@@ -475,11 +475,11 @@ describe("resolveTransition: building up", () => {
   it("keeps the advance chance between 5% and 95% whatever the ratings", () => {
     const s = stateAt("home", 0.3);
 
-    const none = aTeamProfile().withAllRatings(0).build();
-    const all = aTeamProfile().withAllRatings(1).build();
+    const farBelow = aTeamProfile().withAllRatings(-10).build();
+    const farAbove = aTeamProfile().withAllRatings(10).build();
 
-    expect(firstChance(s, none, all)).toBeCloseTo(0.05);
-    expect(firstChance(s, all, none)).toBeCloseTo(0.95);
+    expect(firstChance(s, farBelow, farAbove)).toBeCloseTo(0.05);
+    expect(firstChance(s, farAbove, farBelow)).toBeCloseTo(0.95);
   });
 
   it("lets a modest rating edge shift the advance chance only modestly", () => {
