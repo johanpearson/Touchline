@@ -66,6 +66,7 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 
 - `SaveStore` interface: `list()`, `load(id)`, `save(id, data)`, `delete(id)`.
 - Save format: `{ schemaVersion, createdAt, game }`, with a migration per version bump.
+- Saved and imported data is untrusted: `parseCareer(raw)` in `src/game` rebuilds a `Career` field by field and returns `{ ok, career } | { ok: false, error }` (never throws, never returns the input). Every stored `game` payload goes through it before the UI uses it.
 - Autosave after each match day; manual export/import as a JSON file.
 
 ## Desktop later (Tauri)
