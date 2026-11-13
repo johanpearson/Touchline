@@ -10,7 +10,7 @@ import { shotXg } from "./xg";
 export type Transition = { state: MatchState; events: MatchEvent[] };
 
 /** Progress beyond which the attacking team may shoot. */
-const SHOOTING_ZONE = 0.76;
+export const SHOOTING_ZONE = 0.76;
 const CORNER_CHANCE = 0.3;
 const LATERAL_CHANCE = 0.2;
 const CENTRE: PitchPosition = { x: 0.5, y: 0.5 };

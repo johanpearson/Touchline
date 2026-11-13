@@ -24,3 +24,14 @@ First real Stryker run against the engine (`npm run test:mutation`), recorded as
 - `rng.ts`, `match-builders.ts`: a handful of boundary and default-value survivors.
 
 Per `CLAUDE.md`, treat survivors as missing tests. Re-run with `npm run test:mutation` and compare against this table.
+
+## After #47 (transition tests)
+
+`transition.test.ts` tests the zone model with a scripted RNG. It asserts behaviour and relationships (a better attacker raises the shoot chance, a better keeper lowers the goal chance, probabilities stay clamped, the shooting-zone boundary), not exact formula values, so retuning the formulas does not break it.
+
+| File | Score |
+| --- | --- |
+| All files | **93.51%** |
+| `transition.ts` | 99.08% |
+
+The one remaining `transition.ts` survivor changes the exact intensity formula of progress events. Pinning it would tie a test to a tuning value, so it is left alive on purpose.
