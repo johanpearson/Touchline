@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { createBrowserLocaleStore } from "./platform";
 import { App } from "./ui";
 
 const container = document.getElementById("root");
@@ -9,6 +10,6 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <App />
+    <App localeStore={createBrowserLocaleStore()} />
   </StrictMode>,
 );
