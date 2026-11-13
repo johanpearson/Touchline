@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/johanpearson/Touchline/compare/v1.0.0...v1.0.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **ci:** exclude generated CHANGELOG.md from Biome ([#37](https://github.com/johanpearson/Touchline/issues/37)) ([d117968](https://github.com/johanpearson/Touchline/commit/d117968b6438ba71f16bbd8b0a82e4dfbea64bba)), closes [#36](https://github.com/johanpearson/Touchline/issues/36)
+
 ## 1.0.0 (2026-11-13)
 
 
