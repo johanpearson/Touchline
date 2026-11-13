@@ -1,0 +1,19 @@
+name: Bootstrap issues
+
+# Run once from the Actions tab (works from a phone browser).
+# Creates labels, milestones and the initial issues with the built-in token.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ./scripts/bootstrap-issues.sh "${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ github.token }}

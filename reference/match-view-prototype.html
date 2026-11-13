@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Matchvy, prototyp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ece6ec; --ink:#1f1522; --muted:#6c5d70; --panel:#f8f4f8; --rule:rgba(31,21,34,.13);
+  --stage:#1d1022; --stage-glow:#4a1a35; --stage-ink:#f5ecf4; --stage-muted:#a891a6;
+  --home:#ff4b5c; --away:#2f9bff;
+  --btn:#1f1522; --btn-ink:#f8f4f8;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#130a16; --ink:#f2e8f1; --muted:#a493a7; --panel:#1d1321; --rule:rgba(255,255,255,.1);
+    --btn:#f2e8f1; --btn-ink:#130a16; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#130a16; --ink:#f2e8f1; --muted:#a493a7; --panel:#1d1321; --rule:rgba(255,255,255,.1);
+  --btn:#f2e8f1; --btn-ink:#130a16; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.45}
+main{max-width:760px;margin:0 auto;padding:14px 14px 32px}
+.stage{position:relative;border-radius:20px;overflow:hidden;color:var(--stage-ink);
+  background:radial-gradient(120% 90% at 55% 45%,var(--stage-glow) 0%,var(--stage) 62%);}
+.board{position:absolute;inset:0 0 auto 0;display:flex;justify-content:space-between;align-items:flex-start;padding:14px 16px;pointer-events:none;z-index:2}
+.teams{display:flex;gap:22px}
+.team .name{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:15px;letter-spacing:.02em;padding-bottom:4px;border-bottom:2px solid currentColor}
+.team.home .name{color:var(--home)} .team.away .name{color:var(--away)}
+.team .goals{font-family:"Barlow Condensed",sans-serif;font-weight:400;font-size:58px;line-height:1;color:var(--stage-ink);margin-top:4px;font-variant-numeric:tabular-nums}
+.clock{text-align:right}
+.clock .min{font-family:"Barlow Condensed",sans-serif;font-weight:400;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.clock .phase{font-size:13px;color:var(--stage-muted);margin-top:4px}
+.view{position:relative;width:100%;aspect-ratio:1/0.95;touch-action:pan-y;cursor:grab}
+@media (min-width:640px){.view{aspect-ratio:16/10}}
+.view canvas{display:block;width:100%;height:100%}
+.tag{position:absolute;left:0;top:0;transform:translate(-50%,-130%);background:#0d070f;color:#fff;border:1px solid rgba(255,255,255,.25);
+  font-family:"Barlow Condensed",sans-serif;font-weight:500;font-size:14px;padding:3px 9px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .4s}
+.tag.on{opacity:1}
+.flash{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:1;mix-blend-mode:screen}
+.momentum{padding:4px 16px 14px}
+.momentum .label{font-size:13px;color:var(--stage-muted);margin-bottom:2px}
+.momentum canvas{display:block;width:100%;height:64px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 6px}
+button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:9px 18px;background:var(--btn);color:var(--btn-ink);cursor:pointer}
+button:focus-visible{outline:3px solid var(--away);outline-offset:2px}
+.speed{display:flex;border:1px solid var(--rule);border-radius:999px;padding:3px;margin-left:auto}
+.speed button{background:transparent;color:var(--ink);padding:6px 13px;font-weight:500}
+.speed button[aria-pressed="true"]{background:var(--btn);color:var(--btn-ink)}
+.ghost{background:transparent;color:var(--ink);border:1px solid var(--rule)}
+.feed{list-style:none;margin:12px 0 0;padding:0;border-top:1px solid var(--rule)}
+.feed li{display:flex;gap:12px;padding:9px 2px;border-bottom:1px solid var(--rule);font-size:15px}
+.feed .t{font-family:"Barlow Condensed",sans-serif;font-weight:600;min-width:38px;color:var(--muted);font-variant-numeric:tabular-nums}
+.feed .dot{width:8px;height:8px;border-radius:50%;margin-top:7px;flex:none}
+.feed li.goal{font-weight:600;font-size:16px}
+.half{position:absolute;inset:0;z-index:3;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:20px;background:rgba(20,10,24,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.half.on{display:flex}
+.half .htitle{font-family:"Barlow Condensed",sans-serif;font-size:20px;color:var(--stage-muted)}
+.half .hscore{font-family:"Barlow Condensed",sans-serif;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.half button{background:#f5ecf4;color:#1d1022;margin-top:6px}
+.half .hnote{font-size:13px;color:var(--stage-muted);max-width:32ch}
+.stats{margin:16px 0 6px;display:grid;gap:10px}
+.srow .top{display:flex;justify-content:space-between;align-items:baseline;font-size:14px}
+.srow .lbl{color:var(--muted)}
+.srow .v{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:18px;font-variant-numeric:tabular-nums;min-width:44px}
+.srow .v.r{text-align:right}
+.srow .bar{display:flex;gap:2px;height:5px;border-radius:3px;overflow:hidden;margin-top:3px}
+.srow .bar i{display:block;height:100%;transition:width .5s}
+.srow .bar i:first-child{background:var(--home)} .srow .bar i:last-child{background:var(--away)}
+.feed li{animation:feedin .35s ease-out}
+@keyframes feedin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.feed li{animation:none}}
+.note{color:var(--muted);font-size:14px;margin-top:16px;max-width:62ch}
+</style>
+</head>
+<body>
+<main>
+  <section class="stage" aria-label="Matchvy">
+    <div class="flash" id="flash"></div>
+    <div class="board">
+      <div class="teams">
+        <div class="team home"><div class="name" id="hn">Kvarnby FF</div><div class="goals" id="hs">0</div></div>
+        <div class="team away"><div class="name" id="an">Norrvik IF</div><div class="goals" id="as">0</div></div>
+      </div>
+      <div class="clock"><div class="min" id="clock">0’</div><div class="phase" id="phase">Första halvlek</div></div>
+    </div>
+    <div class="view" id="view"><div class="tag" id="tag"></div></div>
+    <div class="momentum"><div class="label">Momentum</div><canvas id="mom"></canvas></div>
+    <div class="half" id="half"><div class="htitle">Halvtid</div><div class="hscore" id="hscore"></div><button id="h2">Starta andra halvlek</button><div class="hnote">I spelet görs byten, taktik och uppställning här.</div></div>
+  </section>
+
+  <div class="controls">
+    <button id="play">Pausa</button>
+    <button id="new" class="ghost">Ny match</button>
+    <div class="speed" role="group" aria-label="Hastighet">
+      <button data-s="1" aria-pressed="false">1×</button>
+      <button data-s="3" aria-pressed="true">3×</button>
+      <button data-s="8" aria-pressed="false">8×</button>
+    </div>
+  </div>
+  <div class="stats" id="stats" aria-label="Statistik"></div>
+  <ul class="feed" id="feed"></ul>
+  <p class="note" id="note">Prototyp: matchen är fejkad men spelas av en liten seedad zonmotor, så samma matchnummer ger alltid samma match. Höjden visar var trycket ligger, färgen vilket lag som dominerar. Vid mål stannar klockan en stund medan planen exploderar. Dra i planen för att vrida den.</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HOME = new THREE.Color(), AWAY = new THREE.Color();
+  const W = 10.5, D = 6.8, SX = 96, SY = 62, NV = (SX + 1) * (SY + 1);
+
+  // ---------- grid ----------
+  const U = new Float32Array(NV), V = new Float32Array(NV);
+  for (let iy = 0; iy <= SY; iy++) for (let ix = 0; ix <= SX; ix++) {
+    const i = iy * (SX + 1) + ix; U[i] = ix / SX; V[i] = iy / SY;
+  }
+  const OWN = new Float32Array(NV);
+  for (let i = 0; i < NV; i++) { const q = Math.min(1, Math.max(0, (U[i] - .46) / .08)); OWN[i] = q * q * (3 - 2 * q); }
+  const fast = [new Float32Array(NV), new Float32Array(NV)];
+  const slow = [new Float32Array(NV), new Float32Array(NV)];
+  const dispH = new Float32Array(NV).fill(0.1), dispT = new Float32Array(NV).fill(0.5);
+
+  function bump(f, x, y, amp, s) {
+    const s2 = 2 * s * s, lim = 9 * s * s;
+    for (let i = 0; i < NV; i++) {
+      const dx = U[i] - x, dy = (V[i] - y) * 0.648, d2 = dx * dx + dy * dy;
+      if (d2 < lim) f[i] += amp * Math.exp(-d2 / s2);
+    }
+  }
+
+  // ---------- simulation ----------
+  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const CLUBS = [
+    ['Kvarnby FF', '#ff4b5c'], ['Norrvik IF', '#2f9bff'], ['Sandhamn BK', '#f5c518'],
+    ['Ekdala AIK', '#22c47a'], ['Västerå IS', '#a46bff'], ['Hallbro FK', '#ff8a3d'],
+    ['Strandby GoIF', '#1fd1d1'], ['Brodal SK', '#ff6fb5']
+  ];
+  const NAMES = ['Ek', 'Lindqvist', 'Haddad', 'Nyberg', 'Sjöö', 'Okafor', 'Berg', 'Strand', 'Mäkelä', 'Holm', 'Duarte', 'Wikström', 'Aho', 'Lund', 'Karlsson', 'Yilmaz', 'Falk', 'Nordin', 'Bajramović', 'Ström'];
+  const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const far = (a, b) => { const x = hexRgb(a), y = hexRgb(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]) > 170; };
+  let rng, trng, possT, teams, s, mom, momBucket, seed;
+  const prog = (t, x) => t === 0 ? x : 1 - x;
+  const toX = (t, p) => t === 0 ? p : 1 - p;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const pick = a => a[Math.floor(rng() * a.length)];
+  const PH = {
+    danger: ['{T} trycker på i straffområdet', 'Farligt nu! {T} kombinerar sig in i boxen', '{T} slår in ett inlägg, det rör sig framför mål', 'Det brinner i {Og} straffområde'],
+    win: ['{T} vinner bollen högt och ställer om direkt', 'Bollvinst för {T} långt upp i planen', 'Slarv av {O}, {T} snappar åt sig bollen'],
+    save: ['{T} skjuter, men målvakten är på plats', 'Fin räddning av {Og} målvakt', 'Avslut från {T}, målvakten tar den säkert'],
+    wide: ['{T} skjuter utanför', 'Nära! {T} skjuter strax utanför stolpen', 'Över ribban från {T}'],
+    bigSave: ['Jättechans för {T}, men {Og} målvakt räddar!', 'Vilken räddning! {T} var helt fria'],
+    bigMiss: ['Hur kunde det inte bli mål? {T} missar öppet läge', 'Öppet mål, men {T} sätter den i stolpen!'],
+    corner: ['Hörna till {T}', '{T} tvingar fram en hörna', 'Hörna, {T} samlar folk i straffområdet'],
+    goal: ['Mål! {P} gör {S}', 'Där satt den! {P} för {T}, {S}', '{P} nätar och det står {S}!', 'Mål för {T}! {P} avslutar kallt, {S}'],
+    dom: ['{T} har styrt senaste kvarten, {pct} % bollinnehav', '{T} äger bollen just nu, {pct} % senaste kvarten'],
+    even: ['Jämnt spel, {A}–{B} i bollinnehav senaste kvarten', 'Ingen tar över, {A}–{B} i bollinnehav']
+  };
+  const say = (arr, v) => arr[Math.floor(trng() * arr.length)].replace(/\{(\w+)\}/g, (_, k) => v[k]);
+  const tv = P => ({ T: teams[P].short, O: teams[1 - P].short, Og: teams[1 - P].gen });
+  function reportPoss() {
+    const a = possT[0], b = possT[1], pa = Math.round(a / ((a + b) || 1) * 100);
+    if (Math.abs(pa - 50) < 8) log(say(PH.even, { A: pa, B: 100 - pa }), pa >= 50 ? 0 : 1);
+    else { const P = pa > 50 ? 0 : 1; log(say(PH.dom, { ...tv(P), pct: P ? 100 - pa : pa }), P); }
+    possT = [0, 0];
+  }
+
+  function newMatch(sd) {
+    seed = sd; rng = mulberry32(sd); trng = mulberry32(sd * 7 + 13); possT = [0, 0];
+    const ca = Math.floor(rng() * CLUBS.length); let cb;
+    do { cb = Math.floor(rng() * CLUBS.length); } while (cb === ca || !far(CLUBS[ca][1], CLUBS[cb][1]));
+    teams = [ca, cb].map(ci => {
+      const t = { name: CLUBS[ci][0], color: CLUBS[ci][1], finish: .95 + rng() * .1, players: [] };
+      for (const k of ['build', 'press', 'attack', 'defend', 'keep']) t[k] = .44 + rng() * .2;
+      while (t.players.length < 7) { const n = pick(NAMES); if (!t.players.includes(n)) t.players.push(n); }
+      t.short = t.name.split(' ')[0]; t.gen = t.short.endsWith('s') ? t.short : t.short + 's';
+      return t;
+    });
+    applyColors();
+    const first = rng() < .5 ? 0 : 1;
+    s = { t: 0, next: 4, stat: 900, st: { poss: [0, 0], tilt: [0, 0], shots: [0, 0], onT: [0, 0], xg: [0, 0], corners: [0, 0] }, poss: first, first, x: .5, y: .5, score: [0, 0], half: 1, end: 5400 + 60 + Math.floor(rng() * 180), over: false, lastP: .5 };
+    mom = []; momBucket = 0;
+    for (const f of [...fast, ...slow]) f.fill(0);
+    // each team starts owning its own half
+    feed.innerHTML = ''; tagLife = 0; bursts.length = 0; hold = 0; bx = by = frontX = pullX = .5;
+    log('Avspark, ' + teams[first].name + ' börjar med bollen', first);
+    updateBoard();
+  }
+
+  function emit(team, x, y, amp, sig) {
+    bump(fast[team], x, y, amp, sig);
+    bump(slow[team], x, y, amp * .12, .22);
+    momBucket += (team === 0 ? 1 : -1) * amp * (.25 + prog(team, x));
+  }
+
+  function step() {
+    const P = s.poss, T = teams[P], O = teams[1 - P];
+    let p = prog(P, s.x);
+    if (p > .76 && rng() < .2 + T.attack * .25 - O.defend * .12) {
+      const central = 1 - Math.min(1, Math.abs(s.y - .5) * 2);
+      const xg = .62 * Math.min(.6, .03 + Math.max(0, p - .76) * 1.5 * (.35 + .65 * central));
+      const who = pick(T.players);
+      s.st.shots[P]++; s.st.xg[P] += xg;
+      if (rng() < xg * T.finish * (1.1 - O.keep * .3)) {
+        s.score[P]++; s.st.onT[P]++;
+        emit(P, s.x, s.y, 1.2, .05);
+        goalBurst(P, s.x, s.y, who);
+        log(say(PH.goal, { ...tv(P), P: who, S: s.score[0] + '–' + s.score[1] }), P, true);
+        s.poss = 1 - P; s.x = .5; s.y = .5; s.kick = s.poss;
+      } else {
+        emit(P, s.x, s.y, .6 + xg * 2, .045);
+        const saved = trng() < .55; if (saved) s.st.onT[P]++;
+        if (xg > .045) { log(say(xg > .12 ? (saved ? PH.bigSave : PH.bigMiss) : (saved ? PH.save : PH.wide), tv(P)), P); }
+        if (rng() < .3) {
+          s.y = rng() < .5 ? .03 : .97; s.x = toX(P, .985);
+          emit(P, s.x, s.y, .45, .06);
+          s.st.corners[P]++; log(say(PH.corner, tv(P)), P);
+        } else {
+          s.poss = 1 - P; s.x = toX(s.poss, .08); s.y = .5 + (rng() - .5) * .4;
+        }
+      }
+    } else {
+      const adv = .56 + (T.build - O.press) * .5 - p * .22;
+      if (rng() < adv) {
+        p = Math.min(.97, p + .05 + rng() * .14);
+        s.y = clamp(s.y + (rng() - .5) * .35, .06, .94);
+        s.x = toX(P, p);
+        emit(P, s.x, s.y, .18 + p * p * .75, .09 + (1 - p) * .06);
+        if (p > .8 && s.lastP <= .8 && trng() < .5) log(say(PH.danger, tv(P)), P);
+      } else {
+        emit(P, s.x, s.y, .1, .1);
+        s.poss = 1 - P;
+        emit(s.poss, s.x, s.y, .2, .08);
+        if (prog(s.poss, s.x) > .65 && trng() < .15) log(say(PH.win, tv(s.poss)), s.poss);
+      }
+    }
+    s.lastP = prog(s.poss, s.x);
+    s.next += 5 + rng() * 12;
+  }
+
+  function advance(dt) {
+    if (s.over) return;
+    let target = Math.min(s.t + dt, s.end);
+    while (s.next <= target) {
+      possT[s.poss] += s.next - s.t; s.st.poss[s.poss] += s.next - s.t; s.st.tilt[s.x > .5 ? 0 : 1] += s.next - s.t;
+      if (s.next >= s.stat) { reportPoss(); s.stat += 900; }
+      while (Math.floor(s.t / 20) < Math.floor(s.next / 20)) { mom.push(momBucket); momBucket = 0; s.t = (Math.floor(s.t / 20) + 1) * 20; }
+      s.t = s.next;
+      if (s.half === 1 && s.t >= 2700) {
+        s.t = 2700; s.half = 1.5;
+        log('Halvtid, ' + s.score[0] + '–' + s.score[1], s.first);
+        target = s.t; showHalftime(); break;
+      }
+      step();
+      if (hold > 0) { target = s.t; break; }
+    }
+    while (Math.floor(s.t / 20) < Math.floor(target / 20)) { mom.push(momBucket); momBucket = 0; s.t = (Math.floor(s.t / 20) + 1) * 20; }
+    s.t = target;
+    const fd = Math.exp(-dt / 25), sd = Math.exp(-dt / 300);
+    for (let i = 0; i < NV; i++) { fast[0][i] *= fd; fast[1][i] *= fd; slow[0][i] *= sd; slow[1][i] *= sd; }
+    if (s.t >= s.end) { s.over = true; log('Slutsignal, ' + s.score[0] + '–' + s.score[1], s.score[0] >= s.score[1] ? 0 : 1, true); setPlaying(false); }
+    updateBoard();
+  }
+
+  // ---------- UI text ----------
+  const feed = document.getElementById('feed');
+  function minuteStr(t) {
+    const m = Math.floor(t / 60) + 1;
+    if (s.half < 2 && m > 45) return '45’';
+    if (m > 90) return '90+' + (m - 90) + '’';
+    return m + '’';
+  }
+  function log(text, team, big) {
+    const li = document.createElement('li'); if (big) { li.className = 'goal'; li.style.boxShadow = 'inset 3px 0 0 ' + teams[team].color; li.style.paddingLeft = '10px'; }
+    li.innerHTML = '<span class="t"></span><span class="dot"></span><span class="x"></span>';
+    li.querySelector('.t').textContent = minuteStr(s.t);
+    li.querySelector('.dot').style.background = team === 0 ? 'var(--home)' : 'var(--away)';
+    li.querySelector('.x').textContent = text;
+    feed.prepend(li);
+    while (feed.children.length > 6) feed.lastChild.remove();
+  }
+  function applyColors() {
+    HOME.set(teams[0].color); AWAY.set(teams[1].color);
+    endMat[0].color.set(teams[0].color); endMat[1].color.set(teams[1].color);
+    const r = document.documentElement.style;
+    r.setProperty('--home', teams[0].color); r.setProperty('--away', teams[1].color);
+    document.getElementById('hn').textContent = teams[0].name;
+    document.getElementById('an').textContent = teams[1].name;
+  }
+  const STATS = [['Bollinnehav', 'poss'], ['Planövertag', 'tilt'], ['Skott', 'shots'], ['Skott på mål', 'onT'], ['xG', 'xg'], ['Hörnor', 'corners']];
+  const statsEl = document.getElementById('stats');
+  statsEl.innerHTML = STATS.map(([l, k]) => '<div class="srow" data-k="' + k + '"><div class="top"><span class="v"></span><span class="lbl">' + l + '</span><span class="v r"></span></div><div class="bar"><i></i><i></i></div></div>').join('');
+  function renderStats() {
+    for (const [, k] of STATS) {
+      const row = statsEl.querySelector('[data-k="' + k + '"]'), a = s.st[k][0], b = s.st[k][1], tot = a + b, fa = tot ? a / tot : .5;
+      const fmt = k === 'poss' || k === 'tilt' ? v => Math.round((tot ? v / tot : .5) * 100) + ' %' : k === 'xg' ? v => v.toFixed(2).replace('.', ',') : v => v;
+      const vs = row.querySelectorAll('.v'); vs[0].textContent = fmt(a); vs[1].textContent = fmt(b);
+      const bars = row.querySelectorAll('i'); bars[0].style.width = (fa * 100) + '%'; bars[1].style.width = ((1 - fa) * 100) + '%';
+    }
+  }
+  function updateBoard() {
+    renderStats();
+    document.getElementById('hs').textContent = s.score[0];
+    document.getElementById('as').textContent = s.score[1];
+    document.getElementById('clock').textContent = s.over ? 'Slut' : minuteStr(s.t);
+    document.getElementById('phase').textContent = s.over ? 'Match ' + seed : (s.half === 1 ? 'Första halvlek' : s.half < 2 ? 'Halvtid' : 'Andra halvlek');
+  }
+
+  // ---------- three.js ----------
+  const view = document.getElementById('view');
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  view.prepend(renderer.domElement);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(38, 1, .1, 100);
+
+  const lines = document.createElement('canvas'); lines.width = 1050; lines.height = 680;
+  (() => {
+    const c = lines.getContext('2d'); c.fillStyle = '#000'; c.fillRect(0, 0, 1050, 680);
+    c.strokeStyle = '#fff'; c.lineWidth = 4; const m = 10;
+    c.strokeRect(m, m, 1050 - 2 * m, 680 - 2 * m);
+    c.beginPath(); c.moveTo(525, m); c.lineTo(525, 680 - m); c.stroke();
+    c.beginPath(); c.arc(525, 340, 91.5, 0, Math.PI * 2); c.stroke();
+    for (const side of [0, 1]) {
+      const x0 = side ? 1050 - m : m, dir = side ? -1 : 1;
+      c.strokeRect(Math.min(x0, x0 + dir * 165), 340 - 201.5, 165, 403);
+      c.strokeRect(Math.min(x0, x0 + dir * 55), 340 - 91.5, 55, 183);
+      c.beginPath(); c.arc(x0 + dir * 110, 340, 91.5, side ? Math.PI - .93 : -.93, side ? Math.PI + .93 : .93);
+      c.stroke();
+    }
+  })();
+  const tex = new THREE.CanvasTexture(lines);
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+  const geo = new THREE.PlaneGeometry(W, D, SX, SY);
+  geo.rotateX(-Math.PI / 2);
+  geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(NV * 3), 3));
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .55, metalness: 0, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: .55, side: THREE.DoubleSide });
+  const surf = new THREE.Mesh(geo, mat); scene.add(surf);
+
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(W * 1.02, .25, D * 1.04), new THREE.MeshStandardMaterial({ color: 0x0c0610, roughness: .9 }));
+  slab.position.y = -.2; scene.add(slab);
+  // each team's end: a coloured strip along the goal line and a goal frame
+  const endMat = [new THREE.MeshBasicMaterial({ color: 0xffffff }), new THREE.MeshBasicMaterial({ color: 0xffffff })];
+  for (const side of [0, 1]) {
+    const sx = side ? 1 : -1, m = endMat[side];
+    // a coloured strip along each goal line
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(.1, .3, D * 1.04), m);
+    strip.position.set(sx * W * .515, -.15, 0); scene.add(strip);
+  }
+
+  scene.add(new THREE.HemisphereLight(0xffeef6, 0x1a0a14, .75));
+  const sun = new THREE.DirectionalLight(0xffffff, .9); sun.position.set(-4, 9, 6); scene.add(sun);
+
+  let theta = -.42, dragging = false, lastX = 0, radius = 13;
+  renderer.domElement.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; renderer.domElement.setPointerCapture(e.pointerId); });
+  renderer.domElement.addEventListener('pointermove', e => { if (!dragging) return; theta -= (e.clientX - lastX) * .006; lastX = e.clientX; });
+  const stop = () => dragging = false;
+  renderer.domElement.addEventListener('pointerup', stop); renderer.domElement.addEventListener('pointercancel', stop);
+
+  function resize() {
+    const w = view.clientWidth, h = view.clientHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    radius = camera.aspect < 1.2 ? 14.5 : 11.5;
+    sizeMom();
+  }
+  new ResizeObserver(resize).observe(view);
+
+  // label
+  const tag = document.getElementById('tag'); let tagLife = 0, tagX = .5, tagY = .5;
+  function showTag(text, x, y) { tag.textContent = text; tagX = x; tagY = y; tagLife = 4; }
+  const bursts = []; let hold = 0, shake = 0, bx = .5, by = .5, frontX = .5, pullX = .5;
+  const flash = document.getElementById('flash');
+  function goalBurst(team, x, y, who) {
+    bursts.push({ team, x, y, age: 0, peak: 4.2, life: 3.4, ring: 1 });
+    hold = 3.2; shake = reduce ? 0 : .5;
+    showTag('Mål! ' + who, x, y);
+    bump(slow[team], x, y, 1.2, .35);
+    flash.style.transition = 'none';
+    flash.style.background = 'radial-gradient(circle at 50% 45%, ' + teams[team].color + ' 0%, transparent 65%)';
+    flash.style.opacity = '.55';
+    requestAnimationFrame(() => requestAnimationFrame(() => { flash.style.transition = 'opacity 2.4s ease-out'; flash.style.opacity = '0'; }));
+  }
+  const tmp = new THREE.Vector3();
+  function heightAt(x, y) {
+    const ix = Math.round(clamp(x, 0, 1) * SX), iy = Math.round(clamp(y, 0, 1) * SY);
+    return pos.getY(iy * (SX + 1) + ix);
+  }
+
+  const pos = geo.attributes.position, col = geo.attributes.color, c = new THREE.Color();
+  function env(b) {
+    const a = b.age, up = .35;
+    if (a < up) { const t = a / up - 1; return 1 + 2.7 * t * t * t + 1.7 * t * t; }
+    const fall = b.life * .5;
+    if (a < fall) return 1 + .06 * Math.sin(a * 14) * Math.exp(-(a - up) * 2);
+    const f = Math.max(0, 1 - (a - fall) / (b.life - fall)); return f * f;
+  }
+  function updateSurface(dt, time) {
+    const k = 1 - Math.exp(-dt * 7), na = reduce ? .012 : .06;
+    for (const b of bursts) { b.age += dt; b.e = env(b); }
+    for (let j = bursts.length - 1; j >= 0; j--) if (bursts[j].age > bursts[j].life) bursts.splice(j, 1);
+    for (let i = 0; i < NV; i++) {
+      const fh = fast[0][i], fa = fast[1][i], sh = slow[0][i], sa = slow[1][i];
+      const v = fh + fa + (sh + sa) * 1.3;
+      const target = .06 + 2.5 * (1 - Math.exp(-v));
+      const wob = .035 * Math.sin(V[i] * 9 + time * 1.3) + .02 * Math.sin(V[i] * 23 - time * 2.1);
+      const pull = (pullX - frontX) * Math.exp(-((V[i] - by) * (V[i] - by)) / .05);
+      const q = Math.min(1, Math.max(0, (U[i] - (frontX + wob + pull) + .05) / .1)), own = q * q * (3 - 2 * q);
+      const dh = fh * 1.3 + sh * .25 + (1 - own) * .6 + 1e-3, da = fa * 1.3 + sa * .25 + own * .6 + 1e-3;
+      dispH[i] += (target - dispH[i]) * k;
+      dispT[i] += (da / (dh + da) - dispT[i]) * k;
+      const n = na * (Math.sin(U[i] * 6 + time * .9) * Math.cos(V[i] * 5 - time * .7)
+        + .6 * Math.sin((U[i] + V[i]) * 11 - time * 1.7)
+        + .4 * Math.sin(U[i] * 17 - V[i] * 9 + time * 2.3)) * (1 + dispH[i] * .8);
+      let h = dispH[i] + n, tt = dispT[i];
+      for (const b of bursts) {
+        const dx = U[i] - b.x, dy = (V[i] - b.y) * .648, d2 = dx * dx + dy * dy;
+        h += b.peak * b.e * (Math.exp(-d2 / .0018) + .25 * Math.exp(-d2 / .016));
+        if (b.ring) {
+          const d = Math.sqrt(d2), r = b.age * .55, fade = Math.max(0, 1 - b.age / b.life);
+          h += .7 * Math.exp(-b.age * 1.1) * Math.exp(-(d - r) * (d - r) / .0025);
+          const w = (d < r ? 1 : Math.exp(-(d - r) * (d - r) / .004)) * fade * .9;
+          tt += ((b.team === 0 ? 0 : 1) - tt) * w;
+        }
+      }
+      pos.setY(i, h);
+      let t = clamp((tt - .3) / .4, 0, 1); t = t * t * (3 - 2 * t);
+      c.copy(HOME).lerp(AWAY, t).multiplyScalar(.72 + .4 * Math.min(1, h / 2.5));
+      col.setXYZ(i, c.r, c.g, c.b);
+    }
+    pos.needsUpdate = true; col.needsUpdate = true; geo.computeVertexNormals();
+  }
+
+  // ---------- momentum chart ----------
+  const momC = document.getElementById('mom'), mctx = momC.getContext('2d');
+  function sizeMom() { const r = Math.min(devicePixelRatio, 2); momC.width = momC.clientWidth * r; momC.height = momC.clientHeight * r; mctx.setTransform(r, 0, 0, r, 0, 0); }
+  function drawMom() {
+    const w = momC.clientWidth, h = momC.clientHeight, mid = h / 2;
+    mctx.clearRect(0, 0, w, h);
+    mctx.strokeStyle = 'rgba(255,255,255,.15)'; mctx.lineWidth = 1;
+    mctx.beginPath(); mctx.moveTo(0, mid); mctx.lineTo(w, mid); mctx.stroke();
+    const total = s.end / 20, n = mom.length; if (n < 2) return;
+    const sm = []; let e = 0; for (const v of mom) { e = e * .55 + v * .45; sm.push(e); }
+    const mx = Math.max(2.5, ...sm.map(Math.abs));
+    const X = i => i / total * w, Y = v => mid - v / mx * (mid - 3);
+    for (const [team, sign] of [[0, 1], [1, -1]]) {
+      mctx.save(); mctx.beginPath();
+      if (sign > 0) mctx.rect(0, 0, w, mid); else mctx.rect(0, mid, w, mid);
+      mctx.clip();
+      mctx.beginPath(); mctx.moveTo(X(0), mid);
+      sm.forEach((v, i) => mctx.lineTo(X(i), Y(v)));
+      mctx.lineTo(X(n - 1), mid); mctx.closePath();
+      mctx.globalAlpha = .35; mctx.fillStyle = teams[team].color; mctx.fill(); mctx.globalAlpha = 1;
+      mctx.beginPath(); sm.forEach((v, i) => i ? mctx.lineTo(X(i), Y(v)) : mctx.moveTo(X(i), Y(v)));
+      mctx.strokeStyle = teams[team].color; mctx.lineWidth = 1.5; mctx.stroke();
+      mctx.restore();
+    }
+    const cx = s.t / s.end * w;
+    mctx.strokeStyle = 'rgba(255,255,255,.55)'; mctx.beginPath(); mctx.moveTo(cx, 2); mctx.lineTo(cx, h - 2); mctx.stroke();
+  }
+
+  // ---------- controls & loop ----------
+  let playing = true, speed = 3, last = performance.now();
+  const playBtn = document.getElementById('play');
+  function setPlaying(v) { playing = v; playBtn.textContent = v ? 'Pausa' : (s && s.over ? 'Spela igen' : s && s.half === 1.5 ? 'Starta andra halvlek' : 'Spela'); }
+  const halfEl = document.getElementById('half');
+  function resetPitch() { for (const f of [...fast, ...slow]) f.fill(0); }
+  function showHalftime() {
+    resetPitch();
+    document.getElementById('hscore').textContent = teams[0].short + ' ' + s.score[0] + '–' + s.score[1] + ' ' + teams[1].short;
+    halfEl.classList.add('on'); setPlaying(false);
+  }
+  function startSecondHalf() {
+    s.half = 2; s.poss = 1 - s.first; s.x = .5; s.y = .5; s.lastP = .5; s.next = 2703;
+    resetPitch();
+    log('Andra halvlek, ' + teams[s.poss].short + ' sparkar igång', s.poss);
+    halfEl.classList.remove('on'); setPlaying(true); updateBoard();
+  }
+  document.getElementById('h2').onclick = startSecondHalf;
+  playBtn.onclick = () => { if (s.over) { newMatch(seed); setPlaying(true); } else if (s.half === 1.5) startSecondHalf(); else setPlaying(!playing); };
+  document.getElementById('new').onclick = () => { halfEl.classList.remove('on'); newMatch(1 + Math.floor(Math.random() * 9999)); setPlaying(true); };
+  document.querySelectorAll('.speed button').forEach(b => b.onclick = () => {
+    speed = +b.dataset.s;
+    document.querySelectorAll('.speed button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  });
+
+  function frame(now) {
+    const dt = Math.min(.1, (now - last) / 1000); last = now;
+    if (playing) {
+      if (hold > 0) {
+        hold -= dt;
+        if (hold <= 0 && s.kick != null) { resetPitch(); log('Avspark, ' + teams[s.kick].short + ' sparkar igång', s.kick); s.kick = null; }
+      } else advance(dt * speed * 12);
+    }
+    if (hold > 0 || s.half === 1.5) {
+      const kk = 1 - Math.exp(-dt * 2.5);
+      frontX += (.5 - frontX) * kk; pullX += (.5 - pullX) * kk; bx += (.5 - bx) * kk; by += (.5 - by) * kk;
+    }
+    if (playing && hold <= 0 && !s.over) {
+      const kb = 1 - Math.exp(-dt * 4);
+      bx += (s.x - bx) * kb; by += (s.y - by) * kb;
+      bump(fast[s.poss], bx, by, dt * speed * .48 * (.3 + .45 * prog(s.poss, bx)), .07);
+      frontX += (.5 + (bx - .5) * .9 - frontX) * (1 - Math.exp(-dt * speed * .12));
+      const pt = s.poss === 0 ? Math.max(frontX, bx + .06) : Math.min(frontX, bx - .06);
+      pullX += (pt - pullX) * (1 - Math.exp(-dt * 5));
+    }
+    const time = now / 1000;
+    updateSurface(dt, time);
+    const th = theta + (reduce || dragging ? 0 : Math.sin(time * .15) * .06);
+    camera.position.set(Math.sin(th) * radius, radius * .62, Math.cos(th) * radius);
+    if (shake > 0) { shake = Math.max(0, shake - dt); const a = shake * .35; camera.position.x += (Math.random() - .5) * a; camera.position.y += (Math.random() - .5) * a; }
+    camera.lookAt(0, .4, 0);
+    renderer.render(scene, camera);
+    if (tagLife > 0) {
+      tagLife -= dt;
+      tmp.set((tagX - .5) * W, heightAt(tagX, tagY) + .15, (tagY - .5) * D).project(camera);
+      tag.style.left = ((tmp.x + 1) / 2 * view.clientWidth) + 'px';
+      tag.style.top = ((1 - tmp.y) / 2 * view.clientHeight) + 'px';
+    }
+    tag.classList.toggle('on', tagLife > 0);
+    drawMom();
+    requestAnimationFrame(frame);
+  }
+
+  newMatch(4821);
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
