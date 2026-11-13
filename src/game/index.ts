@@ -1,5 +1,7 @@
 export { attributeGoalScorers } from "./attribute-goal-scorers";
 export type { Club } from "./club";
+export type { Outcome, Result, TableError, TableResult, TableRow } from "./compute-table";
+export { computeForm, computeTable } from "./compute-table";
 export { deriveTeamProfile } from "./derive-team-profile";
 export type {
   ClubIdentity,
