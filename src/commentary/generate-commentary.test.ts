@@ -142,6 +142,21 @@ describe("generateCommentary", () => {
     expect(lines([ev(60, { type: "shot", xg: 0.3, outcome: "goal" })])).toEqual([]);
   });
 
+  it("only announces the second half for the kickoff that starts it, not for kickoffs after goals", () => {
+    const out = lines([
+      ev(0, { type: "kickoff" }),
+      ev(540, { type: "goal", xg: 0.3 }),
+      ev(540, { type: "kickoff", team: "away" }),
+      ev(2800, { type: "periodChange", period: "halfTime" }),
+      ev(2800, { type: "periodChange", period: "secondHalf" }),
+      ev(2800, { type: "kickoff", team: "away" }),
+    ]);
+    const kickoffs = out.filter((l) => l.kind === "kickoff");
+    expect(kickoffs.map((l) => l.time)).toEqual([0, 2800]);
+    expect(kickoffs[0]?.text).not.toMatch(/second half/i);
+    expect(kickoffs[1]?.text).toMatch(/second half/i);
+  });
+
   it("gives half-time and full-time lines with the score", () => {
     const out = lines([
       ev(100, { type: "goal", xg: 0.3 }),

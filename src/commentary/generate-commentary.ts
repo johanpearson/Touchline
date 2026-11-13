@@ -44,6 +44,18 @@ const shotPiece = (event: MatchEvent & { type: "shot" }): Piece | undefined => {
   return { key: big ? "bigMiss" : "wide", kind: "chance", team };
 };
 
+/** The match kickoff and the second-half kickoff get a line; restarts after goals do not. */
+const kickoffPiece = (
+  event: MatchEvent & { type: "kickoff" },
+  previous: MatchEvent | undefined,
+): Piece | undefined => {
+  if (!previous) return { key: "kickoff", kind: "kickoff", team: event.team };
+  const startsSecondHalf = previous.type === "periodChange" && previous.period === "secondHalf";
+  return startsSecondHalf
+    ? { key: "secondHalfKickoff", kind: "kickoff", team: event.team }
+    : undefined;
+};
+
 /**
  * Turns the event log into commentary lines, in time order. Pure: it reads the events and nothing
  * else, and draws all its randomness from its own stream (forked from `seed`), so it can never
@@ -119,9 +131,7 @@ export const generateCommentary = (
   const pieceFor = (event: MatchEvent, index: number): Piece | undefined => {
     switch (event.type) {
       case "kickoff":
-        return index === 0
-          ? { key: "kickoff", kind: "kickoff", team: event.team }
-          : { key: "secondHalfKickoff", kind: "kickoff", team: event.team };
+        return kickoffPiece(event, events[index - 1]);
       case "goal":
         return { key: "goal", kind: "goal", team: event.team, big: true };
       case "shot":
