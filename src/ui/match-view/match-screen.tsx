@@ -3,12 +3,14 @@ import { generateCommentary } from "../../commentary";
 import type { MatchInput, PerSide } from "../../engine";
 import { computeMatchStats, createMatch } from "../../engine";
 import { useI18n } from "../i18n-provider";
+import { HalfTimePanel } from "./half-time-panel";
 import { MatchFeed } from "./match-feed";
 import { MomentumChart } from "./momentum-chart";
 import { MomentumTerrain } from "./momentum-terrain";
 import { Scoreboard } from "./scoreboard";
 import { SpeedControls } from "./speed-controls";
 import { StatsPanel } from "./stats-panel";
+import { terrainEvents } from "./terrain-events";
 import type { TerrainRendererFactory } from "./terrain-renderer";
 import { useMatchPlayback } from "./use-match-playback";
 import "./match-screen.css";
@@ -39,11 +41,13 @@ export function MatchScreen({
 }: MatchScreenProps) {
   const { t, locale } = useI18n();
   const [match] = useState(() => createMatch(input, seed));
-  const { matchTime, state, events, paused, speed, setPaused, setSpeed } = useMatchPlayback(
+  const { matchTime, state, events, paused, speed, setPaused, setSpeed, resume } = useMatchPlayback(
     match,
     tickMs,
   );
   const stats = useMemo(() => computeMatchStats(events, matchTime), [events, matchTime]);
+  const shownEvents = useMemo(() => terrainEvents(events, state.period), [events, state.period]);
+  const halfTime = state.period === "halfTime";
   const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
   const lines = useMemo(
     () => generateCommentary(events, { locale, names, players }, seed),
@@ -63,13 +67,22 @@ export function MatchScreen({
       />
       <div className="match-main">
         <MomentumTerrain
-          events={events}
+          events={shownEvents}
           matchTime={matchTime}
           homeColour={colours.home}
           awayColour={colours.away}
           createRenderer={createRenderer}
           label={t("match.terrain")}
         />
+        {halfTime && (
+          <HalfTimePanel
+            homeName={names.home}
+            awayName={names.away}
+            score={state.score}
+            stats={stats}
+            onResume={resume}
+          />
+        )}
         <SpeedControls
           paused={paused}
           speed={speed}
@@ -78,7 +91,7 @@ export function MatchScreen({
         />
       </div>
       <aside className="match-side">
-        <StatsPanel stats={stats} />
+        {!halfTime && <StatsPanel stats={stats} />}
         <MomentumChart
           events={events}
           matchTime={matchTime}

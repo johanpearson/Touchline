@@ -90,3 +90,20 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+.match-screen .match-main {
+  position: relative;
+}
+.match-screen .half-time {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.78);
+  text-align: center;
+}
+.match-screen .half-time h2,
+.match-screen .half-time h3 {
+  margin: 0;
+}

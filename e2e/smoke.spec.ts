@@ -38,3 +38,16 @@ test.describe("match screen", () => {
     await expect(page.getByTestId("clock")).toHaveText(frozen ?? "");
   });
 });
+
+test.describe("half-time", () => {
+  test("plays to half-time, resumes and reaches full time", async ({ page }) => {
+    await page.goto("./");
+
+    await page.getByTestId("speed-4").click();
+    await expect(page.getByTestId("half-time")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("half-time-score")).toBeVisible();
+    await page.getByTestId("start-second-half").click();
+    await expect(page.getByTestId("half-time")).toBeHidden();
+    await expect(page.getByTestId("period")).toHaveText("Full time", { timeout: 60_000 });
+  });
+});

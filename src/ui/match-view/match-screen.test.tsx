@@ -89,6 +89,27 @@ describe("MatchScreen", () => {
     expect(clockText()).toBe(frozen);
   });
 
+  it("shows the half-time overlay with the first-half stats at half-time", () => {
+    mount();
+    expect(screen.queryByTestId("half-time")).toBeNull();
+    fireEvent.click(screen.getByTestId("speed-4"));
+    play(15_000);
+    expect(screen.getByTestId("half-time")).toBeTruthy();
+    expect(screen.getByTestId("half-time-score")).toBeTruthy();
+  });
+
+  it("starts the second half when the button is clicked, and plays on to full time", () => {
+    mount();
+    fireEvent.click(screen.getByTestId("speed-4"));
+    play(15_000);
+    fireEvent.click(screen.getByTestId("start-second-half"));
+    expect(screen.queryByTestId("half-time")).toBeNull();
+    expect(screen.getByTestId("period").textContent).toBe("Second half");
+    play(30_000);
+    expect(screen.getByTestId("period").textContent).toBe("Full time");
+    expect(screen.queryByTestId("half-time")).toBeNull();
+  });
+
   it("fills the stats panel as the match is played", () => {
     mount();
     fireEvent.click(screen.getByTestId("speed-4"));
