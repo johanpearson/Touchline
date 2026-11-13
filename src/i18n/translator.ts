@@ -2,6 +2,8 @@ import type { Locale } from "./locale";
 import type { MessageKey } from "./messages";
 import { messages } from "./messages";
 
+const MINUS_SIGN = "\u2212";
+
 export type Params = Record<string, string | number>;
 
 export type Translator = {
@@ -9,6 +11,8 @@ export type Translator = {
   t: (key: MessageKey, params?: Params) => string;
   formatNumber: (value: number, fractionDigits?: number) => string;
   formatPercent: (ratio: number, fractionDigits?: number) => string;
+  /** An integer with an explicit plus for positive values and a true minus sign (U+2212). */
+  formatSigned: (value: number) => string;
 };
 
 function interpolate(template: string, params: Params): string {
@@ -37,5 +41,9 @@ export function createTranslator(locale: Locale): Translator {
     },
     formatNumber: (value, fractionDigits = 2) => number(value, "decimal", fractionDigits),
     formatPercent: (ratio, fractionDigits = 0) => number(ratio, "percent", fractionDigits),
+    formatSigned: (value) =>
+      new Intl.NumberFormat(locale, { signDisplay: "exceptZero" })
+        .format(value)
+        .replace("-", MINUS_SIGN),
   };
 }

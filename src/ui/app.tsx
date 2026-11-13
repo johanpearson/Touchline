@@ -3,6 +3,7 @@ import { CareerHubScreen } from "./career-hub-screen";
 import { CareerNav } from "./career-nav";
 import { demoMatch } from "./demo-match";
 import { I18nProvider, useI18n } from "./i18n-provider";
+import { LeagueScreen } from "./league-screen";
 import { LocaleSwitch } from "./locale-switch";
 import { MatchScreen, type MatchScreenProps } from "./match-view";
 import { NewCareerScreen } from "./new-career-screen";
@@ -24,7 +25,7 @@ function Screen({ createRenderer, initialSeed }: RendererProp & { initialSeed: n
     case "home":
       return <CareerHubScreen />;
     case "league":
-      return <PlaceholderScreen testId="screen-league" titleKey="screen.league" />;
+      return <LeagueScreen />;
     case "club":
       return <PlaceholderScreen testId="screen-club" titleKey="screen.club" />;
     case "season-end":

@@ -51,6 +51,7 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 
 - Hash routing (`src/ui/routes.ts`, `use-route.ts`): `#/`, `#/league`, `#/club/:clubId`, `#/match`, `#/season-end`; unknown hashes show a not-found view. No server support needed.
 - The career lives in `useCareer` (`use-career.tsx`), an in-memory store. M4 plugs the `SaveStore` in there without changing screens. Without a career every route except `#/match` shows the new-career screen.
+- `#/league` (`league-screen.tsx`) has a Table tab (`league-table.tsx`, built from `computeTable`) and a Fixtures tab (`fixtures-view.tsx`). `LeagueView` takes the career as a prop; `LeagueScreen` reads it from `useCareer`, so new results show without a reload.
 - The composition root passes `initialSeed` to `App`, so the UI itself never draws randomness and tests stay deterministic.
 
 ## Commentary
