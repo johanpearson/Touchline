@@ -10,6 +10,9 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <App localeStore={createBrowserLocaleStore()} />
+    <App
+      localeStore={createBrowserLocaleStore()}
+      initialSeed={Math.floor(Math.random() * 2 ** 31)}
+    />
   </StrictMode>,
 );

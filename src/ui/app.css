@@ -1,0 +1,62 @@
+.app-shell {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.app-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.career-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid currentColor;
+}
+.career-nav ul {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.career-nav a[aria-current="page"] {
+  font-weight: 700;
+}
+.career-nav .nav-club-name {
+  margin-left: auto;
+  font-weight: 600;
+}
+.club-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.club-option {
+  display: grid;
+  grid-template-columns: 32px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+}
+.club-option[aria-pressed="true"] {
+  font-weight: 700;
+  outline: 2px solid currentColor;
+}
+.club-colours {
+  display: inline-block;
+  width: 32px;
+  height: 16px;
+  border-radius: 2px;
+}
+.club-rating {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
