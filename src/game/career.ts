@@ -1,6 +1,7 @@
 import type { Result } from "./compute-table";
 import type { Fixture } from "./generate-fixtures";
 import type { League } from "./league";
+import type { SeasonSummary } from "./season-summary";
 
 /** One season of a career. Plain JSON-serialisable data. */
 export type Season = {
@@ -19,6 +20,8 @@ export type Career = {
   userClubId: string;
   league: League;
   season: Season;
+  /** Summaries of the finished seasons, oldest first. */
+  history: SeasonSummary[];
 };
 
 export type CareerError = "unknown-club";
