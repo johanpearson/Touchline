@@ -393,6 +393,20 @@ describe("resolveTransition: building up", () => {
     expect(nearer).toBeLessThanOrEqual(1);
   });
 
+  it("has no danger while the attack is still in its own half", () => {
+    const { state } = build([true], [0, 0.5], "home", 0.1); // progress 0.15
+
+    expect(state.danger).toBe(0);
+  });
+
+  it("has no danger for the side that wins the ball in its own half", () => {
+    // Home lose the ball at x=0.8, which is progress 0.2 for away.
+    const { state } = build([false, false], [], "home", 0.8);
+
+    expect(state.possession).toBe("away");
+    expect(state.danger).toBe(0);
+  });
+
   it("moves the ball sideways and keeps possession on a lateral pass", () => {
     const { state, events } = build([false, true], [1]);
 

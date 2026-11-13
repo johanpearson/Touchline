@@ -18,7 +18,9 @@ const CENTRE: PitchPosition = { x: 0.5, y: 0.5 };
 const profileOf = (input: MatchInput, side: Side): TeamMatchProfile =>
   side === "home" ? input.home : input.away;
 
-const dangerAt = (progress: number): number => clamp(((progress - 0.5) / 0.5) ** 2, 0, 1);
+/** Danger is zero in the attacking team's own half and rises towards 1 at the opponent's goal. */
+const dangerAt = (progress: number): number =>
+  clamp((Math.max(0, progress - 0.5) / 0.5) ** 2, 0, 1);
 
 const withBall = (
   state: MatchState,
