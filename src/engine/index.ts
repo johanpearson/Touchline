@@ -1,2 +1,6 @@
+export type { MatchEvent, MatchEventType, ShotOutcome } from "./match-event";
+export type { MatchInput, TeamTactics } from "./match-input";
+export type { MatchState, Period, PitchPosition, Side } from "./match-state";
 export type { Rng } from "./rng";
 export { createRng } from "./rng";
+export type { TeamMatchProfile } from "./team-match-profile";
