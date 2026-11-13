@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.3.0](https://github.com/johanpearson/Touchline/compare/v1.2.0...v1.3.0) (2026-11-13)
+
+
+### Features
+
+* **game:** club and player model with 12 attributes and team profile derivation ([#84](https://github.com/johanpearson/Touchline/issues/84)) ([9aef09c](https://github.com/johanpearson/Touchline/commit/9aef09cdc1372037f90332652848636a43b645ef)), closes [#71](https://github.com/johanpearson/Touchline/issues/71)
+* **game:** double round-robin fixture schedule ([#89](https://github.com/johanpearson/Touchline/issues/89)) ([2366955](https://github.com/johanpearson/Touchline/commit/236695551319d4438c18846d23177eae9d56dc68)), closes [#75](https://github.com/johanpearson/Touchline/issues/75)
+* **game:** end of season summary and next season ([#92](https://github.com/johanpearson/Touchline/issues/92)) ([0b196fc](https://github.com/johanpearson/Touchline/commit/0b196fcc43fbd88e103088c4fdcd2a5319809bc8))
+* **game:** fictional player and squad generator ([#87](https://github.com/johanpearson/Touchline/issues/87)) ([6a5b525](https://github.com/johanpearson/Touchline/commit/6a5b525a9585180aa2b1f0af54b624601eaf4b10)), closes [#73](https://github.com/johanpearson/Touchline/issues/73)
+* **game:** generate a league of fictional clubs with balanced strengths ([#88](https://github.com/johanpearson/Touchline/issues/88)) ([f449a74](https://github.com/johanpearson/Touchline/commit/f449a747397ea5e0514d10726cb1ec737647d829)), closes [#74](https://github.com/johanpearson/Touchline/issues/74)
+* **game:** generate fictional club identities ([#86](https://github.com/johanpearson/Touchline/issues/86)) ([c938c74](https://github.com/johanpearson/Touchline/commit/c938c7443aeff15fd13158ec6da68f3bf5629126))
+* **game:** league table with tie-breakers ([#90](https://github.com/johanpearson/Touchline/issues/90)) ([2333a05](https://github.com/johanpearson/Touchline/commit/2333a05e034e2c94f67ef8dfd5a279714f7a6117)), closes [#76](https://github.com/johanpearson/Touchline/issues/76)
+* **game:** season state and matchday simulation ([#91](https://github.com/johanpearson/Touchline/issues/91)) ([c0a9f40](https://github.com/johanpearson/Touchline/commit/c0a9f40de950557ecece9caceafabf90d199ec01))
+* **ui:** app shell with hash routing and new career screen ([#93](https://github.com/johanpearson/Touchline/issues/93)) ([0c3886b](https://github.com/johanpearson/Touchline/commit/0c3886ba377c8730c20ad3fb6e0873b11364cfc1))
+* **ui:** club and squad overview screen ([#95](https://github.com/johanpearson/Touchline/issues/95)) ([3a2a5c5](https://github.com/johanpearson/Touchline/commit/3a2a5c53db1475a481b017bb120708822f151a36)), closes [#81](https://github.com/johanpearson/Touchline/issues/81)
+* **ui:** league table and fixtures screens ([#94](https://github.com/johanpearson/Touchline/issues/94)) ([bbe6284](https://github.com/johanpearson/Touchline/commit/bbe6284e21d2ec17f53f7622b7f64381aa515055)), closes [#80](https://github.com/johanpearson/Touchline/issues/80)
+* **ui:** play the season with matchday flow, quick sim and season end screen ([#97](https://github.com/johanpearson/Touchline/issues/97)) ([f2fc399](https://github.com/johanpearson/Touchline/commit/f2fc399445b1aaa0f154d9fb140c0949e2ec5de5))
+
 ## [1.2.0](https://github.com/johanpearson/Touchline/compare/v1.1.0...v1.2.0) (2026-11-13)
 
 
