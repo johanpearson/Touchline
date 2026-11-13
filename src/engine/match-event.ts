@@ -16,6 +16,8 @@ export type ShotOutcome = "goal" | "saved" | "missed" | "blocked";
 
 export type KickoffEvent = EventBase & { type: "kickoff" };
 export type ProgressEvent = EventBase & { type: "progress" };
+/** The ball moves sideways while the team keeps possession. */
+export type LateralEvent = EventBase & { type: "lateral" };
 export type TurnoverEvent = EventBase & { type: "turnover" };
 export type ShotEvent = EventBase & {
   type: "shot";
@@ -37,6 +39,7 @@ export type PeriodChangeEvent = EventBase & {
 export type MatchEvent =
   | KickoffEvent
   | ProgressEvent
+  | LateralEvent
   | TurnoverEvent
   | ShotEvent
   | GoalEvent

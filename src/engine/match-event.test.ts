@@ -9,6 +9,7 @@ describe("MatchEvent", () => {
     const events: MatchEvent[] = [
       { ...base, type: "kickoff" },
       { ...base, type: "progress" },
+      { ...base, type: "lateral" },
       { ...base, type: "turnover" },
       { ...base, type: "shot", xg: 0.1, outcome: "saved" },
       { ...base, type: "goal", xg: 0.3 },
@@ -19,6 +20,6 @@ describe("MatchEvent", () => {
 
     const types: MatchEventType[] = events.map((event) => event.type);
 
-    expect(new Set(types).size).toBe(8);
+    expect(new Set(types).size).toBe(9);
   });
 });
