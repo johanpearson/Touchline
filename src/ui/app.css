@@ -60,6 +60,95 @@
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
+.club-header h2 {
+  display: inline-block;
+  margin: 0 12px 0 0;
+  padding: 4px 12px;
+  border-radius: 4px;
+}
+.your-club {
+  font-weight: 700;
+}
+.form-chips {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.form-chip {
+  min-width: 24px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 700;
+  color: #fff;
+}
+.form-W {
+  background: #1b7f3b;
+}
+.form-D {
+  background: #6b7280;
+}
+.form-L {
+  background: #b42318;
+}
+.club-ratings {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.club-ratings dd {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.squad-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.squad-table th,
+.squad-table td {
+  padding: 2px 6px;
+  text-align: left;
+}
+.squad-table .num {
+  text-align: right;
+}
+.squad-table th button {
+  font: inherit;
+  font-weight: 700;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.squad-table th[aria-sort="ascending"] button::after {
+  content: " ▲";
+}
+.squad-table th[aria-sort="descending"] button::after {
+  content: " ▼";
+}
+.squad-group-heading th {
+  padding-top: 12px;
+  border-bottom: 1px solid currentColor;
+}
+.squad-table .best-eleven td:first-child {
+  font-weight: 700;
+}
+.attr-low {
+  background: #fde2e0;
+  color: #7a1b13;
+}
+.attr-mid {
+  background: #fdf3c8;
+  color: #5c4a00;
+}
+.attr-high {
+  background: #d3f2dc;
+  color: #0f4d24;
+}
 
 .league-tabs {
   display: flex;
