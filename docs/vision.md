@@ -35,6 +35,12 @@ A football management game inspired by Football Manager, but smaller: fewer scre
 | AI lineups (M3) | Until the squad and tactics milestone (M5), every club (including the user's) plays its best eleven in a fixed 4-4-2 picked automatically from the squad. |
 | Home advantage (M3) | None. The engine has no home advantage today; adding it is an engine change that needs its own balance work and is out of scope for M3. |
 | Game state shape | All career and season state is plain JSON-serialisable data (no `Map`, `Set`, `Date`, classes or functions) so M4 can save it unchanged. Entities reference each other by string id. All randomness derives from the career seed through `createRng(...).fork(name)`. |
+| Save slots (M4) | One **autosave** slot (`autosave`) plus **3 manual slots** (`slot-1` to `slot-3`). One running career at a time. |
+| Autosave (M4) | The career is autosaved after it is created, after every completed matchday and after starting the next season, never mid-match (leaving a match restarts it from kickoff, as in M3). On startup the app offers "Continue" from the autosave (or the newest save when the autosave is missing). Autosave failures are shown but never block play. |
+| Save content (M4) | A save stores the `Career` (plain JSON, see "Game state shape") inside the `SaveEnvelope`. `schemaVersion` **1** is the M3 `Career` shape; every later change of that shape bumps the version and ships a migration with a test and a frozen fixture. The locale preference is not part of a save (it stays in `localStorage`). `createdAt` comes from a clock injected at the composition root, because `game` must not read the time. |
+| Export and import (M4) | Export writes the envelope as pretty-printed JSON, file name `touchline-<club-slug>-s<season>-md<matchday>.json`. Import validates and migrates the file and stores it in a manual slot the user picks (confirming before overwriting a used slot); it never replaces the running career directly. Invalid or newer-version files are rejected with a message. |
+| Storage fallback (M4) | If IndexedDB is unavailable (private mode, blocked storage) the app falls back to the in-memory store, shows a persistent warning that progress will be lost on reload, and export still works. |
+| Test dependency (M4) | `fake-indexeddb` (MIT, dev dependency only) lets the IndexedDB adapter run the `SaveStore` contract suite in Vitest. No new runtime dependency. |
 | Names | Club, player and league names are generated data (proper nouns), not UI strings, so they are not translated. Pools are Swedish-flavoured fictional names. |
 
 ## Out of scope (for now)
@@ -45,5 +51,6 @@ Multiplayer, real teams or players, rendering of players or ball, online account
 
 - ~~How many leagues and divisions in the first playable version?~~ Decided for M3: one league, 14 clubs (see Decisions). Several divisions with promotion and relegation: when?
 - ~~How detailed should player attributes be?~~ Decided for M3: 12 attributes (see Decisions). Revisit when player development (M6) lands.
+- ~~How are saves organised?~~ Decided for M4: autosave plus 3 manual slots, JSON export/import (see Decisions). Cloud sync stays out of scope.
 - In-match tactical changes beyond half-time: when in the roadmap?
 - Final name of the game.
