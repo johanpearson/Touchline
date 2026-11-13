@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it } from "vitest";
@@ -145,6 +147,50 @@ describe("MatchFeed", () => {
     const lines = [line(60, "GOAL", { importance: "big", kind: "goal" })];
     inLocale(<MatchFeed lines={lines} events={[]} matchTime={120} {...colours} />);
     expect(screen.getByTestId("feed-line").getAttribute("data-importance")).toBe("big");
+  });
+
+  it("colours the dot with the team colour and neutral lines with the text colour", () => {
+    const lines = [
+      line(60, "home line"),
+      line(120, "away line", { team: "away" }),
+      line(180, "even", { team: undefined }),
+    ];
+    inLocale(<MatchFeed lines={lines} events={[]} matchTime={600} {...colours} />);
+    const dots = screen
+      .getAllByTestId("feed-line")
+      .map((li) => (li.querySelector(".dot") as HTMLElement).style.background);
+    expect(dots).toEqual(["currentcolor", "rgb(0, 0, 255)", "rgb(255, 0, 0)"]);
+  });
+
+  it("gives big lines an accent in the scoring team's colour and normal lines none", () => {
+    const lines = [
+      line(60, "plain"),
+      line(120, "GOAL", { importance: "big", kind: "goal", team: "away" }),
+    ];
+    inLocale(<MatchFeed lines={lines} events={[]} matchTime={600} {...colours} />);
+    const [big, plain] = screen.getAllByTestId("feed-line");
+    expect((big as HTMLElement).style.borderLeft).toContain("rgb(0, 0, 255)");
+    expect((plain as HTMLElement).style.borderLeft).toBe("");
+  });
+
+  it("shows new lines when the line list grows", () => {
+    const first = [line(60, "one")];
+    const view = inLocale(<MatchFeed lines={first} events={[]} matchTime={600} {...colours} />);
+    expect(screen.getAllByTestId("feed-line")).toHaveLength(1);
+    view.rerender(
+      <I18nProvider store={createMemoryLocaleStore("en")}>
+        <MatchFeed lines={[...first, line(120, "two")]} events={[]} matchTime={600} {...colours} />
+      </I18nProvider>,
+    );
+    expect(screen.getAllByTestId("feed-line")).toHaveLength(2);
+  });
+
+  it("animates new lines in only when the user has not asked for reduced motion", () => {
+    const css = readFileSync(join(process.cwd(), "src/ui/match-view/match-screen.css"), "utf8");
+    const block = css.match(/@media \(prefers-reduced-motion: no-preference\) \{([\s\S]*?)\n\}/);
+    expect(block?.[1]).toContain("@keyframes feed-in");
+    expect(block?.[1]).toContain(".feed li");
+    expect(css.replace(block?.[0] ?? "", "")).not.toContain("animation");
   });
 
   it("prefixes each line with its minute", () => {
