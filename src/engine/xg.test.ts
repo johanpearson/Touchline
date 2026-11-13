@@ -19,4 +19,23 @@ describe("shotXg", () => {
       }
     }
   });
+
+  it("keeps a central shot from the edge of the area within a realistic range", () => {
+    const xg = shotXg(0.9, 0.5);
+
+    expect(xg).toBeGreaterThan(0.1);
+    expect(xg).toBeLessThan(0.37);
+  });
+
+  it("values a shot from the touchline at well under 60% of the same shot from the centre", () => {
+    expect(shotXg(0.9, 0)).toBeLessThan(shotXg(0.9, 0.5) * 0.6);
+  });
+
+  it("mirrors left and right", () => {
+    expect(shotXg(0.9, 0.2)).toBeCloseTo(shotXg(0.9, 0.8));
+  });
+
+  it("never goes above the cap", () => {
+    expect(shotXg(1, 0.5)).toBeLessThanOrEqual(0.37);
+  });
 });

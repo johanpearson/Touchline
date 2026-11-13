@@ -162,4 +162,45 @@ describe("createMatch", () => {
 
     expect(wins.strong).toBeGreaterThan(wins.weak * 2);
   });
+
+  it("starts in the first half", () => {
+    expect(createMatch(input, 1).state.period).toBe("firstHalf");
+  });
+
+  it("gives the first kickoff to either side depending on the seed", () => {
+    const kickoffTeams = new Set<string>();
+    for (let seed = 1; seed <= 40; seed++) {
+      const team = createMatch(input, seed).events[0]?.team;
+      expect(["home", "away"]).toContain(team);
+      kickoffTeams.add(team as string);
+    }
+
+    expect([...kickoffTeams].sort()).toEqual(["away", "home"]);
+  });
+
+  it("spaces steps between 5 and 17 seconds apart", () => {
+    const times = [...new Set(playFull(3).events.map((e) => e.time))].sort((a, b) => a - b);
+    const gaps = times.slice(1).map((t, i) => t - (times[i] as number));
+
+    expect(Math.min(...gaps.slice(1))).toBeGreaterThanOrEqual(5);
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(17);
+    expect(Math.max(...gaps)).toBeGreaterThan(10);
+  });
+
+  it("plays a step that falls exactly on the requested time", () => {
+    const stepTime = playFull(3).events[1]?.time as number;
+
+    const justBefore = createMatch(input, 3);
+    justBefore.advanceTo(stepTime - 0.001);
+    const exactly = createMatch(input, 3);
+    exactly.advanceTo(stepTime);
+
+    expect(justBefore.events).toHaveLength(1);
+    expect(exactly.events.length).toBeGreaterThan(1);
+    expect(exactly.events[1]?.time).toBe(stepTime);
+  });
+
+  it("says which time was invalid", () => {
+    expect(() => createMatch(input, 1).advanceTo(Number.NaN)).toThrow("Invalid match time: NaN");
+  });
 });
