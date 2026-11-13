@@ -35,3 +35,17 @@ Per `CLAUDE.md`, treat survivors as missing tests. Re-run with `npm run test:mut
 | `transition.ts` | 99.08% |
 
 The one remaining `transition.ts` survivor changes the exact intensity formula of progress events. Pinning it would tie a test to a tuning value, so it is left alive on purpose.
+
+## After #48 (remaining survivors)
+
+| File | Score |
+| --- | --- |
+| All files | **98.86%** |
+| `create-match.ts`, `rng.ts`, `xg.ts`, `pitch.ts` | 100% |
+| `match-builders.ts` | 94.74% |
+| `transition.ts` | 99.09% |
+
+Three survivors are left on purpose:
+
+- `match-builders.ts` (2): `build()` copies `homeTactics` and `awayTactics`, but `MatchInput` tactics are empty today and the builder cannot set them, so replacing the copy with `{}` is indistinguishable. Revisit when tactics get fields and builder methods.
+- `transition.ts` (1): the exact intensity formula of progress events (see above).

@@ -7,6 +7,29 @@ const draw = (seed: number, count: number) => {
 };
 
 describe("createRng", () => {
+  it("matches known reference values for a forked stream", () => {
+    const fork = createRng(1).fork("x");
+
+    expect([fork.next(), fork.next(), fork.next()]).toEqual([
+      0.6434926844667643, 0.5489218165166676, 0.12459697690792382,
+    ]);
+  });
+
+  it("says why an invalid range, empty list or probability was rejected", () => {
+    const rng = createRng(1);
+
+    expect(() => rng.int(3, 2)).toThrow("Invalid integer range [3, 2]");
+    expect(() => rng.pick([])).toThrow("Cannot pick from an empty list");
+    expect(() => rng.chance(1.5)).toThrow("Probability out of range: 1.5");
+  });
+
+  it("treats a chance equal to the next draw as a miss", () => {
+    const first = createRng(1).next();
+
+    expect(createRng(1).chance(first)).toBe(false);
+    expect(createRng(1).chance(first + 1e-9)).toBe(true);
+  });
+
   it("gives the same sequence for the same seed", () => {
     expect(draw(42, 20)).toEqual(draw(42, 20));
   });

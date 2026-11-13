@@ -12,6 +12,10 @@ const ratingKeys = [
 ] as const;
 
 describe("aTeamProfile", () => {
+  it("is called Team unless named", () => {
+    expect(aTeamProfile().build().name).toBe("Team");
+  });
+
   it("builds an average team with all seven ratings at 0.5", () => {
     const profile = aTeamProfile().build();
 
