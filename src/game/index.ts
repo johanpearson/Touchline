@@ -43,6 +43,7 @@ export { pickBestEleven } from "./pick-best-eleven";
 export type { AttributeName, Player, PlayerAttributes } from "./player";
 export { ATTRIBUTE_NAMES, MAX_ATTRIBUTE, MIN_ATTRIBUTE } from "./player";
 export { FIRST_NAMES, LAST_NAMES } from "./player-names";
+export { playerOverall } from "./player-overall";
 export type { SeasonError, SeasonSummary, SummaryResult, TopScorer } from "./season-summary";
 export { simulateFixture } from "./simulate-fixture";
 export type { PlayerPosition, SquadPlayer } from "./squad-player";

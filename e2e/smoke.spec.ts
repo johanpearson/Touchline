@@ -67,3 +67,18 @@ test.describe("half-time", () => {
     await expect(page.getByTestId("period")).toHaveText("Full time", { timeout: 60_000 });
   });
 });
+
+test.describe("club screen", () => {
+  test("opens My club and shows the squad table", async ({ page }) => {
+    await page.goto("./");
+    await page.getByTestId("club-name").first().click();
+    await page.getByTestId("start-career").click();
+
+    await page.getByTestId("nav-club").click();
+
+    await expect(page.getByTestId("club-screen")).toBeVisible();
+    await expect(page.getByTestId("your-club")).toBeVisible();
+    await expect(page.getByTestId("squad-table")).toBeVisible();
+    await expect(page.getByTestId(/^squad-row-/)).toHaveCount(22);
+  });
+});

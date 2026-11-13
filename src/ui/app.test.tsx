@@ -218,12 +218,16 @@ describe("career navigation", () => {
     expect(screen.getByTestId("nav-hub").getAttribute("aria-current")).toBeNull();
   });
 
-  it("shows placeholders for the league, club and season-end routes", () => {
+  it("shows the club screen on the club route", () => {
     const club = startedClub();
+    goTo(`#/club/${club.id}`);
+    expect(screen.getByTestId("club-screen")).toBeTruthy();
+  });
+
+  it("shows placeholders for the league and season-end routes", () => {
+    startedClub();
     goTo("#/league");
     expect(screen.getByTestId("screen-league")).toBeTruthy();
-    goTo(`#/club/${club.id}`);
-    expect(screen.getByTestId("screen-club")).toBeTruthy();
     goTo("#/season-end");
     expect(screen.getByTestId("screen-season-end")).toBeTruthy();
   });
