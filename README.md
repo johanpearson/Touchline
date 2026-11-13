@@ -7,4 +7,4 @@ A football management game with less detail than Football Manager but real depth
 - Contributing (humans and agents): [CLAUDE.md](CLAUDE.md)
 - Match view reference prototype: [reference/match-view-prototype.html](reference/match-view-prototype.html)
 
-Live build: _added when GitHub Pages deploy is set up._
+Live build: <https://johanpearson.github.io/Touchline/> (deployed from `main` by `.github/workflows/deploy.yml`).
