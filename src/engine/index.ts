@@ -1,3 +1,5 @@
+export type { Match } from "./create-match";
+export { createMatch } from "./create-match";
 export type { MatchEvent, MatchEventType, ShotOutcome } from "./match-event";
 export type { MatchInput, TeamTactics } from "./match-input";
 export type { MatchState, Period, PitchPosition, Side } from "./match-state";
