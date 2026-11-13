@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 test.describe("smoke", () => {
   test("loads the app and shows the title @smoke", async ({ page }) => {
@@ -49,9 +49,16 @@ test.describe("league screen", () => {
   });
 });
 
+const startMatch = async (page: Page) => {
+  await page.goto("./");
+  await page.getByTestId("club-name").first().click();
+  await page.getByTestId("start-career").click();
+  await page.getByTestId("play-match").click();
+};
+
 test.describe("match screen", () => {
   test("shows the scoreboard, stats and feed, and the clock runs", async ({ page }) => {
-    await page.goto("./#/match");
+    await startMatch(page);
 
     await expect(page.getByTestId("scoreboard")).toBeVisible();
     await expect(page.getByTestId("stats-panel")).toBeVisible();
@@ -60,7 +67,7 @@ test.describe("match screen", () => {
   });
 
   test("pauses the clock and changes the speed", async ({ page }) => {
-    await page.goto("./#/match");
+    await startMatch(page);
 
     await page.getByTestId("speed-4").click();
     await expect(page.getByTestId("speed-4")).toHaveAttribute("aria-pressed", "true");
@@ -73,7 +80,7 @@ test.describe("match screen", () => {
 
 test.describe("half-time", () => {
   test("plays to half-time, resumes and reaches full time", async ({ page }) => {
-    await page.goto("./#/match");
+    await startMatch(page);
 
     await page.getByTestId("speed-4").click();
     await expect(page.getByTestId("half-time")).toBeVisible({ timeout: 30_000 });

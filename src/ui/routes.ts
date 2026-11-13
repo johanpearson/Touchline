@@ -29,7 +29,8 @@ export const parseRoute = (hash: string): Route => {
     return clubId === null || clubId === "" ? NOT_FOUND : { name: "club", clubId };
   }
   if (arg !== undefined) return NOT_FOUND;
-  if (head === "league" || head === "match" || head === "results" || head === "season-end") return { name: head };
+  if (head === "league" || head === "match" || head === "results" || head === "season-end")
+    return { name: head };
   return NOT_FOUND;
 };
 

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createMatch } from "../engine";
-import { type Career, createCareer, generateLeague, getNextFixture, simulateFixture } from "../game";
+import {
+  type Career,
+  createCareer,
+  generateLeague,
+  getNextFixture,
+  simulateFixture,
+} from "../game";
 import { matchSetupFor } from "./match-setup";
 
 const aCareer = (seed = 5): Career => {
