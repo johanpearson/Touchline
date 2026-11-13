@@ -65,6 +65,7 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 ## Persistence
 
 - `SaveStore` interface: `list()`, `load(id)`, `save(id, data)`, `delete(id)`.
+- `createIndexedDbSaveStore(factory?, dbName?)` (`src/platform/save/indexeddb-save-store.ts`) is the browser implementation: database `touchline` version 1 with one object store `saves` keyed by save id. Every call opens, uses and closes its own connection; open, read and write failures (including blocked opens and aborted transactions) reject with a clear `Error`. `isIndexedDbAvailable()` tells the app when to fall back to the in-memory store. The `indexedDB` global is read only inside these functions, never at import time. It runs the shared `runSaveStoreContract` suite against `fake-indexeddb` (dev dependency).
 - Save format: `{ schemaVersion, createdAt, game }`, with a migration per version bump.
 - Codec (`src/platform/save`): `createEnvelope(game, now)` and `updateEnvelope(previous, game)` build envelopes (the clock is injected; re-saving keeps `createdAt`), `readEnvelope(raw)` migrates an untrusted blob to `CURRENT_SCHEMA_VERSION` and returns `{ ok, save } | { ok: false, error }`. The codec is game-agnostic (`game: unknown`); the caller runs `parseCareer` afterwards.
 - Versioning rule: `schemaVersion` 1 is the M3 `Career` shape. Every change to `Career` bumps `CURRENT_SCHEMA_VERSION` in `schema.ts` and adds a `Migration` to `MIGRATIONS`; a test fails if the list is not a gapless chain from 1.
