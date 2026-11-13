@@ -45,7 +45,7 @@ const resolveShot = (state: MatchState, input: MatchInput, rng: Rng): Transition
   const progress = progressOf(attacker, state.ball.x);
   const xg = shotXg(progress, state.ball.y);
   const goalChance = clamp(
-    xg * (0.8 + 0.4 * attack.finishing) * (1.1 - defence.goalkeeping * 0.3),
+    xg * (0.9 + 0.2 * attack.finishing) * (1.1 - defence.goalkeeping * 0.15),
     0,
     1,
   );
@@ -94,7 +94,7 @@ const resolveBuildUp = (state: MatchState, input: MatchInput, rng: Rng): Transit
   const defence = profileOf(input, defender);
   const progress = progressOf(attacker, state.ball.x);
   const advanceChance = clamp(
-    0.56 + ((attack.buildUp + attack.progression) / 2 - defence.pressing) * 0.5 - progress * 0.22,
+    0.56 + ((attack.buildUp + attack.progression) / 2 - defence.pressing) * 0.15 - progress * 0.22,
     0.05,
     0.95,
   );
@@ -133,7 +133,7 @@ export const resolveTransition = (state: MatchState, input: MatchInput, rng: Rng
   const attack = profileOf(input, state.possession);
   const defence = profileOf(input, opponentOf(state.possession));
   const progress = progressOf(state.possession, state.ball.x);
-  const shootChance = clamp(0.2 + attack.chanceCreation * 0.25 - defence.defending * 0.12, 0, 1);
+  const shootChance = clamp(0.2 + attack.chanceCreation * 0.12 - defence.defending * 0.06, 0, 1);
 
   if (progress > SHOOTING_ZONE && rng.chance(shootChance)) return resolveShot(state, input, rng);
   return resolveBuildUp(state, input, rng);

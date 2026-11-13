@@ -40,24 +40,27 @@ describe("engine balance: two average teams", () => {
 });
 
 describe("engine balance: clearly stronger team", () => {
-  it("wins at least 55% of matches", () => {
-    const strong = aTeamProfile("Strong").withAllRatings(0.6).build();
-    const weak = aTeamProfile("Weak").withAllRatings(0.4).build();
+  const strong = aTeamProfile("Strong").withAllRatings(0.6).build();
+  const weak = aTeamProfile("Weak").withAllRatings(0.4).build();
+
+  it("wins 60% to 75% of matches at home, and the weaker team still wins at least 10%", () => {
     const input = aMatchInput().withHome(strong).withAway(weak).build();
 
     const summary = simulateBalance(input, MATCHES, BASE_SEED);
 
     console.info(`\n${formatBalanceTable("Strong (0.6) vs weak (0.4)", summary)}\n`);
-    expect(summary.homeWinRate).toBeGreaterThanOrEqual(0.55);
+    expect(summary.homeWinRate).toBeGreaterThanOrEqual(0.6);
+    expect(summary.homeWinRate).toBeLessThanOrEqual(0.75);
+    expect(summary.awayWinRate).toBeGreaterThanOrEqual(0.1);
   });
 
-  it("also wins at least 55% when playing away", () => {
-    const strong = aTeamProfile("Strong").withAllRatings(0.6).build();
-    const weak = aTeamProfile("Weak").withAllRatings(0.4).build();
+  it("wins 60% to 75% of matches away, and the weaker team still wins at least 10%", () => {
     const input = aMatchInput().withHome(weak).withAway(strong).build();
 
     const summary = simulateBalance(input, MATCHES, BASE_SEED);
 
-    expect(summary.awayWinRate).toBeGreaterThanOrEqual(0.55);
+    expect(summary.awayWinRate).toBeGreaterThanOrEqual(0.6);
+    expect(summary.awayWinRate).toBeLessThanOrEqual(0.75);
+    expect(summary.homeWinRate).toBeGreaterThanOrEqual(0.1);
   });
 });

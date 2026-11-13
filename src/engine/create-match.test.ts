@@ -183,7 +183,10 @@ describe("createMatch", () => {
   });
 
   it("spaces steps between 5 and 17 seconds apart", () => {
-    const times = [...new Set(playFull(3).events.map((e) => e.time))].sort((a, b) => a - b);
+    const events = playFull(3).events;
+    const boundaryTimes = new Set(ofType(events, "periodChange").map((e) => e.time));
+    const stepTimes = events.map((e) => e.time).filter((t) => !boundaryTimes.has(t));
+    const times = [...new Set(stepTimes)].sort((a, b) => a - b);
     const gaps = times.slice(1).map((t, i) => t - (times[i] as number));
 
     expect(Math.min(...gaps.slice(1))).toBeGreaterThanOrEqual(5);
