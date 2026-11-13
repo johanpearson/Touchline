@@ -28,5 +28,10 @@ export const sv = {
   "controls.pause": "Pausa",
   "controls.play": "Spela",
   "controls.speed": "Hastighet",
+  "halfTime.title": "Halvtid",
+  "halfTime.changes": "Byten och taktik",
+  "halfTime.changesPlaceholder":
+    "Ändringar av laguppställning och taktik kommer här i en senare version.",
+  "halfTime.start": "Starta andra halvlek",
   "match.terrain": "Matchens momentumterräng",
 } as const satisfies Record<keyof typeof en, Message>;

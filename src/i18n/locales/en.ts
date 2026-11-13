@@ -27,5 +27,10 @@ export const en = {
   "controls.pause": "Pause",
   "controls.play": "Play",
   "controls.speed": "Speed",
+  "halfTime.title": "Half-time",
+  "halfTime.changes": "Substitutions and tactics",
+  "halfTime.changesPlaceholder":
+    "Changes to the lineup and tactics will be available here in a later version.",
+  "halfTime.start": "Start second half",
   "match.terrain": "Momentum terrain of the match",
 } as const satisfies Record<string, Message>;

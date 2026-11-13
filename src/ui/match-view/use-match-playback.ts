@@ -12,6 +12,8 @@ export type MatchPlayback = {
   speed: number;
   setPaused: (paused: boolean) => void;
   setSpeed: (speed: number) => void;
+  /** Starts the second half; only valid at half-time. */
+  resume: () => void;
 };
 
 /**
@@ -44,5 +46,11 @@ export const useMatchPlayback = (match: Match, tickMs: number = DEFAULT_TICK_MS)
     return () => clearInterval(id);
   }, [match, speed, paused, tickMs]);
 
-  return { matchTime, ...snapshot, paused, speed, setPaused, setSpeed };
+  const resume = () => {
+    if (match.state.period !== "halfTime") return;
+    match.resume();
+    setSnapshot({ state: match.state, events: [...match.events] });
+  };
+
+  return { matchTime, ...snapshot, paused, speed, setPaused, setSpeed, resume };
 };
