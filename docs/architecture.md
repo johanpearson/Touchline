@@ -65,6 +65,7 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 ## Persistence
 
 - `SaveStore` interface: `list()`, `load(id)`, `save(id, data)`, `delete(id)`.
+- `createIndexedDbSaveStore(factory?, dbName?)` (`src/platform/save/indexeddb-save-store.ts`) is the browser implementation: database `touchline` version 1 with one object store `saves` keyed by save id. Every call opens, uses and closes its own connection; open, read and write failures (including blocked opens and aborted transactions) reject with a clear `Error`. `isIndexedDbAvailable()` tells the app when to fall back to the in-memory store. The `indexedDB` global is read only inside these functions, never at import time. It runs the shared `runSaveStoreContract` suite against `fake-indexeddb` (dev dependency).
 - Save format: `{ schemaVersion, createdAt, game }`, with a migration per version bump.
 - Autosave after each match day; manual export/import as a JSON file.
 
