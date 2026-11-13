@@ -23,5 +23,8 @@ export const createCareer = (spec: CareerSpec): CareerResult => {
     1,
     league.clubs.map((club) => club.id),
   );
-  return { ok: true, career: { seed: spec.seed, userClubId: spec.userClubId, league, season } };
+  return {
+    ok: true,
+    career: { seed: spec.seed, userClubId: spec.userClubId, league, season, history: [] },
+  };
 };
