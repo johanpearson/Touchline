@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.0](https://github.com/johanpearson/Touchline/compare/v1.1.0...v1.2.0) (2026-11-13)
+
+
+### Features
+
+* **game:** attribute goals to squad players for commentary ([#68](https://github.com/johanpearson/Touchline/issues/68)) ([41c0d87](https://github.com/johanpearson/Touchline/commit/41c0d8743214be7a6f665f98806a3482f9d8786e)), closes [#61](https://github.com/johanpearson/Touchline/issues/61)
+* **match-view:** animate feed lines in with reduced-motion support ([#67](https://github.com/johanpearson/Touchline/issues/67)) ([513e8b1](https://github.com/johanpearson/Touchline/commit/513e8b1fbe23e66843b60d85300a1e54f549be28)), closes [#60](https://github.com/johanpearson/Touchline/issues/60)
+* **match-view:** half-time screen ([#66](https://github.com/johanpearson/Touchline/issues/66)) ([8db998c](https://github.com/johanpearson/Touchline/commit/8db998c2f70eb89fe7fecb47074ff8e0f9d86686))
+* **match-view:** scoreboard, momentum chart, stats panel, feed and speed controls ([#63](https://github.com/johanpearson/Touchline/issues/63)) ([98e2e9e](https://github.com/johanpearson/Touchline/commit/98e2e9e41003fd114b0a8fbfbd011362d107412f))
+
+
+### Bug Fixes
+
+* **commentary:** only announce second half for the second-half kickoff ([#70](https://github.com/johanpearson/Touchline/issues/70)) ([8e0a7c4](https://github.com/johanpearson/Touchline/commit/8e0a7c4ca7e49efe4fbba02463dd6f2368f8db95))
+
 ## [1.1.0](https://github.com/johanpearson/Touchline/compare/v1.0.1...v1.1.0) (2026-11-13)
 
 
