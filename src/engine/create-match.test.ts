@@ -10,6 +10,8 @@ const input = aMatchInput().build();
 const playFull = (seed: number, matchInput = input) => {
   const match = createMatch(matchInput, seed);
   match.advanceTo(MATCH_SECONDS);
+  match.resume();
+  match.advanceTo(2 * MATCH_SECONDS);
   return match;
 };
 
@@ -38,6 +40,8 @@ describe("createMatch", () => {
   it("gives the same event log whether time is advanced in one go or in pieces", () => {
     const pieces = createMatch(input, 7);
     for (let t = 100; t <= MATCH_SECONDS; t += 100) pieces.advanceTo(t);
+    pieces.resume();
+    for (let t = 100; t <= 2 * MATCH_SECONDS; t += 100) pieces.advanceTo(t);
 
     expect(pieces.events).toEqual(playFull(7).events);
   });
