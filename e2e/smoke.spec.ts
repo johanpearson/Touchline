@@ -33,6 +33,22 @@ test.describe("new career", () => {
   });
 });
 
+test.describe("league screen", () => {
+  test("shows 14 clubs on zero points after starting a career", async ({ page }) => {
+    await page.goto("./");
+    await page.getByTestId("club-name").first().click();
+    await page.getByTestId("start-career").click();
+
+    await page.getByTestId("nav-league").click();
+
+    await expect(page.getByTestId("screen-league")).toBeVisible();
+    await expect(page.getByTestId(/^table-row-/)).toHaveCount(14);
+    const points = await page.getByTestId(/^table-points-/).allTextContents();
+    expect(points).toHaveLength(14);
+    expect(points.every((p) => p === "0")).toBe(true);
+  });
+});
+
 test.describe("match screen", () => {
   test("shows the scoreboard, stats and feed, and the clock runs", async ({ page }) => {
     await page.goto("./#/match");

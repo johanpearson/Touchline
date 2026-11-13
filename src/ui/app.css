@@ -149,3 +149,61 @@
   background: #d3f2dc;
   color: #0f4d24;
 }
+
+.league-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.league-tabs [aria-selected="true"] {
+  font-weight: 700;
+  text-decoration: underline;
+}
+.league-table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 48rem;
+}
+.league-table th,
+.league-table td {
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+.league-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.league-table .club-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.league-table .user-row,
+.fixture-list .user-fixture {
+  background: rgba(255, 215, 0, 0.18);
+  font-weight: 600;
+}
+.matchday-picker {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.fixture-list {
+  list-style: none;
+  padding: 0;
+  max-width: 40rem;
+}
+.fixture-list li {
+  display: grid;
+  grid-template-columns: 1fr 5rem 1fr;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+}
+.fixture-home {
+  text-align: right;
+}
+.fixture-score {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
