@@ -7,8 +7,13 @@ export type {
   ClubIdentityResult,
 } from "./generate-club-identities";
 export { CLUB_PLACE_NAMES, generateClubIdentities } from "./generate-club-identities";
+export type { PlayerSpec } from "./generate-player";
+export { generatePlayer } from "./generate-player";
+export type { SquadSpec } from "./generate-squad";
+export { generateSquad, SQUAD_SHAPE } from "./generate-squad";
 export { pickBestEleven } from "./pick-best-eleven";
 export type { AttributeName, Player, PlayerAttributes } from "./player";
 export { ATTRIBUTE_NAMES, MAX_ATTRIBUTE, MIN_ATTRIBUTE } from "./player";
+export { FIRST_NAMES, LAST_NAMES } from "./player-names";
 export type { PlayerPosition, SquadPlayer } from "./squad-player";
 export { toSquadPlayer } from "./to-squad-player";
