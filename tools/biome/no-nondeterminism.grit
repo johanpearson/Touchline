@@ -1,0 +1,9 @@
+language js
+
+or {
+  `Math.random($args)`,
+  `Date.now($args)`,
+  `new Date($args)`
+} as $call where {
+  register_diagnostic(span=$call, message="Nondeterministic API is forbidden in src/engine and src/game. Use the seeded RNG and pass time in as data.", severity="error")
+}
