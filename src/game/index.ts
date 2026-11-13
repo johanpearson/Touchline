@@ -39,6 +39,8 @@ export { getNextFixture } from "./get-next-fixture";
 export { isSeasonComplete } from "./is-season-complete";
 export type { League } from "./league";
 export { matchInputFor, matchSeed } from "./match-input-for";
+export type { CareerParseError, CareerParseResult } from "./parse-career";
+export { parseCareer } from "./parse-career";
 export { pickBestEleven } from "./pick-best-eleven";
 export type { AttributeName, Player, PlayerAttributes } from "./player";
 export { ATTRIBUTE_NAMES, MAX_ATTRIBUTE, MIN_ATTRIBUTE } from "./player";
