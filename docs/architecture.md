@@ -71,6 +71,8 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 - Versioning rule: `schemaVersion` 1 is the M3 `Career` shape. Every change to `Career` bumps `CURRENT_SCHEMA_VERSION` in `schema.ts` and adds a `Migration` to `MIGRATIONS`; a test fails if the list is not a gapless chain from 1.
 - Fixture policy: `fixtures/career-v1.json` is a real v1 save, frozen and never regenerated. A bump adds `career-v2.json` and keeps the older fixtures, so old saves keep loading.
 - Saved and imported data is untrusted: `parseCareer(raw)` in `src/game` rebuilds a `Career` field by field and returns `{ ok, career } | { ok: false, error }` (never throws, never returns the input). Every stored `game` payload goes through it before the UI uses it.
+- Save files (`src/platform/save/save-file.ts`): `serializeSave(envelope)` writes pretty-printed JSON; `parseSaveFile(text)` rejects files above 10 MB (`file-too-large`), non-JSON (`not-json`) and otherwise delegates to `readEnvelope`, so it adds no version logic of its own (`invalid-envelope`, `newer-version`, `missing-migration`). `saveFileName({ clubName, season, matchday })` gives `touchline-<club-slug>-s<season>-md<matchday>.json` with Swedish letters folded to ASCII and a safe fallback slug.
+- `FileTransfer` (`src/shared`): `download(name, text)` and `pickFile()`. `createBrowserFileTransfer()` uses Blob + object URL (revoked after the click) and a hidden file input; `createMemoryFileTransfer()` records downloads and returns queued files for tests. A Tauri adapter can replace the browser one.
 - Autosave after each match day; manual export/import as a JSON file.
 
 ## Desktop later (Tauri)
