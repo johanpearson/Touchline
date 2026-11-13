@@ -5,3 +5,5 @@ coverage
 .stryker-tmp
 playwright-report
 test-results
+reports
+stryker-setup-*.js

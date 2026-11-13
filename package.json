@@ -17,7 +17,8 @@
     "test:coverage": "vitest run --coverage",
     "depcheck": "depcruise src --config .dependency-cruiser.cjs",
     "test:e2e": "playwright test",
-    "test:e2e:smoke": "playwright test --grep @smoke"
+    "test:e2e:smoke": "playwright test --grep @smoke",
+    "test:mutation": "stryker run"
   },
   "dependencies": {
     "react": "^19.3.1",
@@ -26,6 +27,8 @@
   "devDependencies": {
     "@biomejs/biome": "^2.6.7",
     "@playwright/test": "^1.65.0",
+    "@stryker-mutator/core": "^10.1.1",
+    "@stryker-mutator/vitest-runner": "^10.1.1",
     "@swc/core": "^1.16.22",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^26.6.6",
