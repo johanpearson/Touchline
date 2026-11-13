@@ -51,7 +51,7 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 
 - `generateCommentary(events, context, seed)` in `src/commentary` turns the event log into feed lines. It is pure and uses its own RNG stream (`createRng(seed).fork("commentary")`), so it never changes the simulation.
 - Templates live per locale in `src/commentary/templates` (several variants per event type; a test enforces `en` and `sv` have the same keys). Grammar helpers such as the Swedish genitive are in `grammar.ts`.
-- Player names appear only on goals. Every 15 minutes there is a possession summary; half-time and full-time lines carry the score.
+- Player names appear only on goals. The scorer of each goal comes from `attributeGoalScorers(events, squads, seed)` in `src/game` (weighted by position and finishing, own RNG stream, no engine draws) and is passed in as `CommentaryContext.scorers`. Every 15 minutes there is a possession summary; half-time and full-time lines carry the score.
 
 ## Persistence
 

@@ -10,8 +10,8 @@ import { templates } from "./templates/templates";
 export type CommentaryContext = {
   locale: Locale;
   names: PerSide<string>;
-  /** Names the scorer is drawn from. Players are only ever named on goals. */
-  players: PerSide<readonly string[]>;
+  /** Scorer of each goal, in goal order (see `attributeGoalScorers` in `src/game`). Players are only ever named on goals. */
+  scorers: readonly string[];
 };
 
 const SUMMARY_INTERVAL = 900;
@@ -56,10 +56,11 @@ export const generateCommentary = (
   seed: number,
 ): CommentaryLine[] => {
   const rng = createRng(seed).fork("commentary");
-  const { locale, names, players } = context;
+  const { locale, names, scorers } = context;
   const score: PerSide<number> = { home: 0, away: 0 };
   const lines: CommentaryLine[] = [];
   let nextSlot = 0;
+  let goalIndex = 0;
 
   const scoreText = () => `${score.home}–${score.away}`;
   const paramsFor = (team: Side | undefined, extra: Params = {}): Params => {
@@ -73,6 +74,7 @@ export const generateCommentary = (
       ...extra,
     };
   };
+  const scorerOf = (team: Side): string => scorers[goalIndex++] ?? names[team];
   const emit = (time: number, piece: Piece, extra: Params = {}) => {
     const text = render(rng.pick(templates[locale][piece.key]), paramsFor(piece.team, extra));
     lines.push({
@@ -158,8 +160,7 @@ export const generateCommentary = (
     if (event.type === "goal") score[event.team] += 1;
     const piece = pieceFor(event, index);
     if (!piece) return;
-    const extra: Params = event.type === "goal" ? { player: rng.pick(players[event.team]) } : {};
-    emit(event.time, piece, extra);
+    emit(event.time, piece, event.type === "goal" ? { player: scorerOf(event.team) } : {});
   });
 
   return lines;
