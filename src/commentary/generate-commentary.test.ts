@@ -26,7 +26,7 @@ const ev = (time: number, rest: Record<string, unknown>): MatchEvent =>
 const context = (locale: "en" | "sv" = "en"): CommentaryContext => ({
   locale,
   names: { home: "Kvarnby", away: "Västerås" },
-  players: { home: ["Ek"], away: ["Lund"] },
+  scorers: ["Ek", "Lund", "Berg"],
 });
 
 const lines = (events: MatchEvent[], locale: "en" | "sv" = "en", seed = 1) =>
@@ -76,6 +76,24 @@ describe("generateCommentary", () => {
     expect(line?.team).toBe("home");
     expect(line?.text).toContain("Ek");
     expect(line?.text).toContain("1–0");
+  });
+
+  it("names the scorers in goal order, whichever team scored", () => {
+    const out = lines([
+      ev(100, { type: "goal", xg: 0.3 }),
+      ev(200, { type: "goal", xg: 0.3, team: "away" }),
+      ev(300, { type: "goal", xg: 0.3 }),
+    ]);
+    expect(out[0]?.text).toContain("Ek");
+    expect(out[1]?.text).toContain("Lund");
+    expect(out[2]?.text).toContain("Berg");
+  });
+
+  it("does not change its other lines with the scorers it is given", () => {
+    const events = playedMatch(5);
+    const other = generateCommentary(events, { ...context(), scorers: ["A", "B", "C", "D"] }, 1);
+    const strip = (l: { text: string; kind: string }) => (l.kind === "goal" ? l.kind : l.text);
+    expect(other.map(strip)).toEqual(lines(events).map(strip));
   });
 
   it("counts goals for the score in later lines", () => {

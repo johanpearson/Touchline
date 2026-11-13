@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { generateCommentary } from "../../commentary";
 import type { MatchInput, PerSide } from "../../engine";
 import { computeMatchStats, createMatch } from "../../engine";
+import type { SquadPlayer } from "../../game";
+import { attributeGoalScorers } from "../../game";
 import { useI18n } from "../i18n-provider";
 import { HalfTimePanel } from "./half-time-panel";
 import { MatchFeed } from "./match-feed";
@@ -19,8 +21,8 @@ export type MatchScreenProps = {
   input: MatchInput;
   seed: number;
   colours: PerSide<string>;
-  /** Names the commentary draws goal scorers from. */
-  players: PerSide<readonly string[]>;
+  /** The players goals are credited to, by position and finishing. */
+  squads: PerSide<readonly SquadPlayer[]>;
   /** Replaces the three.js renderer, for tests. */
   createRenderer?: TerrainRendererFactory;
   /** How often the clock advances, in milliseconds; tests use a coarser tick. */
@@ -35,7 +37,7 @@ export function MatchScreen({
   input,
   seed,
   colours,
-  players,
+  squads,
   createRenderer,
   tickMs,
 }: MatchScreenProps) {
@@ -50,8 +52,13 @@ export function MatchScreen({
   const halfTime = state.period === "halfTime";
   const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
   const lines = useMemo(
-    () => generateCommentary(events, { locale, names, players }, seed),
-    [events, locale, names, players, seed],
+    () =>
+      generateCommentary(
+        events,
+        { locale, names, scorers: attributeGoalScorers(events, squads, seed) },
+        seed,
+      ),
+    [events, locale, names, squads, seed],
   );
   return (
     <div className="match-screen" data-testid="match-screen">

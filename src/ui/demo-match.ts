@@ -1,11 +1,12 @@
 import type { MatchInput, PerSide } from "../engine";
+import type { SquadPlayer } from "../game";
 
 /** A fixed fictional fixture shown until the career and league screens exist. */
 export const demoMatch: {
   input: MatchInput;
   seed: number;
   colours: PerSide<string>;
-  players: PerSide<readonly string[]>;
+  squads: PerSide<readonly SquadPlayer[]>;
 } = {
   input: {
     home: {
@@ -33,8 +34,16 @@ export const demoMatch: {
   },
   seed: 2026,
   colours: { home: "#ff4b5c", away: "#2f9bff" },
-  players: {
-    home: ["Elias Berg", "Oskar Lind", "Nils Falk"],
-    away: ["Viktor Strand", "Anton Hed", "Leo Sand"],
+  squads: {
+    home: [
+      { name: "Elias Berg", position: "FWD", finishing: 0.7 },
+      { name: "Oskar Lind", position: "MID", finishing: 0.55 },
+      { name: "Nils Falk", position: "DEF", finishing: 0.4 },
+    ],
+    away: [
+      { name: "Viktor Strand", position: "FWD", finishing: 0.65 },
+      { name: "Anton Hed", position: "MID", finishing: 0.55 },
+      { name: "Leo Sand", position: "DEF", finishing: 0.4 },
+    ],
   },
 };
