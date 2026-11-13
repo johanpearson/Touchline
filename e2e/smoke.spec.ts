@@ -17,9 +17,25 @@ test.describe("smoke", () => {
   });
 });
 
+test.describe("new career", () => {
+  test("picks a club, starts the career and shows the hub", async ({ page }) => {
+    await page.goto("./");
+
+    const first = page.getByTestId("club-name").first();
+    const name = (await first.textContent()) ?? "";
+    await first.click();
+    await page.getByTestId("start-career").click();
+
+    await expect(page.getByTestId("career-hub")).toBeVisible();
+    await expect(page.getByTestId("hub-club-name")).toHaveText(name);
+    await expect(page.getByTestId("nav-club-name")).toHaveText(name);
+    await expect(page.getByTestId("locale-switch")).toBeVisible();
+  });
+});
+
 test.describe("match screen", () => {
   test("shows the scoreboard, stats and feed, and the clock runs", async ({ page }) => {
-    await page.goto("./");
+    await page.goto("./#/match");
 
     await expect(page.getByTestId("scoreboard")).toBeVisible();
     await expect(page.getByTestId("stats-panel")).toBeVisible();
@@ -28,7 +44,7 @@ test.describe("match screen", () => {
   });
 
   test("pauses the clock and changes the speed", async ({ page }) => {
-    await page.goto("./");
+    await page.goto("./#/match");
 
     await page.getByTestId("speed-4").click();
     await expect(page.getByTestId("speed-4")).toHaveAttribute("aria-pressed", "true");
@@ -41,7 +57,7 @@ test.describe("match screen", () => {
 
 test.describe("half-time", () => {
   test("plays to half-time, resumes and reaches full time", async ({ page }) => {
-    await page.goto("./");
+    await page.goto("./#/match");
 
     await page.getByTestId("speed-4").click();
     await expect(page.getByTestId("half-time")).toBeVisible({ timeout: 30_000 });

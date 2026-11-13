@@ -22,7 +22,8 @@ describe("clubRating", () => {
   it("is the same for the same league", () => {
     const a = league(7);
     const b = league(7);
-    expect(clubRating(a.clubs[0]!, a.players)).toBe(clubRating(b.clubs[0]!, b.players));
+    const ratings = (l: typeof a) => l.clubs.map((club) => clubRating(club, l.players));
+    expect(ratings(a)).toEqual(ratings(b));
   });
 
   it("varies between clubs of different strength", () => {

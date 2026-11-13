@@ -47,6 +47,12 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 - The match screen (`src/ui/match-view/match-screen.tsx`) composes the terrain with a scoreboard, momentum chart (`momentumSeries`), stats panel (`computeMatchStats`), commentary feed and speed controls. `useMatchPlayback` advances the engine from the wall clock and stops at half-time and full time.
 - `reference/match-view-prototype.html` is the visual reference (prototype quality, not production code). Its tuning values are a starting point.
 
+## App shell
+
+- Hash routing (`src/ui/routes.ts`, `use-route.ts`): `#/`, `#/league`, `#/club/:clubId`, `#/match`, `#/season-end`; unknown hashes show a not-found view. No server support needed.
+- The career lives in `useCareer` (`use-career.tsx`), an in-memory store. M4 plugs the `SaveStore` in there without changing screens. Without a career every route except `#/match` shows the new-career screen.
+- The composition root passes `initialSeed` to `App`, so the UI itself never draws randomness and tests stay deterministic.
+
 ## Commentary
 
 - `generateCommentary(events, context, seed)` in `src/commentary` turns the event log into feed lines. It is pure and uses its own RNG stream (`createRng(seed).fork("commentary")`), so it never changes the simulation.
