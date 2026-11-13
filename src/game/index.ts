@@ -7,6 +7,8 @@ export type {
   ClubIdentityResult,
 } from "./generate-club-identities";
 export { CLUB_PLACE_NAMES, generateClubIdentities } from "./generate-club-identities";
+export type { Fixture, FixtureError, FixtureResult } from "./generate-fixtures";
+export { generateFixtures } from "./generate-fixtures";
 export type { LeagueError, LeagueResult, LeagueSpec } from "./generate-league";
 export {
   CLUB_COUNT_RANGE,
