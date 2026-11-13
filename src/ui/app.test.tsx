@@ -218,7 +218,7 @@ describe("career navigation", () => {
     expect(screen.getByTestId("nav-hub").getAttribute("aria-current")).toBeNull();
   });
 
-  it("shows placeholders for the league, club and season-end routes", () => {
+  it("shows the league screen and placeholders for the club and season-end routes", () => {
     const club = startedClub();
     goTo("#/league");
     expect(screen.getByTestId("screen-league")).toBeTruthy();
