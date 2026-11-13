@@ -1,7 +1,19 @@
 export { attributeGoalScorers } from "./attribute-goal-scorers";
+export type {
+  Career,
+  CareerError,
+  CareerResult,
+  MatchdayError,
+  MatchdayResult,
+  Season,
+} from "./career";
 export type { Club } from "./club";
+export { completeMatchday } from "./complete-matchday";
 export type { Outcome, Result, TableError, TableResult, TableRow } from "./compute-table";
 export { computeForm, computeTable } from "./compute-table";
+export type { CareerSpec } from "./create-career";
+export { createCareer } from "./create-career";
+export { createSeason } from "./create-season";
 export { deriveTeamProfile } from "./derive-team-profile";
 export type {
   ClubIdentity,
@@ -23,10 +35,13 @@ export type { PlayerSpec } from "./generate-player";
 export { generatePlayer } from "./generate-player";
 export type { SquadSpec } from "./generate-squad";
 export { generateSquad, SQUAD_SHAPE } from "./generate-squad";
+export { getNextFixture } from "./get-next-fixture";
 export type { League } from "./league";
+export { matchInputFor, matchSeed } from "./match-input-for";
 export { pickBestEleven } from "./pick-best-eleven";
 export type { AttributeName, Player, PlayerAttributes } from "./player";
 export { ATTRIBUTE_NAMES, MAX_ATTRIBUTE, MIN_ATTRIBUTE } from "./player";
 export { FIRST_NAMES, LAST_NAMES } from "./player-names";
+export { simulateFixture } from "./simulate-fixture";
 export type { PlayerPosition, SquadPlayer } from "./squad-player";
 export { toSquadPlayer } from "./to-squad-player";
