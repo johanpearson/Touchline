@@ -66,6 +66,9 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 
 - `SaveStore` interface: `list()`, `load(id)`, `save(id, data)`, `delete(id)`.
 - Save format: `{ schemaVersion, createdAt, game }`, with a migration per version bump.
+- Codec (`src/platform/save`): `createEnvelope(game, now)` and `updateEnvelope(previous, game)` build envelopes (the clock is injected; re-saving keeps `createdAt`), `readEnvelope(raw)` migrates an untrusted blob to `CURRENT_SCHEMA_VERSION` and returns `{ ok, save } | { ok: false, error }`. The codec is game-agnostic (`game: unknown`); the caller runs `parseCareer` afterwards.
+- Versioning rule: `schemaVersion` 1 is the M3 `Career` shape. Every change to `Career` bumps `CURRENT_SCHEMA_VERSION` in `schema.ts` and adds a `Migration` to `MIGRATIONS`; a test fails if the list is not a gapless chain from 1.
+- Fixture policy: `fixtures/career-v1.json` is a real v1 save, frozen and never regenerated. A bump adds `career-v2.json` and keeps the older fixtures, so old saves keep loading.
 - Saved and imported data is untrusted: `parseCareer(raw)` in `src/game` rebuilds a `Career` field by field and returns `{ ok, career } | { ok: false, error }` (never throws, never returns the input). Every stored `game` payload goes through it before the UI uses it.
 - Autosave after each match day; manual export/import as a JSON file.
 
