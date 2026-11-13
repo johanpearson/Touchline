@@ -77,11 +77,11 @@ describe("App", () => {
     expect(screen.queryByTestId("match-screen")).toBeNull();
   });
 
-  it("shows the match screen on #/match", () => {
+  it("asks to start a career on #/match without one", () => {
     renderApp();
     goTo("#/match");
-    expect(screen.getByTestId("match-screen")).toBeTruthy();
-    expect(screen.getByTestId("locale-switch")).toBeTruthy();
+    expect(screen.getByTestId("new-career")).toBeTruthy();
+    expect(screen.queryByTestId("match-screen")).toBeNull();
   });
 
   it("shows a not-found view with a link home for unknown routes", () => {
@@ -230,10 +230,11 @@ describe("career navigation", () => {
     expect(screen.getByTestId("club-screen")).toBeTruthy();
   });
 
-  it("shows a placeholder for the season-end route", () => {
+  it("sends the user back to the hub from #/season-end while the season runs", () => {
     startedClub();
     goTo("#/season-end");
-    expect(screen.getByTestId("screen-season-end")).toBeTruthy();
+    expect(window.location.hash).toBe("#/");
+    expect(screen.getByTestId("career-hub")).toBeTruthy();
   });
 
   it("asks to start a career when a career route is opened without one", () => {

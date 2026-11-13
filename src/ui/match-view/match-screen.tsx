@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { generateCommentary } from "../../commentary";
-import type { MatchInput, PerSide } from "../../engine";
+import type { MatchInput, MatchState, PerSide } from "../../engine";
 import { computeMatchStats, createMatch } from "../../engine";
 import type { SquadPlayer } from "../../game";
 import { attributeGoalScorers } from "../../game";
@@ -27,6 +27,8 @@ export type MatchScreenProps = {
   createRenderer?: TerrainRendererFactory;
   /** How often the clock advances, in milliseconds; tests use a coarser tick. */
   tickMs?: number;
+  /** When given, a "Continue" button appears at full time and calls this with the final score. */
+  onContinue?: (score: MatchState["score"]) => void;
 };
 
 /**
@@ -40,6 +42,7 @@ export function MatchScreen({
   squads,
   createRenderer,
   tickMs,
+  onContinue,
 }: MatchScreenProps) {
   const { t, locale } = useI18n();
   const [match] = useState(() => createMatch(input, seed));
@@ -89,6 +92,11 @@ export function MatchScreen({
             stats={stats}
             onResume={resume}
           />
+        )}
+        {state.period === "fullTime" && onContinue && (
+          <button type="button" data-testid="continue" onClick={() => onContinue(state.score)}>
+            {t("match.continue")}
+          </button>
         )}
         <SpeedControls
           paused={paused}
