@@ -46,6 +46,12 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 - Half-time: the pitch resets; the user starts the second half after changes.
 - `reference/match-view-prototype.html` is the visual reference (prototype quality, not production code). Its tuning values are a starting point.
 
+## Commentary
+
+- `generateCommentary(events, context, seed)` in `src/commentary` turns the event log into feed lines. It is pure and uses its own RNG stream (`createRng(seed).fork("commentary")`), so it never changes the simulation.
+- Templates live per locale in `src/commentary/templates` (several variants per event type; a test enforces `en` and `sv` have the same keys). Grammar helpers such as the Swedish genitive are in `grammar.ts`.
+- Player names appear only on goals. Every 15 minutes there is a possession summary; half-time and full-time lines carry the score.
+
 ## Persistence
 
 - `SaveStore` interface: `list()`, `load(id)`, `save(id, data)`, `delete(id)`.
