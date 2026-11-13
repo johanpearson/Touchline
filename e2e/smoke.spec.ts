@@ -16,3 +16,25 @@ test.describe("smoke", () => {
     await expect(page.getByLabel("Språk")).toBeVisible();
   });
 });
+
+test.describe("match screen", () => {
+  test("shows the scoreboard, stats and feed, and the clock runs", async ({ page }) => {
+    await page.goto("./");
+
+    await expect(page.getByTestId("scoreboard")).toBeVisible();
+    await expect(page.getByTestId("stats-panel")).toBeVisible();
+    await expect(page.getByTestId("momentum-chart")).toBeVisible();
+    await expect(page.getByTestId("clock")).not.toHaveText("0’", { timeout: 10_000 });
+  });
+
+  test("pauses the clock and changes the speed", async ({ page }) => {
+    await page.goto("./");
+
+    await page.getByTestId("speed-4").click();
+    await expect(page.getByTestId("speed-4")).toHaveAttribute("aria-pressed", "true");
+    await page.getByTestId("pause-toggle").click();
+    const frozen = await page.getByTestId("clock").textContent();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId("clock")).toHaveText(frozen ?? "");
+  });
+});

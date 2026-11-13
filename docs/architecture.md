@@ -44,6 +44,7 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 - Colour per vertex: blend of both teams' pressure plus a moving front (territory) between the halves.
 - Goals: tall spike, shockwave ring in the scorer's colour, short pause, then reset to kickoff.
 - Half-time: the pitch resets; the user starts the second half after changes.
+- The match screen (`src/ui/match-view/match-screen.tsx`) composes the terrain with a scoreboard, momentum chart (`momentumSeries`), stats panel (`computeMatchStats`), commentary feed and speed controls. `useMatchPlayback` advances the engine from the wall clock and stops at half-time and full time.
 - `reference/match-view-prototype.html` is the visual reference (prototype quality, not production code). Its tuning values are a starting point.
 
 ## Commentary
