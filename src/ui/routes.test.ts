@@ -11,6 +11,7 @@ describe("parseRoute", () => {
     expect(parseRoute("#/league")).toEqual({ name: "league" });
     expect(parseRoute("#/match")).toEqual({ name: "match" });
     expect(parseRoute("#/season-end")).toEqual({ name: "season-end" });
+    expect(parseRoute("#/results")).toEqual({ name: "results" });
   });
 
   it("parses a club route with its id", () => {
