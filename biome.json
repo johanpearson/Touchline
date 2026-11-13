@@ -9,6 +9,7 @@
     "includes": [
       "**",
       "!package-lock.json",
+      "!CHANGELOG.md",
       "!reference",
       "!docs",
       "!scripts",
