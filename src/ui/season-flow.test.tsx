@@ -1,12 +1,13 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateLeague } from "../game";
-import { createMemoryLocaleStore } from "../platform";
+import { createMemoryLocaleStore, createMemorySaveStore } from "../platform";
 import { App } from "./app";
 
 const SEED = 11;
 const MATCHDAYS = 26;
 
+const fixedNow = () => "2026-01-01T12:00:00.000Z";
 const createRenderer = () => ({ resize: vi.fn(), render: vi.fn(), dispose: vi.fn() });
 
 const goTo = (hash: string) =>
@@ -22,6 +23,8 @@ const mount = (locale?: string) => {
     <App
       createRenderer={createRenderer}
       localeStore={createMemoryLocaleStore(locale)}
+      saveStore={createMemorySaveStore()}
+      now={fixedNow}
       initialSeed={SEED}
       tickMs={1000}
     />,
