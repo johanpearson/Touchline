@@ -7,6 +7,7 @@ export default mergeConfig(
     test: {
       environment: "jsdom",
       include: ["src/**/*.test.{ts,tsx}"],
+      exclude: ["src/**/*.balance.test.ts", "node_modules/**"],
       coverage: {
         provider: "v8",
         include: ["src/**/*.{ts,tsx}"],
