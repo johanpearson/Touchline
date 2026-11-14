@@ -15,9 +15,12 @@ export { computeForm, computeTable } from "./compute-table";
 export type { CareerSpec } from "./create-career";
 export { createCareer } from "./create-career";
 export { createSeason } from "./create-season";
+export { deriveLineupProfile } from "./derive-lineup-profile";
 export { deriveTeamProfile } from "./derive-team-profile";
 export type { Formation } from "./formation";
 export { FORMATION_SHAPE, FORMATIONS } from "./formation";
+export type { PhaseRating } from "./formation-offsets";
+export { FORMATION_OFFSETS, MAX_FORMATION_OFFSET, PHASE_RATINGS } from "./formation-offsets";
 export type {
   ClubIdentity,
   ClubIdentityError,
