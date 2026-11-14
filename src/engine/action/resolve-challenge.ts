@@ -8,6 +8,7 @@ import {
   FOUL_MIN,
   FOUL_SKILL_GAIN,
   PENALTY_AREA_DEPTH,
+  PENALTY_AREA_FOUL_FACTOR,
   PENALTY_AREA_HALF_WIDTH,
   TACKLE_WIN_BASE,
   TACKLE_WIN_MAX,
@@ -63,9 +64,10 @@ export const tackleWinChance = (input: ChallengeInput): number => {
 export const resolveChallenge = (input: ChallengeInput, rng: Rng): Resolution<TackleOutcome> => {
   const { carrierSide, point } = input;
   const draw = rng.next();
-  const pFoul = foulChance(input.tackler);
+  const inBox = inAttackedPenaltyArea(carrierSide, point);
+  const pFoul = foulChance(input.tackler) * (inBox ? PENALTY_AREA_FOUL_FACTOR : 1);
   if (draw < pFoul) {
-    const variant = inAttackedPenaltyArea(carrierSide, point) ? "penalty" : "freeKick";
+    const variant = inBox ? "penalty" : "freeKick";
     return {
       outcome: "foul",
       ball: point,

@@ -17,7 +17,7 @@ const pass = {
   variant: "short",
   from: at(50),
   to: at(60),
-  pressure: 0,
+  pressure: 0.5,
   opponents: [],
 } as const;
 

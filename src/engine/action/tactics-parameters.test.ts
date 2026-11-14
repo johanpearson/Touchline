@@ -37,6 +37,19 @@ describe("actionTactics", () => {
     expect(low.spaceBehind).toBeLessThan(1);
   });
 
+  it("leaves space behind an attacking side and closes it for a defensive one", () => {
+    expect(actionTactics(t({ mentality: "attacking" })).spaceBehind).toBeGreaterThan(1);
+    expect(actionTactics(t({ mentality: "defensive" })).spaceBehind).toBeLessThan(1);
+    expect(
+      actionTactics(t({ mentality: "attacking", pressing: "high" })).spaceBehind,
+    ).toBeGreaterThan(actionTactics(t({ pressing: "high" })).spaceBehind);
+  });
+
+  it("leaves the flanks open to counters when narrow", () => {
+    expect(actionTactics(t({ width: "narrow" })).spaceBehind).toBeGreaterThan(1);
+    expect(actionTactics(t({ width: "wide" })).spaceBehind).toBe(1);
+  });
+
   it("makes wide raise the cross share and lower central shots, and narrow the opposite", () => {
     const wide = actionTactics(t({ width: "wide" }));
     const narrow = actionTactics(t({ width: "narrow" }));

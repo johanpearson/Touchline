@@ -16,6 +16,7 @@ import {
   CROSS_MIN_DEPTH,
   CROSS_WIDE_CHANNEL,
   GOALKEEPER_CARRY_FACTOR,
+  LONG_PASS_FACTOR,
   LONG_PASS_MIN,
   PASS_BASE_WEIGHT,
   PASS_DISTANCE_SCALE,
@@ -113,6 +114,7 @@ const passWeight = (
   const risk = risky ? tactics.risk * (1 - ACTOR_PRESSURE_RISK_PENALTY * pressure) : 1;
   const wide = isWide(to, WIDE_TARGET_CHANNEL) || variant === "cross" ? tactics.wideBonus : 1;
   const behind = variant === "through" ? spaceBehind : 1;
+  const longBall = variant === "long" ? LONG_PASS_FACTOR : 1;
   return finiteOrZero(
     PASS_BASE_WEIGHT *
       skill *
@@ -122,7 +124,8 @@ const passWeight = (
       space *
       risk *
       wide *
-      behind,
+      behind *
+      longBall,
   );
 };
 
@@ -170,12 +173,15 @@ const shotOption = (
   from: Point,
   pressure: number,
   tactics: ActionTactics,
+  spaceBehind: number,
 ): ShotOption => {
   const xg = shotXg(toAttackingFrame(side, from), pressure);
   const finishing = 1 + SHOT_FINISHING_GAIN * 2 * (rating(actor, "finishing") - 0.5);
   const channel = isCentralShot(from.y, PITCH_WIDTH) ? tactics.centralShot : 1;
   const weight =
-    xg < SHOT_MIN_XG ? 0 : SHOT_WEIGHT_GAIN * xg * finishing * tactics.shotWeight * channel;
+    xg < SHOT_MIN_XG
+      ? 0
+      : SHOT_WEIGHT_GAIN * xg * finishing * tactics.shotWeight * channel * spaceBehind;
   const to = { x: side === "home" ? PITCH_LENGTH : 0, y: PITCH_WIDTH / 2 };
   return { type: "shot", from, to, xg, weight: finiteOrZero(weight) };
 };
@@ -218,6 +224,6 @@ export const buildOptions = (
     ...passes,
     carryOption(player, actor.side, from, pressure, shapes, mine, radius, spaceBehind),
     clearanceOption(actor.side, from, pressure),
-    shotOption(player, actor.side, from, pressure, mine),
+    shotOption(player, actor.side, from, pressure, mine, spaceBehind),
   ];
 };

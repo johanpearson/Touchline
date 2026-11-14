@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createRng } from "../rng";
 import { anEnginePlayer } from "./action-builders";
+import { CROSS_DEFLECTED_CORNER_SHARE, CROSS_INTERCEPTED_CORNER_SHARE } from "./decision-constants";
 import type { Challenger } from "./open-play-types";
 import { interceptionChance } from "./resolve-interception";
 import { type PassInput, passCompletionChance, resolvePass } from "./resolve-pass";
@@ -43,7 +44,7 @@ describe("resolvePass", () => {
   });
 
   it("completes more often with a better passer, a better receiver and less pressure", () => {
-    const draw = 0.9; // average short pass completes at 0.9 - hit the edge
+    const draw = passCompletionChance(input()) + 0.001; // just above the average chance
     const base = resolvePass(input(), scripted(draw)).outcome;
     expect(base).not.toBe("complete");
     const better = anEnginePlayer("p")
@@ -55,7 +56,7 @@ describe("resolvePass", () => {
       .withAttribute("passing", 1)
       .withAttribute("ballControl", 1)
       .build();
-    expect(resolvePass(input({ passer: worse }), scripted(0.8)).outcome).not.toBe("complete");
+    expect(resolvePass(input({ passer: worse }), scripted(0.9)).outcome).not.toBe("complete");
     expect(resolvePass(input({ pressure: 1 }), scripted(0.7)).outcome).not.toBe("complete");
     expect(resolvePass(input({ pressure: 0 }), scripted(0.7)).outcome).toBe("complete");
   });
@@ -118,6 +119,34 @@ describe("resolvePass", () => {
     expect(r.ball).toEqual(r.restart?.position);
   });
 
+  it("turns some crosses that end behind the goal line into corners and leaves other passes alone", () => {
+    const cross = input({ variant: "cross", from: at(90, 10), to: at(104, 20) });
+    const deflected = resolvePass(cross, scripted(0.99, 0.01, 0.01));
+    expect(deflected.outcome).toBe("outOfPlay");
+    expect(deflected.restart).toEqual({ team: "home", variant: "corner", position: at(105, 0) });
+    expect(deflected.possession).toEqual({ side: "home" });
+    const kept = resolvePass(cross, scripted(0.99, 0.01, CROSS_DEFLECTED_CORNER_SHARE + 0.01));
+    expect(kept.restart?.variant).toBe("goalKick");
+    const long = resolvePass({ ...cross, variant: "long" }, scripted(0.99, 0.01, 0.01));
+    expect(long.restart?.variant).toBe("goalKick");
+  });
+
+  it("lets a defender put an intercepted cross behind the goal line for a corner", () => {
+    const cross = input({
+      variant: "cross",
+      from: at(90, 10),
+      to: at(100, 12),
+      opponents: [defender(3, at(95, 11), 20)],
+    });
+    const corner = resolvePass(cross, scripted(0.99, 0.01, 0.01));
+    expect(corner.outcome).toBe("intercepted");
+    expect(corner.restart).toEqual({ team: "home", variant: "corner", position: at(105, 0) });
+    const kept = resolvePass(cross, scripted(0.99, 0.01, CROSS_INTERCEPTED_CORNER_SHARE + 0.01));
+    expect(kept.outcome).toBe("intercepted");
+    expect(kept.restart).toBeUndefined();
+    expect(kept.possession.side).toBe("away");
+  });
+
   it("is deterministic for the same RNG state", () => {
     const a = resolvePass(input(), createRng(5));
     expect(resolvePass(input(), createRng(5))).toEqual(a);
@@ -127,7 +156,7 @@ describe("resolvePass", () => {
 describe("resolvePass with tactics", () => {
   it("completes a pass that normal tempo loses when tempo is slow, and fast tempo lowers the chance", () => {
     const chance = passCompletionChance(input());
-    const draw = chance + 0.01;
+    const draw = chance + 0.005;
     expect(resolvePass(input(), scripted(draw)).outcome).not.toBe("complete");
     expect(resolvePass(input({ passSuccess: 0.03 }), scripted(draw)).outcome).toBe("complete");
     expect(passCompletionChance(input({ passSuccess: -0.03 }))).toBeLessThan(chance);
