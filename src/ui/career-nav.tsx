@@ -11,6 +11,7 @@ export function CareerNav({ route }: { route: Route }) {
     { name: "hub", route: { name: "home" }, key: "nav.hub" },
     { name: "league", route: { name: "league" }, key: "nav.league" },
     { name: "club", route: { name: "club", clubId: career.userClubId }, key: "nav.club" },
+    { name: "squad", route: { name: "squad" }, key: "nav.squad" },
     { name: "match", route: { name: "match" }, key: "nav.match" },
     { name: "saves", route: { name: "saves" }, key: "nav.saves" },
   ] as const;

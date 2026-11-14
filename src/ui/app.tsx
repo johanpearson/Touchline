@@ -13,6 +13,7 @@ import { NotFoundScreen } from "./not-found-screen";
 import { SaveStatus } from "./save-status";
 import { SavesScreen } from "./saves-screen";
 import { SeasonEndScreen } from "./season-end-screen";
+import { SquadScreen } from "./squad-screen";
 import { StorageWarning } from "./storage-warning";
 import { CareerProvider, useCareer } from "./use-career";
 import { useRoute } from "./use-route";
@@ -35,6 +36,8 @@ function Screen({ createRenderer, tickMs, initialSeed }: RendererProp & { initia
       return <ClubView career={career} clubId={route.clubId} />;
     case "match":
       return <MatchFlowScreen createRenderer={createRenderer} tickMs={tickMs} />;
+    case "squad":
+      return <SquadScreen career={career} />;
     case "results":
       return <MatchdayResultsScreen />;
     case "season-end":

@@ -74,4 +74,22 @@ describe("groupSquad", () => {
     const groups = groupSquad(twins, new Set(), { column: "overall", direction: "desc" });
     expect(ids(groups)).toEqual([["MID", ["a", "b"]]]);
   });
+
+  it("sorts by fitness and form from the condition, defaulting to full fitness and form 5", () => {
+    const condition = { f1: { fitness: 20, form: 9 } };
+    const fitness = groupSquad(
+      squad(),
+      new Set(),
+      { column: "fitness", direction: "asc" },
+      condition,
+    );
+    expect(fitness.flatMap((g) => g.rows).find((r) => r.player.id === "f1")?.fitness).toBe(20);
+    const rows = fitness.flatMap((g) => g.rows);
+    expect(rows.find((r) => r.player.id !== "f1")?.fitness).toBe(100);
+    expect(rows.find((r) => r.player.id !== "f1")?.form).toBe(5);
+    const form = groupSquad(squad(), new Set(), { column: "form", direction: "desc" }, condition);
+    expect(
+      form.flatMap((g) => g.rows).find((r) => r.player.position === "FWD")?.form,
+    ).toBeDefined();
+  });
 });

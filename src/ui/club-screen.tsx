@@ -194,6 +194,12 @@ function PlayerRow({ row }: { row: SquadRow }) {
       </td>
       <td className="num">{player.age}</td>
       <td className="num">{formatNumber(row.overall, 1)}</td>
+      <td className="num" data-testid={`fitness-${player.id}`}>
+        {formatNumber(row.fitness, 0)}
+      </td>
+      <td className="num" data-testid={`form-${player.id}`}>
+        {formatNumber(row.form, 0)}
+      </td>
       {ATTRIBUTE_NAMES.map((name) => (
         <td
           key={name}
@@ -213,7 +219,7 @@ function SquadTable({ club, career }: { club: Club; career: Career }) {
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
   const players = career.league.players.filter((p) => club.playerIds.includes(p.id));
   const bestEleven = new Set(pickBestEleven(players).map((p) => p.id));
-  const groups = groupSquad(players, bestEleven, sort);
+  const groups = groupSquad(players, bestEleven, sort, career.condition);
   const onSort = (column: SortColumn) => setSort((current) => nextSort(current, column));
   const header = { sort, onSort };
   return (
@@ -240,6 +246,18 @@ function SquadTable({ club, career }: { club: Club; career: Career }) {
               full={t("club.col.overall")}
               {...header}
             />
+            <SortHeader
+              column="fitness"
+              label={t("club.col.fitness.short")}
+              full={t("club.col.fitness")}
+              {...header}
+            />
+            <SortHeader
+              column="form"
+              label={t("club.col.form.short")}
+              full={t("club.col.form")}
+              {...header}
+            />
             {ATTRIBUTE_NAMES.map((name) => (
               <SortHeader
                 key={name}
@@ -254,7 +272,7 @@ function SquadTable({ club, career }: { club: Club; career: Career }) {
         {groups.map((group) => (
           <tbody key={group.position} data-testid={`squad-group-${group.position}`}>
             <tr className="squad-group-heading">
-              <th scope="rowgroup" colSpan={3 + ATTRIBUTE_NAMES.length}>
+              <th scope="rowgroup" colSpan={5 + ATTRIBUTE_NAMES.length}>
                 {t(`position.${group.position}`)}
               </th>
             </tr>

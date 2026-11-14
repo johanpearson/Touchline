@@ -6,6 +6,7 @@ export type Route =
   | { name: "results" }
   | { name: "season-end" }
   | { name: "saves" }
+  | { name: "squad" }
   | { name: "not-found" };
 
 const NOT_FOUND: Route = { name: "not-found" };
@@ -35,7 +36,8 @@ export const parseRoute = (hash: string): Route => {
     head === "match" ||
     head === "results" ||
     head === "season-end" ||
-    head === "saves"
+    head === "saves" ||
+    head === "squad"
   )
     return { name: head };
   return NOT_FOUND;

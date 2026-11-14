@@ -228,6 +228,18 @@ describe("career navigation", () => {
     expect(href("match")).toBe("#/match");
   });
 
+  it("links to the squad screen", () => {
+    startedClub();
+    expect(screen.getByTestId("nav-squad").getAttribute("href")).toBe("#/squad");
+  });
+
+  it("shows the new-career screen on the squad route without a career", () => {
+    renderApp();
+    goTo("#/squad");
+    expect(screen.getByTestId("start-career")).toBeTruthy();
+    expect(screen.queryByTestId("squad-screen")).toBeNull();
+  });
+
   it("marks the current page in the navigation", () => {
     startedClub();
     goTo("#/league");

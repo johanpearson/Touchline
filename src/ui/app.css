@@ -246,3 +246,25 @@
   outline: 2px solid #1a73e8;
   outline-offset: 2px;
 }
+
+.squad-controls,
+.squad-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.squad-line h4 {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+}
+.low-fitness {
+  background: #fde2e0;
+  color: #7a1b13;
+}
+.squad-table meter {
+  width: 3rem;
+  margin-left: 4px;
+  vertical-align: middle;
+}

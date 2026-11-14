@@ -8,11 +8,18 @@ import {
   useRef,
   useState,
 } from "react";
+import type { TeamTactics } from "../engine";
 import {
+  setLineup as applyLineup,
+  setTactics as applyTactics,
+  autoPickUserLineup,
   type Career,
   type CareerError,
   completeMatchday,
   createCareer,
+  type Formation,
+  type Lineup,
+  type LineupError,
   type MatchdayError,
   parseCareer,
   type Result,
@@ -53,6 +60,12 @@ export type CareerStore = {
   startCareer: (seed: number, userClubId: string) => CareerError | null;
   /** Records the user's result, simulates the rest of the round and moves to the next matchday. */
   completeMatch: (userResult: Result) => MatchdayError | null;
+  /** Replaces the user's lineup. An invalid lineup returns the error and changes nothing. */
+  setLineup: (lineup: Lineup) => { ok: true } | { ok: false; error: LineupError };
+  /** Replaces the user's tactics. */
+  setTactics: (tactics: TeamTactics) => void;
+  /** Auto-picks starters and bench for a formation, keeping the tactics. */
+  autoPickLineup: (formation: Formation) => void;
   /** Rolls a finished season over to the next one. Returns an error while the season is running. */
   startNextSeason: () => "season-incomplete" | null;
   /** State of the latest autosave. */
@@ -189,6 +202,27 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       return null;
     },
     [career, persist],
+  );
+  // Plan edits are not saved on their own; the next autosave (matchday, new season) carries them.
+  const setLineup = useCallback(
+    (lineup: Lineup): { ok: true } | { ok: false; error: LineupError } => {
+      if (!career) return { ok: false, error: "unknown-player" };
+      const outcome = applyLineup(career, lineup);
+      if (!outcome.ok) return outcome;
+      setCareer(outcome.career);
+      return { ok: true };
+    },
+    [career],
+  );
+  const setTactics = useCallback(
+    (tactics: TeamTactics) =>
+      setCareer((current) => (current ? applyTactics(current, tactics) : current)),
+    [],
+  );
+  const autoPickLineup = useCallback(
+    (formation: Formation) =>
+      setCareer((current) => (current ? autoPickUserLineup(current, formation) : current)),
+    [],
   );
   const rollOver = useCallback((): "season-incomplete" | null => {
     if (!career) return "season-incomplete";
@@ -342,6 +376,9 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       career,
       startCareer,
       completeMatch,
+      setLineup,
+      setTactics,
+      autoPickLineup,
       startNextSeason: rollOver,
       saveStatus,
       lastSavedAt,
@@ -367,6 +404,9 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       career,
       startCareer,
       completeMatch,
+      setLineup,
+      setTactics,
+      autoPickLineup,
       rollOver,
       saveStatus,
       lastSavedAt,

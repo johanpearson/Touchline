@@ -194,4 +194,14 @@ describe("ClubView", () => {
     renderClub(career, career.userClubId, "sv");
     expect(screen.getByTestId("your-club").textContent).toBe("Din klubb");
   });
+
+  it("shows fitness and form for every squad player", () => {
+    const career = newCareer();
+    renderClub(career, otherClubId(career));
+    const club = career.league.clubs[1];
+    const id = club?.playerIds[0] ?? "";
+    expect(screen.getByTestId(`fitness-${id}`).textContent).toBe("100");
+    expect(screen.getByTestId(`form-${id}`).textContent).toBe("5");
+    expect(screen.getByTestId("sort-fitness")).toBeTruthy();
+  });
 });
