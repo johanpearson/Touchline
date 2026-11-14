@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createMatch, type MatchChange, NEUTRAL_TACTICS } from "../engine";
+import { createActionMatch, createMatch, type MatchChange, NEUTRAL_TACTICS } from "../engine";
 import type { Career } from "./career";
 import { aCareer, deepFreeze } from "./career-builders";
 import { completeMatchday } from "./complete-matchday";
 import type { Fixture } from "./generate-fixtures";
-import { matchInputV1For, matchSeed } from "./match-input-for";
+import { matchInputV1For, matchInputV2For, matchSeed } from "./match-input-for";
 import { planHalfTime } from "./plan-half-time";
 import type { Player } from "./player";
 import { ATTRIBUTE_NAMES } from "./player";
@@ -211,7 +211,9 @@ describe("planHalfTime", () => {
     const kept = plan(career, { substitutions: [] });
     const swapped = plan(career, { substitutions: [{ off, on }] });
 
-    if (!kept.ok || !swapped.ok) throw new Error("plan failed");
+    if (!kept.ok || !swapped.ok || kept.engineVersion !== 1 || swapped.engineVersion !== 1) {
+      throw new Error("plan failed");
+    }
     const before = kept.change.profile as NonNullable<MatchChange["profile"]>;
     const after = swapped.change.profile as NonNullable<MatchChange["profile"]>;
     expect(after.progression + after.buildUp + after.chanceCreation).toBeGreaterThan(
@@ -263,5 +265,84 @@ describe("planHalfTime", () => {
 
     expect(play()).toEqual(play());
     expect(play().changes).toHaveLength(1);
+  });
+
+  describe("on engine v2", () => {
+    const v2 = () => aCareer(1, 2);
+
+    it("puts the substitute in the starter's slot of the lineup change, with tactics", () => {
+      const career = v2();
+      const fixture = userFixtureOf(career);
+      const input = matchInputV2For(career, fixture);
+      const side = sideOf(career, fixture);
+      const { off, on } = pair(career, "MID");
+      const attacking = { ...NEUTRAL_TACTICS, mentality: "attacking" as const };
+
+      const result = plan(career, { substitutions: [{ off, on }], tactics: attacking });
+
+      if (!result.ok || result.engineVersion !== 2) throw new Error("plan failed");
+      const before = input[side].starters.map((p) => p.id);
+      const lineup = (result.change.lineup ?? []).map((p) => p.id);
+      expect(lineup).toEqual(before.map((id) => (id === off ? on : id)));
+      expect(result.change.tactics).toEqual(attacking);
+      expect(result.change.side).toBe(side);
+      expect(result.report.minutes[off]).toBe(45);
+      expect(result.report.minutes[on]).toBe(45);
+    });
+
+    it("keeps the starters unchanged without substitutions", () => {
+      const career = v2();
+      const fixture = userFixtureOf(career);
+      const side = sideOf(career, fixture);
+
+      const result = plan(career, { substitutions: [] });
+
+      if (!result.ok) throw new Error(result.error);
+      expect(result.change).toEqual({
+        side,
+        lineup: matchInputV2For(career, fixture)[side].starters,
+        tactics: career.squadPlan.tactics,
+      });
+    });
+
+    it("returns the same validation errors as engine v1", () => {
+      const career = v2();
+      const { off } = pair(career, "MID");
+      const fwdOn = pair(career, "FWD").on;
+      expect(plan(career, { substitutions: [{ off, on: fwdOn }] })).toEqual({
+        ok: false,
+        error: "position-mismatch",
+      });
+      expect(
+        plan(career, { substitutions: outfieldPairs(career, 5).concat(pair(career, "GK")) }),
+      ).toEqual({
+        ok: false,
+        error: "too-many-substitutions",
+      });
+    });
+
+    it("gives the same match twice when the change is applied at half-time", () => {
+      const career = v2();
+      const fixture = userFixtureOf(career);
+      const { off, on } = pair(career, "FWD");
+      const result = plan(career, { substitutions: [{ off, on }] });
+      if (!result.ok || result.engineVersion !== 2) throw new Error("plan failed");
+
+      const play = () => {
+        const match = createActionMatch(
+          matchInputV2For(career, fixture),
+          matchSeed(career, fixture),
+          { detail: "fast" },
+        );
+        match.advanceTo(1_000_000);
+        expect(match.applyChange(result.change)).toEqual({ ok: true });
+        match.resume();
+        match.advanceTo(1_000_000);
+        return { events: match.events, score: match.state.score, changes: match.changes };
+      };
+
+      expect(play()).toEqual(play());
+      expect(play().changes).toHaveLength(1);
+    });
   });
 });

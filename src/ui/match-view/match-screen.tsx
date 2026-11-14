@@ -59,7 +59,8 @@ export function MatchScreen({
   const [report, setReport] = useState<MatchReport | undefined>();
   const startSecondHalf = (plan?: AppliedHalfTimePlan) => {
     setReport(plan?.report);
-    resume(plan?.change);
+    // The v2 half-time change is wired up with the action match screen.
+    resume(plan?.engineVersion === 1 ? plan.change : undefined);
   };
   const stats = useMemo(() => computeMatchStats(events, matchTime), [events, matchTime]);
   const shownEvents = useMemo(() => terrainEvents(events, state.period), [events, state.period]);
