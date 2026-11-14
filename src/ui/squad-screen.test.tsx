@@ -246,6 +246,46 @@ describe("squad screen", () => {
     expect(select("starter-1").value).toBe(before);
   });
 
+  const positionOf = (id: string) =>
+    screen.getByTestId(`plan-row-${id}`).getAttribute("data-position");
+  const benchValues = () => [0, 1, 2, 3, 4, 5, 6].map((i) => select(`bench-${i}`).value);
+
+  it("swaps a starter with a bench player of the same position in one step", () => {
+    mountApp();
+    startCareer();
+    const slot = select("starter-1");
+    const starter = slot.value;
+    const position = positionOf(starter);
+    const benchIndex = benchValues().findIndex((id) => positionOf(id) === position);
+    if (benchIndex < 0) throw new Error("no bench player of that position");
+    const benchPlayer = select(`bench-${benchIndex}`).value;
+    const option = [...slot.options].find((o) => o.value === benchPlayer);
+    expect(option?.disabled).toBe(false);
+    choose("starter-1", benchPlayer);
+    expect(select("starter-1").value).toBe(benchPlayer);
+    expect(select(`bench-${benchIndex}`).value).toBe(starter);
+    expect(screen.queryByTestId("squad-error")).toBeNull();
+  });
+
+  it("swaps two bench players when one is chosen in the other's slot", () => {
+    mountApp();
+    startCareer();
+    const bench = benchValues();
+    // The only bench keeper locks outfield players, so use an outfield slot.
+    const slotIndex = bench.findIndex((id) => positionOf(id) !== "GK");
+    const first = bench[slotIndex] ?? "";
+    const slot = select(`bench-${slotIndex}`);
+    const target = [...slot.options].find(
+      (o) => !o.disabled && o.value !== first && bench.includes(o.value),
+    );
+    if (!target) throw new Error("no allowed swap");
+    const targetIndex = bench.indexOf(target.value);
+    choose(`bench-${slotIndex}`, target.value);
+    expect(select(`bench-${slotIndex}`).value).toBe(target.value);
+    expect(select(`bench-${targetIndex}`).value).toBe(first);
+    expect(screen.queryByTestId("squad-error")).toBeNull();
+  });
+
   it("keeps the plan after a reload from the autosave", async () => {
     const store = createMemorySaveStore();
     mountApp(store);
