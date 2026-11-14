@@ -56,6 +56,7 @@ test.describe("persistence", () => {
     expect(await snapshot(page)).toEqual(before);
 
     await page.getByTestId("nav-league").click();
+    await expect(page.getByTestId(/^table-row-/)).toHaveCount(CLUBS);
     const played = await page
       .locator("[data-testid^='table-row-'] td:nth-child(3)")
       .allTextContents();
