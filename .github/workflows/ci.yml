@@ -32,6 +32,8 @@ jobs:
       - name: Unit tests with coverage
         run: |
           if [ "$(npm pkg get scripts.test:coverage)" != "{}" ]; then npm run test:coverage; else npm test; fi
+      - name: Performance budget (runs alone, not in parallel with other tests)
+        run: npm run test:perf
       - run: npm run build
 
   balance:

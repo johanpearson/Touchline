@@ -18,6 +18,7 @@ npm run depcheck        # dependency-cruiser module boundaries
 npm test                # Vitest unit tests
 npm run test:coverage   # unit tests with coverage thresholds
 npm run test:balance    # engine balance tests (many seeded matches)
+npm run test:perf       # engine performance budget (runs alone, serially)
 npm run test:e2e        # Playwright E2E (smoke: npm run test:e2e:smoke)
 npm run build           # production build
 ```
