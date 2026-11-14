@@ -1,3 +1,4 @@
+import type { EngineVersion } from "../engine";
 import type { CareerResult } from "./career";
 import { createSeason } from "./create-season";
 import { generateLeague } from "./generate-league";
@@ -6,6 +7,8 @@ import { clubSquad, initialConditions, initialSquadPlan } from "./squad-plan";
 export type CareerSpec = {
   seed: number;
   userClubId: string;
+  /** The engine for new matches; defaults to 1 (the zone engine) until v2 becomes the default. */
+  engineVersion?: EngineVersion;
 };
 
 /**
@@ -33,6 +36,7 @@ export const createCareer = (spec: CareerSpec): CareerResult => {
       history: [],
       squadPlan: initialSquadPlan(clubSquad(userClub, league.players)),
       condition: initialConditions(league.players),
+      engineVersion: spec.engineVersion ?? 1,
     },
   };
 };

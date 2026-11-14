@@ -1,13 +1,14 @@
+import type { EngineVersion } from "../engine";
 import type { Career } from "./career";
 import { createCareer } from "./create-career";
 import { generateLeague } from "./generate-league";
 
 /** A generated career for tests; the user manages the league's first club. */
-export const aCareer = (seed = 1): Career => {
+export const aCareer = (seed = 1, engineVersion: EngineVersion = 1): Career => {
   const generated = generateLeague({ seed });
   if (!generated.ok) throw new Error(generated.error);
   const userClubId = (generated.league.clubs[0] as { id: string }).id;
-  const created = createCareer({ seed, userClubId });
+  const created = createCareer({ seed, userClubId, engineVersion });
   if (!created.ok) throw new Error(created.error);
   return created.career;
 };

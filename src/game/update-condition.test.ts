@@ -19,6 +19,7 @@ const resultFor = (
   awayClubId: fixture.awayClubId,
   homeGoals,
   awayGoals,
+  engineVersion: 1,
 });
 
 const clubPlayers = (career: ReturnType<typeof aCareer>, clubId: string) =>

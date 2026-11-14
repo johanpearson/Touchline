@@ -397,4 +397,22 @@ describe("parseCareer squad plan and condition", () => {
       delete (c as { condition?: unknown }).condition;
     }, "invalid-condition");
   });
+
+  it.each([0, 3, "2", null, undefined])("rejects engineVersion %j", (value) => {
+    reject((c) => {
+      (c as { engineVersion: unknown }).engineVersion = value;
+    }, "invalid-engine-version");
+  });
+
+  it("rejects a result without a valid engineVersion", () => {
+    const played = playMatchdays(aCareer(), 1);
+    const raw = roundTrip(played) as Career;
+    (raw.season.results[0] as { engineVersion: unknown }).engineVersion = 7;
+    expect(errorOf(raw)).toBe("invalid-season");
+  });
+
+  it("keeps engine 2 careers and results", () => {
+    const played = playMatchdays(aCareer(1, 2), 1);
+    expect(parseCareer(roundTrip(played))).toEqual({ ok: true, career: played });
+  });
 });

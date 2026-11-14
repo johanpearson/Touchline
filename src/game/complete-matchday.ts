@@ -16,6 +16,7 @@ const checkUserResult = (
   if (season.results.some((r) => r.fixtureId === userResult.fixtureId)) {
     return "matchday-already-completed";
   }
+  if (userResult.engineVersion !== career.engineVersion) return "wrong-engine-version";
   if (userResult.fixtureId !== userFixture.id) {
     const known = season.fixtures.some((f) => f.id === userResult.fixtureId);
     return known ? "wrong-matchday" : "wrong-fixture";
