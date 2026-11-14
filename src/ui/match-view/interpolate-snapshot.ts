@@ -26,7 +26,8 @@ const isJump = (earlier: Snapshotted, later: ActionEvent): boolean =>
  * Between two snapshots positions are interpolated linearly; before the first and after the last
  * the nearest snapshot is held. Across a restart the earlier snapshot is held until the later one
  * is reached, so the view snaps instead of sliding the teams across the pitch. At an event time
- * the event's own snapshot is returned. `undefined` when the log has no snapshots (fast detail).
+ * the event's own snapshot is returned. A set piece holds its set-up positions until the first
+ * action of the restart. `undefined` when the log has no snapshots (fast detail).
  */
 export const interpolateSnapshot = (
   events: readonly ActionEvent[],
@@ -40,7 +41,12 @@ export const interpolateSnapshot = (
   const after = withSnapshots[afterIndex];
   if (!before?.snapshot) return after?.snapshot;
   if (!after?.snapshot) return before.snapshot;
-  if (isJump({ ...before, snapshot: before.snapshot }, after) || before.time === time) {
+  const settingUp = before.type === "setPiece";
+  if (
+    settingUp ||
+    isJump({ ...before, snapshot: before.snapshot }, after) ||
+    before.time === time
+  ) {
     return before.snapshot;
   }
   const f = (time - before.time) / (after.time - before.time);

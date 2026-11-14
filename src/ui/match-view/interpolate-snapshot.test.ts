@@ -92,3 +92,22 @@ describe("interpolateSnapshot", () => {
     }
   });
 });
+
+describe("interpolateSnapshot at a set piece", () => {
+  const setPiece = {
+    ...carry(10, 20),
+    type: "setPiece",
+    variant: "corner",
+    outcome: "taken",
+  } as unknown as ActionEvent;
+  const log = [setPiece, carry(14, 60)];
+
+  it("holds the set-up positions until the first action is taken", () => {
+    expect(interpolateSnapshot(log, 12)).toEqual(snapshotAt(20));
+    expect(interpolateSnapshot(log, 13.9)).toEqual(snapshotAt(20));
+  });
+
+  it("resumes normal interpolation after the first action", () => {
+    expect(interpolateSnapshot([...log, carry(18, 80)], 16)?.ball).toEqual({ x: 70, y: 30 });
+  });
+});

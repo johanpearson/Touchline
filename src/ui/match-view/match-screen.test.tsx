@@ -323,6 +323,17 @@ describe("MatchScreen with the action engine", () => {
       expect(screen.getByTestId("view-pitch").textContent).toBe("Plan");
     });
 
+    it("offers a passing chain toggle in the pitch view only, in both languages", () => {
+      mountAction({}, "sv");
+      expect(screen.queryByTestId("chain-toggle")).toBeNull();
+      fireEvent.click(screen.getByTestId("view-pitch"));
+      const toggle = screen.getByTestId("chain-toggle");
+      expect(toggle.textContent).toBe("Passningskedja");
+      expect(toggle.getAttribute("aria-pressed")).toBe("true");
+      fireEvent.click(toggle);
+      expect(toggle.getAttribute("aria-pressed")).toBe("false");
+    });
+
     it("is not offered for zone engine matches", () => {
       mount();
       expect(screen.queryByTestId("view-toggle")).toBeNull();

@@ -1,8 +1,13 @@
 import { useEffect, useRef } from "react";
-import type { ActionEvent, MatchState } from "../../engine";
+import type { ActionEvent, MatchState, SetPieceEvent } from "../../engine";
 import { createCanvasPitchRenderer } from "./canvas-pitch-renderer";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import { interpolateSnapshot } from "./interpolate-snapshot";
+import { chainLines } from "./passing-chain";
+import { activeSetPiece } from "./set-piece-setup";
+
+/** How many seconds back the passing chain reaches. */
+export const CHAIN_WINDOW_SECONDS = 20;
 
 export type ClassicPitchProps = {
   /** The action event log. The pitch only reads it. */
@@ -12,6 +17,10 @@ export type ClassicPitchProps = {
   score: MatchState["score"];
   homeColour: string;
   awayColour: string;
+  /** Whether the passing chain is drawn. */
+  showChain?: boolean;
+  /** The short label shown while each kind of set piece is set up. */
+  setPieceLabels: Readonly<Record<SetPieceEvent["variant"], string>>;
   /** Replaces the canvas renderer, for tests. */
   createRenderer?: PitchRendererFactory;
   label: string;
@@ -24,12 +33,14 @@ export function ClassicPitch({
   score,
   homeColour,
   awayColour,
+  showChain = true,
+  setPieceLabels,
   createRenderer = createCanvasPitchRenderer,
   label,
 }: ClassicPitchProps) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const latest = useRef({ events, matchTime, score });
-  latest.current = { events, matchTime, score };
+  const latest = useRef({ events, matchTime, score, showChain, setPieceLabels });
+  latest.current = { events, matchTime, score, showChain, setPieceLabels };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -41,9 +52,23 @@ export function ClassicPitch({
     resize();
     let frameId = 0;
     const loop = () => {
-      const { events: log, matchTime: time, score: current } = latest.current;
+      const { events: log, matchTime: time, score: current, ...shown } = latest.current;
       const snapshot = interpolateSnapshot(log, time);
-      if (snapshot) renderer.render({ snapshot, score: current });
+      if (snapshot) {
+        const setPiece = activeSetPiece(log, time);
+        renderer.render({
+          snapshot,
+          score: current,
+          chain: shown.showChain
+            ? chainLines(log, time, CHAIN_WINDOW_SECONDS, snapshot)
+            : undefined,
+          setPiece: setPiece && {
+            team: setPiece.team,
+            taker: setPiece.taker,
+            label: shown.setPieceLabels[setPiece.variant],
+          },
+        });
+      }
       frameId = requestAnimationFrame(loop);
     };
     frameId = requestAnimationFrame(loop);

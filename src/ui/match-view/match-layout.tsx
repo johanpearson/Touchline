@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { CommentaryLine } from "../../commentary";
 import type { ActionEvent, MatchEvent, MatchState, MatchStats, PerSide } from "../../engine";
 import { useI18n } from "../i18n-provider";
@@ -63,6 +64,7 @@ export function MatchLayout({
   const halfTime = period === "halfTime";
   const [chosenView, setView] = useViewChoice();
   const view = pitch ? chosenView : "momentum";
+  const [showChain, setShowChain] = useState(true);
   return (
     <div className="match-screen" data-testid="match-screen">
       <Scoreboard
@@ -92,6 +94,17 @@ export function MatchLayout({
             ))}
           </fieldset>
         )}
+        {pitch && view === "pitch" && (
+          <button
+            type="button"
+            className="chain-toggle"
+            data-testid="chain-toggle"
+            aria-pressed={showChain}
+            onClick={() => setShowChain(!showChain)}
+          >
+            {t("match.chain.toggle")}
+          </button>
+        )}
         {pitch && view === "pitch" ? (
           <ClassicPitch
             events={pitch.events}
@@ -99,6 +112,15 @@ export function MatchLayout({
             score={score}
             homeColour={colours.home}
             awayColour={colours.away}
+            showChain={showChain}
+            setPieceLabels={{
+              kickoff: t("match.setPiece.kickoff"),
+              throwIn: t("match.setPiece.throwIn"),
+              goalKick: t("match.setPiece.goalKick"),
+              corner: t("match.setPiece.corner"),
+              freeKick: t("match.setPiece.freeKick"),
+              penalty: t("match.setPiece.penalty"),
+            }}
             createRenderer={pitch.createRenderer}
             label={t("match.pitch")}
           />

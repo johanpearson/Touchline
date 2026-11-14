@@ -43,6 +43,44 @@ const drawMarkings = (ctx: CanvasRenderingContext2D, { scale, left, top }: Layou
 /** Squad number of a snapshot slot: home 0 to 10 and away 11 to 21 both read 1 to 11. */
 const shirtNumber = (slot: number): number => (slot % 11) + 1;
 
+/** The passing chain as lines in the team colour, older links fainter. */
+const drawChain = (
+  ctx: CanvasRenderingContext2D,
+  { scale, left, top }: Layout,
+  { chain }: PitchFrame,
+  options: { homeColour: string; awayColour: string },
+) => {
+  if (!chain) return;
+  ctx.strokeStyle = chain.team === "home" ? options.homeColour : options.awayColour;
+  ctx.lineWidth = 3;
+  for (const { from, to, strength } of chain.links) {
+    ctx.globalAlpha = strength;
+    ctx.beginPath();
+    ctx.moveTo(left + from.x * scale, top + from.y * scale);
+    ctx.lineTo(left + to.x * scale, top + to.y * scale);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+};
+
+/** The taker of a set piece in a highlight ring, with the label of the set piece above. */
+const drawSetPiece = (ctx: CanvasRenderingContext2D, layout: Layout, frame: PitchFrame) => {
+  const { setPiece } = frame;
+  const taker = setPiece && frame.snapshot.players[setPiece.taker];
+  if (!setPiece || !taker) return;
+  const px = layout.left + taker.x * layout.scale;
+  const py = layout.top + taker.y * layout.scale;
+  ctx.strokeStyle = "#ffd54f";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(px, py, PLAYER_RADIUS + 4, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.font = "bold 12px sans-serif";
+  ctx.fillStyle = "#ffd54f";
+  ctx.fillText(setPiece.label, px, py - PLAYER_RADIUS - 10);
+  ctx.font = "bold 10px sans-serif";
+};
+
 /** The default renderer: the pitch, both teams, the ball and the score, on one canvas 2D element. */
 export const createCanvasPitchRenderer: PitchRendererFactory = (host, options) => {
   const canvas = document.createElement("canvas");
@@ -63,6 +101,7 @@ export const createCanvasPitchRenderer: PitchRendererFactory = (host, options) =
     ctx.font = "bold 10px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    drawChain(ctx, layout, frame, options);
     frame.snapshot.players.forEach((player, slot) => {
       const px = layout.left + player.x * layout.scale;
       const py = layout.top + player.y * layout.scale;
@@ -76,6 +115,7 @@ export const createCanvasPitchRenderer: PitchRendererFactory = (host, options) =
       ctx.fillStyle = "#fff";
       ctx.fillText(String(shirtNumber(slot)), px, py);
     });
+    drawSetPiece(ctx, layout, frame);
     const { ball } = frame.snapshot;
     ctx.fillStyle = "#fff";
     ctx.beginPath();
