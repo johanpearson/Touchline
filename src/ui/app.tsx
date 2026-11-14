@@ -11,6 +11,7 @@ import { MatchdayResultsScreen } from "./matchday-results-screen";
 import { NewCareerScreen } from "./new-career-screen";
 import { NotFoundScreen } from "./not-found-screen";
 import { SaveStatus } from "./save-status";
+import { SavesScreen } from "./saves-screen";
 import { SeasonEndScreen } from "./season-end-screen";
 import { StorageWarning } from "./storage-warning";
 import { CareerProvider, useCareer } from "./use-career";
@@ -23,6 +24,7 @@ function Screen({ createRenderer, tickMs, initialSeed }: RendererProp & { initia
   const route = useRoute();
   const { career } = useCareer();
   if (route.name === "not-found") return <NotFoundScreen />;
+  if (route.name === "saves") return <SavesScreen />;
   if (!career) return <NewCareerScreen initialSeed={initialSeed} />;
   switch (route.name) {
     case "home":
