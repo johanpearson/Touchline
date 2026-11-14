@@ -54,6 +54,17 @@ export const formationAnchors = (formation: FormationCounts): Local[] => [
   ...lanes(formation.forwards, ATTACK_DEPTH),
 ];
 
+const anchorCache = new WeakMap<FormationCounts, readonly Local[]>();
+
+/** `formationAnchors` computed once per formation object; the anchors are never mutated. */
+const cachedAnchors = (formation: FormationCounts): readonly Local[] => {
+  const cached = anchorCache.get(formation);
+  if (cached !== undefined) return cached;
+  const anchors = formationAnchors(formation);
+  anchorCache.set(formation, anchors);
+  return anchors;
+};
+
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
 
@@ -62,7 +73,11 @@ const clampLocal = (p: Local): Local => ({
   y: clamp(p.y, PITCH_MARGIN, PITCH_WIDTH - PITCH_MARGIN),
 });
 
-const applyBlock = (anchors: Local[], params: ShapeParameters, phase: TeamPhase): Local[] => {
+const applyBlock = (
+  anchors: readonly Local[],
+  params: ShapeParameters,
+  phase: TeamPhase,
+): Local[] => {
   const shift = PHASE_SHIFT[phase] + params.lineHeight;
   return anchors.map((a, slot) =>
     slot === 0
@@ -115,13 +130,22 @@ const keepApart = (block: Local[]): Local[] => {
   let points = block.map(clampLocal);
   for (let pass = 0; pass < SPREAD_PASSES; pass++) {
     const next = points.map((p) => ({ ...p }));
+    let pushed = false;
     for (let i = 0; i < next.length; i++) {
       for (let j = i + 1; j < next.length; j++) {
         const a = next[i];
         const b = next[j];
         if (!a || !b) continue;
+        // A component of MIN_PLAYER_DISTANCE or more already means d >= MIN_PLAYER_DISTANCE; skips the hypot.
+        if (
+          Math.abs(a.depth - b.depth) >= MIN_PLAYER_DISTANCE ||
+          Math.abs(a.y - b.y) >= MIN_PLAYER_DISTANCE
+        ) {
+          continue;
+        }
         const d = distance(a, b);
         if (d >= MIN_PLAYER_DISTANCE) continue;
+        pushed = true;
         const push = (MIN_PLAYER_DISTANCE - d) / 2 + 0.01;
         const ux = d === 0 ? 0 : (a.depth - b.depth) / d;
         const uy = d === 0 ? -1 : (a.y - b.y) / d;
@@ -132,6 +156,8 @@ const keepApart = (block: Local[]): Local[] => {
       }
     }
     points = next.map(clampLocal);
+    // Nobody was pushed, so every later pass would find the same: the result is final.
+    if (!pushed) break;
   }
   return points;
 };
@@ -157,7 +183,7 @@ export const teamShape = (
     depth: side === "home" ? ball.x : PITCH_LENGTH - ball.x,
     y: ball.y,
   };
-  const block = applyBlock(formationAnchors(sheet.formation), shapeParameters(tactics), phase);
+  const block = applyBlock(cachedAnchors(sheet.formation), shapeParameters(tactics), phase);
   const placed = closeInOnBall(pullBlock(block, localBall), localBall);
   return keepApart(placed).map((p) => toPitch(p, side));
 };

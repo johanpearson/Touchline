@@ -93,9 +93,9 @@ describe("set pieces in the match loop", () => {
     for (const m of matches) {
       for (const e of m.events) {
         if (e.type !== "setPiece") continue;
-        expect(e.snapshot.players).toHaveLength(22);
-        expect(e.snapshot.players.every(inPitch)).toBe(true);
-        expect(e.snapshot.ball).toEqual(e.from);
+        expect(e.snapshot?.players).toHaveLength(22);
+        expect(e.snapshot?.players.every(inPitch)).toBe(true);
+        expect(e.snapshot?.ball).toEqual(e.from);
         if (e.variant === "throwIn") expect(e.from.y === 0 || e.from.y === PITCH_WIDTH).toBe(true);
         if (e.variant === "corner") {
           expect(e.from.x === 0 || e.from.x === PITCH_LENGTH).toBe(true);

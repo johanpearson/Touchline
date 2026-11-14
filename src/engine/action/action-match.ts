@@ -30,6 +30,15 @@ export type TimedActionMatchChange = {
   change: ActionMatchChange;
 };
 
+/**
+ * `"full"` (default) builds the position snapshots of every event; `"fast"` skips them (and the
+ * presentation stream) and gives the same log otherwise.
+ */
+export type MatchDetail = "full" | "fast";
+
+/** Options of `createActionMatch`. */
+export type ActionMatchOptions = { detail?: MatchDetail };
+
 /** A running action-engine simulation. Same control methods as the zone engine's `Match`. */
 export type ActionMatch = {
   readonly events: readonly ActionEvent[];
