@@ -44,6 +44,20 @@ export { parseCareer } from "./parse-career";
 export { pickBestEleven } from "./pick-best-eleven";
 export type { AttributeName, Player, PlayerAttributes } from "./player";
 export { ATTRIBUTE_NAMES, MAX_ATTRIBUTE, MIN_ATTRIBUTE } from "./player";
+export type { MatchAppearance, MatchOutcome, PlayerCondition } from "./player-condition";
+export {
+  applyMatchToCondition,
+  effectiveAttributes,
+  FITNESS_ATTRIBUTE_WEIGHT,
+  FITNESS_DRAIN_PER_MATCH,
+  FITNESS_RECOVERY_RATE,
+  FORM_ATTRIBUTE_STEP,
+  FORM_MAX,
+  FORM_MIN,
+  FORM_START,
+  initialCondition,
+  recoverCondition,
+} from "./player-condition";
 export { FIRST_NAMES, LAST_NAMES } from "./player-names";
 export { playerOverall } from "./player-overall";
 export type { SeasonError, SeasonSummary, SummaryResult, TopScorer } from "./season-summary";
