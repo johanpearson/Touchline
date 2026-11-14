@@ -1,7 +1,11 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateLeague, parseCareer } from "../game";
-import { createMemoryLocaleStore, createMemorySaveStore } from "../platform";
+import {
+  createMemoryFileTransfer,
+  createMemoryLocaleStore,
+  createMemorySaveStore,
+} from "../platform";
 import type { SaveEnvelope, SaveStore } from "../shared";
 import { App } from "./app";
 
@@ -25,6 +29,7 @@ const mountApp = (store: SaveStore = createMemorySaveStore(), locale?: string) =
       createRenderer={createRenderer}
       localeStore={createMemoryLocaleStore(locale)}
       saveStore={store}
+      fileTransfer={createMemoryFileTransfer()}
       now={aClock()}
       initialSeed={SEED}
       tickMs={1000}

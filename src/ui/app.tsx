@@ -1,4 +1,4 @@
-import type { LocaleStore, SaveStore } from "../shared";
+import type { FileTransfer, LocaleStore, SaveStore } from "../shared";
 import { CareerHubScreen } from "./career-hub-screen";
 import { CareerNav } from "./career-nav";
 import { ClubView } from "./club-screen";
@@ -65,6 +65,8 @@ export type AppProps = {
   localeStore: LocaleStore;
   /** Where autosaves are written. The composition root passes IndexedDB, or memory as a fallback. */
   saveStore: SaveStore;
+  /** Downloads and file picking for save export and import. */
+  fileTransfer: FileTransfer;
   /** Clock returning an ISO 8601 timestamp, injected so the UI never reads the time itself. */
   now: () => string;
   /** False when `saveStore` is the in-memory fallback; shows a warning that progress is lost. */
@@ -76,6 +78,7 @@ export type AppProps = {
 export function App({
   localeStore,
   saveStore,
+  fileTransfer,
   now,
   storageAvailable = true,
   createRenderer,
@@ -84,7 +87,7 @@ export function App({
 }: AppProps) {
   return (
     <I18nProvider store={localeStore}>
-      <CareerProvider saveStore={saveStore} now={now}>
+      <CareerProvider saveStore={saveStore} now={now} fileTransfer={fileTransfer}>
         <Shell
           createRenderer={createRenderer}
           tickMs={tickMs}

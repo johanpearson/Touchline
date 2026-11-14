@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import {
+  createBrowserFileTransfer,
   createBrowserLocaleStore,
   createIndexedDbSaveStore,
   createMemorySaveStore,
@@ -21,6 +22,7 @@ async function start() {
       <App
         localeStore={createBrowserLocaleStore()}
         saveStore={storageAvailable ? createIndexedDbSaveStore() : createMemorySaveStore()}
+        fileTransfer={createBrowserFileTransfer()}
         storageAvailable={storageAvailable}
         now={() => new Date().toISOString()}
         initialSeed={Math.floor(Math.random() * 2 ** 31)}

@@ -1,7 +1,11 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateLeague } from "../game";
-import { createMemoryLocaleStore, createMemorySaveStore } from "../platform";
+import {
+  createMemoryFileTransfer,
+  createMemoryLocaleStore,
+  createMemorySaveStore,
+} from "../platform";
 import { App } from "./app";
 import { clubRating } from "./club-rating";
 
@@ -14,6 +18,7 @@ const renderApp = (locale?: string, initialSeed = 11) =>
       createRenderer={createRenderer}
       localeStore={createMemoryLocaleStore(locale)}
       saveStore={createMemorySaveStore()}
+      fileTransfer={createMemoryFileTransfer()}
       now={fixedNow}
       initialSeed={initialSeed}
     />,
@@ -67,6 +72,7 @@ describe("App", () => {
         createRenderer={createRenderer}
         localeStore={store}
         saveStore={createMemorySaveStore()}
+        fileTransfer={createMemoryFileTransfer()}
         now={fixedNow}
         initialSeed={1}
       />,

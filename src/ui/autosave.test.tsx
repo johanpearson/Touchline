@@ -10,7 +10,11 @@ import {
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateLeague, parseCareer } from "../game";
-import { createMemoryLocaleStore, createMemorySaveStore } from "../platform";
+import {
+  createMemoryFileTransfer,
+  createMemoryLocaleStore,
+  createMemorySaveStore,
+} from "../platform";
 import type { SaveEnvelope, SaveStore } from "../shared";
 import { App } from "./app";
 import { I18nProvider } from "./i18n-provider";
@@ -48,6 +52,7 @@ const mountApp = ({
       createRenderer={createRenderer}
       localeStore={createMemoryLocaleStore(locale)}
       saveStore={store}
+      fileTransfer={createMemoryFileTransfer()}
       now={now ?? aClock()}
       storageAvailable={storageAvailable}
       initialSeed={SEED}
@@ -272,7 +277,7 @@ describe("useCareer persistence", () => {
   const clock = aClock();
   const wrapper = ({ children }: { children: ReactNode }) => (
     <I18nProvider store={createMemoryLocaleStore()}>
-      <CareerProvider saveStore={activeStore} now={clock}>
+      <CareerProvider saveStore={activeStore} now={clock} fileTransfer={createMemoryFileTransfer()}>
         {children}
       </CareerProvider>
     </I18nProvider>

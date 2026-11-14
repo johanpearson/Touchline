@@ -1,7 +1,11 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateLeague } from "../game";
-import { createMemoryLocaleStore, createMemorySaveStore } from "../platform";
+import {
+  createMemoryFileTransfer,
+  createMemoryLocaleStore,
+  createMemorySaveStore,
+} from "../platform";
 import { App } from "./app";
 
 const SEED = 11;
@@ -24,6 +28,7 @@ const mount = (locale?: string) => {
       createRenderer={createRenderer}
       localeStore={createMemoryLocaleStore(locale)}
       saveStore={createMemorySaveStore()}
+      fileTransfer={createMemoryFileTransfer()}
       now={fixedNow}
       initialSeed={SEED}
       tickMs={1000}
