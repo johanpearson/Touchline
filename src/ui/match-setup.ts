@@ -23,8 +23,13 @@ const clubOf = (career: Career, clubId: string): Club => {
   return club;
 };
 
+/** The user's club is limited to its starters and bench, so a substitute can score after half-time. */
 const squadOf = (career: Career, club: Club): SquadPlayer[] => {
-  const ids = new Set(club.playerIds);
+  const ids = new Set(
+    club.id === career.userClubId
+      ? [...career.squadPlan.starters, ...career.squadPlan.bench]
+      : club.playerIds,
+  );
   return career.league.players.filter((p) => ids.has(p.id)).map(toSquadPlayer);
 };
 

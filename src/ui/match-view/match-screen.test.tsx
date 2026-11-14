@@ -172,3 +172,78 @@ describe("MatchScreen", () => {
     expect(screen.getByTestId("period").textContent).toBe("Första halvlek");
   });
 });
+
+describe("MatchScreen half-time changes", () => {
+  beforeEach(() => {
+    vi.stubGlobal("requestAnimationFrame", () => 0);
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
+  });
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const editor = {
+    players: [
+      { id: "a", name: "Elias Berg", position: "FWD" },
+      { id: "b", name: "Oskar Lind", position: "FWD" },
+    ],
+    starters: ["a"],
+    bench: ["b"],
+    condition: {},
+    tactics: NEUTRAL_TACTICS,
+    plan: (changes: { substitutions: { off: string; on: string }[] }) => ({
+      ok: true as const,
+      change: { side: "home" as const, tactics: NEUTRAL_TACTICS },
+      report: { minutes: { a: changes.substitutions.length ? 45 : 90 } },
+      lineupAfter: { formation: "4-4-2" as const, starters: ["b"], bench: ["a"] },
+    }),
+  };
+
+  it("passes the half-time report to onContinue", () => {
+    const onContinue = vi.fn();
+    render(
+      <I18nProvider store={createMemoryLocaleStore("en")}>
+        <MatchScreen
+          {...demoMatch}
+          createRenderer={fakeRenderer}
+          tickMs={1000}
+          // biome-ignore lint/suspicious/noExplicitAny: a minimal fake editor for this test
+          halfTimeEditor={editor as any}
+          onContinue={onContinue}
+        />
+      </I18nProvider>,
+    );
+    fireEvent.click(screen.getByTestId("speed-4"));
+    act(() => vi.advanceTimersByTime(15_000));
+    fireEvent.click(screen.getByTestId("sub-add"));
+    fireEvent.click(screen.getByTestId("start-second-half"));
+    act(() => vi.advanceTimersByTime(30_000));
+    fireEvent.click(screen.getByTestId("continue"));
+    expect(onContinue).toHaveBeenCalledWith(expect.anything(), { minutes: { a: 45 } });
+  });
+
+  it("passes no report when nothing changed at half-time", () => {
+    const onContinue = vi.fn();
+    render(
+      <I18nProvider store={createMemoryLocaleStore("en")}>
+        <MatchScreen
+          {...demoMatch}
+          createRenderer={fakeRenderer}
+          tickMs={1000}
+          // biome-ignore lint/suspicious/noExplicitAny: a minimal fake editor for this test
+          halfTimeEditor={editor as any}
+          onContinue={onContinue}
+        />
+      </I18nProvider>,
+    );
+    fireEvent.click(screen.getByTestId("speed-4"));
+    act(() => vi.advanceTimersByTime(15_000));
+    fireEvent.click(screen.getByTestId("start-second-half"));
+    act(() => vi.advanceTimersByTime(30_000));
+    fireEvent.click(screen.getByTestId("continue"));
+    expect(onContinue).toHaveBeenCalledWith(expect.anything(), undefined);
+  });
+});
