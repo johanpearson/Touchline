@@ -44,6 +44,22 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
   - `engine.balance.test.ts` checks each setting moves its target statistic and that none of the 81 combinations beats neutral on both goals for and against or wins more than 58% against it between equal teams.
 - Periods: first half, half-time (simulation paused until the user resumes), second half, added time. Kickoff after goals and at the start of each half.
 
+## Team ratings from a lineup
+
+- `deriveTeamProfile(club, players)` keeps its meaning: best-eleven 4-4-2 at full condition. `deriveLineupProfile(name, players, lineup, condition)` (`derive-lineup-profile.ts`) is the general case: the starters' `effectiveAttributes` (fitness and form from `condition`, a player id to `PlayerCondition` record; a missing entry is neutral) go through the same attribute-to-phase mapping (`baseRatings` in `phase-ratings.ts`), then the formation's offsets are added and each rating is clamped to 0..1. An invalid lineup (checked with `validateLineup`) throws `RangeError`; callers validate user input first.
+- Formation offsets (`formation-offsets.ts`, `FORMATION_OFFSETS`, each at most `MAX_FORMATION_OFFSET` = 0.06 in absolute value, goalkeeping always 0; a test enforces the bound):
+
+| Formation | buildUp | progression | chanceCreation | finishing | pressing | defending | Rationale |
+|---|---|---|---|---|---|---|---|
+| 4-4-2 | 0 | 0 | 0 | 0 | 0 | 0 | Baseline |
+| 4-3-3 | -0.02 | +0.02 | +0.03 | +0.02 | 0 | -0.03 | Three forwards, thinner midfield and defence |
+| 4-5-1 | +0.03 | 0 | -0.02 | -0.03 | +0.02 | 0 | Packed midfield, lone striker |
+| 3-5-2 | +0.04 | 0 | +0.03 | 0 | +0.01 | -0.04 | More build-up and chances, only three defenders |
+| 5-3-2 | -0.01 | -0.02 | -0.04 | 0 | 0 | +0.05 | Solid, few players forward |
+| 3-4-3 | 0 | +0.02 | +0.04 | +0.03 | -0.01 | -0.05 | Most attacking, exposed at the back |
+
+- `formation.balance.test.ts` plays every club of 3 generated leagues over 5 seasons of 26 matches with each formation against its own 4-4-2 (equal players); no formation wins or loses more than 55% of its matches (currently all about 36 to 38%).
+
 ## Match view
 
 - Consumes the event log only. It never calls engine internals.
