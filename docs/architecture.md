@@ -47,7 +47,7 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 
 ## Action engine (v2, milestone M5b)
 
-Design for the action-level engine that replaces the zone engine (v1). Nothing here is built yet; the issues of the epic "action-level match engine" (milestone M5b Action engine) implement it in order. Until the final issue, v1 behaves exactly as described under "Match engine" above.
+Design for the action-level engine that replaces the zone engine (v1). Step 1 (types, dispatch and input validation in `src/engine/action/`) is built; `createMatch` returns a stub `ActionMatch` for a v2 input until the simulation lands. The issues of the epic "action-level match engine" (milestone M5b Action engine) implement it in order. Until the final issue, v1 behaves exactly as described under "Match engine" above.
 
 ### What v2 must stay compatible with
 

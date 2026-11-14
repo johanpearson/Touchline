@@ -1,6 +1,6 @@
 import {
   createRng,
-  type MatchInput,
+  type MatchInputV1,
   NEUTRAL_TACTICS,
   type TeamMatchProfile,
   type TeamTactics,
@@ -38,7 +38,7 @@ const setupOf = (career: Career, clubId: string): SideSetup => {
 };
 
 /** The engine input for a fixture: the user's club uses its squad plan, AI clubs a 4-4-2. */
-export const matchInputFor = (career: Career, fixture: Fixture): MatchInput => {
+export const matchInputFor = (career: Career, fixture: Fixture): MatchInputV1 => {
   const home = setupOf(career, fixture.homeClubId);
   const away = setupOf(career, fixture.awayClubId);
   return {

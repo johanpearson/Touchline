@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMatch, type MatchEvent, type MatchInput, NEUTRAL_TACTICS } from "../engine";
+import { createMatch, type MatchEvent, type MatchInputV1, NEUTRAL_TACTICS } from "../engine";
 import { type CommentaryContext, generateCommentary } from "./generate-commentary";
 
 const team = (name: string) => ({
@@ -12,7 +12,7 @@ const team = (name: string) => ({
   defending: 0.5,
   goalkeeping: 0.5,
 });
-const matchInput = (): MatchInput => ({
+const matchInput = (): MatchInputV1 => ({
   home: team("Kvarnby"),
   away: team("Västerås"),
   homeTactics: NEUTRAL_TACTICS,

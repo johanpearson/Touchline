@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createMatch, type MatchInput, NEUTRAL_TACTICS } from "../../engine";
+import { createMatch, type MatchInputV1, NEUTRAL_TACTICS } from "../../engine";
 import { useMatchPlayback } from "./use-match-playback";
 
 const profile = (name: string) => ({
@@ -14,7 +14,7 @@ const profile = (name: string) => ({
   goalkeeping: 0.5,
 });
 
-const input: MatchInput = {
+const input: MatchInputV1 = {
   home: profile("Kvarnby"),
   away: profile("Västerås Park"),
   homeTactics: NEUTRAL_TACTICS,

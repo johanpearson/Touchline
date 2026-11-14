@@ -1,6 +1,10 @@
+import type { ActionMatch } from "./action/action-match";
+import { createActionMatch } from "./action/create-action-match";
+import type { MatchInputV2 } from "./action/match-input-v2";
 import type { MatchChange, TimedMatchChange } from "./match-change";
 import type { MatchEvent } from "./match-event";
-import type { MatchInput } from "./match-input";
+import type { MatchInput, MatchInputV1 } from "./match-input";
+import { isMatchInputV2 } from "./match-input";
 import type { MatchState, Side } from "./match-state";
 import { createRng } from "./rng";
 import { tacticsModifiers } from "./tactics";
@@ -42,7 +46,7 @@ const otherSide = (side: Side): Side => (side === "home" ? "away" : "home");
  * however the time is split across `advanceTo` calls. Changes applied with `applyChange` at the
  * same moments are part of that reproducible input.
  */
-export const createMatch = (initialInput: MatchInput, seed: number): Match => {
+const createZoneMatch = (initialInput: MatchInputV1, seed: number): Match => {
   let input = initialInput;
   const changes: TimedMatchChange[] = [];
   const rng = createRng(seed);
@@ -144,3 +148,14 @@ export const createMatch = (initialInput: MatchInput, seed: number): Match => {
     resume,
   };
 };
+
+/**
+ * Creates a match with the engine the input asks for: a v1 input (no `engineVersion`, or 1)
+ * returns a zone-engine `Match`, a v2 input (`engineVersion: 2`) an `ActionMatch`.
+ */
+export function createMatch(input: MatchInputV1, seed: number): Match;
+export function createMatch(input: MatchInputV2, seed: number): ActionMatch;
+export function createMatch(input: MatchInput, seed: number): Match | ActionMatch;
+export function createMatch(input: MatchInput, seed: number): Match | ActionMatch {
+  return isMatchInputV2(input) ? createActionMatch(input, seed) : createZoneMatch(input, seed);
+}

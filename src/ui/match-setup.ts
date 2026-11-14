@@ -1,4 +1,4 @@
-import type { MatchInput, PerSide } from "../engine";
+import type { MatchInputV1, PerSide } from "../engine";
 import {
   type Career,
   type Club,
@@ -11,7 +11,7 @@ import {
 
 /** Everything the match screen needs to play one fixture of the career. */
 export type MatchSetup = {
-  input: MatchInput;
+  input: MatchInputV1;
   seed: number;
   colours: PerSide<string>;
   squads: PerSide<readonly SquadPlayer[]>;

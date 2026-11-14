@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type MatchInput, NEUTRAL_TACTICS, type PerSide } from "../../engine";
+import { type MatchInputV1, NEUTRAL_TACTICS, type PerSide } from "../../engine";
 import type { SquadPlayer } from "../../game";
 import { createMemoryLocaleStore } from "../../platform";
 import { I18nProvider } from "../i18n-provider";
@@ -9,7 +9,7 @@ import type { TerrainRenderer } from "./terrain-renderer";
 
 // A fixed fictional fixture used only by these tests.
 const demoMatch: {
-  input: MatchInput;
+  input: MatchInputV1;
   seed: number;
   colours: PerSide<string>;
   squads: PerSide<readonly SquadPlayer[]>;
