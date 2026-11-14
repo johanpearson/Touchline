@@ -78,6 +78,7 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 - `FileTransfer` (`src/shared`): `download(name, text)` and `pickFile()`. `createBrowserFileTransfer()` uses Blob + object URL (revoked after the click) and a hidden file input; `createMemoryFileTransfer()` records downloads and returns queued files for tests. A Tauri adapter can replace the browser one.
 - Autosave (`src/ui/autosave-queue.ts`): slot `autosave`, written after the career is created, after every completed matchday and after starting the next season, never mid-match. `createAutosaveQueue(store, now)` runs writes strictly one after another so the last state wins; `save(game, "new" | "continue")` starts a new `createdAt` or keeps the current one (`adopt` marks a loaded envelope as the one to continue). A failed write rejects only its own promise and never blocks play.
 - Startup (`src/ui/find-continue-candidate.ts`): `findContinueCandidate(store)` reads the autosave (or the newest valid save by `savedAt` when there is none) through `readEnvelope` and `parseCareer`. A damaged or newer-version autosave is returned as an error and never falls back to another slot. Nothing is loaded until the user presses Continue.
+- E2E (`e2e/persistence.spec.ts`): reload and continue (tagged `@smoke`), manual slot save and load, export a slot and import the downloaded file into another slot, and rejecting a garbage file. Each test runs in a fresh browser context, so IndexedDB starts empty.
 
 ## Desktop later (Tauri)
 
