@@ -29,6 +29,22 @@ jobs:
           path: reports/mutation
           if-no-files-found: ignore
 
+  property-tests:
+    name: Property tests (engine, many runs)
+    runs-on: ubuntu-latest
+    env:
+      FC_RUNS: "500"
+      # A fresh set of inputs each night; a failure prints the seed, reproduce it with FC_SEED.
+      FC_SEED: ${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run src/engine/action/action-match.property.test.ts
+
   e2e-full:
     name: E2E full
     runs-on: ubuntu-latest
