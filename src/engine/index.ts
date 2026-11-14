@@ -28,6 +28,12 @@ export type {
   ActionMatchState,
   TimedActionMatchChange,
 } from "./action/action-match";
+export type {
+  ActionPlayerLine,
+  ActionStats,
+  ActionTeamStats,
+} from "./action/action-stats";
+export { computeActionStats } from "./action/action-stats";
 export {
   type ActionOption,
   type ActorContext,
@@ -62,6 +68,8 @@ export {
   PITCH_WIDTH,
   toNormalised,
 } from "./action/pitch-metres";
+export type { RatedPlayer } from "./action/player-ratings";
+export { playerRatings } from "./action/player-ratings";
 export { pressureOn, type Shapes } from "./action/pressure";
 export { type CarryInput, resolveCarry } from "./action/resolve-carry";
 export { type ChallengeInput, resolveChallenge } from "./action/resolve-challenge";
