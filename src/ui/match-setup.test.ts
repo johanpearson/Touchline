@@ -24,14 +24,56 @@ const nextFixtureOf = (career: Career) => {
 };
 
 const playToFullTime = (setup: ReturnType<typeof matchSetupFor>) => {
-  const match = createMatch(setup.input, setup.seed);
+  const match =
+    setup.engineVersion === 2
+      ? createMatch(setup.input, setup.seed)
+      : createMatch(setup.input, setup.seed);
   match.advanceTo(1_000_000);
   match.resume();
   match.advanceTo(1_000_000);
   return match.state.score;
 };
 
+const aV2Career = (seed = 5): Career => {
+  const league = generateLeague({ seed });
+  if (!league.ok) throw new Error("league");
+  const created = createCareer({
+    seed,
+    userClubId: league.league.clubs[0]?.id ?? "",
+    engineVersion: 2,
+  });
+  if (!created.ok) throw new Error("career");
+  return created.career;
+};
+
 describe("matchSetupFor", () => {
+  it("plays the zone engine for a zone career", () => {
+    const career = aCareer();
+    expect(matchSetupFor(career, nextFixtureOf(career)).engineVersion).toBe(1);
+  });
+
+  it("sets up the action engine for an action career, with the names of every player", () => {
+    const career = aV2Career();
+    const fixture = nextFixtureOf(career);
+    const setup = matchSetupFor(career, fixture);
+    if (setup.engineVersion !== 2) throw new Error("expected an action engine setup");
+    expect(setup.input.engineVersion).toBe(2);
+    const sheet = setup.input.home;
+    for (const player of [...sheet.starters, ...sheet.bench]) {
+      expect(setup.players[player.id]).toBe(
+        career.league.players.find((p) => p.id === player.id)?.name,
+      );
+    }
+  });
+
+  it("plays the same score as the quick sim for an action career", () => {
+    const career = aV2Career();
+    const fixture = nextFixtureOf(career);
+    const quick = simulateFixture(career, fixture);
+    const score = playToFullTime(matchSetupFor(career, fixture));
+    expect(score).toEqual({ home: quick.homeGoals, away: quick.awayGoals });
+  });
+
   it("plays the same score as the quick sim for the same fixture and seed", () => {
     const career = aCareer();
     const fixture = nextFixtureOf(career);

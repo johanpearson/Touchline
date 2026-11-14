@@ -168,7 +168,6 @@ export const sv = {
   "hub.venue.away": "Borta mot",
   "hub.playMatch": "Spela match",
   "hub.quickSim": "Snabbsimulera",
-  "hub.playMatchUnavailable": "Matchvyn stöder inte actionmotorn än. Använd snabbsimulering.",
   "hub.seasonComplete": "Säsongen är slut",
   "hub.toSeasonEnd": "Se säsongssammanfattningen",
   "results.title": "Resultat omgång {matchday}",

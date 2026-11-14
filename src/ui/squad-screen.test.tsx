@@ -331,6 +331,7 @@ describe("squad plan and match setup", () => {
     const fixture = getNextFixture(career.season, career.userClubId);
     if (!fixture) throw new Error("fixture");
     const setup = matchSetupFor(career, fixture);
+    if (setup.engineVersion !== 1) throw new Error("expected a zone engine setup");
     const tactics =
       fixture.homeClubId === career.userClubId ? setup.input.homeTactics : setup.input.awayTactics;
     expect(tactics).toEqual({

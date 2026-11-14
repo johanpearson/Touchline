@@ -206,28 +206,25 @@ describe("new career screen", () => {
     renderApp();
     startCareer(leagueFor(11).clubs[0]?.id ?? "");
     expect(screen.getByTestId("play-match")).toBeTruthy();
-    expect(screen.queryByTestId("play-match-unavailable")).toBeNull();
   });
 
   it("starts an action engine career when chosen and quick-sims its matchday", () => {
     renderApp();
     fireEvent.change(screen.getByTestId("engine-version"), { target: { value: "2" } });
     startCareer(leagueFor(11).clubs[0]?.id ?? "");
-    expect(screen.queryByTestId("play-match")).toBeNull();
-    expect(screen.getByTestId("play-match-unavailable")).toBeTruthy();
+    expect(screen.getByTestId("play-match")).toBeTruthy();
 
     fireEvent.click(screen.getByTestId("quick-sim"));
 
     expect(window.location.hash).toBe("#/results");
   });
 
-  it("sends an action engine career away from the zone-only match view", () => {
+  it("plays an action engine career's match in the match view", () => {
     renderApp();
     fireEvent.change(screen.getByTestId("engine-version"), { target: { value: "2" } });
     startCareer(leagueFor(11).clubs[0]?.id ?? "");
     goTo("#/match");
-    expect(screen.queryByTestId("match-screen")).toBeNull();
-    expect(screen.getByTestId("career-hub")).toBeTruthy();
+    expect(screen.getByTestId("match-screen")).toBeTruthy();
   });
 });
 

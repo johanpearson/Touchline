@@ -1,27 +1,26 @@
 import { useMemo, useState } from "react";
-import { generateCommentary } from "../../commentary";
-import type { MatchInputV1, MatchState, PerSide } from "../../engine";
-import { computeMatchStats, createMatch } from "../../engine";
+import { generateActionCommentary, generateCommentary } from "../../commentary";
+import type { EngineVersion, MatchInputV1, MatchInputV2, MatchState, PerSide } from "../../engine";
+import { computeMatchStats, createMatch, toZoneEvents } from "../../engine";
 import type { MatchReport, SquadPlayer } from "../../game";
 import { attributeGoalScorers } from "../../game";
 import { useI18n } from "../i18n-provider";
-import { type AppliedHalfTimePlan, type HalfTimeEditor, HalfTimePanel } from "./half-time-panel";
-import { MatchFeed } from "./match-feed";
-import { MomentumChart } from "./momentum-chart";
-import { MomentumTerrain } from "./momentum-terrain";
-import { Scoreboard } from "./scoreboard";
-import { SpeedControls } from "./speed-controls";
-import { StatsPanel } from "./stats-panel";
+import type { AppliedHalfTimePlan, HalfTimeEditor } from "./half-time-panel";
+import { MatchLayout } from "./match-layout";
 import { terrainEvents } from "./terrain-events";
 import type { TerrainRendererFactory } from "./terrain-renderer";
 import { useMatchPlayback } from "./use-match-playback";
-import "./match-screen.css";
 
-export type MatchScreenProps = {
-  input: MatchInputV1;
+/** What `onContinue` gets at full time. */
+export type FinishedMatch = {
+  score: MatchState["score"];
+  engineVersion: EngineVersion;
+};
+
+type MatchScreenCommon = {
   seed: number;
   colours: PerSide<string>;
-  /** The players goals are credited to, by position and finishing. */
+  /** The players goals are credited to, by position and finishing (zone engine). */
   squads: PerSide<readonly SquadPlayer[]>;
   /** Replaces the three.js renderer, for tests. */
   createRenderer?: TerrainRendererFactory;
@@ -30,17 +29,43 @@ export type MatchScreenProps = {
   /** Lets the user change their side at half-time. Without it half-time offers no changes. */
   halfTimeEditor?: HalfTimeEditor;
   /**
-   * When given, a "Continue" button appears at full time and calls this with the final score and,
-   * if the user made changes at half-time, the report of minutes played.
+   * When given, a "Continue" button appears at full time and calls this with the final score and
+   * engine version and, if the user made changes at half-time, the report of minutes played.
    */
-  onContinue?: (score: MatchState["score"], report?: MatchReport) => void;
+  onContinue?: (finished: FinishedMatch, report?: MatchReport) => void;
+};
+
+export type MatchScreenProps = MatchScreenCommon &
+  (
+    | { engineVersion?: 1; input: MatchInputV1 }
+    | {
+        engineVersion: 2;
+        input: MatchInputV2;
+        /** Display name of every player who can appear in the log, by player id. */
+        players: Readonly<Record<string, string>>;
+      }
+  );
+
+type ZoneProps = MatchScreenCommon & { input: MatchInputV1 };
+type ActionProps = MatchScreenCommon & {
+  input: MatchInputV2;
+  players: Readonly<Record<string, string>>;
 };
 
 /**
  * The match screen: terrain, scoreboard, momentum chart, stats panel, feed and speed controls.
- * The match is created once from `input` and `seed`; give the component a new `key` to start another.
+ * The match is created once from `input` and `seed` on the engine the setup names (the zone engine
+ * unless `engineVersion` is 2); give the component a new `key` to start another.
  */
-export function MatchScreen({
+export function MatchScreen(props: MatchScreenProps) {
+  return props.engineVersion === 2 ? (
+    <ActionMatchScreen {...props} />
+  ) : (
+    <ZoneMatchScreen {...props} />
+  );
+}
+
+function ZoneMatchScreen({
   input,
   seed,
   colours,
@@ -49,23 +74,25 @@ export function MatchScreen({
   tickMs,
   halfTimeEditor,
   onContinue,
-}: MatchScreenProps) {
-  const { t, locale } = useI18n();
+}: ZoneProps) {
+  const { locale } = useI18n();
   const [match] = useState(() => createMatch(input, seed));
-  const { matchTime, state, events, paused, speed, setPaused, setSpeed, resume } = useMatchPlayback(
+  const { matchTime, state, events, eventCount, resume, ...playback } = useMatchPlayback(
     match,
     tickMs,
   );
   const [report, setReport] = useState<MatchReport | undefined>();
   const startSecondHalf = (plan?: AppliedHalfTimePlan) => {
     setReport(plan?.report);
-    // The v2 half-time change is wired up with the action match screen.
     resume(plan?.engineVersion === 1 ? plan.change : undefined);
   };
-  const stats = useMemo(() => computeMatchStats(events, matchTime), [events, matchTime]);
-  const shownEvents = useMemo(() => terrainEvents(events, state.period), [events, state.period]);
-  const halfTime = state.period === "halfTime";
+  // `events` is appended to in place; `eventCount` tells when it grew.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
+  const stats = useMemo(() => computeMatchStats(events, matchTime), [eventCount, matchTime]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
+  const shown = useMemo(() => terrainEvents(events, state.period), [eventCount, state.period]);
   const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   const lines = useMemo(
     () =>
       generateCommentary(
@@ -73,71 +100,81 @@ export function MatchScreen({
         { locale, names, scorers: attributeGoalScorers(events, squads, seed) },
         seed,
       ),
-    [events, locale, names, squads, seed],
+    [eventCount, locale, names, squads, seed],
   );
   return (
-    <div className="match-screen" data-testid="match-screen">
-      <Scoreboard
-        homeName={names.home}
-        awayName={names.away}
-        homeColour={colours.home}
-        awayColour={colours.away}
-        score={state.score}
-        period={state.period}
-        matchTime={matchTime}
-        events={events}
-      />
-      <div className="match-main">
-        <MomentumTerrain
-          events={shownEvents}
-          matchTime={matchTime}
-          homeColour={colours.home}
-          awayColour={colours.away}
-          createRenderer={createRenderer}
-          label={t("match.terrain")}
-        />
-        {halfTime && (
-          <HalfTimePanel
-            homeName={names.home}
-            awayName={names.away}
-            score={state.score}
-            stats={stats}
-            editor={halfTimeEditor}
-            onResume={startSecondHalf}
-          />
-        )}
-        {state.period === "fullTime" && onContinue && (
-          <button
-            type="button"
-            data-testid="continue"
-            onClick={() => onContinue(state.score, report)}
-          >
-            {t("match.continue")}
-          </button>
-        )}
-        <SpeedControls
-          paused={paused}
-          speed={speed}
-          onPausedChange={setPaused}
-          onSpeedChange={setSpeed}
-        />
-      </div>
-      <aside className="match-side">
-        {!halfTime && <StatsPanel stats={stats} />}
-        <MomentumChart
-          events={events}
-          matchTime={matchTime}
-          homeColour={colours.home}
-          awayColour={colours.away}
-        />
-        <MatchFeed
-          lines={lines}
-          events={events}
-          matchTime={matchTime}
-          homeColour={colours.home}
-          awayColour={colours.away}
-        />
-      </aside>
-    </div>
+    <MatchLayout
+      names={names}
+      colours={colours}
+      score={state.score}
+      period={state.period}
+      matchTime={matchTime}
+      events={events}
+      terrainEvents={shown}
+      stats={stats}
+      lines={lines}
+      playback={playback}
+      createRenderer={createRenderer}
+      halfTimeEditor={halfTimeEditor}
+      onResume={startSecondHalf}
+      onContinue={
+        onContinue && (() => onContinue({ score: state.score, engineVersion: 1 }, report))
+      }
+    />
+  );
+}
+
+function ActionMatchScreen({
+  input,
+  seed,
+  colours,
+  players,
+  createRenderer,
+  tickMs,
+  halfTimeEditor,
+  onContinue,
+}: ActionProps) {
+  const { locale } = useI18n();
+  const [match] = useState(() => createMatch(input, seed));
+  const { matchTime, state, events, eventCount, resume, ...playback } = useMatchPlayback(
+    match,
+    tickMs,
+  );
+  const [report, setReport] = useState<MatchReport | undefined>();
+  const startSecondHalf = (plan?: AppliedHalfTimePlan) => {
+    setReport(plan?.report);
+    resume(plan?.engineVersion === 2 ? plan.change : undefined);
+  };
+  // The terrain, the momentum chart and the stats only ever see the adapted events.
+  // `events` is appended to in place; `eventCount` tells when it grew.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
+  const zoneEvents = useMemo(() => toZoneEvents(events), [eventCount]);
+  const stats = useMemo(() => computeMatchStats(zoneEvents, matchTime), [zoneEvents, matchTime]);
+  const shown = useMemo(() => terrainEvents(zoneEvents, state.period), [zoneEvents, state.period]);
+  const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
+  const lines = useMemo(
+    () => generateActionCommentary(events, { locale, names, players }, seed),
+    [eventCount, locale, names, players, seed],
+  );
+  return (
+    <MatchLayout
+      names={names}
+      colours={colours}
+      score={state.score}
+      period={state.period}
+      matchTime={matchTime}
+      events={zoneEvents}
+      terrainEvents={shown}
+      stats={stats}
+      lines={lines}
+      playback={playback}
+      createRenderer={createRenderer}
+      halfTimeEditor={halfTimeEditor}
+      onResume={startSecondHalf}
+      onContinue={
+        onContinue && (() => onContinue({ score: state.score, engineVersion: 2 }, report))
+      }
+    />
   );
 }

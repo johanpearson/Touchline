@@ -37,13 +37,9 @@ export function CareerHubScreen() {
             {t(home ? "hub.venue.home" : "hub.venue.away")} {opponent?.name}
           </p>
           <div className="next-match-actions">
-            {career.engineVersion === 1 ? (
-              <a className="button" data-testid="play-match" href={hrefFor({ name: "match" })}>
-                {t("hub.playMatch")}
-              </a>
-            ) : (
-              <p data-testid="play-match-unavailable">{t("hub.playMatchUnavailable")}</p>
-            )}
+            <a className="button" data-testid="play-match" href={hrefFor({ name: "match" })}>
+              {t("hub.playMatch")}
+            </a>
             <button type="button" data-testid="quick-sim" onClick={quickSim}>
               {t("hub.quickSim")}
             </button>

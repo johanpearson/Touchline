@@ -1,8 +1,12 @@
 import { useMemo } from "react";
-import type { MatchState } from "../engine";
 import { getNextFixture, type MatchReport, planHalfTime, type Result } from "../game";
 import { matchSetupFor } from "./match-setup";
-import { type HalfTimeEditor, MatchScreen, type MatchScreenProps } from "./match-view";
+import {
+  type FinishedMatch,
+  type HalfTimeEditor,
+  MatchScreen,
+  type MatchScreenProps,
+} from "./match-view";
 
 import { Redirect } from "./redirect";
 import { hrefFor } from "./routes";
@@ -22,8 +26,7 @@ export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
     () => (career && fixture ? matchSetupFor(career, fixture) : null),
     [career, fixture],
   );
-  // The match view only plays the zone engine until the action engine gets its view (#161, #163).
-  if (!career || !fixture || !setup || career.engineVersion !== 1) {
+  if (!career || !fixture || !setup) {
     return <Redirect to={{ name: "home" }} />;
   }
 
@@ -37,14 +40,14 @@ export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
     plan: (changes) => planHalfTime(career, fixture, changes),
   };
 
-  const finish = (score: MatchState["score"], report?: MatchReport) => {
+  const finish = ({ score, engineVersion }: FinishedMatch, report?: MatchReport) => {
     const result: Result = {
       fixtureId: fixture.id,
       homeClubId: fixture.homeClubId,
       awayClubId: fixture.awayClubId,
       homeGoals: score.home,
       awayGoals: score.away,
-      engineVersion: career.engineVersion,
+      engineVersion,
     };
     if (completeMatch(result, report) === null) window.location.hash = hrefFor({ name: "results" });
   };
