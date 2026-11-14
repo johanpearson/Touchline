@@ -39,7 +39,7 @@ export const createActionMatch = (input: MatchInputV2, seed: number): ActionMatc
   let time = 0;
   let periodEnd = HALF_SECONDS + addedSeconds(FIRST_HALF_ADDED_MINUTES);
   const secondHalfAdded = addedSeconds(SECOND_HALF_ADDED_MINUTES);
-  let play: PlayState = kickoffPlay(firstKickoff, { home: 0, away: 0 });
+  let play: PlayState = kickoffPlay(firstKickoff, { home: 0, away: 0 }, { home: 0, away: 0 });
   let nextActionAt = 0;
 
   const act = (at: number): void => {
@@ -92,7 +92,7 @@ export const createActionMatch = (input: MatchInputV2, seed: number): ActionMatc
   const resume = (): void => {
     if (period !== "halfTime") throw new Error(`Cannot resume from ${period}`);
     const team = otherSide(firstKickoff);
-    play = kickoffPlay(team, play.score);
+    play = kickoffPlay(team, play.score, play.fouls);
     periodChange(time, "secondHalf");
     periodEnd = time + HALF_SECONDS + secondHalfAdded;
     act(time);
@@ -109,6 +109,7 @@ export const createActionMatch = (input: MatchInputV2, seed: number): ActionMatc
     possession: play.possession,
     ball: play.ball,
     score: { ...play.score },
+    fouls: { ...play.fouls },
   });
 
   return {

@@ -1,7 +1,7 @@
 import type { Period, Side } from "../match-state";
 import type { Rng } from "../rng";
 import { actionDuration } from "./action-duration";
-import type { ActionEvent, PassEvent } from "./action-event";
+import type { ActionEvent, PassEvent, PassVariant, SetPieceVariant } from "./action-event";
 import { buildOptions } from "./build-options";
 import { chooseOption } from "./choose-option";
 import { PENALTY_XG } from "./decision-constants";
@@ -17,11 +17,20 @@ import { resolveChallenge } from "./resolve-challenge";
 import { resolveClearance } from "./resolve-clearance";
 import { resolvePass } from "./resolve-pass";
 import { resolveShot } from "./resolve-shot";
-import { restartTaker } from "./restart-taker";
+import { FREE_KICK_SHOT_PRESSURE } from "./set-piece-constants";
+import { setPieceShape } from "./set-piece-shape";
+import { shotXg, toAttackingFrame } from "./shot-xg";
 import { buildSnapshot } from "./snapshot";
 import { phaseOf } from "./team-phase";
 import { teamShape } from "./team-shape";
 import type { TeamSheet } from "./team-sheet";
+
+/** The first action of a dead ball: a cross from a corner, a short throw, a long goal kick. */
+const FIRST_PASS: Partial<Record<SetPieceVariant, PassVariant>> = {
+  corner: "cross",
+  throwIn: "short",
+  goalKick: "long",
+};
 
 const CENTRE: Point = { x: PITCH_LENGTH / 2, y: PITCH_WIDTH / 2 };
 const other = (side: Side): Side => (side === "home" ? "away" : "home");
@@ -55,13 +64,18 @@ export const kickoffFor = (team: Side): PendingRestart => ({
 });
 
 /** The state at the start of a half: the ball on the centre spot, a kickoff waiting. */
-export const kickoffPlay = (team: Side, score: PlayState["score"]): PlayState => ({
+export const kickoffPlay = (
+  team: Side,
+  score: PlayState["score"],
+  fouls: PlayState["fouls"],
+): PlayState => ({
   possession: team,
   ball: CENTRE,
   restart: kickoffFor(team),
   lastType: "none",
   actionsSinceTurnover: NO_RECENT_TURNOVER,
   score,
+  fouls,
 });
 
 const sheetOf = (input: MatchInputV2, side: Side): TeamSheet =>
@@ -127,6 +141,7 @@ const afterResolution = (
     lastType: type,
     actionsSinceTurnover: turnover ? 0 : play.actionsSinceTurnover + 1,
     score: goalBy === undefined ? play.score : { ...play.score, [goalBy]: play.score[goalBy] + 1 },
+    fouls: play.fouls,
   };
 };
 
@@ -140,15 +155,17 @@ const nearestSlot = (shape: readonly Point[], ball: Point): number =>
     0,
   );
 
-/** Takes the pending restart: the taker is chosen and the set-up is the plain shape (set pieces come later). */
+/** Takes the pending restart: the engine-owned set-up of its kind, with the taker chosen from attributes. */
 const takeRestart = (ctx: ActionContext, restart: PendingRestart): ActionResult => {
   const { input, play, sim } = ctx;
   const ball = restart.variant === "penalty" ? penaltySpot(restart.team) : restart.position;
   const dead: PlayState = { ...play, ball, lastType: "setPiece" };
-  const shapes = shapesFor(input, { ...dead, possession: restart.team }, ball);
+  const layout = setPieceShape(restart.variant, restart.team, ball, {
+    home: input.home,
+    away: input.away,
+  });
   const sheet = sheetOf(input, restart.team);
-  const slot = restartTaker(restart.variant, sheet.starters, shapes[restart.team], ball);
-  const placed = withCarrier(shapes, restart.team, slot, ball);
+  const slot = layout.taker;
   const event: ActionEvent = {
     type: "setPiece",
     variant: restart.variant,
@@ -160,7 +177,7 @@ const takeRestart = (ctx: ActionContext, restart: PendingRestart): ActionResult 
     from: ball,
     to: ball,
     pressure: 0,
-    snapshot: buildSnapshot(placed, ball, ctx.presentation),
+    snapshot: buildSnapshot(layout, ball, ctx.presentation),
   };
   const next: PlayState = {
     ...dead,
@@ -168,6 +185,7 @@ const takeRestart = (ctx: ActionContext, restart: PendingRestart): ActionResult 
     slot,
     restart: undefined,
     penalty: restart.variant === "penalty",
+    setUp: { variant: restart.variant, layout },
     actionsSinceTurnover: restart.team === play.possession ? play.actionsSinceTurnover + 1 : 0,
   };
   const duration = actionDuration("setPiece", sheet.tactics.tempo, sim);
@@ -188,7 +206,7 @@ export const playAction = (ctx: ActionContext): ActionResult => {
   const sheet = sheetOf(input, side);
   const foeSheet = sheetOf(input, foe);
   const ball = play.ball;
-  const raw = shapesFor(input, play, ball);
+  const raw: Shapes = play.setUp?.layout ?? shapesFor(input, play, ball);
   const slot = play.slot ?? nearestSlot(raw[side], ball);
   const shapes = withCarrier(raw, side, slot, ball);
   const carrier = sheet.starters[slot] as TeamSheet["starters"][number];
@@ -211,7 +229,7 @@ export const playAction = (ctx: ActionContext): ActionResult => {
       duration: actionDuration(type, sheet.tactics.tempo, sim),
     };
   };
-  const shoot = (xg: number, penalty: boolean): ActionResult => {
+  const shoot = (xg: number, penalty: boolean, shotPressure = pressure): ActionResult => {
     const resolution = resolveShot(
       {
         side,
@@ -221,7 +239,7 @@ export const playAction = (ctx: ActionContext): ActionResult => {
         keeper,
         blockers: outfieldOpponents,
         xg,
-        pressure: penalty ? 0 : pressure,
+        pressure: penalty ? 0 : shotPressure,
         penalty,
       },
       sim,
@@ -244,7 +262,52 @@ export const playAction = (ctx: ActionContext): ActionResult => {
     return marked === previous ? result : { ...result, replacedPrevious: marked as PassEvent };
   };
 
+  const pass = (target: number, to: Point, variant: PassVariant): ActionResult => {
+    const receiver = sheet.starters[target] as TeamSheet["starters"][number];
+    const resolution = resolvePass(
+      {
+        side,
+        passer: carrier,
+        receiverSlot: target,
+        receiver,
+        variant,
+        from: ball,
+        to,
+        pressure,
+        opponents,
+      },
+      sim,
+    );
+    const interceptor =
+      resolution.outcome === "intercepted" && resolution.possession.slot !== undefined
+        ? foeSheet.starters[resolution.possession.slot]
+        : undefined;
+    const event: ActionEvent = {
+      ...base,
+      type: "pass",
+      team: side,
+      actor: carrier.id,
+      target: receiver.id,
+      variant,
+      outcome: resolution.outcome,
+      to: resolution.ball,
+      ...(interceptor === undefined ? {} : { opponent: interceptor.id }),
+    };
+    return finish([event], resolution);
+  };
+
   if (play.penalty === true) return shoot(PENALTY_XG, true);
+
+  const setUp = play.setUp;
+  if (setUp?.variant === "freeKick" && setUp.layout.wall.length > 0) {
+    const xg = shotXg(toAttackingFrame(side, ball), FREE_KICK_SHOT_PRESSURE);
+    return shoot(xg, false, FREE_KICK_SHOT_PRESSURE);
+  }
+  const firstPass = setUp === undefined ? undefined : FIRST_PASS[setUp.variant];
+  if (setUp !== undefined && firstPass !== undefined && setUp.layout.targets.length > 0) {
+    const target = setUp.layout.targets[sim.int(0, setUp.layout.targets.length - 1)] as number;
+    return pass(target, shapes[side][target] as Point, firstPass);
+  }
 
   const challenger = nearest(outfieldOpponents, ball);
   if (challenger !== undefined && sim.next() < CHALLENGE_PRESSURE_GAIN * pressure) {
@@ -270,7 +333,11 @@ export const playAction = (ctx: ActionContext): ActionResult => {
         outcome: resolution.restart?.variant === "penalty" ? "penalty" : "freeKick",
         to: ball,
       };
-      return finish([foul], resolution);
+      const result = finish([foul], resolution);
+      return {
+        ...result,
+        play: { ...result.play, fouls: { ...play.fouls, [foe]: play.fouls[foe] + 1 } },
+      };
     }
     const tackle: ActionEvent = {
       ...base,
@@ -291,39 +358,8 @@ export const playAction = (ctx: ActionContext): ActionResult => {
   switch (option.type) {
     case "shot":
       return shoot(option.xg, false);
-    case "pass": {
-      const receiver = sheet.starters[option.target] as TeamSheet["starters"][number];
-      const resolution = resolvePass(
-        {
-          side,
-          passer: carrier,
-          receiverSlot: option.target,
-          receiver,
-          variant: option.variant,
-          from: ball,
-          to: option.to,
-          pressure,
-          opponents,
-        },
-        sim,
-      );
-      const interceptor =
-        resolution.outcome === "intercepted" && resolution.possession.slot !== undefined
-          ? foeSheet.starters[resolution.possession.slot]
-          : undefined;
-      const event: ActionEvent = {
-        ...base,
-        type: "pass",
-        team: side,
-        actor: carrier.id,
-        target: receiver.id,
-        variant: option.variant,
-        outcome: resolution.outcome,
-        to: resolution.ball,
-        ...(interceptor === undefined ? {} : { opponent: interceptor.id }),
-      };
-      return finish([event], resolution);
-    }
+    case "pass":
+      return pass(option.target, option.to, option.variant);
     case "carry": {
       const resolution = resolveCarry(
         {
