@@ -30,4 +30,14 @@ describe("restartTaker", () => {
     expect(restartTaker("corner", starters, shape, { x: 105, y: 0 })).toBe(7);
     expect(restartTaker("kickoff", sheet.starters, shape, { x: 52.5, y: 34 })).toBe(1);
   });
+
+  it("adds vision to passing for corners and free kicks but not for the kickoff", () => {
+    const starters = sheet.starters.map((p, i) =>
+      i === 5 ? anEnginePlayer(p.id).withAttribute("vision", 18).build() : p,
+    );
+
+    expect(restartTaker("corner", starters, shape, { x: 105, y: 0 })).toBe(5);
+    expect(restartTaker("freeKick", starters, shape, { x: 80, y: 20 })).toBe(5);
+    expect(restartTaker("kickoff", starters, shape, { x: 52.5, y: 34 })).toBe(1);
+  });
 });

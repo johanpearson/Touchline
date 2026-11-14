@@ -13,6 +13,8 @@ export type ActionMatchState = {
   /** Ball position in metres. */
   ball: Point;
   score: Record<Side, number>;
+  /** Fouls committed by each side so far. */
+  fouls: Record<Side, number>;
 };
 
 /** New starters (a substitution) and/or new tactics for one side, applied from the next action. */
