@@ -22,7 +22,10 @@ export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
     () => (career && fixture ? matchSetupFor(career, fixture) : null),
     [career, fixture],
   );
-  if (!career || !fixture || !setup) return <Redirect to={{ name: "home" }} />;
+  // The match view only plays the zone engine until the action engine gets its view (#161, #163).
+  if (!career || !fixture || !setup || career.engineVersion !== 1) {
+    return <Redirect to={{ name: "home" }} />;
+  }
 
   const club = career.league.clubs.find((c) => c.id === career.userClubId);
   const editor: HalfTimeEditor = {
@@ -41,6 +44,7 @@ export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
       awayClubId: fixture.awayClubId,
       homeGoals: score.home,
       awayGoals: score.away,
+      engineVersion: career.engineVersion,
     };
     if (completeMatch(result, report) === null) window.location.hash = hrefFor({ name: "results" });
   };

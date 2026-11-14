@@ -194,6 +194,41 @@ describe("new career screen", () => {
     expect(screen.getByTestId("career-hub")).toBeTruthy();
     expect(screen.getByTestId("hub-club-name").textContent).toBe(club.name);
   });
+
+  it("offers the match engine with the zone engine as the default", () => {
+    renderApp();
+    const select = screen.getByTestId("engine-version") as HTMLSelectElement;
+    expect(select.value).toBe("1");
+    expect(select.options).toHaveLength(2);
+  });
+
+  it("starts a zone engine career by default and shows play match", () => {
+    renderApp();
+    startCareer(leagueFor(11).clubs[0]?.id ?? "");
+    expect(screen.getByTestId("play-match")).toBeTruthy();
+    expect(screen.queryByTestId("play-match-unavailable")).toBeNull();
+  });
+
+  it("starts an action engine career when chosen and quick-sims its matchday", () => {
+    renderApp();
+    fireEvent.change(screen.getByTestId("engine-version"), { target: { value: "2" } });
+    startCareer(leagueFor(11).clubs[0]?.id ?? "");
+    expect(screen.queryByTestId("play-match")).toBeNull();
+    expect(screen.getByTestId("play-match-unavailable")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("quick-sim"));
+
+    expect(window.location.hash).toBe("#/results");
+  });
+
+  it("sends an action engine career away from the zone-only match view", () => {
+    renderApp();
+    fireEvent.change(screen.getByTestId("engine-version"), { target: { value: "2" } });
+    startCareer(leagueFor(11).clubs[0]?.id ?? "");
+    goTo("#/match");
+    expect(screen.queryByTestId("match-screen")).toBeNull();
+    expect(screen.getByTestId("career-hub")).toBeTruthy();
+  });
 });
 
 describe("career navigation", () => {

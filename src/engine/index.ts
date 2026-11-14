@@ -25,7 +25,9 @@ export { SNAPSHOT_PLAYER_COUNT } from "./action/action-event";
 export type {
   ActionMatch,
   ActionMatchChange,
+  ActionMatchOptions,
   ActionMatchState,
+  MatchDetail,
   TimedActionMatchChange,
 } from "./action/action-match";
 export type {
@@ -44,6 +46,7 @@ export {
   type ShotOption,
 } from "./action/build-options";
 export { chooseOption } from "./action/choose-option";
+export { createActionMatch } from "./action/create-action-match";
 export { MAX_SHOT_XG, PENALTY_XG } from "./action/decision-constants";
 export type {
   EngineAttributeName,

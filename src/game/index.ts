@@ -1,3 +1,4 @@
+export { addEngineVersion } from "./add-engine-version";
 export { addSquadPlanAndCondition } from "./add-squad-plan";
 export { attributeGoalScorers } from "./attribute-goal-scorers";
 export { autoPickLineup } from "./auto-pick-lineup";
@@ -24,6 +25,7 @@ export type { Formation } from "./formation";
 export { FORMATION_SHAPE, FORMATIONS } from "./formation";
 export type { PhaseRating } from "./formation-offsets";
 export { FORMATION_OFFSETS, MAX_FORMATION_OFFSET, PHASE_RATINGS } from "./formation-offsets";
+export { formationShape } from "./formation-shape";
 export type {
   ClubIdentity,
   ClubIdentityError,
@@ -49,7 +51,7 @@ export { isSeasonComplete } from "./is-season-complete";
 export type { League } from "./league";
 export type { Lineup, LineupError, LineupResult } from "./lineup";
 export { BENCH_SIZE, validateLineup } from "./lineup";
-export { matchInputFor, matchSeed } from "./match-input-for";
+export { matchInputFor, matchInputV1For, matchInputV2For, matchSeed } from "./match-input-for";
 export type { CareerParseError, CareerParseResult } from "./parse-career";
 export { parseCareer } from "./parse-career";
 export { pickBestEleven } from "./pick-best-eleven";
@@ -82,5 +84,6 @@ export type { NextSeasonResult } from "./start-next-season";
 export { startNextSeason } from "./start-next-season";
 export type { SummaryOptions } from "./summarise-season";
 export { summariseSeason } from "./summarise-season";
+export { toEngineBench, toEnginePlayers } from "./to-engine-players";
 export { toSquadPlayer } from "./to-squad-player";
 export type { MatchReport } from "./update-condition";

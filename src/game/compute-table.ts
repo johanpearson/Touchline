@@ -1,3 +1,5 @@
+import type { EngineVersion } from "../engine";
+
 /** Plain data for one played match. */
 export type Result = {
   fixtureId: string;
@@ -5,6 +7,8 @@ export type Result = {
   awayClubId: string;
   homeGoals: number;
   awayGoals: number;
+  /** The engine the match was played with (schema v4). Fixed when the match is created. */
+  engineVersion: EngineVersion;
 };
 
 export type TableRow = {

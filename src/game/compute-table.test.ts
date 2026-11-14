@@ -9,6 +9,7 @@ const aResult = (home: string, homeGoals: number, away: string, awayGoals: numbe
   awayClubId: away,
   homeGoals,
   awayGoals,
+  engineVersion: 1,
 });
 
 const tableOf = (clubIds: string[], results: Result[]) => {

@@ -4,7 +4,7 @@ import type { Career } from "./career";
 import { aCareer, deepFreeze } from "./career-builders";
 import { completeMatchday } from "./complete-matchday";
 import type { Fixture } from "./generate-fixtures";
-import { matchInputFor, matchSeed } from "./match-input-for";
+import { matchInputV1For, matchSeed } from "./match-input-for";
 import { planHalfTime } from "./plan-half-time";
 import type { Player } from "./player";
 import { ATTRIBUTE_NAMES } from "./player";
@@ -50,7 +50,7 @@ describe("planHalfTime", () => {
   it("gives the unchanged profile and tactics and 90 minutes to all starters without changes", () => {
     const career = deepFreeze(aCareer());
     const fixture = userFixtureOf(career);
-    const input = matchInputFor(career, fixture);
+    const input = matchInputV1For(career, fixture);
     const side = sideOf(career, fixture);
 
     const result = planHalfTime(career, fixture, { substitutions: [] });
@@ -231,6 +231,7 @@ describe("planHalfTime", () => {
       awayClubId: fixture.awayClubId,
       homeGoals: 1,
       awayGoals: 1,
+      engineVersion: 1 as const,
     };
 
     const done = completeMatchday(career, draw, result.report);
@@ -252,7 +253,7 @@ describe("planHalfTime", () => {
     if (!result.ok) throw new Error(result.error);
 
     const play = () => {
-      const match = createMatch(matchInputFor(career, fixture), matchSeed(career, fixture));
+      const match = createMatch(matchInputV1For(career, fixture), matchSeed(career, fixture));
       match.advanceTo(1_000_000);
       match.applyChange(result.change);
       match.resume();

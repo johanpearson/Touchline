@@ -80,6 +80,24 @@ describe("completeMatchday", () => {
     expect(completeMatchday(career, result)).toEqual({ ok: false, error: "wrong-matchday" });
   });
 
+  it("rejects a user result played on another engine than the career's", () => {
+    const career = aCareer(1, 2);
+    const v1Result = { ...userResultOf(career), engineVersion: 1 as const };
+
+    expect(completeMatchday(career, v1Result)).toEqual({
+      ok: false,
+      error: "wrong-engine-version",
+    });
+  });
+
+  it("simulates the other fixtures of an engine 2 career on engine 2", () => {
+    const career = aCareer(1, 2);
+
+    const done = complete(career);
+
+    expect(done.season.results.every((r) => r.engineVersion === 2)).toBe(true);
+  });
+
   it("rejects a result for an unknown fixture", () => {
     const career = aCareer();
     const result = { ...userResultOf(career), fixtureId: "nope" };
@@ -125,6 +143,20 @@ describe("completeMatchday", () => {
     expect(finished.season.results).toHaveLength(182);
     expect(table.ok && table.table.every((row) => row.played === 26)).toBe(true);
   });
+
+  it("plays an engine 2 season of 26 matchdays to the end within the time budget", () => {
+    // Budget: 13 background matches per matchday at about 50 ms each on a laptop (see
+    // "Performance and the fast path" in docs/architecture.md); tripled for slow CI runners.
+    const budgetMs = 26 * 13 * 50 * 3;
+    const start = performance.now();
+
+    const career = playSeason(aCareer(1, 2));
+
+    expect(performance.now() - start).toBeLessThan(budgetMs);
+    expect(career.season.results).toHaveLength(182);
+    expect(career.season.results.every((r) => r.engineVersion === 2)).toBe(true);
+    expect(career.season.currentMatchday).toBe(27);
+  }, 120_000);
 
   it("round-trips through JSON", () => {
     const career = complete(aCareer());

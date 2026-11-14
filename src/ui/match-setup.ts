@@ -3,7 +3,7 @@ import {
   type Career,
   type Club,
   type Fixture,
-  matchInputFor,
+  matchInputV1For,
   matchSeed,
   type SquadPlayer,
   toSquadPlayer,
@@ -45,7 +45,7 @@ export const matchSetupFor = (career: Career, fixture: Fixture): MatchSetup => {
   const home = clubOf(career, fixture.homeClubId);
   const away = clubOf(career, fixture.awayClubId);
   return {
-    input: matchInputFor(career, fixture),
+    input: matchInputV1For(career, fixture),
     seed: matchSeed(career, fixture),
     colours: coloursOf(home, away),
     squads: { home: squadOf(career, home), away: squadOf(career, away) },

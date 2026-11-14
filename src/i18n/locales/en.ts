@@ -49,6 +49,9 @@ export const en = {
   "newCareer.clubs": "Clubs",
   "newCareer.rating": "Rating",
   "newCareer.start": "Start career",
+  "newCareer.engine": "Match engine",
+  "newCareer.engine.1": "Zone engine (default)",
+  "newCareer.engine.2": "Action engine (experimental)",
   "save.continue": "Continue",
   "save.continueDetails": "{club}, season {season}, matchday {matchday}",
   "save.saving": "Saving...",
@@ -164,6 +167,8 @@ export const en = {
   "hub.venue.away": "Away at",
   "hub.playMatch": "Play match",
   "hub.quickSim": "Quick sim",
+  "hub.playMatchUnavailable":
+    "The match view does not support the action engine yet. Use quick sim.",
   "hub.seasonComplete": "Season complete",
   "hub.toSeasonEnd": "See the season summary",
   "results.title": "Matchday {matchday} results",

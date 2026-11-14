@@ -1,3 +1,4 @@
+import type { EngineVersion } from "../engine";
 import type { Result } from "./compute-table";
 import type { Fixture } from "./generate-fixtures";
 import type { League } from "./league";
@@ -28,6 +29,8 @@ export type Career = {
   squadPlan: SquadPlan;
   /** Fitness and form of every player in the league, by player id (schema v3). */
   condition: Record<string, PlayerCondition>;
+  /** The engine used for new matches: 1 is the zone engine, 2 the action engine (schema v4). */
+  engineVersion: EngineVersion;
 };
 
 export type CareerError = "unknown-club";
@@ -38,6 +41,7 @@ export type MatchdayError =
   | "season-complete"
   | "matchday-already-completed"
   | "wrong-matchday"
-  | "wrong-fixture";
+  | "wrong-fixture"
+  | "wrong-engine-version";
 
 export type MatchdayResult = { ok: true; career: Career } | { ok: false; error: MatchdayError };
