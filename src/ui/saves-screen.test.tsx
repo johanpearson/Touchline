@@ -158,7 +158,12 @@ describe("saves screen", () => {
 
   it("shows a corrupt slot with only a delete action and keeps the others usable", async () => {
     const store = createMemorySaveStore();
-    await store.save("slot-3", { schemaVersion: 1, createdAt: "2026-01-01T00:00:00Z", game: 42 });
+    await store.save("slot-3", {
+      schemaVersion: 1,
+      createdAt: "2026-01-01T00:00:00Z",
+      savedAt: "2026-01-01T00:00:00Z",
+      game: 42,
+    });
     mountApp(store);
     startCareer();
     await openSaves();
@@ -175,6 +180,7 @@ describe("saves screen", () => {
     await store.save("slot-1", {
       schemaVersion: 9999,
       createdAt: "2026-01-01T00:00:00Z",
+      savedAt: "2026-01-01T00:00:00Z",
       game: {},
     });
     mountApp(store);

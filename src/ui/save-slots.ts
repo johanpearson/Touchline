@@ -16,7 +16,7 @@ export type SlotSummary = {
   leagueName: string;
   season: number;
   matchday: number;
-  /** Time of the last write to the slot (`createdAt` of its envelope). */
+  /** Time of the last write to the slot (`savedAt` of its envelope). */
   savedAt: string;
 };
 
@@ -62,7 +62,7 @@ export const summariseSlot = (envelope: SaveEnvelope, career: Career): SlotSumma
   leagueName: career.league.name,
   season: career.season.number,
   matchday: career.season.currentMatchday,
-  savedAt: envelope.createdAt,
+  savedAt: envelope.savedAt,
 });
 
 /** Describes every slot. A damaged slot never fails the whole list. */
