@@ -12,6 +12,7 @@ import {
   CORNER_EDGE,
   CORNER_FAR_POST,
   CORNER_KEEPER,
+  CORNER_MARKER_GOALSIDE,
   CORNER_NEAR_POST,
   CORNER_PENALTY_SPOT,
   CORNER_POSTS,
@@ -35,6 +36,7 @@ import {
   WALL_SIZE,
   WALL_SPACING,
 } from "./set-piece-constants";
+import { MIN_PLAYER_DISTANCE } from "./shape-constants";
 import { toAttackingFrame } from "./shot-xg";
 import { teamShape } from "./team-shape";
 import type { TeamSheet } from "./team-sheet";
@@ -104,12 +106,30 @@ const fill = (
   return { points: result, slots };
 };
 
+/**
+ * The targets that keep `MIN_PLAYER_DISTANCE` from every `avoid` point. With `spreadOut`, an accepted
+ * target also counts as an obstacle for the later ones; without it (a wall) targets ignore each other.
+ */
+const clearOf = (targets: readonly Point[], avoid: readonly Point[], spreadOut = true): Point[] => {
+  const obstacles = [...avoid];
+  return targets.filter((t) => {
+    if (obstacles.some((o) => dist(o, t) < MIN_PLAYER_DISTANCE)) return false;
+    if (spreadOut) obstacles.push(t);
+    return true;
+  });
+};
+
 /** Applies `move` to every player not in `except`. */
 const mapOthers = (
   points: readonly Point[],
   except: readonly number[],
   move: (p: Point) => Point,
 ): Point[] => points.map((p, i) => (except.includes(i) ? p : move(p)));
+
+const clampToPitch = (p: Point): Point => ({
+  x: clamp(p.x, 0, PITCH_LENGTH),
+  y: clamp(p.y, 0, PITCH_WIDTH),
+});
 
 const keeperOnly = [0];
 
@@ -203,7 +223,7 @@ const corner = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
     [0, taker],
     [...runners, ...edge, ...cover],
   );
-  const goalside = [...runners, ...edge].map((p) => toPoint(p.x + MARKER_GOALSIDE, p.y));
+  const goalside = [...runners, ...edge].map((p) => toPoint(p.x + CORNER_MARKER_GOALSIDE, p.y));
   const defending = fill(
     opp.map((p, i) => (i === 0 ? at(CORNER_KEEPER) : p)),
     keeperOnly,
@@ -253,21 +273,26 @@ const freeKick = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
     toPoint(spot.x + uy * FREE_KICK_RUNNER_OFFSET, spot.y - ux * FREE_KICK_RUNNER_OFFSET),
     ...FREE_KICK_BOX_RUNNERS.map((r) => toPoint(r.x, CENTRE_Y + r.y)),
   ];
-  const ownPlaced = fill(ownTaker, [0, taker], runnerPoints);
+  const ownPlaced = fill(ownTaker, [0, taker], clearOf(runnerPoints, [spot]));
   const shift = clamp(
     (spot.y - CENTRE_Y) * FREE_KICK_KEEPER_SHIFT,
     -FREE_KICK_KEEPER_SHIFT_MAX,
     FREE_KICK_KEEPER_SHIFT_MAX,
   );
+  const keeper = toPoint(FREE_KICK_KEEPER_DEPTH, CENTRE_Y + shift);
+  const wallClear = clearOf(wallPoints.map(clampToPitch), [keeper], false);
   const wall = fill(
-    opp.map((p, i) => (i === 0 ? toPoint(FREE_KICK_KEEPER_DEPTH, CENTRE_Y + shift) : p)),
+    opp.map((p, i) => (i === 0 ? keeper : p)),
     keeperOnly,
-    wallPoints,
+    wallClear,
   );
   const boxMarkers = fill(
     wall.points,
     [0, ...wall.slots],
-    FREE_KICK_BOX_RUNNERS.map((r) => toPoint(r.x + MARKER_GOALSIDE, CENTRE_Y + r.y)),
+    clearOf(
+      FREE_KICK_BOX_RUNNERS.map((r) => toPoint(r.x + MARKER_GOALSIDE, CENTRE_Y + r.y)),
+      [keeper, ...wallClear],
+    ),
   );
   return {
     own: ownPlaced.points,
@@ -297,19 +322,15 @@ const penalty = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
   };
 };
 
-const clampToPitch = (p: Point): Point => ({
-  x: clamp(p.x, 0, PITCH_LENGTH),
-  y: clamp(p.y, 0, PITCH_WIDTH),
-});
-
 /**
  * The 22 positions of a dead ball for `kind` taken by `side` at `spot` (pitch metres). Built in the
  * taker's attacking frame from each side's plain `setPiece` shape: the roles of the kind (taker,
  * runners, wall, markers, pressing line) are put on fixed points with the nearest free players, the
  * others keep their plain positions with the limits of the kind (own half at a kickoff, outside the
  * box and the arc at a penalty) and are moved apart (`separate`) so they stand `MIN_PLAYER_DISTANCE`
- * from everyone; role points never move, so two role players can still be closer (a wall, a defender
- * on the post next to a marker), and the taker may stand next to anyone. The away side is the exact x-mirror. Pure and RNG-free: the taker
+ * from everyone; role points never move, so role points that would end up closer than `MIN_PLAYER_DISTANCE` (a free-kick
+ * runner or marker next to the wall or the keeper) are left out, and only the taker and the wall players
+ * among themselves may stand closer. The away side is the exact x-mirror. Pure and RNG-free: the taker
  * comes from attributes (`restartTaker`), the roles from distance with the lowest slot on ties.
  */
 export const setPieceShape = (

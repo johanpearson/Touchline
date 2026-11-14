@@ -54,6 +54,8 @@ export const CORNER_COUNTER_COVER = [
 ] as const;
 /** Defending a corner: the keeper, two players on the posts, markers a step goalside of the runners. */
 export const CORNER_KEEPER = { x: 104, y: 0 };
+/** At a corner the markers of the runners stand closer, so they keep clear of the players on the posts. */
+export const CORNER_MARKER_GOALSIDE = 0.5;
 export const CORNER_POSTS = [
   { x: 104.4, y: -3 },
   { x: 104.4, y: 3 },
