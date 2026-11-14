@@ -226,11 +226,11 @@ describe("createMatch dispatch", () => {
     expect(match.events[0]?.type).toBe("kickoff");
   });
 
-  it("returns a stub action match for engineVersion 2", () => {
+  it("returns an action match for engineVersion 2", () => {
     const match = createMatch(aMatchInputV2().build(), 1);
-    match.advanceTo(5400);
 
-    expect(match.events).toEqual([]);
-    expect(match.state.ball).toEqual({ x: 52.5, y: 34 });
+    expect(match.events[0]).toMatchObject({ type: "setPiece", variant: "kickoff" });
+    match.advanceTo(5400);
+    expect(match.events.length).toBeGreaterThan(100);
   });
 });

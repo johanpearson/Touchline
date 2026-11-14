@@ -47,7 +47,7 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 
 ## Action engine (v2, milestone M5b)
 
-Design for the action-level engine that replaces the zone engine (v1). Step 1 (types, dispatch and input validation in `src/engine/action/`) is built; `createMatch` returns a stub `ActionMatch` for a v2 input until the simulation lands. The issues of the epic "action-level match engine" (milestone M5b Action engine) implement it in order. Until the final issue, v1 behaves exactly as described under "Match engine" above.
+Design for the action-level engine that replaces the zone engine (v1). Step 1 (types, dispatch and input validation in `src/engine/action/`) is built; `createMatch` returns an `ActionMatch` for a v2 input. The issues of the epic "action-level match engine" (milestone M5b Action engine) implement it in order. Until the final issue, v1 behaves exactly as described under "Match engine" above.
 
 ### What v2 must stay compatible with
 
@@ -119,6 +119,10 @@ Decisions use the shape (pressure = weighted count of opponents within a few met
 - `resolveShot(input, rng)` (input holds the shooter, keeper, outfield defenders, xG and pressure): one draw picks the class. Below `goalChance` (xG x finishing factor x keeper factor) it is a goal; the rest is split between woodwork, blocked (needs a defender within `SHOT_BLOCK_RADIUS` of the lane), saved and missed. A save or a block draws once more: corner, catch or rebound for a save; corner or a loose ball for the blocker for a block. A miss gives a goal kick without a draw, woodwork a rebound. A rebound goes to the nearest of the shooter and the defenders.
 - A penalty uses `PENALTY_XG` (0.76) and `penalty: true` (no blockers); the keeper still decides.
 - `markKeyPasses(events)` sets `keyPass` on a completed pass whose very next action is a shot by its receiver on the same team.
+
+### Match loop
+
+Implemented in `create-action-match.ts` (periods, clock, added time) and `play-action.ts` (one action). Every action is one event at a fixed time; the next action follows `actionDuration` (2 to 4 s) later, so the log does not depend on how `advanceTo` is split. The match starts with a kickoff event at 0 s; a period ends with a `periodChange` event, and `resume` emits `periodChange` plus a kickoff for the side that did not start. Added time uses `fork("addedTime")` (same minutes as v1 for a seed). A goal is followed by a kickoff for the conceding side; out-of-play outcomes by the matching restart `setPiece` (taker from `restart-taker.ts`, plain shape until the set-pieces issue). Each action first draws a challenge chance from pressure (`CHALLENGE_PRESSURE_GAIN`): a tackle, or a `foul` event for a foul. A pass interception is the `pass` event with outcome `intercepted` and `opponent` set; a lost carry is the `carry` event with outcome `tackled`. The ball carrier is placed on the ball in the shapes. Snapshot jitter comes from `fork("action-presentation")` (`snapshot.ts`). `applyChange` records changes but applies none yet (tactics and substitutions come in their own issues).
 
 ### Performance and the fast path
 
