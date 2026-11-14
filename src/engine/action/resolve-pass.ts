@@ -17,6 +17,7 @@ import type { Challenger, Resolution } from "./open-play-types";
 import { exitPoint, restartAfterOutOfPlay } from "./out-of-play";
 import type { Point } from "./pitch-metres";
 import { interceptionChance, resolveInterception } from "./resolve-interception";
+import { distanceToSegment } from "./segment-distance";
 
 export type PassInput = {
   side: Side;
@@ -30,15 +31,6 @@ export type PassInput = {
   pressure: number;
   /** Every opponent on the pitch with their position. */
   opponents: readonly Challenger[];
-};
-
-const distanceToSegment = (p: Point, a: Point, b: Point): number => {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const lengthSquared = dx * dx + dy * dy;
-  const t =
-    lengthSquared === 0 ? 0 : clamp(((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared, 0, 1);
-  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
 };
 
 /** Opponents within `LANE_RADIUS` of the pass lane. */

@@ -131,3 +131,52 @@ export const ACTION_MIN_SECONDS = 2;
 export const ACTION_MAX_SECONDS = 4;
 /** The draw is raised to this power: below 1 gives longer actions, above 1 shorter ones. */
 export const TEMPO_DRAW_EXPONENT: Record<Tempo, number> = { slow: 0.7, normal: 1, fast: 1.5 };
+
+// Shots and xG
+/** Goal centre and width (metres). Posts are `GOAL_WIDTH / 2` either side of the centre line. */
+export const GOAL_WIDTH = 7.32;
+/** Logistic xG model: `logit = XG_INTERCEPT + XG_DISTANCE_GAIN * distance + XG_ANGLE_GAIN * angle` (angle in radians subtended by the posts). */
+export const XG_INTERCEPT = -1.2;
+export const XG_DISTANCE_GAIN = -0.15;
+export const XG_ANGLE_GAIN = 2;
+/** Share of xG lost at full pressure (0..1). */
+export const XG_PRESSURE_PENALTY = 0.5;
+/** Multiplies xG for headers. */
+export const XG_HEADER_FACTOR = 0.6;
+/** No open-play shot is worth more than this. */
+export const MAX_SHOT_XG = 0.6;
+/** A penalty is worth a fixed xG (the keeper still decides the outcome). */
+export const PENALTY_XG = 0.76;
+
+// Shot option weight
+/** Below this xG a shot is never chosen (weight 0). */
+export const SHOT_MIN_XG = 0.01;
+/** Option weight per unit of xG, before finishing and mentality. */
+export const SHOT_WEIGHT_GAIN = 12;
+/** Share of the shot weight that depends on finishing (an average 10 keeps 1). */
+export const SHOT_FINISHING_GAIN = 0.5;
+export const MENTALITY_SHOT: Record<Mentality, number> = {
+  defensive: 0.8,
+  balanced: 1,
+  attacking: 1.25,
+};
+
+// Shot resolution
+/** Goal chance = xG x finishing factor x keeper factor, clamped. */
+export const FINISHING_GOAL_GAIN = 0.6;
+export const KEEPER_GOAL_GAIN = 0.6;
+export const GOAL_CHANCE_MAX = 0.95;
+/** Weights that split the non-goal remainder between woodwork, blocked, saved and missed. */
+export const WOODWORK_WEIGHT = 0.03;
+export const SAVED_WEIGHT = 0.45;
+export const MISSED_WEIGHT = 0.4;
+export const BLOCKED_WEIGHT_PER_BLOCKER = 0.2;
+/** Opponents within this many metres of the shot lane can block it. */
+export const SHOT_BLOCK_RADIUS = 1.5;
+/** After a block: share that goes behind for a corner (the rest is a loose ball for the blocker). */
+export const BLOCK_CORNER_SHARE = 0.3;
+/** After a save: cumulative shares for a corner, then a catch; the rest is a rebound. */
+export const SAVE_CORNER_SHARE = 0.25;
+export const SAVE_CATCH_SHARE = 0.5;
+/** Metres in front of the goal line where a rebound lands. */
+export const REBOUND_DISTANCE = 6;

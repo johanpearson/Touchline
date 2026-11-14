@@ -113,3 +113,57 @@ describe("buildOptions", () => {
     expect(carry?.type === "carry" && carry.to.x).toBeLessThan(70);
   });
 });
+
+describe("buildOptions shot option", () => {
+  const shotOf = (options: ReturnType<typeof buildOptions>) =>
+    options.flatMap((o) => (o.type === "shot" ? [o] : []));
+  const near: Shapes = { home: [at(5, 34), at(94, 34), at(80, 30)], away: farAway };
+  const nearActor = (slot = 1): ActorContext => ({
+    side: "home",
+    slot,
+    players: players(near.home.length),
+  });
+
+  it("offers one shot aimed at the goal centre with its xG", () => {
+    const [shot] = shotOf(buildOptions(nearActor(), near, tactics()));
+    expect(shotOf(buildOptions(nearActor(), near, tactics()))).toHaveLength(1);
+    expect(shot?.from).toEqual(at(94, 34));
+    expect(shot?.to).toEqual(at(105, 34));
+    expect(shot?.xg).toBeCloseTo(0.1729, 4);
+    expect(shot?.weight).toBeGreaterThan(0);
+  });
+
+  it("aims at the away goal for the away side, using the mirrored xG", () => {
+    const away: Shapes = { home: farAway, away: [at(5, 34), at(11, 34)] };
+    const [shot] = shotOf(
+      buildOptions({ side: "away", slot: 1, players: players(2) }, away, tactics()),
+    );
+    expect(shot?.to).toEqual(at(0, 34));
+    expect(shot?.xg).toBeCloseTo(0.1729, 4);
+  });
+
+  it("gives practically no weight to shots from far away", () => {
+    const [shot] = shotOf(buildOptions(actor(3), shapes, tactics()));
+    expect(shot?.weight).toBe(0);
+  });
+
+  it("weighs better finishers and attacking mentality higher, defensive lower", () => {
+    const weight = (finishing: number, t: Partial<TeamTactics> = {}) => {
+      const ps = players(3);
+      ps[1] = anEnginePlayer("h1").withAttribute("finishing", finishing).build();
+      const ctx: ActorContext = { side: "home", slot: 1, players: ps };
+      return shotOf(buildOptions(ctx, near, tactics(t)))[0]?.weight ?? 0;
+    };
+    expect(weight(20)).toBeGreaterThan(weight(10));
+    expect(weight(10)).toBeGreaterThan(weight(1));
+    expect(weight(10, { mentality: "attacking" })).toBeGreaterThan(weight(10));
+    expect(weight(10, { mentality: "defensive" })).toBeLessThan(weight(10));
+  });
+
+  it("lowers the shot weight under pressure", () => {
+    const pressed: Shapes = { home: near.home, away: [at(95, 34), at(96, 35)] };
+    const free = shotOf(buildOptions(nearActor(), near, tactics()))[0]?.weight ?? 0;
+    const under = shotOf(buildOptions(nearActor(), pressed, tactics()))[0]?.weight ?? 0;
+    expect(under).toBeLessThan(free);
+  });
+});

@@ -35,8 +35,10 @@ export {
   type CarryOption,
   type ClearanceOption,
   type PassOption,
+  type ShotOption,
 } from "./action/build-options";
 export { chooseOption } from "./action/choose-option";
+export { MAX_SHOT_XG, PENALTY_XG } from "./action/decision-constants";
 export type {
   EngineAttributeName,
   EngineAttributes,
@@ -49,6 +51,7 @@ export {
   MIN_ENGINE_ATTRIBUTE,
 } from "./action/engine-player";
 export type { EngineVersion } from "./action/engine-version";
+export { markKeyPasses } from "./action/mark-key-passes";
 export type { MatchInputV2 } from "./action/match-input-v2";
 export type { Challenger, Possession, Resolution, Restart } from "./action/open-play-types";
 export type { Point } from "./action/pitch-metres";
@@ -65,6 +68,12 @@ export { type ChallengeInput, resolveChallenge } from "./action/resolve-challeng
 export { type ClearanceInput, resolveClearance } from "./action/resolve-clearance";
 export { type InterceptionInput, resolveInterception } from "./action/resolve-interception";
 export { type PassInput, resolvePass } from "./action/resolve-pass";
+export { goalChance, resolveShot, type ShotInput } from "./action/resolve-shot";
+export {
+  type BodyPart,
+  shotXg as actionShotXg,
+  toAttackingFrame,
+} from "./action/shot-xg";
 export type { LastAction, TeamPhase } from "./action/team-phase";
 export { phaseOf } from "./action/team-phase";
 export {

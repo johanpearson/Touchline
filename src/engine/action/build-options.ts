@@ -19,6 +19,7 @@ import {
   LONG_PASS_MIN,
   MENTALITY_DIRECTNESS,
   MENTALITY_RISK,
+  MENTALITY_SHOT,
   PASS_BASE_WEIGHT,
   PASS_DISTANCE_SCALE,
   PROGRESS_FACTOR_MAX,
@@ -26,6 +27,9 @@ import {
   PROGRESS_SCALE,
   RISKY_VARIANTS,
   SHORT_PASS_MAX,
+  SHOT_FINISHING_GAIN,
+  SHOT_MIN_XG,
+  SHOT_WEIGHT_GAIN,
   TARGET_PRESSURE_PENALTY,
   TEMPO_DIRECTNESS,
   THROUGH_PASS_MIN_DISTANCE,
@@ -36,6 +40,7 @@ import {
 import type { EnginePlayer } from "./engine-player";
 import { PITCH_LENGTH, PITCH_WIDTH, type Point } from "./pitch-metres";
 import { pressureOn, type Shapes } from "./pressure";
+import { shotXg, toAttackingFrame } from "./shot-xg";
 
 /** The ball carrier: their side, their slot in `shapes[side]` and their side's players in slot order. */
 export type ActorContext = { side: Side; slot: number; players: readonly EnginePlayer[] };
@@ -51,8 +56,9 @@ export type PassOption = {
 };
 export type CarryOption = { type: "carry"; from: Point; to: Point; weight: number };
 export type ClearanceOption = { type: "clearance"; from: Point; weight: number };
-/** A shot option is added by the shots issue. */
-export type ActionOption = PassOption | CarryOption | ClearanceOption;
+/** A shot at the goal centre; `xg` is the shot's expected goals. */
+export type ShotOption = { type: "shot"; from: Point; to: Point; xg: number; weight: number };
+export type ActionOption = PassOption | CarryOption | ClearanceOption | ShotOption;
 
 const attackDirection = (side: Side): 1 | -1 => (side === "home" ? 1 : -1);
 const depthOf = (side: Side, point: Point): number =>
@@ -149,9 +155,24 @@ const clearanceOption = (side: Side, from: Point, pressure: number): ClearanceOp
   };
 };
 
+const shotOption = (
+  actor: EnginePlayer,
+  side: Side,
+  from: Point,
+  pressure: number,
+  tactics: TeamTactics,
+): ShotOption => {
+  const xg = shotXg(toAttackingFrame(side, from), pressure);
+  const finishing = 1 + SHOT_FINISHING_GAIN * 2 * (rating(actor, "finishing") - 0.5);
+  const weight =
+    xg < SHOT_MIN_XG ? 0 : SHOT_WEIGHT_GAIN * xg * finishing * MENTALITY_SHOT[tactics.mentality];
+  const to = { x: side === "home" ? PITCH_LENGTH : 0, y: PITCH_WIDTH / 2 };
+  return { type: "shot", from, to, xg, weight: finiteOrZero(weight) };
+};
+
 /**
- * Everything the ball carrier can do (a shot is added later): a pass to each teammate, a carry and a
- * clearance, each with a weight from attributes, geometry, pressure and tactics.
+ * Everything the ball carrier can do: a pass to each teammate, a carry, a
+ * clearance and a shot, each with a weight from attributes, geometry, pressure and tactics.
  */
 export const buildOptions = (
   actor: ActorContext,
@@ -172,5 +193,6 @@ export const buildOptions = (
     ...passes,
     carryOption(player, actor.side, from, pressure, shapes, tactics),
     clearanceOption(actor.side, from, pressure),
+    shotOption(player, actor.side, from, pressure, tactics),
   ];
 };
