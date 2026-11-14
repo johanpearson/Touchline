@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createCareer, generateLeague } from "../game";
-import { createMemorySaveStore } from "../platform";
+import { CURRENT_SCHEMA_VERSION, createMemorySaveStore } from "../platform";
 import type { SaveEnvelope, SaveStore } from "../shared";
 import { findContinueCandidate } from "./find-continue-candidate";
 
@@ -13,11 +13,12 @@ const aCareerValue = () => {
   return result.career;
 };
 
-const envelope = (game: unknown, createdAt = "2026-01-01", schemaVersion = 1): SaveEnvelope => ({
-  schemaVersion,
-  createdAt,
-  game,
-});
+const envelope = (
+  game: unknown,
+  savedAt = "2026-01-01T00:00:00.000Z",
+  schemaVersion = CURRENT_SCHEMA_VERSION,
+  createdAt = "2025-01-01T00:00:00.000Z",
+): SaveEnvelope => ({ schemaVersion, createdAt, savedAt, game });
 
 describe("findContinueCandidate", () => {
   it("finds nothing in an empty store", async () => {
@@ -58,6 +59,35 @@ describe("findContinueCandidate", () => {
     const found = await findContinueCandidate(store);
 
     expect(found.kind === "found" && found.slotId).toBe("slot-2");
+  });
+
+  it("picks the newest save by savedAt, not by createdAt", async () => {
+    const store = createMemorySaveStore();
+    const career = aCareerValue();
+    await store.save(
+      "slot-1",
+      envelope(career, "2026-06-01", CURRENT_SCHEMA_VERSION, "2020-01-01"),
+    );
+    await store.save(
+      "slot-2",
+      envelope(career, "2026-02-01", CURRENT_SCHEMA_VERSION, "2026-01-01"),
+    );
+
+    const found = await findContinueCandidate(store);
+
+    expect(found.kind === "found" && found.slotId).toBe("slot-1");
+  });
+
+  it("treats a v1 save's createdAt as its savedAt", async () => {
+    const store = createMemorySaveStore();
+    const career = aCareerValue();
+    const v1 = { schemaVersion: 1, createdAt: "2027-01-01", game: career };
+    await store.save("slot-1", v1 as unknown as SaveEnvelope);
+    await store.save("slot-2", envelope(career, "2026-06-01"));
+
+    const found = await findContinueCandidate(store);
+
+    expect(found.kind === "found" && found.slotId).toBe("slot-1");
   });
 
   it("reports a corrupt autosave and does not fall back to another slot", async () => {

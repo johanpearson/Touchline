@@ -3,6 +3,7 @@ import { parseCareer } from "../../game";
 import type { SaveEnvelope } from "../../shared";
 import { createEnvelope, readEnvelope, updateEnvelope } from "./codec";
 import careerV1 from "./fixtures/career-v1.json";
+import careerV2 from "./fixtures/career-v2.json";
 import type { Migration } from "./migrations";
 import { CURRENT_SCHEMA_VERSION, MIGRATIONS } from "./schema";
 
@@ -13,6 +14,7 @@ describe("createEnvelope", () => {
     expect(createEnvelope({ n: 1 }, clock)).toEqual({
       schemaVersion: CURRENT_SCHEMA_VERSION,
       createdAt: "2031-02-03T04:05:06.000Z",
+      savedAt: "2031-02-03T04:05:06.000Z",
       game: { n: 1 },
     });
   });
@@ -22,21 +24,26 @@ describe("updateEnvelope", () => {
   const previous: SaveEnvelope = {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     createdAt: "2020-01-01T00:00:00.000Z",
+    savedAt: "2020-01-02T00:00:00.000Z",
     game: { n: 1 },
   };
 
-  it("keeps createdAt and replaces the game", () => {
-    expect(updateEnvelope(previous, { n: 2 })).toEqual({ ...previous, game: { n: 2 } });
+  it("keeps createdAt, sets savedAt from the clock and replaces the game", () => {
+    expect(updateEnvelope(previous, { n: 2 }, clock)).toEqual({
+      ...previous,
+      savedAt: "2031-02-03T04:05:06.000Z",
+      game: { n: 2 },
+    });
   });
 
   it("stamps the current schema version even when the previous save was older", () => {
     const older = { ...previous, schemaVersion: 0 };
-    expect(updateEnvelope(older, { n: 2 }).schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(updateEnvelope(older, { n: 2 }, clock).schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
   });
 
   it("does not mutate the previous envelope", () => {
     const copy = structuredClone(previous);
-    updateEnvelope(previous, { n: 2 });
+    updateEnvelope(previous, { n: 2 }, clock);
     expect(previous).toEqual(copy);
   });
 });
@@ -51,6 +58,14 @@ describe("readEnvelope", () => {
     const raw = { ...createEnvelope({}, clock), schemaVersion: CURRENT_SCHEMA_VERSION + 1 };
     expect(readEnvelope(raw)).toEqual({ ok: false, error: "newer-version" });
   });
+
+  it.each([undefined, "", "yesterday", 42])(
+    "rejects a current envelope with savedAt %j",
+    (savedAt) => {
+      const raw = { ...createEnvelope({}, clock), savedAt };
+      expect(readEnvelope(raw)).toEqual({ ok: false, error: "invalid-envelope" });
+    },
+  );
 
   it.each([null, "save", 42, {}, { schemaVersion: 1 }])(
     "rejects an invalid envelope: %j",
@@ -93,8 +108,28 @@ describe("frozen schema v1 fixture", () => {
     expect(parseCareer(result.save.game).ok).toBe(true);
   });
 
-  it("is a no-op while the current version is 1", () => {
-    if (CURRENT_SCHEMA_VERSION !== 1) return;
-    expect(readEnvelope(careerV1)).toEqual({ ok: true, save: careerV1 });
+  it("sets savedAt to createdAt when migrating from v1", () => {
+    const result = readEnvelope(careerV1);
+    expect(result.ok && result.save.savedAt).toBe(careerV1.createdAt);
+    expect(result.ok && result.save.createdAt).toBe(careerV1.createdAt);
+  });
+
+  it("matches the frozen v2 fixture apart from the version bump and savedAt", () => {
+    const result = readEnvelope(careerV1);
+    expect(result.ok && result.save.game).toEqual(careerV2.game);
+  });
+});
+
+/** `career-v2.json` is a frozen schema version 2 save (adds `savedAt`). Never regenerate it. */
+describe("frozen schema v2 fixture", () => {
+  it("loads unchanged and its game parses as a career", () => {
+    const result = readEnvelope(careerV2);
+    expect(result).toEqual({ ok: true, save: careerV2 });
+    if (!result.ok) return;
+    expect(parseCareer(result.save.game).ok).toBe(true);
+  });
+
+  it("keeps createdAt and savedAt apart", () => {
+    expect(careerV2.savedAt > careerV2.createdAt).toBe(true);
   });
 });

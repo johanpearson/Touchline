@@ -8,6 +8,7 @@ import { CURRENT_SCHEMA_VERSION } from "./schema";
 const envelope: SaveEnvelope = {
   schemaVersion: CURRENT_SCHEMA_VERSION,
   createdAt: "2030-01-01T00:00:00.000Z",
+  savedAt: "2030-01-02T00:00:00.000Z",
   game: { n: 1 },
 };
 
