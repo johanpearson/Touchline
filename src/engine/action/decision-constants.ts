@@ -1,4 +1,4 @@
-import type { Mentality, Tempo, Width } from "../tactics";
+import type { Mentality, Pressing, Tempo, Width } from "../tactics";
 import type { PassVariant } from "./action-event";
 
 /**
@@ -59,6 +59,30 @@ export const BASE_DIRECTNESS = 0.5;
 export const CARRY_DIRECTNESS_GAIN = 0.3;
 
 export const RISKY_VARIANTS: readonly PassVariant[] = ["long", "through", "cross"];
+
+// Tactics in v2 (see tactics-parameters.ts; neutral settings add 0 or multiply by 1)
+/** Added to the pass completion chance of the team's own passes. */
+export const TEMPO_PASS_SUCCESS: Record<Tempo, number> = { slow: 0.03, normal: 0, fast: -0.03 };
+/** Multiplies the weight of a shot taken from the central channel. */
+export const WIDTH_CENTRAL_SHOT: Record<Width, number> = { narrow: 1.15, normal: 1, wide: 0.85 };
+/** A shot is central when it is at most this many metres from the middle line. */
+export const CENTRAL_SHOT_CHANNEL = 11;
+/** Multiplies the radius within which the team's opponents feel its pressure (press trigger distance). */
+export const PRESSING_TRIGGER_SCALE: Record<Pressing, number> = { low: 0.8, medium: 1, high: 1.25 };
+/** Added to the chance of winning the ball (interception, lost carry) against an opponent building up in their own half. */
+export const PRESSING_TURNOVER_BONUS: Record<Pressing, number> = {
+  low: -0.03,
+  medium: 0,
+  high: 0.05,
+};
+/** Multiplies the weight of through passes and carries of an opponent that has just won the ball (space behind the press). */
+export const PRESSING_SPACE_BEHIND: Record<Pressing, number> = { low: 0.85, medium: 1, high: 1.3 };
+
+/**
+ * Home advantage: added to the success chance of the home side's passes, carries, interceptions and
+ * tackles. A first guess; the balance issue tunes it for a home win rate of 42% to 48%.
+ */
+export const HOME_ADVANTAGE = 0.02;
 
 // Pass outcome
 export const PASS_BASE_COMPLETE: Record<PassVariant, number> = {

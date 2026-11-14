@@ -31,6 +31,12 @@ export type PassInput = {
   pressure: number;
   /** Every opponent on the pitch with their position. */
   opponents: readonly Challenger[];
+  /** The passer's tempo effect on completion (added); 0 when absent. */
+  passSuccess?: number;
+  /** The passer's home advantage (added to completion); 0 when absent. */
+  advantage?: number;
+  /** The opponent's press and home advantage added to an interception; 0 when absent. */
+  interceptBonus?: number;
 };
 
 /** Opponents within `LANE_RADIUS` of the pass lane. */
@@ -46,7 +52,9 @@ export const passCompletionChance = (input: PassInput): number => {
     PASS_BASE_COMPLETE[input.variant] +
       PASS_SKILL_GAIN * (skill - 0.5) +
       PASS_RECEIVER_GAIN * (rating(input.receiver, "ballControl") - 0.5) -
-      PASS_PRESSURE_PENALTY * input.pressure,
+      PASS_PRESSURE_PENALTY * input.pressure +
+      (input.passSuccess ?? 0) +
+      (input.advantage ?? 0),
     PASS_COMPLETE_MIN,
     PASS_COMPLETE_MAX,
   );
@@ -83,14 +91,15 @@ export const resolvePass = (input: PassInput, rng: Rng): Resolution<PassOutcome>
   const best = lane.reduce<Challenger | undefined>(
     (b, c) =>
       b === undefined ||
-      interceptionChance(c, input.pressure) > interceptionChance(b, input.pressure)
+      interceptionChance(c, input.pressure, input.interceptBonus) >
+        interceptionChance(b, input.pressure, input.interceptBonus)
         ? c
         : b,
     undefined,
   );
   if (best !== undefined) {
     const interception = resolveInterception(
-      { side, interceptor: best, pressure: input.pressure },
+      { side, interceptor: best, pressure: input.pressure, bonus: input.interceptBonus },
       rng,
     );
     if (interception.outcome === "won") {

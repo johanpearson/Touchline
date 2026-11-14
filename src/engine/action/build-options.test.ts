@@ -167,3 +167,78 @@ describe("buildOptions shot option", () => {
     expect(under).toBeLessThan(free);
   });
 });
+
+describe("buildOptions with tactics", () => {
+  const weightOf = (o: ReturnType<typeof buildOptions>, type: string, variant?: string) =>
+    o
+      .filter(
+        (x) =>
+          x.type === type &&
+          (variant === undefined || (x as { variant?: string }).variant === variant),
+      )
+      .reduce((s, x) => s + x.weight, 0);
+  const crossShare = (t: Partial<TeamTactics>) => {
+    const o = buildOptions(actor(), shapes, tactics(t));
+    return weightOf(o, "pass", "cross") / weightOf(o, "pass");
+  };
+
+  it("gives wide a larger cross share than normal and narrow a smaller one", () => {
+    expect(crossShare({ width: "wide" })).toBeGreaterThan(crossShare({}));
+    expect(crossShare({ width: "narrow" })).toBeLessThan(crossShare({}));
+  });
+
+  const central = at(88, 34);
+  const shotWeight = (t: Partial<TeamTactics>, from = central) =>
+    weightOf(buildOptions(actor(0), { home: [from], away: farAway }, tactics(t)), "shot");
+
+  it("lowers a central shot for wide and raises it for narrow, and leaves a wide-angle shot alone", () => {
+    expect(shotWeight({ width: "wide" })).toBeLessThan(shotWeight({}));
+    expect(shotWeight({ width: "narrow" })).toBeGreaterThan(shotWeight({}));
+    expect(shotWeight({ width: "wide" }, at(88, 12))).toBe(shotWeight({}, at(88, 12)));
+  });
+
+  it("raises shot and risky pass weights for attacking and lowers them for defensive", () => {
+    const risky = (m: TeamTactics["mentality"]) =>
+      weightOf(buildOptions(actor(), shapes, tactics({ mentality: m })), "pass", "through");
+    expect(shotWeight({ mentality: "attacking" })).toBeGreaterThan(shotWeight({}));
+    expect(shotWeight({ mentality: "defensive" })).toBeLessThan(shotWeight({}));
+    expect(risky("attacking")).toBeGreaterThan(risky("balanced"));
+    expect(risky("defensive")).toBeLessThan(risky("balanced"));
+  });
+
+  it("raises through passes and carries after a won ball against a high press and lowers them against a low press", () => {
+    const counter = (pressing: TeamTactics["pressing"], transition = true) => {
+      const o = buildOptions(
+        { ...actor(), foeTactics: tactics({ pressing }), transition },
+        shapes,
+        tactics(),
+      );
+      return [weightOf(o, "pass", "through"), weightOf(o, "carry")] as [number, number];
+    };
+    const [throughHigh, carryHigh] = counter("high");
+    const [throughMedium, carryMedium] = counter("medium");
+    const [throughLow, carryLow] = counter("low");
+    expect(throughHigh).toBeGreaterThan(throughMedium);
+    expect(carryHigh).toBeGreaterThan(carryMedium);
+    expect(throughLow).toBeLessThan(throughMedium);
+    expect(carryLow).toBeLessThan(carryMedium);
+    expect(counter("high", false)).toEqual(counter("medium", false));
+  });
+
+  it("makes the opponent's press feel closer: more pressure lowers pass weight against a high press", () => {
+    const close: Shapes = { home, away: [at(46, 34), at(100, 2)] };
+    const total = (pressing: TeamTactics["pressing"]) =>
+      weightOf(
+        buildOptions({ ...actor(), foeTactics: tactics({ pressing }) }, close, tactics()),
+        "pass",
+      );
+    expect(total("high")).toBeLessThan(total("medium"));
+    expect(total("low")).toBeGreaterThan(total("medium"));
+  });
+
+  it("builds the same options without opponent tactics as with neutral ones", () => {
+    expect(buildOptions({ ...actor(), foeTactics: NEUTRAL_TACTICS }, shapes, tactics())).toEqual(
+      buildOptions(actor(), shapes, tactics()),
+    );
+  });
+});

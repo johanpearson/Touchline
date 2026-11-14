@@ -208,3 +208,15 @@ describe("teamShape", () => {
     },
   );
 });
+
+describe("shapeParameters and mentality", () => {
+  it("lowers compactness for defensive and raises it for attacking mentality", () => {
+    const base = shapeParameters(NEUTRAL_TACTICS).compactness;
+    expect(
+      shapeParameters({ ...NEUTRAL_TACTICS, mentality: "defensive" }).compactness,
+    ).toBeLessThan(base);
+    expect(
+      shapeParameters({ ...NEUTRAL_TACTICS, mentality: "attacking" }).compactness,
+    ).toBeGreaterThan(base);
+  });
+});

@@ -27,6 +27,8 @@ export type CarryInput = {
   pressure: number;
   /** The nearest opponent, if any. */
   defender?: Challenger;
+  /** The defending side's press and the carrier's home advantage, net (added to the kept chance); 0 when absent. */
+  keptBonus?: number;
 };
 
 const nearLine = (p: Point): boolean =>
@@ -41,7 +43,8 @@ export const carryKeptChance = (input: CarryInput): number => {
     CARRY_KEPT_BASE +
       CARRY_SKILL_GAIN * (skill - 0.5) -
       CARRY_DEFENDER_PENALTY * defence -
-      CARRY_PRESSURE_PENALTY * input.pressure,
+      CARRY_PRESSURE_PENALTY * input.pressure +
+      (input.keptBonus ?? 0),
     CARRY_KEPT_MIN,
     CARRY_KEPT_MAX,
   );
