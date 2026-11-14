@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { type BalanceSummary, formatBalanceTable, simulateBalance } from "./balance-harness";
+import { createMatch } from "./create-match";
 import { aMatchInput, aTeamProfile } from "./match-builders";
 import {
   type Mentality,
@@ -184,5 +185,39 @@ describe("engine balance: no dominant tactic", () => {
     );
 
     expect(dominant.map(({ t }) => label(t))).toEqual([]);
+  });
+});
+
+describe("engine balance: half-time profile change", () => {
+  const strongProfile = aTeamProfile("Strong").withAllRatings(0.8).build();
+  const input = aMatchInput().build();
+  const HALF = 2700;
+  const run = (change: boolean) => {
+    let firstHalf = 0;
+    let secondHalf = 0;
+    let firstHalfEvents = 0;
+    for (let seed = BASE_SEED; seed < BASE_SEED + 1000; seed++) {
+      const match = createMatch(input, seed);
+      match.advanceTo(1_000_000);
+      if (change) match.applyChange({ side: "home", profile: strongProfile });
+      match.resume();
+      match.advanceTo(1_000_000);
+      for (const e of match.events) {
+        if (e.type !== "shot" || e.outcome !== "goal" || e.team !== "home") continue;
+        if (e.time <= HALF) firstHalf += 1;
+        else secondHalf += 1;
+      }
+      firstHalfEvents += match.events.filter((e) => e.time <= HALF).length;
+    }
+    return { firstHalf, secondHalf, firstHalfEvents };
+  };
+
+  it("raises the second-half goal rate and leaves the first half untouched", () => {
+    const base = run(false);
+    const changed = run(true);
+
+    expect(changed.firstHalf).toBe(base.firstHalf);
+    expect(changed.firstHalfEvents).toBe(base.firstHalfEvents);
+    expect(changed.secondHalf).toBeGreaterThan(base.secondHalf * 1.2);
   });
 });

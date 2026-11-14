@@ -1,3 +1,4 @@
+import type { MatchChange, TimedMatchChange } from "./match-change";
 import type { MatchEvent } from "./match-event";
 import type { MatchInput } from "./match-input";
 import type { MatchState, Side } from "./match-state";
@@ -16,6 +17,13 @@ export type Match = {
    * and at full time: the match then stays in that period however far it is asked to advance.
    */
   advanceTo: (seconds: number) => void;
+  /**
+   * Applies new phase ratings and/or tactics to one side from the current match time. Consumes no
+   * randomness. Ignored after full time. Only ever called between steps, because a step is atomic.
+   */
+  applyChange: (change: MatchChange) => void;
+  /** Every applied change in order, with the match time it was applied at. */
+  readonly changes: readonly TimedMatchChange[];
   /** Starts the second half after half-time, with a kickoff for the team that did not start the match. */
   resume: () => void;
 };
@@ -31,9 +39,12 @@ const otherSide = (side: Side): Side => (side === "home" ? "away" : "home");
 
 /**
  * Creates a deterministic match. The same `input` and `seed` always give the same event log,
- * however the time is split across `advanceTo` calls.
+ * however the time is split across `advanceTo` calls. Changes applied with `applyChange` at the
+ * same moments are part of that reproducible input.
  */
-export const createMatch = (input: MatchInput, seed: number): Match => {
+export const createMatch = (initialInput: MatchInput, seed: number): Match => {
+  let input = initialInput;
+  const changes: TimedMatchChange[] = [];
   const rng = createRng(seed);
   const firstPossession: Side = rng.chance(0.5) ? "home" : "away";
   const centre = { x: 0.5, y: 0.5 };
@@ -88,6 +99,18 @@ export const createMatch = (input: MatchInput, seed: number): Match => {
     if (target === periodEnd) endPeriod(state.period === "firstHalf" ? "halfTime" : "fullTime");
   };
 
+  const applyChange = (change: MatchChange): void => {
+    if (state.period === "fullTime") return;
+    const key = change.side === "home" ? "home" : "away";
+    const tacticsKey = change.side === "home" ? "homeTactics" : "awayTactics";
+    input = {
+      ...input,
+      [key]: change.profile ?? input[key],
+      [tacticsKey]: change.tactics ?? input[tacticsKey],
+    };
+    changes.push({ time: state.time, change });
+  };
+
   const resume = (): void => {
     if (state.period !== "halfTime") throw new Error(`Cannot resume from ${state.period}`);
     const team = otherSide(firstPossession);
@@ -113,7 +136,11 @@ export const createMatch = (input: MatchInput, seed: number): Match => {
     get state() {
       return state;
     },
+    get changes() {
+      return changes;
+    },
     advanceTo,
+    applyChange,
     resume,
   };
 };
