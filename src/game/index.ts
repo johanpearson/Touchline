@@ -1,4 +1,5 @@
 export { attributeGoalScorers } from "./attribute-goal-scorers";
+export { autoPickLineup } from "./auto-pick-lineup";
 export type {
   Career,
   CareerError,
@@ -15,6 +16,8 @@ export type { CareerSpec } from "./create-career";
 export { createCareer } from "./create-career";
 export { createSeason } from "./create-season";
 export { deriveTeamProfile } from "./derive-team-profile";
+export type { Formation } from "./formation";
+export { FORMATION_SHAPE, FORMATIONS } from "./formation";
 export type {
   ClubIdentity,
   ClubIdentityError,
@@ -38,6 +41,8 @@ export { generateSquad, SQUAD_SHAPE } from "./generate-squad";
 export { getNextFixture } from "./get-next-fixture";
 export { isSeasonComplete } from "./is-season-complete";
 export type { League } from "./league";
+export type { Lineup, LineupError, LineupResult } from "./lineup";
+export { BENCH_SIZE, validateLineup } from "./lineup";
 export { matchInputFor, matchSeed } from "./match-input-for";
 export type { CareerParseError, CareerParseResult } from "./parse-career";
 export { parseCareer } from "./parse-career";

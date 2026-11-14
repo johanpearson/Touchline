@@ -1,4 +1,6 @@
 import type { Club } from "./club";
+import type { Formation } from "./formation";
+import type { Lineup } from "./lineup";
 import { ATTRIBUTE_NAMES, type AttributeName, type Player } from "./player";
 import { initialCondition, type PlayerCondition } from "./player-condition";
 import type { PlayerPosition } from "./squad-player";
@@ -102,6 +104,26 @@ export const aClub = (): ClubBuilder =>
     playerIds: [],
   });
 
+const FULL_SQUAD_SHAPE: [PlayerPosition, number][] = [
+  ["GK", 3],
+  ["DEF", 7],
+  ["MID", 7],
+  ["FWD", 5],
+];
+
+/** A full 22-player squad (3 GK, 7 DEF, 7 MID, 5 FWD), ids `<prefix>-<POS>-<index>`. */
+export const aFullSquad = (attributeValue = 10, idPrefix = "p"): Player[] =>
+  FULL_SQUAD_SHAPE.flatMap(([position, count]) =>
+    Array.from({ length: count }, (_, i) =>
+      aPlayer()
+        .withId(`${idPrefix}-${position}-${i}`)
+        .withName(`${position} ${i}`)
+        .withPosition(position)
+        .withAllAttributes(attributeValue)
+        .build(),
+    ),
+  );
+
 /** A 4-4-2 squad (one extra of each outfield position for depth) with the given attribute value. */
 export const aSquad = (attributeValue = 10, idPrefix = "p"): Player[] => {
   const shape: [PlayerPosition, number][] = [
@@ -136,3 +158,31 @@ const conditionBuilder = (condition: PlayerCondition): ConditionBuilder => ({
 
 /** A neutral condition (fitness 100, form 5) unless overridden. */
 export const aCondition = (): ConditionBuilder => conditionBuilder(initialCondition());
+
+type LineupBuilder = {
+  withFormation: (value: Formation) => LineupBuilder;
+  withStarters: (value: readonly string[]) => LineupBuilder;
+  withBench: (value: readonly string[]) => LineupBuilder;
+  build: () => Lineup;
+};
+
+const lineupBuilder = (lineup: Lineup): LineupBuilder => ({
+  withFormation: (formation) => lineupBuilder({ ...lineup, formation }),
+  withStarters: (starters) => lineupBuilder({ ...lineup, starters: [...starters] }),
+  withBench: (bench) => lineupBuilder({ ...lineup, bench: [...bench] }),
+  build: () => ({ ...lineup, starters: [...lineup.starters], bench: [...lineup.bench] }),
+});
+
+/** A valid 4-4-2 lineup over `aFullSquad()` (ids prefixed `p`) unless overridden. */
+export const aLineup = (): LineupBuilder =>
+  lineupBuilder({
+    formation: "4-4-2",
+    starters: [
+      "p-GK-0",
+      ...[0, 1, 2, 3].map((i) => `p-DEF-${i}`),
+      ...[0, 1, 2, 3].map((i) => `p-MID-${i}`),
+      "p-FWD-0",
+      "p-FWD-1",
+    ],
+    bench: ["p-GK-1", "p-DEF-4", "p-DEF-5", "p-MID-4", "p-MID-5", "p-FWD-2", "p-FWD-3"],
+  });
