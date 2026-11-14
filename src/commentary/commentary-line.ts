@@ -8,6 +8,10 @@ export type CommentaryKind =
   | "danger"
   | "turnover"
   | "foul"
+  | "penalty"
+  | "keyPass"
+  | "tackle"
+  | "setPiece"
   | "summary"
   | "halfTime"
   | "fullTime";
