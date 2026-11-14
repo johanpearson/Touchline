@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { SaveEnvelope, SaveStore } from "../../shared";
 
 function anEnvelope(game: unknown = { week: 1 }): SaveEnvelope {
-  return { schemaVersion: 1, createdAt: "2030-01-01T00:00:00.000Z", game };
+  return {
+    schemaVersion: 2,
+    createdAt: "2030-01-01T00:00:00.000Z",
+    savedAt: "2030-01-01T00:00:00.000Z",
+    game,
+  };
 }
 
 /** Behaviour every `SaveStore` implementation must have. Call from the implementation's test. */

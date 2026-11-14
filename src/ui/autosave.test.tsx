@@ -188,10 +188,14 @@ describe("autosave and continue", () => {
   it.each([
     [
       "a corrupt",
-      { schemaVersion: 1, createdAt: "2026-01-01", game: { broken: true } },
+      { schemaVersion: 2, createdAt: "2026-01-01", savedAt: "2026-01-01", game: { broken: true } },
       /damaged/i,
     ],
-    ["a newer-version", { schemaVersion: 99, createdAt: "2026-01-01", game: {} }, /newer version/i],
+    [
+      "a newer-version",
+      { schemaVersion: 99, createdAt: "2026-01-01", savedAt: "2026-01-01", game: {} },
+      /newer version/i,
+    ],
   ])("refuses %s autosave and offers a new career", async (_name, envelope, message) => {
     const store = createMemorySaveStore();
     await store.save("autosave", envelope);
