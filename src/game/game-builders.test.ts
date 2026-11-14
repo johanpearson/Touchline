@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { aClub, aPlayer, aSquad } from "./game-builders";
+import { aClub, aFullSquad, aLineup, aPlayer, aSquad } from "./game-builders";
+import { validateLineup } from "./lineup";
 
 describe("game builders", () => {
   it("builds a player with overridden fields and leaves the rest default", () => {
@@ -61,5 +62,16 @@ describe("game builders", () => {
     });
     const c = aClub().withId("i").withName("n").withShortName("s").build();
     expect(c).toMatchObject({ id: "i", name: "n", shortName: "s" });
+  });
+});
+
+describe("aLineup", () => {
+  it("builds a valid lineup over aFullSquad", () => {
+    expect(validateLineup(aLineup().build(), aFullSquad())).toEqual({ ok: true });
+  });
+
+  it("overrides formation, starters and bench", () => {
+    const lineup = aLineup().withFormation("3-5-2").withStarters(["a"]).withBench(["b"]).build();
+    expect(lineup).toEqual({ formation: "3-5-2", starters: ["a"], bench: ["b"] });
   });
 });
