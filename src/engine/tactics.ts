@@ -63,13 +63,13 @@ const NO_CHANGE: TacticsModifiers = {
 const MENTALITY: Record<Mentality, Partial<TacticsModifiers>> = {
   defensive: { shootChance: -0.03, concededShootChance: -0.04 },
   balanced: {},
-  attacking: { shootChance: 0.03, concededShootChance: 0.045 },
+  attacking: { shootChance: 0.03, concededShootChance: 0.05 },
 };
 
 const PRESSING: Record<Pressing, Partial<TacticsModifiers>> = {
   low: { concededAdvanceChance: 0.02, concededAdvanceStep: -0.01 },
   medium: {},
-  high: { concededAdvanceChance: -0.04, concededAdvanceStep: 0.03 },
+  high: { concededAdvanceChance: -0.06, concededAdvanceStep: 0.045 },
 };
 
 const WIDTH: Record<Width, Partial<TacticsModifiers>> = {
@@ -79,7 +79,7 @@ const WIDTH: Record<Width, Partial<TacticsModifiers>> = {
 };
 
 const TEMPO: Record<Tempo, Partial<TacticsModifiers>> = {
-  slow: { stepDelay: 1.2, advanceChance: 0.005 },
+  slow: { stepDelay: 1.2 },
   normal: {},
   fast: { stepDelay: 0.8, advanceChance: -0.01 },
 };
