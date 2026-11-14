@@ -1,3 +1,4 @@
+export { actionDuration } from "./action/action-duration";
 export type {
   ActionEvent,
   ActionEventType,
@@ -27,6 +28,15 @@ export type {
   ActionMatchState,
   TimedActionMatchChange,
 } from "./action/action-match";
+export {
+  type ActionOption,
+  type ActorContext,
+  buildOptions,
+  type CarryOption,
+  type ClearanceOption,
+  type PassOption,
+} from "./action/build-options";
+export { chooseOption } from "./action/choose-option";
 export type {
   EngineAttributeName,
   EngineAttributes,
@@ -40,6 +50,7 @@ export {
 } from "./action/engine-player";
 export type { EngineVersion } from "./action/engine-version";
 export type { MatchInputV2 } from "./action/match-input-v2";
+export type { Challenger, Possession, Resolution, Restart } from "./action/open-play-types";
 export type { Point } from "./action/pitch-metres";
 export {
   fromNormalised,
@@ -49,6 +60,11 @@ export {
   toNormalised,
 } from "./action/pitch-metres";
 export { pressureOn, type Shapes } from "./action/pressure";
+export { type CarryInput, resolveCarry } from "./action/resolve-carry";
+export { type ChallengeInput, resolveChallenge } from "./action/resolve-challenge";
+export { type ClearanceInput, resolveClearance } from "./action/resolve-clearance";
+export { type InterceptionInput, resolveInterception } from "./action/resolve-interception";
+export { type PassInput, resolvePass } from "./action/resolve-pass";
 export type { LastAction, TeamPhase } from "./action/team-phase";
 export { phaseOf } from "./action/team-phase";
 export {
