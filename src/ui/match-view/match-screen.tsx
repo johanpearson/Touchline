@@ -5,6 +5,7 @@ import { computeMatchStats, createMatch, toZoneEvents } from "../../engine";
 import type { MatchReport, SquadPlayer } from "../../game";
 import { attributeGoalScorers } from "../../game";
 import { useI18n } from "../i18n-provider";
+import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import type { AppliedHalfTimePlan, HalfTimeEditor } from "./half-time-panel";
 import { MatchLayout } from "./match-layout";
 import { terrainEvents } from "./terrain-events";
@@ -24,6 +25,8 @@ type MatchScreenCommon = {
   squads: PerSide<readonly SquadPlayer[]>;
   /** Replaces the three.js renderer, for tests. */
   createRenderer?: TerrainRendererFactory;
+  /** Replaces the canvas 2D pitch renderer (action engine only), for tests. */
+  createPitchRenderer?: PitchRendererFactory;
   /** How often the clock advances, in milliseconds; tests use a coarser tick. */
   tickMs?: number;
   /** Lets the user change their side at half-time. Without it half-time offers no changes. */
@@ -130,6 +133,7 @@ function ActionMatchScreen({
   colours,
   players,
   createRenderer,
+  createPitchRenderer,
   tickMs,
   halfTimeEditor,
   onContinue,
@@ -170,6 +174,7 @@ function ActionMatchScreen({
       lines={lines}
       playback={playback}
       createRenderer={createRenderer}
+      pitch={{ events, createRenderer: createPitchRenderer }}
       halfTimeEditor={halfTimeEditor}
       onResume={startSecondHalf}
       onContinue={

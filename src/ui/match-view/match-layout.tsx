@@ -1,6 +1,8 @@
 import type { CommentaryLine } from "../../commentary";
-import type { MatchEvent, MatchState, MatchStats, PerSide } from "../../engine";
+import type { ActionEvent, MatchEvent, MatchState, MatchStats, PerSide } from "../../engine";
 import { useI18n } from "../i18n-provider";
+import { ClassicPitch } from "./classic-pitch";
+import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import { type AppliedHalfTimePlan, type HalfTimeEditor, HalfTimePanel } from "./half-time-panel";
 import { MatchFeed } from "./match-feed";
 import { MomentumChart } from "./momentum-chart";
@@ -9,6 +11,7 @@ import { Scoreboard } from "./scoreboard";
 import { SpeedControls } from "./speed-controls";
 import { StatsPanel } from "./stats-panel";
 import type { TerrainRendererFactory } from "./terrain-renderer";
+import { useViewChoice } from "./use-view-choice";
 import "./match-screen.css";
 
 export type MatchLayoutProps = {
@@ -30,6 +33,8 @@ export type MatchLayoutProps = {
     setSpeed: (speed: number) => void;
   };
   createRenderer?: TerrainRendererFactory;
+  /** The action log and renderer of the 2D pitch; only action-engine matches have positions to draw. */
+  pitch?: { events: readonly ActionEvent[]; createRenderer?: PitchRendererFactory };
   halfTimeEditor?: HalfTimeEditor;
   onResume: (plan?: AppliedHalfTimePlan) => void;
   /** When given, a "Continue" button appears at full time. */
@@ -49,12 +54,15 @@ export function MatchLayout({
   lines,
   playback,
   createRenderer,
+  pitch,
   halfTimeEditor,
   onResume,
   onContinue,
 }: MatchLayoutProps) {
   const { t } = useI18n();
   const halfTime = period === "halfTime";
+  const [chosenView, setView] = useViewChoice();
+  const view = pitch ? chosenView : "momentum";
   return (
     <div className="match-screen" data-testid="match-screen">
       <Scoreboard
@@ -68,14 +76,42 @@ export function MatchLayout({
         events={events}
       />
       <div className="match-main">
-        <MomentumTerrain
-          events={terrainEvents}
-          matchTime={matchTime}
-          homeColour={colours.home}
-          awayColour={colours.away}
-          createRenderer={createRenderer}
-          label={t("match.terrain")}
-        />
+        {pitch && (
+          <fieldset className="view-toggle" data-testid="view-toggle">
+            <legend>{t("match.view.label")}</legend>
+            {(["momentum", "pitch"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                data-testid={`view-${option}`}
+                aria-pressed={view === option}
+                onClick={() => setView(option)}
+              >
+                {t(option === "pitch" ? "match.view.pitch" : "match.view.momentum")}
+              </button>
+            ))}
+          </fieldset>
+        )}
+        {pitch && view === "pitch" ? (
+          <ClassicPitch
+            events={pitch.events}
+            matchTime={matchTime}
+            score={score}
+            homeColour={colours.home}
+            awayColour={colours.away}
+            createRenderer={pitch.createRenderer}
+            label={t("match.pitch")}
+          />
+        ) : (
+          <MomentumTerrain
+            events={terrainEvents}
+            matchTime={matchTime}
+            homeColour={colours.home}
+            awayColour={colours.away}
+            createRenderer={createRenderer}
+            label={t("match.terrain")}
+          />
+        )}
         {halfTime && (
           <HalfTimePanel
             homeName={names.home}
