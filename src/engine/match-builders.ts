@@ -1,4 +1,4 @@
-import type { MatchInput } from "./match-input";
+import type { MatchInputV1 } from "./match-input";
 import { NEUTRAL_TACTICS, type TeamTactics } from "./tactics";
 import type { TeamMatchProfile } from "./team-match-profile";
 
@@ -61,10 +61,10 @@ type InputBuilder = {
   withAway: (profile: TeamMatchProfile) => InputBuilder;
   /** Sets the tactics of one or both sides; omitted sides keep their current tactics. */
   withTactics: (tactics: { home?: TeamTactics; away?: TeamTactics }) => InputBuilder;
-  build: () => MatchInput;
+  build: () => MatchInputV1;
 };
 
-const inputBuilder = (input: MatchInput): InputBuilder => ({
+const inputBuilder = (input: MatchInputV1): InputBuilder => ({
   withHome: (home) => inputBuilder({ ...input, home }),
   withAway: (away) => inputBuilder({ ...input, away }),
   withTactics: ({ home, away }) =>
@@ -80,7 +80,7 @@ const inputBuilder = (input: MatchInput): InputBuilder => ({
   }),
 });
 
-/** Test builder for `MatchInput`; two average teams with neutral tactics. */
+/** Test builder for `MatchInputV1`; two average teams with neutral tactics. */
 export const aMatchInput = (): InputBuilder =>
   inputBuilder({
     home: aTeamProfile("Home").build(),

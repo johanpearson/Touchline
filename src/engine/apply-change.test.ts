@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createMatch, type Match } from "./create-match";
 import { aMatchInput, aTeamProfile } from "./match-builders";
 import type { MatchChange } from "./match-change";
-import type { MatchInput } from "./match-input";
+import type { MatchInputV1 } from "./match-input";
 import type { TeamTactics } from "./tactics";
 
 const HALF = 2700;
@@ -17,7 +17,7 @@ const attacking: TeamTactics = {
 };
 
 const playWithChange = (
-  matchInput: MatchInput,
+  matchInput: MatchInputV1,
   seed: number,
   change?: MatchChange,
   step = PLAY_ON,

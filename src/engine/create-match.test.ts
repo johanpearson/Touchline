@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { aMatchInputV2 } from "./action/action-builders";
 import { createMatch } from "./create-match";
 import { aMatchInput, aTeamProfile } from "./match-builders";
 import type { MatchEvent } from "./match-event";
@@ -209,5 +210,27 @@ describe("createMatch", () => {
 
   it("says which time was invalid", () => {
     expect(() => createMatch(input, 1).advanceTo(Number.NaN)).toThrow("Invalid match time: NaN");
+  });
+});
+
+describe("createMatch dispatch", () => {
+  it("returns a zone-engine match for an input without engineVersion", () => {
+    const match = createMatch(input, 1);
+
+    expect(match.events[0]?.type).toBe("kickoff");
+  });
+
+  it("returns a zone-engine match for engineVersion 1", () => {
+    const match = createMatch({ ...input, engineVersion: 1 }, 1);
+
+    expect(match.events[0]?.type).toBe("kickoff");
+  });
+
+  it("returns a stub action match for engineVersion 2", () => {
+    const match = createMatch(aMatchInputV2().build(), 1);
+    match.advanceTo(5400);
+
+    expect(match.events).toEqual([]);
+    expect(match.state.ball).toEqual({ x: 52.5, y: 34 });
   });
 });

@@ -1,5 +1,5 @@
 import type { MatchEvent, ShotOutcome } from "./match-event";
-import type { MatchInput } from "./match-input";
+import type { MatchInputV1 } from "./match-input";
 import type { MatchState, PitchPosition, Side } from "./match-state";
 import { clamp, opponentOf, progressOf, xAtProgress } from "./pitch";
 import type { Rng } from "./rng";
@@ -16,10 +16,10 @@ const CORNER_CHANCE = 0.3;
 const LATERAL_CHANCE = 0.2;
 const CENTRE: PitchPosition = { x: 0.5, y: 0.5 };
 
-const tacticsOf = (input: MatchInput, side: Side): TacticsModifiers =>
+const tacticsOf = (input: MatchInputV1, side: Side): TacticsModifiers =>
   tacticsModifiers(side === "home" ? input.homeTactics : input.awayTactics);
 
-const profileOf = (input: MatchInput, side: Side): TeamMatchProfile =>
+const profileOf = (input: MatchInputV1, side: Side): TeamMatchProfile =>
   side === "home" ? input.home : input.away;
 
 /** Danger is zero in the attacking team's own half and rises towards 1 at the opponent's goal. */
@@ -41,7 +41,7 @@ const eventAt = (state: MatchState, team: Side, position: PitchPosition, intensi
 });
 
 /** Resolves a shot: goal (with kickoff for the conceding side), save, block or miss, then what follows. */
-const resolveShot = (state: MatchState, input: MatchInput, rng: Rng): Transition => {
+const resolveShot = (state: MatchState, input: MatchInputV1, rng: Rng): Transition => {
   const attacker = state.possession;
   const defender = opponentOf(attacker);
   const attack = profileOf(input, attacker);
@@ -92,7 +92,7 @@ const resolveShot = (state: MatchState, input: MatchInput, rng: Rng): Transition
 };
 
 /** Resolves a build-up step: move the ball forward, sideways, or lose it. */
-const resolveBuildUp = (state: MatchState, input: MatchInput, rng: Rng): Transition => {
+const resolveBuildUp = (state: MatchState, input: MatchInputV1, rng: Rng): Transition => {
   const attacker = state.possession;
   const defender = opponentOf(attacker);
   const attack = profileOf(input, attacker);
@@ -140,7 +140,7 @@ const resolveBuildUp = (state: MatchState, input: MatchInput, rng: Rng): Transit
  * Resolves one transition of the zone model from `state` (whose `time` is the moment of the step).
  * Pure: the only randomness comes from `rng`.
  */
-export const resolveTransition = (state: MatchState, input: MatchInput, rng: Rng): Transition => {
+export const resolveTransition = (state: MatchState, input: MatchInputV1, rng: Rng): Transition => {
   const attack = profileOf(input, state.possession);
   const defence = profileOf(input, opponentOf(state.possession));
   const progress = progressOf(state.possession, state.ball.x);

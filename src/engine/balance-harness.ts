@@ -1,6 +1,6 @@
 import { createMatch } from "./create-match";
 import type { MatchEvent } from "./match-event";
-import type { MatchInput } from "./match-input";
+import type { MatchInputV1 } from "./match-input";
 import type { Side } from "./match-state";
 import { computeMatchStats, type PerSide } from "./match-stats";
 import { progressOf } from "./pitch";
@@ -31,7 +31,7 @@ export type BalanceSummary = {
 /** Far beyond any match length; `advanceTo` stops at half-time and full time by itself. */
 const PLAY_ON = 1_000_000;
 
-const playFullMatch = (input: MatchInput, seed: number) => {
+const playFullMatch = (input: MatchInputV1, seed: number) => {
   const match = createMatch(input, seed);
   match.advanceTo(PLAY_ON);
   match.resume();
@@ -62,7 +62,7 @@ const highTurnoversFor = (events: readonly MatchEvent[], side: Side) =>
  * Deterministic: the same arguments always give the same summary.
  */
 export const simulateBalance = (
-  input: MatchInput,
+  input: MatchInputV1,
   matches: number,
   baseSeed: number,
 ): BalanceSummary => {

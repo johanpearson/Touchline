@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { generateCommentary } from "../../commentary";
-import type { MatchInput, MatchState, PerSide } from "../../engine";
+import type { MatchInputV1, MatchState, PerSide } from "../../engine";
 import { computeMatchStats, createMatch } from "../../engine";
 import type { MatchReport, SquadPlayer } from "../../game";
 import { attributeGoalScorers } from "../../game";
@@ -18,7 +18,7 @@ import { useMatchPlayback } from "./use-match-playback";
 import "./match-screen.css";
 
 export type MatchScreenProps = {
-  input: MatchInput;
+  input: MatchInputV1;
   seed: number;
   colours: PerSide<string>;
   /** The players goals are credited to, by position and finishing. */
