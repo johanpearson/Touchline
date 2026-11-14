@@ -167,8 +167,6 @@ export const en = {
   "hub.venue.away": "Away at",
   "hub.playMatch": "Play match",
   "hub.quickSim": "Quick sim",
-  "hub.playMatchUnavailable":
-    "The match view does not support the action engine yet. Use quick sim.",
   "hub.seasonComplete": "Season complete",
   "hub.toSeasonEnd": "See the season summary",
   "results.title": "Matchday {matchday} results",

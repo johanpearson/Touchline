@@ -4,7 +4,8 @@ import { type MatchInputV1, NEUTRAL_TACTICS, type PerSide } from "../../engine";
 import type { SquadPlayer } from "../../game";
 import { createMemoryLocaleStore } from "../../platform";
 import { I18nProvider } from "../i18n-provider";
-import { MatchScreen } from "./match-screen";
+import { anActionMatchSetup } from "./action-match-fixture";
+import { MatchScreen, type MatchScreenProps } from "./match-screen";
 import type { TerrainRenderer } from "./terrain-renderer";
 
 // A fixed fictional fixture used only by these tests.
@@ -222,7 +223,9 @@ describe("MatchScreen half-time changes", () => {
     fireEvent.click(screen.getByTestId("start-second-half"));
     act(() => vi.advanceTimersByTime(30_000));
     fireEvent.click(screen.getByTestId("continue"));
-    expect(onContinue).toHaveBeenCalledWith(expect.anything(), { minutes: { a: 45 } });
+    expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ engineVersion: 1 }), {
+      minutes: { a: 45 },
+    });
   });
 
   it("passes no report when nothing changed at half-time", () => {
@@ -244,6 +247,114 @@ describe("MatchScreen half-time changes", () => {
     fireEvent.click(screen.getByTestId("start-second-half"));
     act(() => vi.advanceTimersByTime(30_000));
     fireEvent.click(screen.getByTestId("continue"));
-    expect(onContinue).toHaveBeenCalledWith(expect.anything(), undefined);
+    expect(onContinue).toHaveBeenCalledWith(
+      expect.objectContaining({ engineVersion: 1 }),
+      undefined,
+    );
+  });
+});
+
+describe("MatchScreen with the action engine", () => {
+  beforeEach(() => {
+    vi.stubGlobal("requestAnimationFrame", () => 0);
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
+  });
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const mountAction = (
+    props: Partial<Pick<MatchScreenProps, "halfTimeEditor" | "onContinue">> = {},
+    locale = "en",
+  ) => {
+    const { setup } = anActionMatchSetup();
+    return render(
+      <I18nProvider store={createMemoryLocaleStore(locale)}>
+        <MatchScreen {...setup} createRenderer={fakeRenderer} tickMs={1000} {...props} />
+      </I18nProvider>,
+    );
+  };
+
+  it("shows every panel and starts at kickoff in the first half", () => {
+    mountAction();
+    for (const id of ["scoreboard", "stats-panel", "momentum-chart", "feed", "momentum-terrain"]) {
+      expect(screen.getByTestId(id)).toBeTruthy();
+    }
+    expect(clockText()).toBe("0’");
+    expect(screen.getByTestId("period").textContent).toBe("First half");
+    expect(screen.getByTestId("score").textContent).toBe("0 – 0");
+  });
+
+  it("fills the stats panel from the adapted events and the feed with player commentary", () => {
+    mountAction();
+    fireEvent.click(screen.getByTestId("speed-4"));
+    play(20_000);
+    expect(screen.getByTestId("stat-possession").textContent).toMatch(/\d/);
+    expect(screen.getAllByTestId("feed-line").length).toBeGreaterThan(0);
+  });
+
+  it("stops at half-time, starts the second half and plays on to full time", () => {
+    mountAction();
+    fireEvent.click(screen.getByTestId("speed-4"));
+    play(20_000);
+    expect(screen.getByTestId("period").textContent).toBe("Half-time");
+    expect(screen.getByTestId("half-time-score")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("start-second-half"));
+    expect(screen.getByTestId("period").textContent).toBe("Second half");
+    play(40_000);
+    expect(screen.getByTestId("period").textContent).toBe("Full time");
+  });
+
+  it("shows the score as goals are scored", () => {
+    mountAction();
+    fireEvent.click(screen.getByTestId("speed-4"));
+    play(20_000);
+    fireEvent.click(screen.getByTestId("start-second-half"));
+    play(40_000);
+    const [home, away] = (screen.getByTestId("score").textContent ?? "").split(" – ").map(Number);
+    expect((home ?? -1) >= 0 && (away ?? -1) >= 0).toBe(true);
+  });
+
+  it("applies the half-time plan of the action engine and reports the engine version", () => {
+    const onContinue = vi.fn();
+    const { career, fixture } = anActionMatchSetup();
+    const starter = career.squadPlan.starters[0] ?? "";
+    const editor = {
+      players: career.league.players,
+      starters: career.squadPlan.starters,
+      bench: career.squadPlan.bench,
+      condition: {},
+      tactics: career.squadPlan.tactics,
+      plan: () => ({
+        ok: true as const,
+        engineVersion: 2 as const,
+        change: { side: "home" as const, tactics: NEUTRAL_TACTICS },
+        report: { minutes: { [starter]: 45 } },
+        lineupAfter: career.squadPlan,
+      }),
+    };
+    mountAction({
+      // biome-ignore lint/suspicious/noExplicitAny: a minimal fake editor for this test
+      halfTimeEditor: editor as any,
+      onContinue,
+    });
+    expect(fixture).toBeTruthy();
+    fireEvent.click(screen.getByTestId("speed-4"));
+    play(20_000);
+    fireEvent.click(screen.getByTestId("sub-add"));
+    fireEvent.click(screen.getByTestId("start-second-half"));
+    play(40_000);
+    fireEvent.click(screen.getByTestId("continue"));
+    expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ engineVersion: 2 }), {
+      minutes: { [starter]: 45 },
+    });
+  });
+
+  it("shows the Swedish labels in Swedish", () => {
+    mountAction({}, "sv");
+    expect(screen.getByTestId("period").textContent).toBe("Första halvlek");
   });
 });
