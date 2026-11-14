@@ -1,10 +1,11 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateLeague } from "../game";
-import { createMemoryLocaleStore } from "../platform";
+import { createMemoryLocaleStore, createMemorySaveStore } from "../platform";
 import { App } from "./app";
 import { clubRating } from "./club-rating";
 
+const fixedNow = () => "2026-01-01T12:00:00.000Z";
 const createRenderer = () => ({ resize: vi.fn(), render: vi.fn(), dispose: vi.fn() });
 
 const renderApp = (locale?: string, initialSeed = 11) =>
@@ -12,6 +13,8 @@ const renderApp = (locale?: string, initialSeed = 11) =>
     <App
       createRenderer={createRenderer}
       localeStore={createMemoryLocaleStore(locale)}
+      saveStore={createMemorySaveStore()}
+      now={fixedNow}
       initialSeed={initialSeed}
     />,
   );
@@ -59,7 +62,15 @@ describe("App", () => {
 
   it("switches locale and remembers it in the store", () => {
     const store = createMemoryLocaleStore();
-    render(<App createRenderer={createRenderer} localeStore={store} initialSeed={1} />);
+    render(
+      <App
+        createRenderer={createRenderer}
+        localeStore={store}
+        saveStore={createMemorySaveStore()}
+        now={fixedNow}
+        initialSeed={1}
+      />,
+    );
     fireEvent.change(screen.getByTestId("locale-switch"), { target: { value: "sv" } });
     expect(screen.getByText(/Språk/)).toBeTruthy();
     expect(store.load()).toBe("sv");

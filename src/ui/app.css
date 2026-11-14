@@ -207,3 +207,21 @@
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
+.save-status {
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+.save-status-error {
+  color: #b3261e;
+  opacity: 1;
+}
+.storage-warning,
+.load-error {
+  padding: 8px 12px;
+  border: 1px solid #b3261e;
+  border-radius: 4px;
+}
+.continue-career {
+  display: block;
+  margin-bottom: 16px;
+}
