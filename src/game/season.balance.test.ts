@@ -8,6 +8,7 @@ import { deriveTeamProfile } from "./derive-team-profile";
 import { generateLeague } from "./generate-league";
 import { getNextFixture } from "./get-next-fixture";
 import { simulateFixture } from "./simulate-fixture";
+import { initialConditions } from "./squad-plan";
 
 const LEAGUE_SEEDS = [1, 2, 3];
 const SEASONS_PER_LEAGUE = 5;
@@ -19,6 +20,7 @@ type SeasonSummary = {
   topQuarterInTopHalf: number;
   topQuarterSize: number;
   championIsStrongest: boolean;
+  conditionInBounds: boolean;
 };
 
 const careerFor = (seed: number): Career => {
@@ -67,6 +69,9 @@ const summarise = (finished: Career): SeasonSummary => {
     topQuarterInTopHalf: [...topQuarter].filter((id) => topHalf.has(id)).length,
     topQuarterSize: quarter,
     championIsStrongest: table[0]?.clubId === byStrength[0],
+    conditionInBounds: Object.values(finished.condition).every(
+      (c) => c.fitness >= 0 && c.fitness <= 100 && c.form >= 1 && c.form <= 10,
+    ),
   };
 };
 
@@ -79,7 +84,11 @@ describe("season balance: full seasons of generated leagues with the real engine
       for (let number = 1; number <= SEASONS_PER_LEAGUE; number++) {
         const ids = career.league.clubs.map((c) => c.id);
         const season = createSeason(seed, number, ids);
-        seasons.push(summarise(playSeason({ ...career, season })));
+        seasons.push(
+          summarise(
+            playSeason({ ...career, season, condition: initialConditions(career.league.players) }),
+          ),
+        );
       }
     }
   }, 120_000);
@@ -101,5 +110,9 @@ describe("season balance: full seasons of generated leagues with the real engine
     const rate = seasons.filter((s) => s.championIsStrongest).length / seasons.length;
     expect(rate).toBeGreaterThanOrEqual(0.25);
     expect(rate).toBeLessThan(0.85);
+  });
+
+  it("keeps fitness within 0..100 and form within 1..10 over 5 seasons", () => {
+    expect(seasons.every((s) => s.conditionInBounds)).toBe(true);
   });
 });

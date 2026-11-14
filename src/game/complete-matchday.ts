@@ -3,6 +3,7 @@ import type { Result } from "./compute-table";
 import type { Fixture } from "./generate-fixtures";
 import { getNextFixture } from "./get-next-fixture";
 import { simulateFixture } from "./simulate-fixture";
+import { type MatchReport, updateConditionAfterMatchday } from "./update-condition";
 
 const fail = (error: MatchdayError): MatchdayResult => ({ ok: false, error });
 
@@ -32,9 +33,14 @@ const checkUserResult = (
  * Completes the current matchday: takes the user's result (from the match view or `simulateFixture`),
  * simulates every other fixture of the round and returns a new career on the next matchday.
  * The input career is not changed. Results are appended in fixture order, so the other matches
- * do not depend on how the user's match was produced.
+ * do not depend on how the user's match was produced. Fitness and form of every player are updated;
+ * without a `report` the user's starters count as having played 90 minutes.
  */
-export const completeMatchday = (career: Career, userResult: Result): MatchdayResult => {
+export const completeMatchday = (
+  career: Career,
+  userResult: Result,
+  report?: MatchReport,
+): MatchdayResult => {
   const { season } = career;
   const userFixture = getNextFixture(season, career.userClubId);
   if (!userFixture) return fail("season-complete");
@@ -49,6 +55,7 @@ export const completeMatchday = (career: Career, userResult: Result): MatchdayRe
     ok: true,
     career: {
       ...career,
+      condition: updateConditionAfterMatchday(career, matchdayResults, report),
       season: {
         ...season,
         results: [...season.results, ...matchdayResults],

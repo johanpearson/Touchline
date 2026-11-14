@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { autoPickLineup } from "./auto-pick-lineup";
 import type { Career } from "./career";
 import { aCareer, deepFreeze } from "./career-builders";
 import { completeMatchday } from "./complete-matchday";
 import { computeTable, type Result } from "./compute-table";
 import { getNextFixture } from "./get-next-fixture";
+import { FITNESS_MAX, FITNESS_MIN, FORM_MAX, FORM_MIN } from "./player-condition";
 import { simulateFixture } from "./simulate-fixture";
+import { clubSquad } from "./squad-plan";
+import { startNextSeason } from "./start-next-season";
 
 const userResultOf = (career: Career): Result => {
   const fixture = getNextFixture(career.season, career.userClubId);
@@ -140,5 +144,76 @@ describe("completeMatchday", () => {
       rows.reduce((n, r) => n + r.goalsAgainst, 0),
     );
     expect(rows.every((r) => r.played === 26)).toBe(true);
+  });
+
+  describe("condition", () => {
+    it("drains the user's starters (90 minutes without a report) and keeps the bench fresh", () => {
+      const career = aCareer();
+
+      const next = complete(career);
+
+      const starter = career.squadPlan.starters[0] as string;
+      const bench = career.squadPlan.bench[0] as string;
+      expect(next.condition[starter]?.fitness).toBe(92.5);
+      expect(next.condition[bench]?.fitness).toBe(100);
+    });
+
+    it("uses the report's minutes for the user's club", () => {
+      const career = aCareer();
+      const [half, full] = career.squadPlan.starters as [string, string];
+      const outcome = completeMatchday(career, userResultOf(career), {
+        minutes: { [half]: 45, [full]: 90 },
+      });
+      if (!outcome.ok) throw new Error(outcome.error);
+
+      expect(outcome.career.condition[half]?.fitness).toBe(96.25);
+      expect(outcome.career.condition[full]?.fitness).toBe(92.5);
+      expect(outcome.career.condition[career.squadPlan.starters[2] as string]?.fitness).toBe(100);
+    });
+
+    it("rotates at least one AI club's eleven because of fatigue, always with a valid lineup", () => {
+      for (const seed of [1, 2, 3]) {
+        let career = aCareer(seed);
+        const elevenOf = (c: Career, clubId: string) => {
+          const club = c.league.clubs.find((x) => x.id === clubId);
+          if (!club) throw new Error("club");
+          const squad = clubSquad(club, c.league.players);
+          return [...autoPickLineup(squad, "4-4-2", c.condition).starters].sort().join();
+        };
+        const aiIds = career.league.clubs.map((c) => c.id).filter((id) => id !== career.userClubId);
+        const first = new Map(aiIds.map((id) => [id, elevenOf(career, id)]));
+        let rotated = false;
+        for (let day = 0; day < 26; day++) {
+          career = complete(career);
+          for (const id of aiIds) {
+            if (elevenOf(career, id) !== first.get(id)) rotated = true;
+          }
+        }
+        expect(rotated).toBe(true);
+      }
+    });
+
+    it("keeps every condition within bounds over a season", () => {
+      const finished = playSeason(aCareer());
+
+      for (const { fitness, form } of Object.values(finished.condition)) {
+        expect(fitness).toBeGreaterThanOrEqual(FITNESS_MIN);
+        expect(fitness).toBeLessThanOrEqual(FITNESS_MAX);
+        expect(form).toBeGreaterThanOrEqual(FORM_MIN);
+        expect(form).toBeLessThanOrEqual(FORM_MAX);
+      }
+    });
+
+    it("resets condition in the next season and keeps the squad plan", () => {
+      const finished = playSeason(aCareer());
+      const next = startNextSeason(finished);
+      if (!next.ok) throw new Error(next.error);
+
+      expect(Object.values(finished.condition).some((c) => c.fitness < 100)).toBe(true);
+      expect(
+        Object.values(next.career.condition).every((c) => c.fitness === 100 && c.form === 5),
+      ).toBe(true);
+      expect(next.career.squadPlan).toEqual(finished.squadPlan);
+    });
   });
 });
