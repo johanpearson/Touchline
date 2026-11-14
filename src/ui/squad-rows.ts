@@ -2,25 +2,39 @@ import {
   ATTRIBUTE_NAMES,
   type AttributeName,
   type Player,
+  type PlayerCondition,
   type PlayerPosition,
   playerOverall,
 } from "../game";
 
 export const POSITION_ORDER: readonly PlayerPosition[] = ["GK", "DEF", "MID", "FWD"];
 
-export type SortColumn = "name" | "age" | "overall" | AttributeName;
+export type SortColumn = "name" | "age" | "overall" | "fitness" | "form" | AttributeName;
 export type SortState = { column: SortColumn; direction: "asc" | "desc" };
 
-export type SquadRow = { player: Player; overall: number; inBestEleven: boolean };
+export type SquadRow = {
+  player: Player;
+  overall: number;
+  fitness: number;
+  form: number;
+  inBestEleven: boolean;
+};
 export type SquadGroup = { position: PlayerPosition; rows: SquadRow[] };
 
 export const DEFAULT_SORT: SortState = { column: "overall", direction: "desc" };
 
-export const SORT_COLUMNS: readonly SortColumn[] = ["name", "age", "overall", ...ATTRIBUTE_NAMES];
+export const SORT_COLUMNS: readonly SortColumn[] = [
+  "name",
+  "age",
+  "overall",
+  "fitness",
+  "form",
+  ...ATTRIBUTE_NAMES,
+];
 
 const columnValue = (row: SquadRow, column: SortColumn): number | string => {
   if (column === "name") return row.player.name;
-  if (column === "overall") return row.overall;
+  if (column === "overall" || column === "fitness" || column === "form") return row[column];
   return row.player[column];
 };
 
@@ -37,6 +51,7 @@ export const groupSquad = (
   players: readonly Player[],
   bestEleven: ReadonlySet<string>,
   sort: SortState,
+  condition: Readonly<Record<string, PlayerCondition>> = {},
 ): SquadGroup[] =>
   POSITION_ORDER.map((position) => ({
     position,
@@ -45,6 +60,8 @@ export const groupSquad = (
       .map((player) => ({
         player,
         overall: playerOverall(player),
+        fitness: condition[player.id]?.fitness ?? 100,
+        form: condition[player.id]?.form ?? 5,
         inBestEleven: bestEleven.has(player.id),
       }))
       .sort((a, b) => compare(a, b, sort)),
