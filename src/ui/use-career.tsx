@@ -21,6 +21,7 @@ import {
   type Lineup,
   type LineupError,
   type MatchdayError,
+  type MatchReport,
   parseCareer,
   type Result,
   startNextSeason,
@@ -59,7 +60,7 @@ export type CareerStore = {
   /** Starts a career and replaces any running one. Returns an error for an unknown club. */
   startCareer: (seed: number, userClubId: string) => CareerError | null;
   /** Records the user's result, simulates the rest of the round and moves to the next matchday. */
-  completeMatch: (userResult: Result) => MatchdayError | null;
+  completeMatch: (userResult: Result, report?: MatchReport) => MatchdayError | null;
   /** Replaces the user's lineup. An invalid lineup returns the error and changes nothing. */
   setLineup: (lineup: Lineup) => { ok: true } | { ok: false; error: LineupError };
   /** Replaces the user's tactics. */
@@ -193,9 +194,9 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
     [persist],
   );
   const completeMatch = useCallback(
-    (userResult: Result): MatchdayError | null => {
+    (userResult: Result, report?: MatchReport): MatchdayError | null => {
       if (!career) return "season-complete";
-      const outcome = completeMatchday(career, userResult);
+      const outcome = completeMatchday(career, userResult, report);
       if (!outcome.ok) return outcome.error;
       setCareer(outcome.career);
       persist(outcome.career, "continue");

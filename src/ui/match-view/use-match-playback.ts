@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Match, MatchEvent, MatchState } from "../../engine";
+import type { Match, MatchChange, MatchEvent, MatchState } from "../../engine";
 import { advanceClock, SPEEDS } from "./playback";
 
 const DEFAULT_TICK_MS = 100;
@@ -12,8 +12,8 @@ export type MatchPlayback = {
   speed: number;
   setPaused: (paused: boolean) => void;
   setSpeed: (speed: number) => void;
-  /** Starts the second half; only valid at half-time. */
-  resume: () => void;
+  /** Starts the second half, applying the user's change first; only valid at half-time. */
+  resume: (change?: MatchChange) => void;
 };
 
 /**
@@ -46,8 +46,9 @@ export const useMatchPlayback = (match: Match, tickMs: number = DEFAULT_TICK_MS)
     return () => clearInterval(id);
   }, [match, speed, paused, tickMs]);
 
-  const resume = () => {
+  const resume = (change?: MatchChange) => {
     if (match.state.period !== "halfTime") return;
+    if (change) match.applyChange(change);
     match.resume();
     setSnapshot({ state: match.state, events: [...match.events] });
   };

@@ -65,12 +65,24 @@ describe("matchSetupFor", () => {
     expect(setup.colours.home).not.toBe(setup.colours.away);
   });
 
-  it("lists every player of both clubs as potential scorers", () => {
+  it("lists every player of the opponent as a potential scorer", () => {
     const career = aCareer();
     const fixture = nextFixtureOf(career);
     const setup = matchSetupFor(career, fixture);
-    const sizeOf = (id: string) => career.league.clubs.find((c) => c.id === id)?.playerIds.length;
-    expect(setup.squads.home).toHaveLength(sizeOf(fixture.homeClubId) ?? -1);
-    expect(setup.squads.away).toHaveLength(sizeOf(fixture.awayClubId) ?? -1);
+    const opponentId =
+      fixture.homeClubId === career.userClubId ? fixture.awayClubId : fixture.homeClubId;
+    const side = fixture.homeClubId === career.userClubId ? "away" : "home";
+    const size = career.league.clubs.find((c) => c.id === opponentId)?.playerIds.length;
+    expect(setup.squads[side]).toHaveLength(size ?? -1);
+  });
+
+  it("credits the user's goals to the starters and bench of the squad plan only", () => {
+    const career = aCareer();
+    const fixture = nextFixtureOf(career);
+    const setup = matchSetupFor(career, fixture);
+    const side = fixture.homeClubId === career.userClubId ? "home" : "away";
+    expect(setup.squads[side]).toHaveLength(
+      career.squadPlan.starters.length + career.squadPlan.bench.length,
+    );
   });
 });

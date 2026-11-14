@@ -170,4 +170,28 @@ describe("season flow", () => {
     expect(screen.getByTestId("play-match").textContent).toBe("Spela match");
     expect(screen.getByTestId("quick-sim").textContent).toBe("Snabbsimulera");
   });
+
+  it("records minutes from a half-time substitution in fitness after the match", () => {
+    mount();
+    click("play-match");
+    fireEvent.click(screen.getByTestId("speed-4"));
+    act(() => vi.advanceTimersByTime(40_000));
+    fireEvent.click(screen.getByTestId("sub-add"));
+    const off = (screen.getByTestId("sub-off-0") as HTMLSelectElement).value;
+    const on = (screen.getByTestId("sub-on-0") as HTMLSelectElement).value;
+    const ids = screen
+      .getAllByTestId(/^half-time-fitness-/)
+      .map((e) => e.dataset.testid?.slice("half-time-fitness-".length) ?? "");
+    fireEvent.click(screen.getByTestId("start-second-half"));
+    act(() => vi.advanceTimersByTime(40_000));
+    click("continue");
+    goTo("#/squad");
+    const fitness = (id: string) => Number(screen.getByTestId(`plan-fitness-${id}`).textContent);
+    const others = ids.filter((id) => id !== off && id !== on);
+    // 45 minutes cost half as much as 90, and an unused substitute stays at 100.
+    expect(fitness(off)).toBe(fitness(on));
+    expect(fitness(off)).toBeLessThan(100);
+    expect(others.some((id) => fitness(id) === 100)).toBe(true);
+    expect(others.some((id) => fitness(id) < fitness(off))).toBe(true);
+  });
 });

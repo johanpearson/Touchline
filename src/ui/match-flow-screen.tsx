@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import type { MatchState } from "../engine";
-import { getNextFixture, type Result } from "../game";
+import { getNextFixture, type MatchReport, planHalfTime, type Result } from "../game";
 import { matchSetupFor } from "./match-setup";
-import { MatchScreen, type MatchScreenProps } from "./match-view";
+import { type HalfTimeEditor, MatchScreen, type MatchScreenProps } from "./match-view";
+
 import { Redirect } from "./redirect";
 import { hrefFor } from "./routes";
 import { useCareer } from "./use-career";
@@ -23,7 +24,17 @@ export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
   );
   if (!career || !fixture || !setup) return <Redirect to={{ name: "home" }} />;
 
-  const finish = (score: MatchState["score"]) => {
+  const club = career.league.clubs.find((c) => c.id === career.userClubId);
+  const editor: HalfTimeEditor = {
+    players: career.league.players.filter((p) => club?.playerIds.includes(p.id)),
+    starters: career.squadPlan.starters,
+    bench: career.squadPlan.bench,
+    condition: career.condition,
+    tactics: career.squadPlan.tactics,
+    plan: (changes) => planHalfTime(career, fixture, changes),
+  };
+
+  const finish = (score: MatchState["score"], report?: MatchReport) => {
     const result: Result = {
       fixtureId: fixture.id,
       homeClubId: fixture.homeClubId,
@@ -31,7 +42,7 @@ export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
       homeGoals: score.home,
       awayGoals: score.away,
     };
-    if (completeMatch(result) === null) window.location.hash = hrefFor({ name: "results" });
+    if (completeMatch(result, report) === null) window.location.hash = hrefFor({ name: "results" });
   };
 
   return (
@@ -40,6 +51,7 @@ export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
       {...setup}
       createRenderer={createRenderer}
       tickMs={tickMs}
+      halfTimeEditor={editor}
       onContinue={finish}
     />
   );

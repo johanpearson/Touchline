@@ -2,10 +2,10 @@ import { useMemo, useState } from "react";
 import { generateCommentary } from "../../commentary";
 import type { MatchInput, MatchState, PerSide } from "../../engine";
 import { computeMatchStats, createMatch } from "../../engine";
-import type { SquadPlayer } from "../../game";
+import type { MatchReport, SquadPlayer } from "../../game";
 import { attributeGoalScorers } from "../../game";
 import { useI18n } from "../i18n-provider";
-import { HalfTimePanel } from "./half-time-panel";
+import { type AppliedHalfTimePlan, type HalfTimeEditor, HalfTimePanel } from "./half-time-panel";
 import { MatchFeed } from "./match-feed";
 import { MomentumChart } from "./momentum-chart";
 import { MomentumTerrain } from "./momentum-terrain";
@@ -27,8 +27,13 @@ export type MatchScreenProps = {
   createRenderer?: TerrainRendererFactory;
   /** How often the clock advances, in milliseconds; tests use a coarser tick. */
   tickMs?: number;
-  /** When given, a "Continue" button appears at full time and calls this with the final score. */
-  onContinue?: (score: MatchState["score"]) => void;
+  /** Lets the user change their side at half-time. Without it half-time offers no changes. */
+  halfTimeEditor?: HalfTimeEditor;
+  /**
+   * When given, a "Continue" button appears at full time and calls this with the final score and,
+   * if the user made changes at half-time, the report of minutes played.
+   */
+  onContinue?: (score: MatchState["score"], report?: MatchReport) => void;
 };
 
 /**
@@ -42,6 +47,7 @@ export function MatchScreen({
   squads,
   createRenderer,
   tickMs,
+  halfTimeEditor,
   onContinue,
 }: MatchScreenProps) {
   const { t, locale } = useI18n();
@@ -50,6 +56,11 @@ export function MatchScreen({
     match,
     tickMs,
   );
+  const [report, setReport] = useState<MatchReport | undefined>();
+  const startSecondHalf = (plan?: AppliedHalfTimePlan) => {
+    setReport(plan?.report);
+    resume(plan?.change);
+  };
   const stats = useMemo(() => computeMatchStats(events, matchTime), [events, matchTime]);
   const shownEvents = useMemo(() => terrainEvents(events, state.period), [events, state.period]);
   const halfTime = state.period === "halfTime";
@@ -90,11 +101,16 @@ export function MatchScreen({
             awayName={names.away}
             score={state.score}
             stats={stats}
-            onResume={resume}
+            editor={halfTimeEditor}
+            onResume={startSecondHalf}
           />
         )}
         {state.period === "fullTime" && onContinue && (
-          <button type="button" data-testid="continue" onClick={() => onContinue(state.score)}>
+          <button
+            type="button"
+            data-testid="continue"
+            onClick={() => onContinue(state.score, report)}
+          >
             {t("match.continue")}
           </button>
         )}
