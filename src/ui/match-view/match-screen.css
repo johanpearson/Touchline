@@ -122,3 +122,21 @@
     animation: feed-in 0.3s ease-out;
   }
 }
+.match-screen .ratings {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.match-screen .ratings th,
+.match-screen .ratings td {
+  padding: 2px 8px;
+  text-align: right;
+}
+.match-screen .ratings th:first-child,
+.match-screen .ratings td:nth-child(2),
+.match-screen .ratings thead th:nth-child(2) {
+  text-align: left;
+}
+.match-screen .ratings tr[data-potm="true"] {
+  font-weight: 700;
+}

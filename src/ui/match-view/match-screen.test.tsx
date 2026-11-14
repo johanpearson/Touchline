@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type MatchInputV1, NEUTRAL_TACTICS, type PerSide } from "../../engine";
 import type { SquadPlayer } from "../../game";
@@ -351,6 +351,48 @@ describe("MatchScreen with the action engine", () => {
     expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ engineVersion: 2 }), {
       minutes: { [starter]: 45 },
     });
+  });
+
+  it("shows the action stats rows instead of the zone ones", () => {
+    mountAction();
+    for (const id of [
+      "possession",
+      "shots",
+      "shotsOnTarget",
+      "xg",
+      "corners",
+      "fouls",
+      "passes",
+      "passCompletion",
+      "keyPasses",
+    ]) {
+      expect(screen.getByTestId(`stat-${id}`), id).toBeTruthy();
+    }
+    expect(screen.queryByTestId("stat-fieldTilt")).toBeNull();
+  });
+
+  it("shows the player ratings table only at full time, with the user's side first", () => {
+    const { setup } = anActionMatchSetup();
+    render(
+      <I18nProvider store={createMemoryLocaleStore("en")}>
+        <MatchScreen {...setup} userSide="away" createRenderer={fakeRenderer} tickMs={1000} />
+      </I18nProvider>,
+    );
+    expect(screen.queryByTestId("player-ratings")).toBeNull();
+    fireEvent.click(screen.getByTestId("speed-4"));
+    play(20_000);
+    fireEvent.click(screen.getByTestId("start-second-half"));
+    play(40_000);
+    const table = screen.getByTestId("player-ratings");
+    const rows = within(table).getAllByTestId(/^rating-row-/);
+    expect(rows).toHaveLength(22);
+    expect(rows.slice(0, 11).every((r) => r.getAttribute("data-side") === "away")).toBe(true);
+    expect(within(table).getAllByTestId("player-of-the-match")).toHaveLength(1);
+    const names = new Set(Object.values(setup.players));
+    for (const row of rows) {
+      expect(names.has(row.querySelector("th")?.firstChild?.textContent ?? "")).toBe(true);
+      expect(row.textContent).toMatch(/\d\.\d/);
+    }
   });
 
   it("shows the Swedish labels in Swedish", () => {

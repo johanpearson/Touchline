@@ -1,12 +1,28 @@
 import { useMemo, useState } from "react";
 import { generateActionCommentary, generateCommentary } from "../../commentary";
-import type { EngineVersion, MatchInputV1, MatchInputV2, MatchState, PerSide } from "../../engine";
-import { computeMatchStats, createMatch, toZoneEvents } from "../../engine";
+import type {
+  EngineVersion,
+  MatchInputV1,
+  MatchInputV2,
+  MatchState,
+  PerSide,
+  Side,
+} from "../../engine";
+import {
+  computeActionStats,
+  computeMatchStats,
+  createMatch,
+  playerRatings,
+  toZoneEvents,
+} from "../../engine";
 import type { MatchReport, SquadPlayer } from "../../game";
 import { attributeGoalScorers } from "../../game";
 import { useI18n } from "../i18n-provider";
+import { ActionStatsPanel } from "./action-stats-panel";
 import type { AppliedHalfTimePlan, HalfTimeEditor } from "./half-time-panel";
 import { MatchLayout } from "./match-layout";
+import { PlayerRatings } from "./player-ratings";
+import { buildRatingRows } from "./ratings-table";
 import { terrainEvents } from "./terrain-events";
 import type { TerrainRendererFactory } from "./terrain-renderer";
 import { useMatchPlayback } from "./use-match-playback";
@@ -22,6 +38,8 @@ type MatchScreenCommon = {
   colours: PerSide<string>;
   /** The players goals are credited to, by position and finishing (zone engine). */
   squads: PerSide<readonly SquadPlayer[]>;
+  /** The side the user manages; its players come first in the ratings table. Default home. */
+  userSide?: Side;
   /** Replaces the three.js renderer, for tests. */
   createRenderer?: TerrainRendererFactory;
   /** How often the clock advances, in milliseconds; tests use a coarser tick. */
@@ -129,6 +147,7 @@ function ActionMatchScreen({
   seed,
   colours,
   players,
+  userSide = "home",
   createRenderer,
   tickMs,
   halfTimeEditor,
@@ -150,6 +169,29 @@ function ActionMatchScreen({
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   const zoneEvents = useMemo(() => toZoneEvents(events), [eventCount]);
   const stats = useMemo(() => computeMatchStats(zoneEvents, matchTime), [zoneEvents, matchTime]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
+  const actionStats = useMemo(() => computeActionStats(events, matchTime), [eventCount, matchTime]);
+  const fullTime = state.period === "fullTime";
+  // Starters plus everyone brought on by an applied change; read once the match is over.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `match.changes` is mutated in place
+  const played = useMemo(() => playedIds(input, match.changes), [input, state.period]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
+  const ratingRows = useMemo(
+    () =>
+      fullTime
+        ? buildRatingRows({
+            players: computeActionStats(events, Number.POSITIVE_INFINITY).players,
+            ratings: playerRatings(
+              events,
+              [...played.home, ...played.away].map((id) => ({ id })),
+            ),
+            played,
+            names: players,
+            userSide,
+          })
+        : [],
+    [fullTime, played, players, userSide],
+  );
   const shown = useMemo(() => terrainEvents(zoneEvents, state.period), [zoneEvents, state.period]);
   const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
@@ -171,6 +213,13 @@ function ActionMatchScreen({
       playback={playback}
       createRenderer={createRenderer}
       halfTimeEditor={halfTimeEditor}
+      statsPanel={<ActionStatsPanel stats={actionStats} playerIds={played} />}
+      fullTimePanel={
+        <PlayerRatings
+          rows={ratingRows}
+          teamNames={{ home: input.home.name, away: input.away.name }}
+        />
+      }
       onResume={startSecondHalf}
       onContinue={
         onContinue && (() => onContinue({ score: state.score, engineVersion: 2 }, report))
@@ -178,3 +227,18 @@ function ActionMatchScreen({
     />
   );
 }
+
+/** Ids of the players who played, per side: the starters and everyone a change brought on. */
+const playedIds = (
+  input: MatchInputV2,
+  changes: readonly { change: { side: Side; lineup?: readonly { id: string }[] } }[],
+): PerSide<string[]> => {
+  const played: PerSide<Set<string>> = {
+    home: new Set(input.home.starters.map((p) => p.id)),
+    away: new Set(input.away.starters.map((p) => p.id)),
+  };
+  for (const { change } of changes) {
+    for (const player of change.lineup ?? []) played[change.side].add(player.id);
+  }
+  return { home: [...played.home], away: [...played.away] };
+};
