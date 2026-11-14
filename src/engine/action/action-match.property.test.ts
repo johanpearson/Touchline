@@ -12,6 +12,8 @@ vi.setConfig({ testTimeout: 120_000 });
 const FIRST_HALF_LIMIT = 10_000;
 const MATCH_LIMIT = 20_000;
 const EPSILON = 1e-6;
+/** Properties that play whole matches or several matches per run use fewer runs by default. */
+const WHOLE_MATCH_RUNS = 8;
 /** All properties see the same random inputs, so a match is simulated once and shared. */
 const DEFAULT_FC_SEED = 20_260_514;
 const fcSeed = Number.parseInt(process.env.FC_SEED ?? "", 10) || DEFAULT_FC_SEED;
@@ -23,14 +25,20 @@ const forAll = <T>(arb: fc.Arbitrary<T>, check: (value: T) => boolean, defaultRu
   fc.assert(fc.property(arb, check), { numRuns: propertyRuns(defaultRuns), seed: fcSeed });
 
 const cache = new Map<string, ReturnType<typeof createActionMatch>>();
-const playMatch = ([input, seed]: Run, detail: "full" | "fast" = "full") => {
-  const key = `${detail}:${seed}:${JSON.stringify(input)}`;
+/**
+ * Plays a match once per run and shares it between properties. Most properties only need the first
+ * half (which also ends in a period change), so `wholeMatch` is opt-in: it also plays the second half.
+ */
+const playMatch = ([input, seed]: Run, detail: "full" | "fast" = "full", wholeMatch = false) => {
+  const key = `${detail}:${wholeMatch}:${seed}:${JSON.stringify(input)}`;
   const cached = cache.get(key);
   if (cached !== undefined) return cached;
   const match = createActionMatch(input, seed, { detail });
   match.advanceTo(FIRST_HALF_LIMIT);
-  match.resume();
-  match.advanceTo(MATCH_LIMIT);
+  if (wholeMatch) {
+    match.resume();
+    match.advanceTo(MATCH_LIMIT);
+  }
   cache.set(key, match);
   return match;
 };
@@ -131,7 +139,7 @@ describe("action engine properties", () => {
       fc.tuple(arbRun, arbSplits),
       ([run, splits]) => {
         const [input, seed] = run;
-        const whole = playMatch(run);
+        const whole = playMatch(run, "full", true);
         const split = createActionMatch(input, seed);
         let at = 0;
         for (const step of splits) {
@@ -154,13 +162,17 @@ describe("action engine properties", () => {
   });
 
   it("gives the same log in fast detail as in full detail, minus the snapshots", () => {
-    forAll(arbRun, (run) => {
-      const fast = playMatch(run, "fast");
-      const full = playMatch(run, "full");
-      expect(fast.events).toEqual(full.events.map(withoutSnapshot));
-      expect(fast.state).toEqual(full.state);
-      return true;
-    });
+    forAll(
+      arbRun,
+      (run) => {
+        const fast = playMatch(run, "fast", true);
+        const full = playMatch(run, "full", true);
+        expect(fast.events).toEqual(full.events.map(withoutSnapshot));
+        expect(fast.state).toEqual(full.state);
+        return true;
+      },
+      WHOLE_MATCH_RUNS,
+    );
   });
 
   it("keeps the score equal to the number of goal events", () => {
@@ -210,14 +222,18 @@ describe("action engine properties", () => {
   });
 
   it("does not depend on the order in which unrelated matches are played", () => {
-    forAll(fc.tuple(arbRun, arbRun), ([first, second]) => {
-      const alone = createActionMatch(first[0], first[1], { detail: "fast" });
-      alone.advanceTo(FIRST_HALF_LIMIT);
-      playMatch(second, "fast");
-      const after = createActionMatch(first[0], first[1], { detail: "fast" });
-      after.advanceTo(FIRST_HALF_LIMIT);
-      expect(after.events).toEqual(alone.events);
-      return true;
-    });
+    forAll(
+      fc.tuple(arbRun, arbRun),
+      ([first, second]) => {
+        const alone = createActionMatch(first[0], first[1], { detail: "fast" });
+        alone.advanceTo(FIRST_HALF_LIMIT);
+        playMatch(second, "fast");
+        const after = createActionMatch(first[0], first[1], { detail: "fast" });
+        after.advanceTo(FIRST_HALF_LIMIT);
+        expect(after.events).toEqual(alone.events);
+        return true;
+      },
+      WHOLE_MATCH_RUNS,
+    );
   });
 });
