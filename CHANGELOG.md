@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.5.0](https://github.com/johanpearson/Touchline/compare/v1.4.0...v1.5.0) (2026-11-14)
+
+
+### Features
+
+* **engine:** apply team changes to a running match ([#134](https://github.com/johanpearson/Touchline/issues/134)) ([0face8e](https://github.com/johanpearson/Touchline/commit/0face8e3aa66e25f9869a7cab394bfd5e44b4c71)), closes [#119](https://github.com/johanpearson/Touchline/issues/119)
+* **engine:** team tactics as engine modifiers ([#133](https://github.com/johanpearson/Touchline/issues/133)) ([27eb444](https://github.com/johanpearson/Touchline/commit/27eb4448a82c9b5ca3e68dc1b25064793f23cb67))
+* **game:** derive team ratings from a lineup, formation and condition ([#136](https://github.com/johanpearson/Touchline/issues/136)) ([e54049d](https://github.com/johanpearson/Touchline/commit/e54049d7f34493263d0b4a0e7f97a877b683fae8)), closes [#122](https://github.com/johanpearson/Touchline/issues/122)
+* **game:** formations, lineups with bench and auto-pick ([#135](https://github.com/johanpearson/Touchline/issues/135)) ([88e4ab8](https://github.com/johanpearson/Touchline/commit/88e4ab8af09a4e39784d4c0c01e72d7338463e1b)), closes [#121](https://github.com/johanpearson/Touchline/issues/121)
+* **game:** half-time substitutions and tactic changes ([#141](https://github.com/johanpearson/Touchline/issues/141)) ([a70d748](https://github.com/johanpearson/Touchline/commit/a70d748f5ded4aeb1ace17af67e02838cd234e4f))
+* **game:** player condition with fitness, form and effective attributes ([#131](https://github.com/johanpearson/Touchline/issues/131)) ([9d81b39](https://github.com/johanpearson/Touchline/commit/9d81b39fb7a9d1945874eb62ef66277e25bdb7bb)), closes [#120](https://github.com/johanpearson/Touchline/issues/120)
+* **game:** squad plan and condition in the career, save schema v3 ([#137](https://github.com/johanpearson/Touchline/issues/137)) ([84a63a8](https://github.com/johanpearson/Touchline/commit/84a63a857d9568bc7798857d13ddf3cdc30b1265)), closes [#123](https://github.com/johanpearson/Touchline/issues/123)
+* **game:** update fitness and form after each matchday and rotate AI lineups ([#138](https://github.com/johanpearson/Touchline/issues/138)) ([1093136](https://github.com/johanpearson/Touchline/commit/109313688049e3e793ac90ff75826c67f1c80d1c)), closes [#124](https://github.com/johanpearson/Touchline/issues/124)
+* **ui:** half-time substitutions and tactic changes in the match view ([#142](https://github.com/johanpearson/Touchline/issues/142)) ([f8e533a](https://github.com/johanpearson/Touchline/commit/f8e533a4a64be6c1d0ff7269813d1a3869a08d32))
+* **ui:** squad screen with lineup, bench, formation and tactics ([#140](https://github.com/johanpearson/Touchline/issues/140)) ([cb3942d](https://github.com/johanpearson/Touchline/commit/cb3942dbad30af36708fa4743fe6656ad313e544)), closes [#125](https://github.com/johanpearson/Touchline/issues/125)
+* **ui:** swap a starter with a bench player in one step on the squad screen ([#143](https://github.com/johanpearson/Touchline/issues/143)) ([8990364](https://github.com/johanpearson/Touchline/commit/8990364f5a6541a5fd7d36ec3f7dcaa27bc263c6)), closes [#139](https://github.com/johanpearson/Touchline/issues/139)
+
 ## [1.4.0](https://github.com/johanpearson/Touchline/compare/v1.3.0...v1.4.0) (2026-11-14)
 
 
