@@ -1,5 +1,6 @@
 import type { Club } from "./club";
 import { ATTRIBUTE_NAMES, type AttributeName, type Player } from "./player";
+import { initialCondition, type PlayerCondition } from "./player-condition";
 import type { PlayerPosition } from "./squad-player";
 
 type PlayerBuilder = {
@@ -120,3 +121,18 @@ export const aSquad = (attributeValue = 10, idPrefix = "p"): Player[] => {
     ),
   );
 };
+
+type ConditionBuilder = {
+  withFitness: (value: number) => ConditionBuilder;
+  withForm: (value: number) => ConditionBuilder;
+  build: () => PlayerCondition;
+};
+
+const conditionBuilder = (condition: PlayerCondition): ConditionBuilder => ({
+  withFitness: (fitness) => conditionBuilder({ ...condition, fitness }),
+  withForm: (form) => conditionBuilder({ ...condition, form }),
+  build: () => ({ ...condition }),
+});
+
+/** A neutral condition (fitness 100, form 5) unless overridden. */
+export const aCondition = (): ConditionBuilder => conditionBuilder(initialCondition());
