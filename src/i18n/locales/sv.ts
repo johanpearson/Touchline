@@ -190,5 +190,17 @@ export const sv = {
     "Åtgärden misslyckades på grund av ett lagringsproblem. Inget annat ändrades.",
   "saves.error.corrupt": "Den här sparfilen är skadad och kan inte laddas.",
   "saves.error.newerVersion": "Den här sparfilen gjordes med en nyare version av spelet.",
+  "saves.export": "Exportera",
+  "saves.exportCareer": "Exportera pågående karriär",
+  "saves.import": "Importera fil",
+  "saves.importPrompt":
+    "Importera {club}, säsong {season}, omgång {matchday}. Vilken plats ska den läggas på?",
+  "saves.importInto": "Importera till {slot}",
+  "saves.confirmImportOverwrite": "Skriva över {slot} med den importerade sparfilen?",
+  "saves.importError.notJson": "Den här filen är inte JSON-data.",
+  "saves.importError.notSave": "Den här filen är inte en Touchline-sparfil.",
+  "saves.importError.newerVersion": "Den här sparfilen gjordes med en nyare version av spelet.",
+  "saves.importError.tooLarge": "Den här filen är för stor för att vara en sparfil.",
+  "saves.importError.corrupt": "Karriärdatan i den här filen är skadad.",
   "saves.error.other": "Åtgärden kunde inte slutföras.",
 } as const satisfies Record<keyof typeof en, Message>;

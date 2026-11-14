@@ -188,5 +188,17 @@ export const en = {
   "saves.error.store": "The action failed because of a storage problem. Nothing else was changed.",
   "saves.error.corrupt": "This save is damaged and cannot be loaded.",
   "saves.error.newerVersion": "This save was made by a newer version of the game.",
+  "saves.export": "Export",
+  "saves.exportCareer": "Export running career",
+  "saves.import": "Import file",
+  "saves.importPrompt":
+    "Import {club}, season {season}, matchday {matchday}. Which slot should it go into?",
+  "saves.importInto": "Import into {slot}",
+  "saves.confirmImportOverwrite": "Overwrite {slot} with the imported save?",
+  "saves.importError.notJson": "This file is not a JSON file.",
+  "saves.importError.notSave": "This file is not a Touchline save.",
+  "saves.importError.newerVersion": "This save was made by a newer version of the game.",
+  "saves.importError.tooLarge": "This file is too large to be a save.",
+  "saves.importError.corrupt": "The career data in this file is damaged.",
   "saves.error.other": "The action could not be completed.",
 } as const satisfies Record<string, Message>;

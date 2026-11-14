@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "./i18n-provider";
+import { ImportControls } from "./import-controls";
 import { hrefFor } from "./routes";
 import { isManualSlot, type SlotActionResult, type SlotEntry, type SlotError } from "./save-slots";
 import { useCareer } from "./use-career";
@@ -25,7 +26,21 @@ const formatTime = (iso: string, locale: string): string => {
 
 export function SavesScreen() {
   const { t, locale } = useI18n();
-  const { career, listSlots, saveToSlot, loadSlot, deleteSlot, lastSavedAt } = useCareer();
+  const {
+    career,
+    listSlots,
+    saveToSlot,
+    loadSlot,
+    deleteSlot,
+    exportSlot,
+    exportCareer,
+    importOffer,
+    importInto,
+    cancelImport,
+    lastImportedSlot,
+    lastSavedAt,
+  } = useCareer();
+  const [importTarget, setImportTarget] = useState<string | null>(null);
   const [slots, setSlots] = useState<SlotEntry[] | null>(null);
   const [listFailed, setListFailed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -96,6 +111,19 @@ export function SavesScreen() {
       },
     );
 
+  const chooseImportTarget = (entry: SlotEntry) => {
+    if (entry.state.kind === "empty") {
+      void run(entry.id, () => importInto(entry.id));
+    } else {
+      setImportTarget(entry.id);
+    }
+  };
+
+  const confirmImport = (id: string) => {
+    setImportTarget(null);
+    void run(id, () => importInto(id));
+  };
+
   const slotName = (id: string) =>
     isManualSlot(id)
       ? t("saves.slot.manual", { number: id.replace("slot-", "") })
@@ -112,6 +140,72 @@ export function SavesScreen() {
           </a>
         </p>
       )}
+      <div className="saves-actions">
+        <ImportControls />
+        {career ? (
+          <button
+            type="button"
+            data-testid="export-career"
+            onClick={() => void run("career", async () => exportCareer())}
+          >
+            {t("saves.exportCareer")}
+          </button>
+        ) : null}
+      </div>
+      {importOffer ? (
+        <section className="import-picker" data-testid="import-picker">
+          <p>
+            {t("saves.importPrompt", {
+              club: importOffer.clubName,
+              season: importOffer.season,
+              matchday: importOffer.matchday,
+            })}
+          </p>
+          {(slots ?? [])
+            .filter((entry) => isManualSlot(entry.id))
+            .map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                data-testid={`import-into-${entry.id}`}
+                disabled={busy}
+                onClick={() => chooseImportTarget(entry)}
+              >
+                {t("saves.importInto", { slot: slotName(entry.id) })}
+              </button>
+            ))}
+          <button
+            type="button"
+            data-testid="import-cancel"
+            onClick={() => {
+              setImportTarget(null);
+              cancelImport();
+            }}
+          >
+            {t("saves.cancel")}
+          </button>
+          {importTarget ? (
+            <div className="slot-confirm" role="alertdialog" data-testid="confirm-import-overwrite">
+              <span>{t("saves.confirmImportOverwrite", { slot: slotName(importTarget) })}</span>
+              <button
+                type="button"
+                data-testid="import-confirm-yes"
+                disabled={busy}
+                onClick={() => confirmImport(importTarget)}
+              >
+                {t("saves.confirm")}
+              </button>
+              <button
+                type="button"
+                data-testid="import-confirm-no"
+                onClick={() => setImportTarget(null)}
+              >
+                {t("saves.cancel")}
+              </button>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
       {listFailed ? (
         <p role="alert" data-testid="saves-list-error">
           {t("saves.listError")}
@@ -126,10 +220,12 @@ export function SavesScreen() {
             time={(iso) => formatTime(iso, locale)}
             canSave={career !== null && isManualSlot(entry.id)}
             busy={busy}
+            highlighted={lastImportedSlot === entry.id}
             confirming={pending?.id === entry.id ? pending.action : null}
             error={error?.id === entry.id ? error.error : null}
             onSave={() => requestSave(entry)}
             onLoad={() => void load(entry)}
+            onExport={() => void run(entry.id, () => exportSlot(entry.id))}
             onDelete={() => setPending({ id: entry.id, action: "delete" })}
             onConfirm={() => void confirm(entry)}
             onCancel={() =>
@@ -148,10 +244,12 @@ type RowProps = {
   time: (iso: string) => string;
   canSave: boolean;
   busy: boolean;
+  highlighted: boolean;
   confirming: "overwrite" | "delete" | null;
   error: SlotError | null;
   onSave: () => void;
   onLoad: () => void;
+  onExport: () => void;
   onDelete: () => void;
   onConfirm: () => void;
   onCancel: () => void;
@@ -163,7 +261,11 @@ function SlotRow(props: RowProps) {
   const { state } = entry;
   const loadable = state.kind === "filled";
   return (
-    <li className="slot-row" data-testid={`slot-${entry.id}`}>
+    <li
+      className="slot-row"
+      data-testid={`slot-${entry.id}`}
+      data-highlighted={props.highlighted ? "true" : undefined}
+    >
       <strong className="slot-name">{props.name}</strong>
       <span className="slot-info" data-testid={`slot-info-${entry.id}`}>
         {state.kind === "empty" ? t("saves.empty") : null}
@@ -197,6 +299,16 @@ function SlotRow(props: RowProps) {
             onClick={props.onLoad}
           >
             {t("saves.load")}
+          </button>
+        ) : null}
+        {loadable ? (
+          <button
+            type="button"
+            data-testid={`export-${entry.id}`}
+            disabled={busy}
+            onClick={props.onExport}
+          >
+            {t("saves.export")}
           </button>
         ) : null}
         {state.kind !== "empty" ? (

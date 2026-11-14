@@ -3,6 +3,7 @@ import { generateLeague } from "../game";
 import { clubRating } from "./club-rating";
 import { ContinuePanel } from "./continue-panel";
 import { useI18n } from "./i18n-provider";
+import { ImportControls } from "./import-controls";
 import { hrefFor } from "./routes";
 import { useCareer } from "./use-career";
 
@@ -42,6 +43,11 @@ export function NewCareerScreen({ initialSeed }: Props) {
       <a data-testid="nav-saves" href={hrefFor({ name: "saves" })}>
         {t("nav.saves")}
       </a>
+      <ImportControls
+        onPicked={() => {
+          window.location.hash = hrefFor({ name: "saves" });
+        }}
+      />
       <p>{t("newCareer.intro")}</p>
       <label className="seed-field">
         {t("newCareer.seed")}{" "}

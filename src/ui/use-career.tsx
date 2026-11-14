@@ -14,17 +14,24 @@ import {
   completeMatchday,
   createCareer,
   type MatchdayError,
+  parseCareer,
   type Result,
   startNextSeason,
 } from "../game";
-import { createEnvelope } from "../platform";
-import type { SaveStore } from "../shared";
+import { createEnvelope, parseSaveFile, saveFileName, serializeSave } from "../platform";
+import type { FileTransfer, SaveEnvelope, SaveStore } from "../shared";
 import { createAutosaveQueue, type SaveLineage } from "./autosave-queue";
 import {
   type ContinueCandidate,
   type ContinueError,
   findContinueCandidate,
 } from "./find-continue-candidate";
+import {
+  type ImportError,
+  type ImportOffer,
+  type ImportPickResult,
+  importErrorFor,
+} from "./import-save";
 import {
   isKnownSlot,
   isManualSlot,
@@ -70,7 +77,33 @@ export type CareerStore = {
   loadSlot: (id: string) => Promise<SlotActionResult>;
   /** Removes a slot (also a damaged one). Deleting an empty slot is not an error. */
   deleteSlot: (id: string) => Promise<SlotActionResult>;
+  /** Hands a slot's stored save to the user as a file. */
+  exportSlot: (id: string) => Promise<SlotActionResult>;
+  /** Hands the running career to the user as a file. */
+  exportCareer: () => SlotActionResult;
+  /** Lets the user pick a file and validates it. It is stored only by `importInto`. */
+  pickImport: () => Promise<ImportPickResult>;
+  /** The validated file waiting for a target slot, or null. */
+  importOffer: ImportOffer | null;
+  /** Why the latest picked file was rejected, or null. */
+  importError: ImportError | null;
+  /** Drops the waiting file and any import error. */
+  cancelImport: () => void;
+  /** Stores the waiting file in a manual slot (the caller has confirmed any overwrite). */
+  importInto: (id: string) => Promise<SlotActionResult>;
+  /** The slot the latest import went into, or null. */
+  lastImportedSlot: string | null;
 };
+
+const clubNameOf = (career: Career): string =>
+  career.league.clubs.find((c) => c.id === career.userClubId)?.name ?? career.userClubId;
+
+const fileNameFor = (career: Career): string =>
+  saveFileName({
+    clubName: clubNameOf(career),
+    season: career.season.number,
+    matchday: career.season.currentMatchday,
+  });
 
 const CareerContext = createContext<CareerStore | null>(null);
 
@@ -81,6 +114,8 @@ export type CareerProviderProps = {
   saveStore: SaveStore;
   /** Injected clock returning an ISO 8601 timestamp; the UI never reads the time itself. */
   now: () => string;
+  /** Downloads and file picking for export and import. */
+  fileTransfer: FileTransfer;
 };
 
 /**
@@ -88,12 +123,15 @@ export type CareerProviderProps = {
  * completed matchday and after starting the next season. Save failures are reported through
  * `saveStatus` and never block play.
  */
-export function CareerProvider({ children, saveStore, now }: CareerProviderProps) {
+export function CareerProvider({ children, saveStore, now, fileTransfer }: CareerProviderProps) {
   const [career, setCareer] = useState<Career | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<FoundCandidate | null>(null);
   const [loadError, setLoadError] = useState<ContinueError | null>(null);
+  const [importOffer, setImportOffer] = useState<ImportOffer | null>(null);
+  const [importError, setImportError] = useState<ImportError | null>(null);
+  const [lastImportedSlot, setLastImportedSlot] = useState<string | null>(null);
 
   const nowRef = useRef(now);
   nowRef.current = now;
@@ -215,6 +253,79 @@ export function CareerProvider({ children, saveStore, now }: CareerProviderProps
     [saveStore],
   );
 
+  const exportCareer = useCallback((): SlotActionResult => {
+    if (!career) return { ok: false, error: "no-career" };
+    const envelope = createEnvelope(career, nowRef.current);
+    fileTransfer.download(fileNameFor(career), serializeSave(envelope));
+    return { ok: true };
+  }, [career, fileTransfer]);
+  const exportSlot = useCallback(
+    async (id: string): Promise<SlotActionResult> => {
+      if (!isKnownSlot(id)) return { ok: false, error: "unknown-slot" };
+      try {
+        const read = await readSlot(saveStore, id);
+        if (read.kind !== "found") return { ok: false, error: read.kind };
+        fileTransfer.download(fileNameFor(read.career), serializeSave(read.envelope));
+        return { ok: true };
+      } catch {
+        return { ok: false, error: "store" };
+      }
+    },
+    [saveStore, fileTransfer],
+  );
+
+  const pickImport = useCallback(async (): Promise<ImportPickResult> => {
+    let file: Awaited<ReturnType<FileTransfer["pickFile"]>>;
+    try {
+      file = await fileTransfer.pickFile();
+    } catch {
+      file = null;
+    }
+    if (!file) return "cancelled";
+    setLastImportedSlot(null);
+    const parsed = parseSaveFile(file.text);
+    if (!parsed.ok) {
+      setImportOffer(null);
+      setImportError(importErrorFor(parsed.error));
+      return "error";
+    }
+    const careerResult = parseCareer(parsed.save.game);
+    if (!careerResult.ok) {
+      setImportOffer(null);
+      setImportError("corrupt-career");
+      return "error";
+    }
+    setImportError(null);
+    setImportOffer({
+      envelope: { ...parsed.save, game: careerResult.career },
+      clubName: clubNameOf(careerResult.career),
+      season: careerResult.career.season.number,
+      matchday: careerResult.career.season.currentMatchday,
+    });
+    return "picked";
+  }, [fileTransfer]);
+  const cancelImport = useCallback(() => {
+    setImportOffer(null);
+    setImportError(null);
+  }, []);
+  const importInto = useCallback(
+    async (id: string): Promise<SlotActionResult> => {
+      if (!isManualSlot(id))
+        return { ok: false, error: isKnownSlot(id) ? "not-manual" : "unknown-slot" };
+      if (!importOffer) return { ok: false, error: "empty" };
+      try {
+        const envelope: SaveEnvelope = importOffer.envelope;
+        await saveStore.save(id, envelope);
+        setImportOffer(null);
+        setLastImportedSlot(id);
+        return { ok: true };
+      } catch {
+        return { ok: false, error: "store" };
+      }
+    },
+    [importOffer, saveStore],
+  );
+
   const continueInfo = useMemo<ContinueInfo | null>(() => {
     if (!candidate) return null;
     const { career: saved } = candidate;
@@ -243,6 +354,14 @@ export function CareerProvider({ children, saveStore, now }: CareerProviderProps
       saveToSlot,
       loadSlot,
       deleteSlot,
+      exportSlot,
+      exportCareer,
+      pickImport,
+      importOffer,
+      importError,
+      cancelImport,
+      importInto,
+      lastImportedSlot,
     }),
     [
       career,
@@ -260,6 +379,14 @@ export function CareerProvider({ children, saveStore, now }: CareerProviderProps
       saveToSlot,
       loadSlot,
       deleteSlot,
+      exportSlot,
+      exportCareer,
+      pickImport,
+      importOffer,
+      importError,
+      cancelImport,
+      importInto,
+      lastImportedSlot,
     ],
   );
   return <CareerContext.Provider value={value}>{children}</CareerContext.Provider>;
