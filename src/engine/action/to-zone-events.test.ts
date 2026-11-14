@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { MatchEvent } from "../match-event";
 import { computeMatchStats } from "../match-stats";
 import { aMatchInputV2 } from "./action-builders";
+import type { ActionEvent } from "./action-event";
 import {
   carry,
   clearance,
@@ -194,11 +195,17 @@ describe("toZoneEvents", () => {
   });
 });
 
-const playedMatch = (seed: number) => {
-  const match = createActionMatch(aMatchInputV2().build(), seed);
+const logs = new Map<number, readonly ActionEvent[]>();
+
+/** A whole match at fast detail (the adapter never reads snapshots), simulated once per seed. */
+const playedMatch = (seed: number): readonly ActionEvent[] => {
+  const cached = logs.get(seed);
+  if (cached) return cached;
+  const match = createActionMatch(aMatchInputV2().build(), seed, { detail: "fast" });
   match.advanceTo(6000);
   match.resume();
   match.advanceTo(12000);
+  logs.set(seed, match.events);
   return match.events;
 };
 
