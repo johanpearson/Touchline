@@ -99,7 +99,7 @@ describe("action engine balance: each tactic moves the statistic it targets", ()
     const low = playWith(withTactics({ pressing: "low" }));
 
     expect(high.perSide.home.highTurnovers).toBeGreaterThan(low.perSide.home.highTurnovers);
-    expect(high.perSide.away.countersConceded).toBeGreaterThan(low.perSide.away.countersConceded);
+    expect(high.perSide.home.countersConceded).toBeGreaterThan(low.perSide.home.countersConceded);
     expect(high.perSide.home.highTurnovers).toBeGreaterThan(neutral.perSide.home.highTurnovers);
   });
 

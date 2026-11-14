@@ -97,7 +97,7 @@ export const PRESSING_SPACE_BEHIND: Record<Pressing, number> = { low: 0.8, mediu
  * Home advantage: added to the success chance of the home side's passes, carries, interceptions and
  * tackles. A first guess; the balance issue tunes it for a home win rate of 42% to 48%.
  */
-export const HOME_ADVANTAGE = 0.012;
+export const HOME_ADVANTAGE = 0.009;
 
 // Pass outcome
 export const PASS_BASE_COMPLETE: Record<PassVariant, number> = {
