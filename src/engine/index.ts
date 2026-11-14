@@ -48,6 +48,15 @@ export {
   PITCH_WIDTH,
   toNormalised,
 } from "./action/pitch-metres";
+export { pressureOn, type Shapes } from "./action/pressure";
+export type { LastAction, TeamPhase } from "./action/team-phase";
+export { phaseOf } from "./action/team-phase";
+export {
+  formationAnchors,
+  type ShapeParameters,
+  shapeParameters,
+  teamShape,
+} from "./action/team-shape";
 export type { FormationCounts, TeamSheet } from "./action/team-sheet";
 export { STARTER_COUNT } from "./action/team-sheet";
 export type {

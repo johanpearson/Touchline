@@ -100,6 +100,8 @@ Every `ActionEvent` has `time` (seconds, one decimal), `period`, `team` (the sid
 5. Set pieces have fixed set-ups owned by the engine: corner (takers, near-post and far-post runners, edge-of-box players, counter-attack cover), free kick (wall at 9.15 m, runners), penalty (taker, keeper on the line, everyone else outside the box and the arc), goal kick (keeper, split defenders, pressing line), throw-in (thrower, two options, markers), kickoff (own half, taker and one support in the centre circle).
 6. All positions are clamped to the pitch and a minimum distance between players of the same side keeps the shape from collapsing.
 
+Implemented in `src/engine/action/`: `team-shape.ts` (`teamShape`, `formationAnchors`, `shapeParameters`), `team-phase.ts` (`phaseOf`), `pressure.ts` (`pressureOn`) and `shape-constants.ts`, which holds every tuning value (line depths, phase shifts, tactic mappings, ball pull, minimum distance, pressure radius). The home side attacks towards x = 105; the away side is the x-mirror. Set-piece set-ups (item 5) come with the set-pieces issue.
+
 Decisions use the shape (pressure = weighted count of opponents within a few metres of the actor and of the target). The shape is a pure function of its inputs; only the snapshot jitter (at most 0.5 m, from the presentation stream, clamped to the pitch) is random, and it is added to the snapshot only, never used in a decision.
 
 ### Decisions and outcomes
