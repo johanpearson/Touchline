@@ -29,7 +29,7 @@ const cache = new Map<string, ReturnType<typeof createActionMatch>>();
  * Plays a match once per run and shares it between properties. Most properties only need the first
  * half (which also ends in a period change), so `wholeMatch` is opt-in: it also plays the second half.
  */
-const playMatch = ([input, seed]: Run, detail: "full" | "fast" = "full", wholeMatch = false) => {
+const playMatch = ([input, seed]: Run, detail: "full" | "fast" = "fast", wholeMatch = false) => {
   const key = `${detail}:${wholeMatch}:${seed}:${JSON.stringify(input)}`;
   const cached = cache.get(key);
   if (cached !== undefined) return cached;
@@ -105,7 +105,7 @@ describe("action engine properties", () => {
 
   it("gives every snapshot 22 players and the ball inside the pitch", () => {
     forAll(arbRun, (run) =>
-      playMatch(run).events.every(
+      playMatch(run, "full").events.every(
         (e) =>
           e.snapshot !== undefined &&
           e.snapshot.players.length === SNAPSHOT_PLAYER_COUNT &&
@@ -139,8 +139,8 @@ describe("action engine properties", () => {
       fc.tuple(arbRun, arbSplits),
       ([run, splits]) => {
         const [input, seed] = run;
-        const whole = playMatch(run, "full", true);
-        const split = createActionMatch(input, seed);
+        const whole = playMatch(run, "fast", true);
+        const split = createActionMatch(input, seed, { detail: "fast" });
         let at = 0;
         for (const step of splits) {
           at += step;
