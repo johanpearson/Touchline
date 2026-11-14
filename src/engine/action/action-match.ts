@@ -3,6 +3,7 @@ import type { TeamTactics } from "../tactics";
 import type { ActionEvent } from "./action-event";
 import type { EnginePlayer } from "./engine-player";
 import type { Point } from "./pitch-metres";
+import type { MatchInputValidation } from "./validate-match-input-v2";
 
 /** The state of an action match after the last `advanceTo` call. */
 export type ActionMatchState = {
@@ -35,8 +36,17 @@ export type ActionMatch = {
   readonly state: ActionMatchState;
   /** Simulates up to `seconds` of match time; stops at half-time and full time. */
   advanceTo: (seconds: number) => void;
-  /** Consumes no randomness; ignored after full time. */
-  applyChange: (change: ActionMatchChange) => void;
+  /**
+   * Applies new starters and/or tactics to one side from the next action. Consumes no randomness
+   * and is ignored after full time (`{ ok: true }`, nothing recorded).
+   *
+   * Expected errors come back as `{ ok: false, errors }` and leave the match untouched: a lineup
+   * that is not 11 players with one goalkeeper and the side's formation lines, has an attribute
+   * out of range, or reuses a player id (within the lineup or from the other side).
+   * Throws `RangeError` for programmer errors: a `side` that is not "home" or "away".
+   * The substituted-in players are removed from the bench.
+   */
+  applyChange: (change: ActionMatchChange) => MatchInputValidation;
   readonly changes: readonly TimedActionMatchChange[];
   /** Starts the second half after half-time. */
   resume: () => void;

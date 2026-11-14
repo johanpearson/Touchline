@@ -97,7 +97,7 @@ export type {
   MatchInputErrorCode,
   MatchInputValidation,
 } from "./action/validate-match-input-v2";
-export { validateMatchInputV2 } from "./action/validate-match-input-v2";
+export { validateLineup, validateMatchInputV2 } from "./action/validate-match-input-v2";
 export type { Match } from "./create-match";
 export { createMatch } from "./create-match";
 export type { MatchChange, TimedMatchChange } from "./match-change";
