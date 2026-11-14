@@ -140,3 +140,21 @@
 .match-screen .ratings tr[data-potm="true"] {
   font-weight: 700;
 }
+.match-screen .view-toggle {
+  display: flex;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  margin: 0 0 8px;
+}
+.match-screen .view-toggle legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.match-screen .view-toggle button[aria-pressed="true"] {
+  font-weight: 700;
+  outline: 2px solid currentColor;
+}
