@@ -156,32 +156,32 @@ describe("engine balance: no dominant tactic", () => {
       widths.flatMap((width) => tempos.map((tempo) => ({ mentality, pressing, width, tempo }))),
     ),
   );
-  const neutral = () => playWith(NEUTRAL_TACTICS, COMBINATION_MATCHES);
   const label = (t: TeamTactics) => `${t.mentality}/${t.pressing}/${t.width}/${t.tempo}`;
+  let reference: BalanceSummary;
+  let results: { t: TeamTactics; s: BalanceSummary }[];
+
+  beforeAll(() => {
+    reference = playWith(NEUTRAL_TACTICS, COMBINATION_MATCHES);
+    results = combinations.map((t) => ({ t, s: playWith(t, COMBINATION_MATCHES) }));
+  }, 600_000);
 
   it("covers all 81 combinations of settings", () => {
     expect(combinations).toHaveLength(81);
   });
 
   it("never wins more than 58% of matches against the neutral setting between equal teams", () => {
-    const reference = neutral();
-    const tooStrong = combinations
-      .map((t) => ({ t, rate: playWith(t, COMBINATION_MATCHES).homeWinRate }))
-      .filter(({ rate }) => rate > 0.58);
+    const tooStrong = results.filter(({ s }) => s.homeWinRate > 0.58);
 
-    expect(tooStrong.map(({ t, rate }) => `${label(t)} ${rate}`)).toEqual([]);
+    expect(tooStrong.map(({ t, s }) => `${label(t)} ${s.homeWinRate}`)).toEqual([]);
     expect(reference.homeWinRate).toBeLessThan(0.58);
   });
 
   it("is never strictly better than neutral on both goals for and goals against", () => {
-    const reference = neutral();
-    const dominant = combinations
-      .map((t) => ({ t, s: playWith(t, COMBINATION_MATCHES) }))
-      .filter(
-        ({ s }) =>
-          s.perSide.home.goals > reference.perSide.home.goals &&
-          s.perSide.away.goals < reference.perSide.away.goals,
-      );
+    const dominant = results.filter(
+      ({ s }) =>
+        s.perSide.home.goals > reference.perSide.home.goals &&
+        s.perSide.away.goals < reference.perSide.away.goals,
+    );
 
     expect(dominant.map(({ t }) => label(t))).toEqual([]);
   });

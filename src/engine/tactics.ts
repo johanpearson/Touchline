@@ -69,7 +69,7 @@ const MENTALITY: Record<Mentality, Partial<TacticsModifiers>> = {
 const PRESSING: Record<Pressing, Partial<TacticsModifiers>> = {
   low: { concededAdvanceChance: 0.02, concededAdvanceStep: -0.01 },
   medium: {},
-  high: { concededAdvanceChance: -0.06, concededAdvanceStep: 0.045 },
+  high: { concededAdvanceChance: -0.06, concededAdvanceStep: 0.035, concededShootChance: 0.03 },
 };
 
 const WIDTH: Record<Width, Partial<TacticsModifiers>> = {
