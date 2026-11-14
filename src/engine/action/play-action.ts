@@ -37,6 +37,9 @@ const FIRST_PASS: Partial<Record<SetPieceVariant, PassVariant>> = {
 const CENTRE: Point = { x: PITCH_LENGTH / 2, y: PITCH_WIDTH / 2 };
 const other = (side: Side): Side => (side === "home" ? "away" : "home");
 
+const snapshotOf = (shapes: Shapes, ball: Point, presentation: Rng | undefined) =>
+  presentation === undefined ? undefined : buildSnapshot(shapes, ball, presentation);
+
 export type ActionContext = {
   input: MatchInputV2;
   play: PlayState;
@@ -44,8 +47,8 @@ export type ActionContext = {
   period: Period;
   /** Decisions and outcomes. */
   sim: Rng;
-  /** Snapshot jitter only; never feeds back into decisions. */
-  presentation: Rng;
+  /** Snapshot jitter only; never feeds back into decisions. Absent: no snapshots are built (fast detail). */
+  presentation?: Rng;
   /** The previous event, so a key pass can be marked when the shot follows. */
   previous?: ActionEvent;
 };
@@ -179,7 +182,7 @@ const takeRestart = (ctx: ActionContext, restart: PendingRestart): ActionResult 
     from: ball,
     to: ball,
     pressure: 0,
-    snapshot: buildSnapshot(layout, ball, ctx.presentation),
+    snapshot: snapshotOf(layout, ball, ctx.presentation),
   };
   const next: PlayState = {
     ...dead,
@@ -196,7 +199,9 @@ const takeRestart = (ctx: ActionContext, restart: PendingRestart): ActionResult 
 
 /** The 22-player snapshot for a period change, at the current ball. */
 export const periodSnapshot = (ctx: Pick<ActionContext, "input" | "play" | "presentation">) =>
-  buildSnapshot(shapesFor(ctx.input, ctx.play, ctx.play.ball), ctx.play.ball, ctx.presentation);
+  ctx.presentation === undefined
+    ? undefined
+    : buildSnapshot(shapesFor(ctx.input, ctx.play, ctx.play.ball), ctx.play.ball, ctx.presentation);
 
 /** Plays one action: a restart if one is waiting, otherwise whatever the ball carrier (or a challenger) does. */
 export const playAction = (ctx: ActionContext): ActionResult => {
@@ -227,7 +232,7 @@ export const playAction = (ctx: ActionContext): ActionResult => {
   const opponents = challengers(foeSheet, shapes[foe]);
   const outfieldOpponents = opponents.filter((o) => o.slot !== 0);
   const keeper = opponents[0] as Challenger;
-  const snapshot = buildSnapshot(shapes, ball, ctx.presentation);
+  const snapshot = snapshotOf(shapes, ball, ctx.presentation);
   const base = { time: ctx.time, period: ctx.period, snapshot, pressure, from: ball };
   const finish = (
     events: ActionEvent[],

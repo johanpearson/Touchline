@@ -170,9 +170,9 @@ describe("createActionMatch", () => {
     const match = playFullMatch(10);
 
     for (const event of match.events) {
-      expect(event.snapshot.players).toHaveLength(22);
+      expect(event.snapshot?.players).toHaveLength(22);
     }
-    expect(match.events.some((e) => e.snapshot.players.some((p) => !Number.isInteger(p.x)))).toBe(
+    expect(match.events.some((e) => e.snapshot?.players.some((p) => !Number.isInteger(p.x)))).toBe(
       true,
     );
   });
@@ -213,7 +213,7 @@ describe("createActionMatch smoke test over 50 seeded matches", () => {
   it("keeps the ball on the pitch unless the action put it out of play", () => {
     for (const match of matches) {
       for (const event of match.events) {
-        expect(inPitch(event.snapshot.ball)).toBe(true);
+        expect(inPitch(event.snapshot?.ball ?? { x: -1, y: -1 })).toBe(true);
         expect(inPitch(event.from)).toBe(true);
         expect(inPitch(event.to)).toBe(true);
       }
@@ -224,8 +224,8 @@ describe("createActionMatch smoke test over 50 seeded matches", () => {
   it("holds 22 players inside the pitch in every snapshot", () => {
     for (const match of matches) {
       for (const event of match.events) {
-        expect(event.snapshot.players).toHaveLength(22);
-        expect(event.snapshot.players.every(inPitch)).toBe(true);
+        expect(event.snapshot?.players).toHaveLength(22);
+        expect(event.snapshot?.players.every(inPitch)).toBe(true);
       }
     }
   });

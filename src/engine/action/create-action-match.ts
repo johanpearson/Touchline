@@ -4,6 +4,7 @@ import type { ActionEvent } from "./action-event";
 import type {
   ActionMatch,
   ActionMatchChange,
+  ActionMatchOptions,
   ActionMatchState,
   TimedActionMatchChange,
 } from "./action-match";
@@ -31,11 +32,16 @@ const round1 = (value: number): number => Math.round(value * 10) / 10;
  * `applyChange` swaps a side's starters and/or tactics from the next action; it consumes no
  * randomness, so changes applied at the same moments are part of the reproducible input.
  */
-export const createActionMatch = (initialInput: MatchInputV2, seed: number): ActionMatch => {
+export const createActionMatch = (
+  initialInput: MatchInputV2,
+  seed: number,
+  options: ActionMatchOptions = {},
+): ActionMatch => {
+  const withSnapshots = (options.detail ?? "full") === "full";
   let input = initialInput;
   const root = createRng(seed);
   const sim = root.fork("action-sim");
-  const presentation = root.fork("action-presentation");
+  const presentation = withSnapshots ? root.fork("action-presentation") : undefined;
   const addedTimeRng = root.fork("addedTime");
   const addedSeconds = (range: { min: number; max: number }) =>
     addedTimeRng.int(range.min, range.max) * SECONDS_PER_MINUTE;

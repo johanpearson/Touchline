@@ -93,7 +93,7 @@ describe("ActionMatch.applyChange", () => {
 
   it("keeps the slot order of the snapshots after a substitution", () => {
     const match = playWithChange({ side: "home", lineup: strongLineup("s") });
-    const counts = new Set(match.events.map((e) => e.snapshot.players.length));
+    const counts = new Set(match.events.map((e) => e.snapshot?.players.length));
 
     expect(counts).toEqual(new Set([22]));
   });

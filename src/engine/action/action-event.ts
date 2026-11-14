@@ -35,7 +35,8 @@ type ActionEventBase = {
   to: Point;
   /** How heavily the actor is pressed, 0..1. */
   pressure: number;
-  snapshot: PositionSnapshot;
+  /** Positions at the moment of the action; absent when the match was created with `detail: "fast"`. */
+  snapshot?: PositionSnapshot;
 };
 
 /** Fields of events driven by a player. Ids are the opaque `EnginePlayer.id`. */

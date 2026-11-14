@@ -16,6 +16,8 @@ export const pressureOn = (
 ): number => {
   const opponents = side === "home" ? shapes.away : shapes.home;
   const total = opponents.reduce((sum, o) => {
+    // Out of reach on one axis already means d >= radius; skips the hypot for most opponents.
+    if (Math.abs(o.x - point.x) >= radius || Math.abs(o.y - point.y) >= radius) return sum;
     const d = Math.hypot(o.x - point.x, o.y - point.y);
     return d >= radius ? sum : sum + (1 - d / radius);
   }, 0);
