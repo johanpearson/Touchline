@@ -53,6 +53,8 @@ export { matchInputFor, matchSeed } from "./match-input-for";
 export type { CareerParseError, CareerParseResult } from "./parse-career";
 export { parseCareer } from "./parse-career";
 export { pickBestEleven } from "./pick-best-eleven";
+export type { HalfTimeChanges, HalfTimeError, HalfTimePlan } from "./plan-half-time";
+export { MAX_SUBSTITUTIONS, planHalfTime } from "./plan-half-time";
 export type { AttributeName, Player, PlayerAttributes } from "./player";
 export { ATTRIBUTE_NAMES, MAX_ATTRIBUTE, MIN_ATTRIBUTE } from "./player";
 export type { MatchAppearance, MatchOutcome, PlayerCondition } from "./player-condition";
