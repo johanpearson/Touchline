@@ -218,7 +218,7 @@ export function SquadScreen({ career }: { career: Career }) {
   const players = career.league.players.filter((p) => ids.has(p.id));
   const byId = new Map(players.map((p) => [p.id, p]));
   const plan = career.squadPlan;
-  const used = new Set([...plan.starters, ...plan.bench]);
+  const starterSet = new Set(plan.starters);
   const starters = orderedStarters(plan.starters, byId);
   const benchKeepers = plan.bench.filter((id) => byId.get(id)?.position === "GK");
 
@@ -232,6 +232,10 @@ export function SquadScreen({ career }: { career: Career }) {
   };
   const replace = (list: readonly string[], from: string, to: string) =>
     list.map((id) => (id === from ? to : id));
+  /** Puts `to` in `from`'s place and, if `to` was in the list, `from` in `to`'s place. */
+  const swap = (list: readonly string[], from: string, to: string) =>
+    list.map((id) => (id === from ? to : id === to ? from : id));
+  const benchSet = new Set(plan.bench);
 
   return (
     <section data-testid="squad-screen" className="club-screen">
@@ -310,8 +314,17 @@ export function SquadScreen({ career }: { career: Career }) {
                 value={id}
                 position={line}
                 players={players}
-                used={used}
-                onChange={(to) => edit({ starters: replace(plan.starters, id, to) })}
+                used={starterSet}
+                onChange={(to) =>
+                  edit(
+                    benchSet.has(to)
+                      ? {
+                          starters: replace(plan.starters, id, to),
+                          bench: replace(plan.bench, to, id),
+                        }
+                      : { starters: replace(plan.starters, id, to) },
+                  )
+                }
               />
             ))}
         </div>
@@ -325,11 +338,11 @@ export function SquadScreen({ career }: { career: Career }) {
             label={t("squad.benchSlot", { slot: i + 1 })}
             value={id}
             players={players}
-            used={used}
+            used={starterSet}
             locked={(p) =>
               byId.get(id)?.position === "GK" && benchKeepers.length === 1 && p.position !== "GK"
             }
-            onChange={(to) => edit({ bench: replace(plan.bench, id, to) })}
+            onChange={(to) => edit({ bench: swap(plan.bench, id, to) })}
           />
         ))}
       </div>
