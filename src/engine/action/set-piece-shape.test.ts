@@ -66,7 +66,7 @@ describe("setPieceShape", () => {
       expect(has(l.home, p)).toBe(true);
     }
     expect(l.away[0]).toEqual({ x: 104, y: 34 });
-    expect(has(l.away, { x: 103, y: 29.5 })).toBe(true);
+    expect(has(l.away, { x: 101.5, y: 29.5 })).toBe(true);
   });
 
   it("builds a wall of four at 9.15 m on the line to goal for a free kick in range", () => {
@@ -82,6 +82,13 @@ describe("setPieceShape", () => {
       { x: 89.15, y: 35.2 },
     ]);
     expect(l.away[0]).toEqual({ x: 103.5, y: 34 });
+  });
+
+  it("leaves out wall players that would stand on the keeper when the kick is next to the goal line", () => {
+    const l = setPieceShape("freeKick", "home", { x: 105, y: 34 }, sheets);
+
+    expect(l.wall.length).toBeLessThan(4);
+    expect(l.roles.away).toContain(0);
   });
 
   it("has no wall for a free kick out of range", () => {
@@ -164,7 +171,7 @@ describe("setPieceShape spacing", () => {
       ),
     );
 
-  it("keeps players of one side at least MIN_PLAYER_DISTANCE apart, except the taker and pairs of role points", () => {
+  it("keeps players of one side at least MIN_PLAYER_DISTANCE apart, except the taker and the wall among themselves", () => {
     const violations: string[] = [];
     for (const kind of kinds) {
       for (const side of ["home", "away"] as const) {
@@ -174,16 +181,10 @@ describe("setPieceShape spacing", () => {
             const own = side === "home" ? l.home : l.away;
             const opp = side === "home" ? l.away : l.home;
             const label = `${kind} ${side} (${x},${y})`;
-            const bothRoles = (slots: readonly number[]) => (i: number, j: number) =>
-              slots.includes(i) && slots.includes(j);
-            for (const pair of closePairs(
-              own,
-              (i, j) => i === l.taker || j === l.taker || bothRoles(l.roles[side])(i, j),
-            ))
+            const wallPair = (i: number, j: number) => l.wall.includes(i) && l.wall.includes(j);
+            for (const pair of closePairs(own, (i, j) => i === l.taker || j === l.taker))
               violations.push(`${label} own ${pair}`);
-            const foe = side === "home" ? "away" : "home";
-            for (const pair of closePairs(opp, bothRoles(l.roles[foe])))
-              violations.push(`${label} opp ${pair}`);
+            for (const pair of closePairs(opp, wallPair)) violations.push(`${label} opp ${pair}`);
           }
         }
       }
