@@ -1,8 +1,11 @@
 import type { Career } from "./career";
+import type { Club } from "./club";
 import { isInt, isRecord, isString } from "./json-guards";
 import { parseHistory } from "./parse-history";
 import { parseLeague } from "./parse-league";
 import { parseSeason } from "./parse-season";
+import { parseCondition, parseSquadPlan } from "./parse-squad-plan";
+import { clubSquad } from "./squad-plan";
 
 export type CareerParseError =
   | "not-an-object"
@@ -11,7 +14,9 @@ export type CareerParseError =
   | "unknown-user-club"
   | "invalid-season"
   | "inconsistent-results"
-  | "invalid-history";
+  | "invalid-history"
+  | "invalid-squad-plan"
+  | "invalid-condition";
 
 export type CareerParseResult =
   | { ok: true; career: Career }
@@ -30,9 +35,22 @@ const parseUnchecked = (raw: unknown): CareerParseResult => {
   if (!season.ok) return fail(season.error);
   const history = parseHistory(raw.history, clubIds);
   if (!history) return fail("invalid-history");
+  const userClub = league.clubs.find((c) => c.id === raw.userClubId);
+  const squadPlan = parseSquadPlan(raw.squadPlan, clubSquad(userClub as Club, league.players));
+  if (!squadPlan) return fail("invalid-squad-plan");
+  const condition = parseCondition(raw.condition, league.players);
+  if (!condition) return fail("invalid-condition");
   return {
     ok: true,
-    career: { seed: raw.seed, userClubId: raw.userClubId, league, season: season.season, history },
+    career: {
+      seed: raw.seed,
+      userClubId: raw.userClubId,
+      league,
+      season: season.season,
+      history,
+      squadPlan,
+      condition,
+    },
   };
 };
 
