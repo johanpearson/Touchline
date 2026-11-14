@@ -39,6 +39,9 @@ export function NewCareerScreen({ initialSeed }: Props) {
     <section className="new-career" data-testid="new-career">
       <h2>{t("newCareer.title")}</h2>
       <ContinuePanel />
+      <a data-testid="nav-saves" href={hrefFor({ name: "saves" })}>
+        {t("nav.saves")}
+      </a>
       <p>{t("newCareer.intro")}</p>
       <label className="seed-field">
         {t("newCareer.seed")}{" "}

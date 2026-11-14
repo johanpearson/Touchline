@@ -12,6 +12,7 @@ describe("parseRoute", () => {
     expect(parseRoute("#/match")).toEqual({ name: "match" });
     expect(parseRoute("#/season-end")).toEqual({ name: "season-end" });
     expect(parseRoute("#/results")).toEqual({ name: "results" });
+    expect(parseRoute("#/saves")).toEqual({ name: "saves" });
   });
 
   it("parses a club route with its id", () => {
@@ -38,6 +39,7 @@ describe("hrefFor", () => {
     for (const route of [
       { name: "home" },
       { name: "league" },
+      { name: "saves" },
       { name: "match" },
       { name: "season-end" },
       { name: "club", clubId: "a b" },

@@ -17,6 +17,7 @@ import {
   type Result,
   startNextSeason,
 } from "../game";
+import { createEnvelope } from "../platform";
 import type { SaveStore } from "../shared";
 import { createAutosaveQueue, type SaveLineage } from "./autosave-queue";
 import {
@@ -24,6 +25,14 @@ import {
   type ContinueError,
   findContinueCandidate,
 } from "./find-continue-candidate";
+import {
+  isKnownSlot,
+  isManualSlot,
+  listSlotEntries,
+  readSlot,
+  type SlotActionResult,
+  type SlotsResult,
+} from "./save-slots";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -53,6 +62,14 @@ export type CareerStore = {
   loadError: ContinueError | null;
   /** Hides the load error so the user can start a new career. */
   dismissLoadError: () => void;
+  /** Describes the autosave and the manual slots. Never throws. */
+  listSlots: () => Promise<SlotsResult>;
+  /** Writes the running career into a manual slot with a fresh save time. */
+  saveToSlot: (id: string) => Promise<SlotActionResult>;
+  /** Replaces the running career with the one in the slot. */
+  loadSlot: (id: string) => Promise<SlotActionResult>;
+  /** Removes a slot (also a damaged one). Deleting an empty slot is not an error. */
+  deleteSlot: (id: string) => Promise<SlotActionResult>;
 };
 
 const CareerContext = createContext<CareerStore | null>(null);
@@ -153,6 +170,51 @@ export function CareerProvider({ children, saveStore, now }: CareerProviderProps
   }, [candidate, queue]);
   const dismissLoadError = useCallback(() => setLoadError(null), []);
 
+  const listSlots = useCallback(() => listSlotEntries(saveStore), [saveStore]);
+  const saveToSlot = useCallback(
+    async (id: string): Promise<SlotActionResult> => {
+      if (!isManualSlot(id))
+        return { ok: false, error: isKnownSlot(id) ? "not-manual" : "unknown-slot" };
+      if (!career) return { ok: false, error: "no-career" };
+      try {
+        await saveStore.save(id, createEnvelope(career, nowRef.current));
+        return { ok: true };
+      } catch {
+        return { ok: false, error: "store" };
+      }
+    },
+    [career, saveStore],
+  );
+  const loadSlot = useCallback(
+    async (id: string): Promise<SlotActionResult> => {
+      if (!isKnownSlot(id)) return { ok: false, error: "unknown-slot" };
+      try {
+        const read = await readSlot(saveStore, id);
+        if (read.kind !== "found") return { ok: false, error: read.kind };
+        queue.adopt(read.envelope);
+        setCandidate(null);
+        setLoadError(null);
+        setCareer(read.career);
+        return { ok: true };
+      } catch {
+        return { ok: false, error: "store" };
+      }
+    },
+    [saveStore, queue],
+  );
+  const deleteSlot = useCallback(
+    async (id: string): Promise<SlotActionResult> => {
+      if (!isKnownSlot(id)) return { ok: false, error: "unknown-slot" };
+      try {
+        await saveStore.delete(id);
+        return { ok: true };
+      } catch {
+        return { ok: false, error: "store" };
+      }
+    },
+    [saveStore],
+  );
+
   const continueInfo = useMemo<ContinueInfo | null>(() => {
     if (!candidate) return null;
     const { career: saved } = candidate;
@@ -177,6 +239,10 @@ export function CareerProvider({ children, saveStore, now }: CareerProviderProps
       loadAutosave,
       loadError,
       dismissLoadError,
+      listSlots,
+      saveToSlot,
+      loadSlot,
+      deleteSlot,
     }),
     [
       career,
@@ -190,6 +256,10 @@ export function CareerProvider({ children, saveStore, now }: CareerProviderProps
       loadAutosave,
       loadError,
       dismissLoadError,
+      listSlots,
+      saveToSlot,
+      loadSlot,
+      deleteSlot,
     ],
   );
   return <CareerContext.Provider value={value}>{children}</CareerContext.Provider>;
