@@ -3,6 +3,7 @@ import type { SetPieceVariant } from "./action-event";
 import { clamp } from "./attribute-rating";
 import { PITCH_LENGTH, PITCH_WIDTH, type Point } from "./pitch-metres";
 import { restartTaker } from "./restart-taker";
+import { separate } from "./separate-players";
 import {
   CENTRE_X,
   CENTRE_Y,
@@ -50,10 +51,22 @@ export type SetPieceLayout = {
   taker: number;
   targets: number[];
   wall: number[];
+  /** Slots standing on a fixed role point (taker, runners, wall, markers, keepers placed by the kind). */
+  roles: Record<Side, number[]>;
 };
 
 type Frame = { own: Point[]; opp: Point[] };
-type Roles = Frame & { targets: number[]; wall: number[] };
+type Limit = (p: Point) => Point;
+type Roles = Frame & {
+  targets: number[];
+  wall: number[];
+  /** Slots that stand on their exact role point; only the others move to keep their distance. */
+  fixedOwn: number[];
+  fixedOpp: number[];
+  /** The limits of the kind (own half, outside the circle, ...) that a moved player must still respect. */
+  limitOwn?: Limit;
+  limitOpp?: Limit;
+};
 
 const other = (side: Side): Side => (side === "home" ? "away" : "home");
 const dist = (a: Point, b: Point): number => Math.hypot(a.x - b.x, a.y - b.y);
@@ -106,10 +119,9 @@ const kickoff = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
     [0, taker],
     [toPoint(spot.x + KICKOFF_SUPPORT_OFFSET.x, spot.y + KICKOFF_SUPPORT_OFFSET.y)],
   );
-  const inOwnHalf = mapOthers(support.points, [taker, ...support.slots], (p) =>
-    toPoint(Math.min(p.x, KICKOFF_OWN_LIMIT), p.y),
-  );
-  const outsideCircle = (p: Point): Point => {
+  const ownLimit: Limit = (p) => toPoint(Math.min(p.x, KICKOFF_OWN_LIMIT), p.y);
+  const inOwnHalf = mapOthers(support.points, [taker, ...support.slots], ownLimit);
+  const outsideCircle: Limit = (p) => {
     const x = Math.max(p.x, CENTRE_X);
     const reach = CIRCLE_RADIUS + KICKOFF_CIRCLE_MARGIN;
     const dy = Math.abs(p.y - spot.y);
@@ -117,7 +129,16 @@ const kickoff = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
       ? toPoint(spot.x + Math.sqrt(reach * reach - dy * dy), p.y)
       : toPoint(x, p.y);
   };
-  return { own: inOwnHalf, opp: opp.map(outsideCircle), targets: support.slots, wall: [] };
+  return {
+    own: inOwnHalf,
+    opp: opp.map(outsideCircle),
+    targets: support.slots,
+    wall: [],
+    fixedOwn: [taker, ...support.slots],
+    fixedOpp: [],
+    limitOwn: ownLimit,
+    limitOpp: outsideCircle,
+  };
 };
 
 const throwIn = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
@@ -133,7 +154,14 @@ const throwIn = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
     keeperOnly,
     options.map((o) => toPoint(o.x + MARKER_GOALSIDE, o.y)),
   );
-  return { own: ownPlaced.points, opp: markers.points, targets: ownPlaced.slots, wall: [] };
+  return {
+    own: ownPlaced.points,
+    opp: markers.points,
+    targets: ownPlaced.slots,
+    wall: [],
+    fixedOwn: [taker, ...ownPlaced.slots],
+    fixedOpp: markers.slots,
+  };
 };
 
 const goalKick = (
@@ -147,12 +175,21 @@ const goalKick = (
     [taker],
     GOAL_KICK_SPLIT.map((p) => toPoint(p.x, p.y)),
   );
+  const pressLimit: Limit = (p) => toPoint(Math.max(p.x, GOAL_KICK_PRESS_MIN_X), p.y);
   const press = fill(
-    mapOthers(opp, [], (p) => toPoint(Math.max(p.x, GOAL_KICK_PRESS_MIN_X), p.y)),
+    opp.map(pressLimit),
     keeperOnly,
     GOAL_KICK_PRESS.map((p) => toPoint(p.x, p.y)),
   );
-  return { own: ownPlaced.points, opp: press.points, targets: [...receivers], wall: [] };
+  return {
+    own: ownPlaced.points,
+    opp: press.points,
+    targets: [...receivers],
+    wall: [],
+    fixedOwn: [taker, ...ownPlaced.slots],
+    fixedOpp: [0, ...press.slots],
+    limitOpp: pressLimit,
+  };
 };
 
 const corner = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
@@ -177,6 +214,8 @@ const corner = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
     opp: defending.points,
     targets: ownPlaced.slots.slice(0, runners.length),
     wall: [],
+    fixedOwn: [taker, ...ownPlaced.slots],
+    fixedOpp: [0, ...defending.slots],
   };
 };
 
@@ -191,7 +230,14 @@ const freeKick = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
       [0, taker],
       FREE_KICK_OUT_OF_RANGE_RUNNERS.map((r) => toPoint(spot.x + r.x, spot.y + r.y)),
     );
-    return { own: runners.points, opp, targets: runners.slots, wall: [] };
+    return {
+      own: runners.points,
+      opp,
+      targets: runners.slots,
+      wall: [],
+      fixedOwn: [taker, ...runners.slots],
+      fixedOpp: [],
+    };
   }
   const ux = d === 0 ? 1 : (goal.x - spot.x) / d;
   const uy = d === 0 ? 0 : (goal.y - spot.y) / d;
@@ -223,7 +269,14 @@ const freeKick = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
     [0, ...wall.slots],
     FREE_KICK_BOX_RUNNERS.map((r) => toPoint(r.x + MARKER_GOALSIDE, CENTRE_Y + r.y)),
   );
-  return { own: ownPlaced.points, opp: boxMarkers.points, targets: [], wall: wall.slots };
+  return {
+    own: ownPlaced.points,
+    opp: boxMarkers.points,
+    targets: [],
+    wall: wall.slots,
+    fixedOwn: [taker, ...ownPlaced.slots],
+    fixedOpp: [0, ...wall.slots, ...boxMarkers.slots],
+  };
 };
 
 const penalty = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
@@ -232,7 +285,16 @@ const penalty = (spot: Point, { own, opp }: Frame, taker: number): Roles => {
   const oppPlaced = mapOthers(opp, keeperOnly, behind).map((p, i) =>
     i === 0 ? toPoint(PENALTY_KEEPER.x, PENALTY_KEEPER.y) : p,
   );
-  return { own: ownPlaced, opp: oppPlaced, targets: [], wall: [] };
+  return {
+    own: ownPlaced,
+    opp: oppPlaced,
+    targets: [],
+    wall: [],
+    fixedOwn: [taker],
+    fixedOpp: keeperOnly,
+    limitOwn: behind,
+    limitOpp: behind,
+  };
 };
 
 const clampToPitch = (p: Point): Point => ({
@@ -245,7 +307,9 @@ const clampToPitch = (p: Point): Point => ({
  * taker's attacking frame from each side's plain `setPiece` shape: the roles of the kind (taker,
  * runners, wall, markers, pressing line) are put on fixed points with the nearest free players, the
  * others keep their plain positions with the limits of the kind (own half at a kickoff, outside the
- * box and the arc at a penalty). The away side is the exact x-mirror. Pure and RNG-free: the taker
+ * box and the arc at a penalty) and are moved apart (`separate`) so they stand `MIN_PLAYER_DISTANCE`
+ * from everyone; role points never move, so two role players can still be closer (a wall, a defender
+ * on the post next to a marker), and the taker may stand next to anyone. The away side is the exact x-mirror. Pure and RNG-free: the taker
  * comes from attributes (`restartTaker`), the roles from distance with the lowest slot on ties.
  */
 export const setPieceShape = (
@@ -285,13 +349,23 @@ export const setPieceShape = (
   })();
   const toPitch = (points: readonly Point[]): Point[] =>
     points.map((p) => clampToPitch(toAttackingFrame(side, p)));
-  const ownPitch = toPitch(roles.own);
-  const oppPitch = toPitch(roles.opp);
+  const spread = (
+    points: readonly Point[],
+    fixed: readonly number[],
+    limit?: Limit,
+    exempt?: number,
+  ) => separate(points, fixed, (p) => clampToPitch(limit ? limit(p) : p), exempt);
+  const ownPitch = toPitch(spread(roles.own, roles.fixedOwn, roles.limitOwn, taker));
+  const oppPitch = toPitch(spread(roles.opp, roles.fixedOpp, roles.limitOpp));
   return {
     home: side === "home" ? ownPitch : oppPitch,
     away: side === "home" ? oppPitch : ownPitch,
     taker,
     targets: roles.targets,
     wall: roles.wall,
+    roles: {
+      home: side === "home" ? roles.fixedOwn : roles.fixedOpp,
+      away: side === "home" ? roles.fixedOpp : roles.fixedOwn,
+    },
   };
 };

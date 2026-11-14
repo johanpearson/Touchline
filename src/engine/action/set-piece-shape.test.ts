@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { anEnginePlayer, aTeamSheet } from "./action-builders";
 import { inPitch, PITCH_LENGTH, type Point } from "./pitch-metres";
 import { inFreeKickRange, type SetPieceLayout, setPieceShape } from "./set-piece-shape";
+import { MIN_PLAYER_DISTANCE } from "./shape-constants";
 
 const sheets = { home: aTeamSheet().build(), away: aTeamSheet().build() };
 const near = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y) < 1e-9;
@@ -146,5 +147,57 @@ describe("setPieceShape", () => {
 
     expect(setPieceShape("corner", "home", { x: 105, y: 0 }, custom).taker).toBe(6);
     expect(setPieceShape("freeKick", "home", { x: 80, y: 34 }, custom).taker).toBe(6);
+  });
+});
+
+describe("setPieceShape spacing", () => {
+  const kinds = ["kickoff", "throwIn", "goalKick", "corner", "freeKick", "penalty"] as const;
+  const closePairs = (
+    points: readonly Point[],
+    exempt: (i: number, j: number) => boolean,
+  ): string[] =>
+    points.flatMap((a, i) =>
+      points.flatMap((b, j) =>
+        j > i && !exempt(i, j) && Math.hypot(a.x - b.x, a.y - b.y) < MIN_PLAYER_DISTANCE - 1e-6
+          ? [`${i}-${j}`]
+          : [],
+      ),
+    );
+
+  it("keeps players of one side at least MIN_PLAYER_DISTANCE apart, except the taker and pairs of role points", () => {
+    const violations: string[] = [];
+    for (const kind of kinds) {
+      for (const side of ["home", "away"] as const) {
+        for (let x = 0; x <= 105; x += 7.5) {
+          for (let y = 0; y <= 68; y += 8.5) {
+            const l = setPieceShape(kind, side, { x, y }, sheets);
+            const own = side === "home" ? l.home : l.away;
+            const opp = side === "home" ? l.away : l.home;
+            const label = `${kind} ${side} (${x},${y})`;
+            const bothRoles = (slots: readonly number[]) => (i: number, j: number) =>
+              slots.includes(i) && slots.includes(j);
+            for (const pair of closePairs(
+              own,
+              (i, j) => i === l.taker || j === l.taker || bothRoles(l.roles[side])(i, j),
+            ))
+              violations.push(`${label} own ${pair}`);
+            const foe = side === "home" ? "away" : "home";
+            for (const pair of closePairs(opp, bothRoles(l.roles[foe])))
+              violations.push(`${label} opp ${pair}`);
+          }
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+});
+
+describe("setPieceShape roles", () => {
+  it("lists the taker and keeps role points exact while unassigned players move", () => {
+    const l = setPieceShape("corner", "home", { x: 105, y: 0 }, sheets);
+
+    expect(l.roles.home).toContain(l.taker);
+    expect(l.roles.home).toHaveLength(1 + 3 + 2 + 2);
+    expect(l.roles.away).toContain(0);
   });
 });
