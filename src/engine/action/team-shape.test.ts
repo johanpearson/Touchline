@@ -177,31 +177,34 @@ describe("teamShape", () => {
     expect(away).toEqual(home.map((p) => ({ x: PITCH_LENGTH - p.x, y: p.y })));
   });
 
-  it("keeps every player on the pitch and apart over all formations, phases, tactics and ball positions", () => {
-    const tactics: TeamTactics[] = [];
-    for (const mentality of ["defensive", "balanced", "attacking"] as const)
-      for (const pressing of ["low", "medium", "high"] as const)
-        for (const width of ["narrow", "normal", "wide"] as const)
-          tactics.push({ mentality, pressing, width, tempo: "normal" });
-    for (const formation of FORMATIONS) {
-      const sheet = sheetFor(formation);
-      for (const phase of PHASES)
-        for (const t of tactics)
-          for (const side of ["home", "away"] as const)
-            for (let bx = 0; bx <= 105; bx += 15)
-              for (let by = 0; by <= 68; by += 17) {
-                const shape = teamShape(sheet, t, phase, { x: bx, y: by }, side);
-                expect(shape.every(inPitch)).toBe(true);
-                for (let i = 0; i < 11; i++)
-                  for (let j = i + 1; j < 11; j++) {
-                    const [a, b] = [shape[i], shape[j]];
-                    const d = Math.hypot((a?.x ?? 0) - (b?.x ?? 0), (a?.y ?? 0) - (b?.y ?? 0));
-                    if (d < MIN_PLAYER_DISTANCE - 1e-6)
-                      throw new Error(
-                        `too close ${d} ${JSON.stringify({ formation, phase, t, bx, by, side })}`,
-                      );
-                  }
-              }
-    }
-  });
+  it.each(FORMATIONS)(
+    "keeps every player on the pitch and apart for %j in all phases, tactics and ball positions",
+    (formation) => {
+      const tactics: TeamTactics[] = [];
+      for (const mentality of ["defensive", "balanced", "attacking"] as const)
+        for (const pressing of ["low", "medium", "high"] as const)
+          for (const width of ["narrow", "normal", "wide"] as const)
+            tactics.push({ mentality, pressing, width, tempo: "normal" });
+      {
+        const sheet = sheetFor(formation);
+        for (const phase of PHASES)
+          for (const t of tactics)
+            for (const side of ["home", "away"] as const)
+              for (let bx = 0; bx <= 105; bx += 15)
+                for (let by = 0; by <= 68; by += 17) {
+                  const shape = teamShape(sheet, t, phase, { x: bx, y: by }, side);
+                  expect(shape.every(inPitch)).toBe(true);
+                  for (let i = 0; i < 11; i++)
+                    for (let j = i + 1; j < 11; j++) {
+                      const [a, b] = [shape[i], shape[j]];
+                      const d = Math.hypot((a?.x ?? 0) - (b?.x ?? 0), (a?.y ?? 0) - (b?.y ?? 0));
+                      if (d < MIN_PLAYER_DISTANCE - 1e-6)
+                        throw new Error(
+                          `too close ${d} ${JSON.stringify({ formation, phase, t, bx, by, side })}`,
+                        );
+                    }
+                }
+      }
+    },
+  );
 });
