@@ -32,7 +32,7 @@ export function createAutosaveQueue(store: SaveStore, now: () => string): Autosa
       enqueue(async () => {
         const envelope =
           lineage === "continue" && previous !== null
-            ? updateEnvelope(previous, game)
+            ? updateEnvelope(previous, game, now)
             : createEnvelope(game, now);
         await store.save(AUTOSAVE_SLOT, envelope);
         previous = envelope;

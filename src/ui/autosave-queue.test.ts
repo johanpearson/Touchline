@@ -40,8 +40,9 @@ describe("autosave queue", () => {
     await queue.save("career-1", "new");
 
     expect(await store.load(AUTOSAVE_SLOT)).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       createdAt: "2026-01-01T10:00:00.000Z",
+      savedAt: "2026-01-01T10:00:00.000Z",
       game: "career-1",
     });
   });
@@ -55,6 +56,7 @@ describe("autosave queue", () => {
 
     const saved = await store.load(AUTOSAVE_SLOT);
     expect(saved?.createdAt).toBe("2026-01-01T10:00:00.000Z");
+    expect(saved?.savedAt).toBe("2027-01-01");
     expect(saved?.game).toBe("second");
   });
 
@@ -71,12 +73,19 @@ describe("autosave queue", () => {
   it("keeps the createdAt of an adopted save", async () => {
     const store = createMemorySaveStore();
     const queue = createAutosaveQueue(store, clockFrom("2099-01-01"));
-    const loaded: SaveEnvelope = { schemaVersion: 1, createdAt: "2025-05-05", game: "loaded" };
+    const loaded: SaveEnvelope = {
+      schemaVersion: 2,
+      createdAt: "2025-05-05",
+      savedAt: "2025-06-06",
+      game: "loaded",
+    };
 
     queue.adopt(loaded);
     await queue.save("next", "continue");
 
-    expect((await store.load(AUTOSAVE_SLOT))?.createdAt).toBe("2025-05-05");
+    const saved = await store.load(AUTOSAVE_SLOT);
+    expect(saved?.createdAt).toBe("2025-05-05");
+    expect(saved?.savedAt).toBe("2099-01-01");
   });
 
   it("never runs two writes at once and lets the last state win", async () => {

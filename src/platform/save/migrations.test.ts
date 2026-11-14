@@ -5,6 +5,7 @@ import { type Migration, migrateSave } from "./migrations";
 const v1: SaveEnvelope = {
   schemaVersion: 1,
   createdAt: "2030-01-01T00:00:00.000Z",
+  savedAt: "2030-01-01T00:00:00.000Z",
   game: { n: 1 },
 };
 
@@ -80,7 +81,7 @@ describe("migrateSave", () => {
   it.each([
     ["null", null],
     ["a string", "save"],
-    ["missing game", { schemaVersion: 1, createdAt: "x" }],
+    ["missing game", { schemaVersion: 1, createdAt: "x", savedAt: "x" }],
     ["missing createdAt", { schemaVersion: 1, game: {} }],
     ["non-integer version", { schemaVersion: 1.5, createdAt: "x", game: {} }],
     ["version below 1", { schemaVersion: 0, createdAt: "x", game: {} }],

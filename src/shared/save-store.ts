@@ -3,6 +3,8 @@ export type SaveEnvelope = {
   schemaVersion: number;
   /** ISO 8601 timestamp of when the save was first created. */
   createdAt: string;
+  /** ISO 8601 timestamp of the last write to this save (set from the injected clock). */
+  savedAt: string;
   /** Game state. Its shape is owned by `game` and described by `schemaVersion`. */
   game: unknown;
 };

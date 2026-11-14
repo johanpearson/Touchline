@@ -28,7 +28,7 @@ async function loadSlot(store: SaveStore, slotId: string): Promise<Loaded | null
 }
 
 const newest = (a: Extract<Loaded, { kind: "found" }>, b: Extract<Loaded, { kind: "found" }>) =>
-  b.envelope.createdAt > a.envelope.createdAt ? b : a;
+  b.envelope.savedAt > a.envelope.savedAt ? b : a;
 
 /**
  * Looks for a career to continue: the autosave, or the newest valid save when there is none.

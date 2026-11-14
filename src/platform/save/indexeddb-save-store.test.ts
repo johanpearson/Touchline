@@ -5,8 +5,9 @@ import { createIndexedDbSaveStore, isIndexedDbAvailable } from "./indexeddb-save
 import { runSaveStoreContract } from "./save-store-contract";
 
 const envelope: SaveEnvelope = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   createdAt: "2030-01-01T00:00:00.000Z",
+  savedAt: "2030-01-01T00:00:00.000Z",
   game: { week: 1 },
 };
 
