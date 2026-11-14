@@ -19,7 +19,16 @@ export const exitPoint = (from: Point, to: Point): Exit => {
   const ty = dy > 0 ? (PITCH_WIDTH - to.y) / dy : dy < 0 ? -to.y / dy : Number.POSITIVE_INFINITY;
   const boundary: Boundary = tx <= ty ? "endLine" : "sideLine";
   const t = Math.min(tx, ty);
-  return { point: { x: to.x + dx * t, y: to.y + dy * t }, boundary };
+  // Snap the crossed line exactly and keep the other coordinate on the pitch (no float drift).
+  const x = boundary === "endLine" ? (dx > 0 ? PITCH_LENGTH : 0) : to.x + dx * t;
+  const y = boundary === "sideLine" ? (dy > 0 ? PITCH_WIDTH : 0) : to.y + dy * t;
+  return {
+    point: {
+      x: Math.min(PITCH_LENGTH, Math.max(0, x)),
+      y: Math.min(PITCH_WIDTH, Math.max(0, y)),
+    },
+    boundary,
+  };
 };
 
 /** The restart after `side` put the ball out of play at `exit`. */
