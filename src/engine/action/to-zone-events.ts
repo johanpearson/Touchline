@@ -78,6 +78,30 @@ const convert = (event: ActionEvent, previousHolder: Side | undefined): MatchEve
   }
 };
 
+export type ZoneEventAdapter = {
+  /** Adapts the next chunk of the log and returns only the zone events it produced. */
+  push: (events: readonly ActionEvent[]) => MatchEvent[];
+};
+
+/**
+ * Incremental form of `toZoneEvents`: feed it the log in consecutive chunks and it returns the
+ * zone events of each chunk, remembering only the side that held the ball last. Concatenating
+ * the results equals `toZoneEvents` of the whole log, however the log is split.
+ */
+export const createZoneEventAdapter = (): ZoneEventAdapter => {
+  let holder: Side | undefined;
+  return {
+    push: (events) => {
+      const zone: MatchEvent[] = [];
+      for (const event of events) {
+        zone.push(...convert(event, holder));
+        holder = holderAfter(event);
+      }
+      return zone;
+    },
+  };
+};
+
 /**
  * Maps an action-engine log to zone-engine events so the momentum terrain, the momentum chart and
  * the possession and field-tilt stats keep working unchanged. Pure; the output has the same order
@@ -91,12 +115,5 @@ const convert = (event: ActionEvent, previousHolder: Side | undefined): MatchEve
  * - `team` is the side that has the ball afterwards, the position is where the ball ends up
  *   (metres to 0..1), and the intensity uses the zone engine's formulas.
  */
-export const toZoneEvents = (events: readonly ActionEvent[]): MatchEvent[] => {
-  const zone: MatchEvent[] = [];
-  let holder: Side | undefined;
-  for (const event of events) {
-    zone.push(...convert(event, holder));
-    holder = holderAfter(event);
-  }
-  return zone;
-};
+export const toZoneEvents = (events: readonly ActionEvent[]): MatchEvent[] =>
+  createZoneEventAdapter().push(events);

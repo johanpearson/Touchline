@@ -1,7 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { generateActionCommentary, generateCommentary } from "../../commentary";
 import type { EngineVersion, MatchInputV1, MatchInputV2, MatchState, PerSide } from "../../engine";
-import { computeMatchStats, createMatch, toZoneEvents } from "../../engine";
+import {
+  computeMatchStats,
+  createMatch,
+  createZoneEventAdapter,
+  type MatchEvent,
+} from "../../engine";
 import type { MatchReport, SquadPlayer } from "../../game";
 import { attributeGoalScorers } from "../../game";
 import { useI18n } from "../i18n-provider";
@@ -150,9 +155,26 @@ function ActionMatchScreen({
     resume(plan?.engineVersion === 2 ? plan.change : undefined);
   };
   // The terrain, the momentum chart and the stats only ever see the adapted events.
-  // `events` is appended to in place; `eventCount` tells when it grew.
+  // `events` is appended to in place; `eventCount` tells when it grew, so only the new tail is
+  // adapted and appended to one growing zone-event list.
+  const adapted = useRef<
+    | {
+        adapter: ReturnType<typeof createZoneEventAdapter>;
+        consumed: number;
+        zone: MatchEvent[];
+      }
+    | undefined
+  >(undefined);
+  adapted.current ??= { adapter: createZoneEventAdapter(), consumed: 0, zone: [] };
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  const zoneEvents = useMemo(() => toZoneEvents(events), [eventCount]);
+  const zoneEvents = useMemo(() => {
+    const kept = adapted.current;
+    if (!kept) return [];
+    kept.zone.push(...kept.adapter.push(events.slice(kept.consumed, eventCount)));
+    kept.consumed = eventCount;
+    // A cheap copy of references, so memoised children see a new array when the log grew.
+    return kept.zone.slice();
+  }, [eventCount]);
   const stats = useMemo(() => computeMatchStats(zoneEvents, matchTime), [zoneEvents, matchTime]);
   const shown = useMemo(() => terrainEvents(zoneEvents, state.period), [zoneEvents, state.period]);
   const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
