@@ -81,3 +81,4 @@ export { startNextSeason } from "./start-next-season";
 export type { SummaryOptions } from "./summarise-season";
 export { summariseSeason } from "./summarise-season";
 export { toSquadPlayer } from "./to-squad-player";
+export type { MatchReport } from "./update-condition";

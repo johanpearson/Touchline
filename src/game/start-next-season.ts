@@ -1,5 +1,6 @@
 import type { Career } from "./career";
 import { createSeason } from "./create-season";
+import { initialConditions } from "./squad-plan";
 import { summariseSeason } from "./summarise-season";
 
 export type NextSeasonResult =
@@ -8,7 +9,8 @@ export type NextSeasonResult =
 
 /**
  * Rolls a finished career over to the next season: appends the finished season's summary to the
- * history and schedules a fresh fixture list. Clubs and players are unchanged until growth (M6).
+ * history and schedules a fresh fixture list and
+ * resets every player's fitness and form (the squad plan is kept). Clubs and players are unchanged until growth (M6).
  */
 export const startNextSeason = (career: Career): NextSeasonResult => {
   const summarised = summariseSeason(career);
@@ -20,6 +22,11 @@ export const startNextSeason = (career: Career): NextSeasonResult => {
   );
   return {
     ok: true,
-    career: { ...career, season, history: [...career.history, summarised.summary] },
+    career: {
+      ...career,
+      season,
+      history: [...career.history, summarised.summary],
+      condition: initialConditions(career.league.players),
+    },
   };
 };
