@@ -273,10 +273,75 @@ describe("MatchScreen with the action engine", () => {
     const { setup } = anActionMatchSetup();
     return render(
       <I18nProvider store={createMemoryLocaleStore(locale)}>
-        <MatchScreen {...setup} createRenderer={fakeRenderer} tickMs={1000} {...props} />
+        <MatchScreen
+          {...setup}
+          createRenderer={fakeRenderer}
+          createPitchRenderer={() => ({ resize: vi.fn(), render: vi.fn(), dispose: vi.fn() })}
+          tickMs={1000}
+          {...props}
+        />
       </I18nProvider>,
     );
   };
+
+  describe("view toggle", () => {
+    beforeEach(() => window.sessionStorage.clear());
+    const pitchRenderer = () => ({ resize: vi.fn(), render: vi.fn(), dispose: vi.fn() });
+
+    it("shows the momentum terrain by default and the pitch after choosing it", () => {
+      const { setup } = anActionMatchSetup();
+      render(
+        <I18nProvider store={createMemoryLocaleStore("en")}>
+          <MatchScreen
+            {...setup}
+            createRenderer={fakeRenderer}
+            createPitchRenderer={pitchRenderer}
+            tickMs={1000}
+          />
+        </I18nProvider>,
+      );
+      expect(screen.getByTestId("momentum-terrain")).toBeTruthy();
+      expect(screen.queryByTestId("classic-pitch")).toBeNull();
+      fireEvent.click(screen.getByTestId("view-pitch"));
+      expect(screen.getByTestId("classic-pitch")).toBeTruthy();
+      expect(screen.queryByTestId("momentum-terrain")).toBeNull();
+      expect(screen.getByTestId("scoreboard")).toBeTruthy();
+      expect(screen.getByTestId("speed-1")).toBeTruthy();
+      expect(screen.getByTestId("feed")).toBeTruthy();
+    });
+
+    it("keeps the choice for the session", () => {
+      mountAction();
+      fireEvent.click(screen.getByTestId("view-pitch"));
+      cleanup();
+      mountAction();
+      expect(screen.getByTestId("classic-pitch")).toBeTruthy();
+    });
+
+    it("labels the toggle in Swedish", () => {
+      mountAction({}, "sv");
+      expect(screen.getByTestId("view-pitch").textContent).toBe("Plan");
+    });
+
+    it("is not offered for zone engine matches", () => {
+      mount();
+      expect(screen.queryByTestId("view-toggle")).toBeNull();
+      expect(screen.getByTestId("momentum-terrain")).toBeTruthy();
+    });
+
+    it("falls back to the momentum view when storage is unavailable", () => {
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new Error("blocked");
+      });
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new Error("blocked");
+      });
+      mountAction();
+      fireEvent.click(screen.getByTestId("view-pitch"));
+      expect(screen.getByTestId("classic-pitch")).toBeTruthy();
+      vi.restoreAllMocks();
+    });
+  });
 
   it("shows every panel and starts at kickoff in the first half", () => {
     mountAction();
