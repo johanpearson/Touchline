@@ -16,7 +16,7 @@ import {
 } from "./action-event-builders";
 import { computeActionStats } from "./action-stats";
 import { createActionMatch } from "./create-action-match";
-import { toZoneEvents } from "./to-zone-events";
+import { createZoneEventAdapter, toZoneEvents } from "./to-zone-events";
 
 const only = (events: Parameters<typeof toZoneEvents>[0]): MatchEvent[] => toZoneEvents(events);
 
@@ -256,5 +256,34 @@ describe("toZoneEvents over played matches", () => {
       expect(zone.corners).toEqual(action.corners);
       expect(Math.abs(zone.possession.home - action.possession.home)).toBeLessThan(0.03);
     }
+  });
+});
+
+describe("createZoneEventAdapter", () => {
+  const seeds = Array.from({ length: 20 }, (_, i) => i + 1);
+
+  const adaptInChunks = (log: readonly ActionEvent[], size: number): MatchEvent[] => {
+    const adapter = createZoneEventAdapter();
+    const zone: MatchEvent[] = [];
+    for (let i = 0; i < log.length; i += size) zone.push(...adapter.push(log.slice(i, i + size)));
+    return zone;
+  };
+
+  it("gives exactly toZoneEvents of the whole log however the log is chunked", () => {
+    for (const seed of seeds) {
+      const log = playedMatch(seed);
+      const expected = toZoneEvents(log);
+      for (const size of [1, 2, 7, 64, log.length]) {
+        expect(adaptInChunks(log, size), `seed ${seed}, chunk ${size}`).toEqual(expected);
+      }
+    }
+  });
+
+  it("returns nothing for an empty chunk and keeps the previous holder across chunks", () => {
+    const adapter = createZoneEventAdapter();
+    expect(adapter.push([])).toEqual([]);
+    adapter.push([pass("home", "h1", "h2", "complete", { time: 1, ...ball(50, 34) })]);
+    const [event] = adapter.push([tackle("away", "a1", "won", { time: 2, ...ball(50, 34) })]);
+    expect(event?.type).toBe("turnover");
   });
 });
