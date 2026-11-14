@@ -1,4 +1,4 @@
-import { createRng, type MatchInput, type TeamMatchProfile } from "../engine";
+import { createRng, type MatchInput, NEUTRAL_TACTICS, type TeamMatchProfile } from "../engine";
 import type { Career } from "./career";
 import { deriveTeamProfile } from "./derive-team-profile";
 import type { Fixture } from "./generate-fixtures";
@@ -15,8 +15,8 @@ const profileOf = (career: Career, clubId: string): TeamMatchProfile => {
 export const matchInputFor = (career: Career, fixture: Fixture): MatchInput => ({
   home: profileOf(career, fixture.homeClubId),
   away: profileOf(career, fixture.awayClubId),
-  homeTactics: {},
-  awayTactics: {},
+  homeTactics: NEUTRAL_TACTICS,
+  awayTactics: NEUTRAL_TACTICS,
 });
 
 /**

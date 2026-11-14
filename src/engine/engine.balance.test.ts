@@ -1,6 +1,14 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { type BalanceSummary, formatBalanceTable, simulateBalance } from "./balance-harness";
 import { aMatchInput, aTeamProfile } from "./match-builders";
+import {
+  type Mentality,
+  NEUTRAL_TACTICS,
+  type Pressing,
+  type TeamTactics,
+  type Tempo,
+  type Width,
+} from "./tactics";
 
 const MATCHES = 2000;
 const BASE_SEED = 1;
@@ -62,5 +70,119 @@ describe("engine balance: clearly stronger team", () => {
     expect(summary.awayWinRate).toBeGreaterThanOrEqual(0.6);
     expect(summary.awayWinRate).toBeLessThanOrEqual(0.75);
     expect(summary.homeWinRate).toBeGreaterThanOrEqual(0.1);
+  });
+});
+
+const withTactics = (changes: Partial<TeamTactics>): TeamTactics => ({
+  ...NEUTRAL_TACTICS,
+  ...changes,
+});
+
+/** The home side plays `tactics` against a neutral away side; both teams are average. */
+const playWith = (tactics: TeamTactics, matches = MATCHES) =>
+  simulateBalance(aMatchInput().withTactics({ home: tactics }).build(), matches, BASE_SEED);
+
+describe("engine balance: each tactic moves the statistic it targets", () => {
+  let neutral: BalanceSummary;
+
+  beforeAll(() => {
+    neutral = playWith(NEUTRAL_TACTICS);
+  });
+
+  it("attacking mentality takes more shots and concedes more goals", () => {
+    const s = playWith(withTactics({ mentality: "attacking" }));
+
+    expect(s.perSide.home.shots).toBeGreaterThan(neutral.perSide.home.shots);
+    expect(s.perSide.away.goals).toBeGreaterThan(neutral.perSide.away.goals);
+  });
+
+  it("defensive mentality takes fewer shots and concedes fewer goals", () => {
+    const s = playWith(withTactics({ mentality: "defensive" }));
+
+    expect(s.perSide.home.shots).toBeLessThan(neutral.perSide.home.shots);
+    expect(s.perSide.away.goals).toBeLessThan(neutral.perSide.away.goals);
+  });
+
+  it("high pressing wins more turnovers in the opponent half and concedes more shots", () => {
+    const s = playWith(withTactics({ pressing: "high" }));
+
+    expect(s.perSide.home.highTurnovers).toBeGreaterThan(neutral.perSide.home.highTurnovers);
+    expect(s.perSide.away.shots).toBeGreaterThan(neutral.perSide.away.shots);
+  });
+
+  it("low pressing wins fewer turnovers in the opponent half", () => {
+    const s = playWith(withTactics({ pressing: "low" }));
+
+    expect(s.perSide.home.highTurnovers).toBeLessThan(neutral.perSide.home.highTurnovers);
+  });
+
+  it("wide play makes more sideways moves and wins more corners", () => {
+    const s = playWith(withTactics({ width: "wide" }));
+
+    expect(s.perSide.home.lateralMoves).toBeGreaterThan(neutral.perSide.home.lateralMoves);
+    expect(s.perSide.home.corners).toBeGreaterThan(neutral.perSide.home.corners);
+  });
+
+  it("narrow play makes fewer sideways moves and wins fewer corners", () => {
+    const s = playWith(withTactics({ width: "narrow" }));
+
+    expect(s.perSide.home.lateralMoves).toBeLessThan(neutral.perSide.home.lateralMoves);
+    expect(s.perSide.home.corners).toBeLessThan(neutral.perSide.home.corners);
+  });
+
+  it("fast tempo takes more shots and concedes more shots", () => {
+    const s = playWith(withTactics({ tempo: "fast" }));
+
+    expect(s.perSide.home.shots).toBeGreaterThan(neutral.perSide.home.shots);
+    expect(s.perSide.away.shots).toBeGreaterThan(neutral.perSide.away.shots);
+  });
+
+  it("slow tempo takes fewer shots and concedes fewer shots", () => {
+    const s = playWith(withTactics({ tempo: "slow" }));
+
+    expect(s.perSide.home.shots).toBeLessThan(neutral.perSide.home.shots);
+    expect(s.perSide.away.shots).toBeLessThan(neutral.perSide.away.shots);
+  });
+});
+
+describe("engine balance: no dominant tactic", () => {
+  const COMBINATION_MATCHES = 1000;
+  const mentalities: Mentality[] = ["defensive", "balanced", "attacking"];
+  const pressings: Pressing[] = ["low", "medium", "high"];
+  const widths: Width[] = ["narrow", "normal", "wide"];
+  const tempos: Tempo[] = ["slow", "normal", "fast"];
+  const combinations: TeamTactics[] = mentalities.flatMap((mentality) =>
+    pressings.flatMap((pressing) =>
+      widths.flatMap((width) => tempos.map((tempo) => ({ mentality, pressing, width, tempo }))),
+    ),
+  );
+  const label = (t: TeamTactics) => `${t.mentality}/${t.pressing}/${t.width}/${t.tempo}`;
+  let reference: BalanceSummary;
+  let results: { t: TeamTactics; s: BalanceSummary }[];
+
+  beforeAll(() => {
+    reference = playWith(NEUTRAL_TACTICS, COMBINATION_MATCHES);
+    results = combinations.map((t) => ({ t, s: playWith(t, COMBINATION_MATCHES) }));
+  }, 600_000);
+
+  it("covers all 81 combinations of settings", () => {
+    expect(combinations).toHaveLength(81);
+  });
+
+  it("never wins more than 58% of matches against the neutral setting between equal teams", () => {
+    const tooStrong = results.filter(({ s }) => s.homeWinRate > 0.58);
+
+    expect(tooStrong.map(({ t, s }) => `${label(t)} ${s.homeWinRate}`)).toEqual([]);
+    expect(reference.homeWinRate).toBeLessThan(0.58);
+  });
+
+  it("is never strictly better than neutral on both goals for and goals against", () => {
+    const dominant = results.filter(
+      ({ s }) =>
+        s.perSide.home.goals > reference.perSide.home.goals &&
+        s.perSide.away.goals < reference.perSide.away.goals,
+    );
+
+    expect(dominant.map(({ t }) => label(t))).toEqual([]);
   });
 });

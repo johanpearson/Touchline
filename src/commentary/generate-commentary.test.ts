@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMatch, type MatchEvent, type MatchInput } from "../engine";
+import { createMatch, type MatchEvent, type MatchInput, NEUTRAL_TACTICS } from "../engine";
 import { type CommentaryContext, generateCommentary } from "./generate-commentary";
 
 const team = (name: string) => ({
@@ -15,8 +15,8 @@ const team = (name: string) => ({
 const matchInput = (): MatchInput => ({
   home: team("Kvarnby"),
   away: team("Västerås"),
-  homeTactics: {},
-  awayTactics: {},
+  homeTactics: NEUTRAL_TACTICS,
+  awayTactics: NEUTRAL_TACTICS,
 });
 
 const at = { x: 0.5, y: 0.5 };

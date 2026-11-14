@@ -1,6 +1,20 @@
 import { createMatch } from "./create-match";
+import type { MatchEvent } from "./match-event";
 import type { MatchInput } from "./match-input";
-import { computeMatchStats } from "./match-stats";
+import type { Side } from "./match-state";
+import { computeMatchStats, type PerSide } from "./match-stats";
+import { progressOf } from "./pitch";
+
+/** Per-match averages for one side. */
+export type SideAverages = {
+  goals: number;
+  shots: number;
+  corners: number;
+  /** Sideways moves in build-up. */
+  lateralMoves: number;
+  /** Turnovers won in the opponent's half. */
+  highTurnovers: number;
+};
 
 /** Averages and rates over many simulated matches. Win rates are from the home side's view. */
 export type BalanceSummary = {
@@ -11,6 +25,7 @@ export type BalanceSummary = {
   homeWinRate: number;
   drawRate: number;
   awayWinRate: number;
+  perSide: PerSide<SideAverages>;
 };
 
 /** Far beyond any match length; `advanceTo` stops at half-time and full time by itself. */
@@ -23,6 +38,24 @@ const playFullMatch = (input: MatchInput, seed: number) => {
   match.advanceTo(PLAY_ON);
   return match;
 };
+
+const averaged = (totals: SideAverages, matches: number): SideAverages => ({
+  goals: totals.goals / matches,
+  shots: totals.shots / matches,
+  corners: totals.corners / matches,
+  lateralMoves: totals.lateralMoves / matches,
+  highTurnovers: totals.highTurnovers / matches,
+});
+
+const SIDES: Side[] = ["home", "away"];
+
+const countFor = (events: readonly MatchEvent[], side: Side, type: MatchEvent["type"]) =>
+  events.filter((e) => e.type === type && e.team === side).length;
+
+const highTurnoversFor = (events: readonly MatchEvent[], side: Side) =>
+  events.filter(
+    (e) => e.type === "turnover" && e.team === side && progressOf(side, e.position.x) > 0.5,
+  ).length;
 
 /**
  * Simulates `matches` matches with seeds `baseSeed`, `baseSeed + 1`, ... and summarises them.
@@ -41,6 +74,10 @@ export const simulateBalance = (
   let xg = 0;
   let homeWins = 0;
   let draws = 0;
+  const totals: PerSide<SideAverages> = {
+    home: { goals: 0, shots: 0, corners: 0, lateralMoves: 0, highTurnovers: 0 },
+    away: { goals: 0, shots: 0, corners: 0, lateralMoves: 0, highTurnovers: 0 },
+  };
   for (let i = 0; i < matches; i++) {
     const match = playFullMatch(input, baseSeed + i);
     const { home, away } = match.state.score;
@@ -48,6 +85,13 @@ export const simulateBalance = (
     goals += home + away;
     shots += stats.shots.home + stats.shots.away;
     xg += stats.xg.home + stats.xg.away;
+    for (const side of SIDES) {
+      totals[side].goals += match.state.score[side];
+      totals[side].shots += stats.shots[side];
+      totals[side].corners += stats.corners[side];
+      totals[side].lateralMoves += countFor(match.events, side, "lateral");
+      totals[side].highTurnovers += highTurnoversFor(match.events, side);
+    }
     if (home > away) homeWins += 1;
     else if (home === away) draws += 1;
   }
@@ -59,6 +103,7 @@ export const simulateBalance = (
     homeWinRate: homeWins / matches,
     drawRate: draws / matches,
     awayWinRate: (matches - homeWins - draws) / matches,
+    perSide: { home: averaged(totals.home, matches), away: averaged(totals.away, matches) },
   };
 };
 

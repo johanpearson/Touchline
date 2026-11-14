@@ -35,6 +35,12 @@ ui         -> game, engine (public index only), commentary, i18n, platform, shar
 - Tactics modify those probabilities (for example high press: more turnovers high up, more exposure to counters).
 - Output is an ordered `MatchEvent[]` with time, team, position, type and intensity.
 - Stats (possession, field tilt, shots, on target, xG, corners) are pure functions over the event log.
+- Tactics (`src/engine/tactics.ts`): `TeamTactics` has four settings, each with a neutral middle level (`NEUTRAL_TACTICS`: balanced, medium, normal, normal). Neutral tactics add 0 (or multiply by 1) everywhere, draw no extra randomness and give exactly the event log of the engine without tactics (pinned by `neutral-regression.test.ts` against `fixtures/neutral-event-logs.json`, which is never regenerated). `tacticsModifiers(tactics)` sums the effects of the four settings; `transition.ts` and `create-match.ts` apply them. Constants (additive unless noted; "conceded" applies while the opponent has the ball):
+  - Mentality: attacking = shoot chance +0.03, conceded shoot chance +0.05; defensive = shoot -0.03, conceded -0.04.
+  - Pressing: high = opponent advance chance -0.06 but opponent advance step +0.035 and conceded shoot chance +0.03 (space behind the press); low = opponent advance chance +0.02, opponent advance step -0.01.
+  - Width: wide = lateral chance +0.03, corner chance +0.08, shot quality x0.85; narrow = lateral -0.02, corner -0.06, shot quality x1.08.
+  - Tempo: fast = step delay x0.8, advance chance -0.01 (more turnovers); slow = step delay x1.2.
+  - `engine.balance.test.ts` checks each setting moves its target statistic and that none of the 81 combinations beats neutral on both goals for and against or wins more than 58% against it between equal teams.
 - Periods: first half, half-time (simulation paused until the user resumes), second half, added time. Kickoff after goals and at the start of each half.
 
 ## Match view

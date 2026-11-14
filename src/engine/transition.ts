@@ -3,6 +3,7 @@ import type { MatchInput } from "./match-input";
 import type { MatchState, PitchPosition, Side } from "./match-state";
 import { clamp, opponentOf, progressOf, xAtProgress } from "./pitch";
 import type { Rng } from "./rng";
+import { type TacticsModifiers, tacticsModifiers } from "./tactics";
 import type { TeamMatchProfile } from "./team-match-profile";
 import { shotXg } from "./xg";
 
@@ -14,6 +15,9 @@ export const SHOOTING_ZONE = 0.76;
 const CORNER_CHANCE = 0.3;
 const LATERAL_CHANCE = 0.2;
 const CENTRE: PitchPosition = { x: 0.5, y: 0.5 };
+
+const tacticsOf = (input: MatchInput, side: Side): TacticsModifiers =>
+  tacticsModifiers(side === "home" ? input.homeTactics : input.awayTactics);
 
 const profileOf = (input: MatchInput, side: Side): TeamMatchProfile =>
   side === "home" ? input.home : input.away;
@@ -42,10 +46,11 @@ const resolveShot = (state: MatchState, input: MatchInput, rng: Rng): Transition
   const defender = opponentOf(attacker);
   const attack = profileOf(input, attacker);
   const defence = profileOf(input, defender);
+  const tactics = tacticsOf(input, attacker);
   const progress = progressOf(attacker, state.ball.x);
   const xg = shotXg(progress, state.ball.y);
   const goalChance = clamp(
-    xg * (0.9 + 0.2 * attack.finishing) * (1.1 - defence.goalkeeping * 0.15),
+    xg * (0.9 + 0.2 * attack.finishing) * (1.1 - defence.goalkeeping * 0.15) * tactics.shotQuality,
     0,
     1,
   );
@@ -75,7 +80,7 @@ const resolveShot = (state: MatchState, input: MatchInput, rng: Rng): Transition
       : "missed";
   const events = [shotEvent(outcome)];
 
-  if (outcome !== "missed" && rng.chance(CORNER_CHANCE)) {
+  if (outcome !== "missed" && rng.chance(CORNER_CHANCE + tactics.cornerChance)) {
     const corner = { x: xAtProgress(attacker, 0.985), y: rng.chance(0.5) ? 0.03 : 0.97 };
     events.push({ ...eventAt(state, attacker, corner, 0.45), type: "corner" });
     return { state: withBall(state, attacker, corner), events };
@@ -92,15 +97,21 @@ const resolveBuildUp = (state: MatchState, input: MatchInput, rng: Rng): Transit
   const defender = opponentOf(attacker);
   const attack = profileOf(input, attacker);
   const defence = profileOf(input, defender);
+  const own = tacticsOf(input, attacker);
+  const opposing = tacticsOf(input, defender);
   const progress = progressOf(attacker, state.ball.x);
   const advanceChance = clamp(
-    0.56 + ((attack.buildUp + attack.progression) / 2 - defence.pressing) * 0.15 - progress * 0.22,
+    0.56 +
+      ((attack.buildUp + attack.progression) / 2 - defence.pressing) * 0.15 -
+      progress * 0.22 +
+      own.advanceChance +
+      opposing.concededAdvanceChance,
     0.05,
     0.95,
   );
 
   if (rng.chance(advanceChance)) {
-    const next = Math.min(0.97, progress + 0.05 + rng.next() * 0.14);
+    const next = Math.min(0.97, progress + 0.05 + rng.next() * 0.14 + opposing.concededAdvanceStep);
     const ball = {
       x: xAtProgress(attacker, next),
       y: clamp(state.ball.y + (rng.next() - 0.5) * 0.35, 0.06, 0.94),
@@ -111,7 +122,7 @@ const resolveBuildUp = (state: MatchState, input: MatchInput, rng: Rng): Transit
     };
   }
 
-  if (rng.chance(LATERAL_CHANCE)) {
+  if (rng.chance(LATERAL_CHANCE + own.lateralChance)) {
     const ball = { x: state.ball.x, y: clamp(state.ball.y + (rng.next() - 0.5) * 0.5, 0.06, 0.94) };
     return {
       state: withBall(state, attacker, ball),
@@ -133,7 +144,17 @@ export const resolveTransition = (state: MatchState, input: MatchInput, rng: Rng
   const attack = profileOf(input, state.possession);
   const defence = profileOf(input, opponentOf(state.possession));
   const progress = progressOf(state.possession, state.ball.x);
-  const shootChance = clamp(0.2 + attack.chanceCreation * 0.12 - defence.defending * 0.06, 0, 1);
+  const own = tacticsOf(input, state.possession);
+  const opposing = tacticsOf(input, opponentOf(state.possession));
+  const shootChance = clamp(
+    0.2 +
+      attack.chanceCreation * 0.12 -
+      defence.defending * 0.06 +
+      own.shootChance +
+      opposing.concededShootChance,
+    0,
+    1,
+  );
 
   if (progress > SHOOTING_ZONE && rng.chance(shootChance)) return resolveShot(state, input, rng);
   return resolveBuildUp(state, input, rng);

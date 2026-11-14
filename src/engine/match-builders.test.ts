@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { aMatchInput, aTeamProfile } from "./match-builders";
+import { NEUTRAL_TACTICS } from "./tactics";
 
 const ratingKeys = [
   "buildUp",
@@ -63,8 +64,8 @@ describe("aMatchInput", () => {
 
     expect(input.home).toEqual(aTeamProfile("Home").build());
     expect(input.away).toEqual(aTeamProfile("Away").build());
-    expect(input.homeTactics).toEqual({});
-    expect(input.awayTactics).toEqual({});
+    expect(input.homeTactics).toEqual(NEUTRAL_TACTICS);
+    expect(input.awayTactics).toEqual(NEUTRAL_TACTICS);
   });
 
   it("uses the given home and away profiles", () => {
@@ -75,5 +76,16 @@ describe("aMatchInput", () => {
 
     expect(input.home).toEqual(strong);
     expect(input.away).toEqual(weak);
+  });
+});
+
+describe("aMatchInput().withTactics", () => {
+  it("sets the tactics of the given sides and keeps the other", () => {
+    const attacking = { ...NEUTRAL_TACTICS, mentality: "attacking" } as const;
+
+    const input = aMatchInput().withTactics({ home: attacking }).build();
+
+    expect(input.homeTactics).toEqual(attacking);
+    expect(input.awayTactics).toEqual(NEUTRAL_TACTICS);
   });
 });

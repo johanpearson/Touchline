@@ -24,6 +24,22 @@ describe("simulateBalance", () => {
     expect(s.goalsPerMatch).toBeGreaterThanOrEqual(0);
   });
 
+  it("reports per-side averages that add up to the match totals", () => {
+    const s = simulateBalance(aMatchInput().build(), 10, 1);
+
+    expect(s.perSide.home.goals + s.perSide.away.goals).toBeCloseTo(s.goalsPerMatch, 10);
+    expect(s.perSide.home.shots + s.perSide.away.shots).toBeCloseTo(s.shotsPerMatch, 10);
+    expect(s.perSide.home.corners).toBeGreaterThanOrEqual(0);
+    expect(s.perSide.away.lateralMoves).toBeGreaterThan(0);
+  });
+
+  it("counts turnovers won in the opponent half for the side that wins the ball", () => {
+    const s = simulateBalance(aMatchInput().build(), 10, 1);
+
+    expect(s.perSide.home.highTurnovers).toBeGreaterThan(0);
+    expect(s.perSide.away.highTurnovers).toBeGreaterThan(0);
+  });
+
   it("rejects a match count below one", () => {
     expect(() => simulateBalance(aMatchInput().build(), 0, 1)).toThrow(RangeError);
   });
