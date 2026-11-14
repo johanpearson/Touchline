@@ -1,6 +1,7 @@
 import type { Side } from "../match-state";
 import {
   ENGINE_ATTRIBUTE_NAMES,
+  type EnginePlayer,
   MAX_ENGINE_ATTRIBUTE,
   MIN_ENGINE_ATTRIBUTE,
 } from "./engine-player";
@@ -84,6 +85,25 @@ const validatePlayers = (sheet: TeamSheet, side: Side, seen: Set<string>): Match
     }
   }
   return errors;
+};
+
+/**
+ * Checks new starters for one side against that side's formation (a substitution keeps the
+ * formation lines). `otherIds` are the player ids the lineup must not reuse (the other side's).
+ * Never throws.
+ */
+export const validateLineup = (
+  sheet: TeamSheet,
+  lineup: readonly EnginePlayer[],
+  side: Side,
+  otherIds: ReadonlySet<string>,
+): MatchInputValidation => {
+  const candidate: TeamSheet = { ...sheet, starters: lineup, bench: [] };
+  const errors = [
+    ...validateStructure(candidate, side),
+    ...validatePlayers(candidate, side, new Set(otherIds)),
+  ];
+  return errors.length === 0 ? { ok: true } : { ok: false, errors };
 };
 
 /** Checks a v2 input and reports every problem; never throws. Player ids must be unique across both sides. */

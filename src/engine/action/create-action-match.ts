@@ -1,7 +1,13 @@
 import type { Period, Side } from "../match-state";
 import { createRng } from "../rng";
 import type { ActionEvent } from "./action-event";
-import type { ActionMatch, ActionMatchState, TimedActionMatchChange } from "./action-match";
+import type {
+  ActionMatch,
+  ActionMatchChange,
+  ActionMatchState,
+  TimedActionMatchChange,
+} from "./action-match";
+import { applyChangeToInput } from "./apply-change-to-input";
 import {
   FIRST_HALF_ADDED_MINUTES,
   HALF_SECONDS,
@@ -11,6 +17,7 @@ import {
 import type { MatchInputV2 } from "./match-input-v2";
 import { kickoffPlay, periodSnapshot, playAction } from "./play-action";
 import type { PlayState } from "./play-state";
+import type { MatchInputValidation } from "./validate-match-input-v2";
 
 const otherSide = (side: Side): Side => (side === "home" ? "away" : "home");
 const round1 = (value: number): number => Math.round(value * 10) / 10;
@@ -21,10 +28,11 @@ const round1 = (value: number): number => Math.round(value * 10) / 10;
  * same minutes as the zone engine for a seed), so no stream depends on another. The same input and
  * seed give the same log however time is split across `advanceTo` calls.
  *
- * `applyChange` records changes but does not apply them yet: tactics come with the tactics issue
- * and substitutions with the changes issue of the epic.
+ * `applyChange` swaps a side's starters and/or tactics from the next action; it consumes no
+ * randomness, so changes applied at the same moments are part of the reproducible input.
  */
-export const createActionMatch = (input: MatchInputV2, seed: number): ActionMatch => {
+export const createActionMatch = (initialInput: MatchInputV2, seed: number): ActionMatch => {
+  let input = initialInput;
   const root = createRng(seed);
   const sim = root.fork("action-sim");
   const presentation = root.fork("action-presentation");
@@ -98,9 +106,16 @@ export const createActionMatch = (input: MatchInputV2, seed: number): ActionMatc
     act(time);
   };
 
-  const applyChange = (change: TimedActionMatchChange["change"]): void => {
-    if (period === "fullTime") return;
+  const applyChange = (change: ActionMatchChange): MatchInputValidation => {
+    if (change.side !== "home" && change.side !== "away") {
+      throw new RangeError(`Invalid side: ${String(change.side)}`);
+    }
+    if (period === "fullTime") return { ok: true };
+    const result = applyChangeToInput(input, change);
+    if (!result.ok) return result;
+    input = result.input;
     changes.push({ time, change });
+    return { ok: true };
   };
 
   const state = (): ActionMatchState => ({
