@@ -5,6 +5,7 @@ import type { ActionEvent, PassEvent, PassVariant, SetPieceVariant } from "./act
 import { buildOptions } from "./build-options";
 import { chooseOption } from "./choose-option";
 import { PENALTY_XG } from "./decision-constants";
+import { homeEdge } from "./home-advantage";
 import { CHALLENGE_PRESSURE_GAIN, NO_RECENT_TURNOVER, PENALTY_SPOT_DEPTH } from "./loop-constants";
 import { markKeyPasses } from "./mark-key-passes";
 import type { MatchInputV2 } from "./match-input-v2";
@@ -21,6 +22,7 @@ import { FREE_KICK_SHOT_PRESSURE } from "./set-piece-constants";
 import { setPieceShape } from "./set-piece-shape";
 import { shotXg, toAttackingFrame } from "./shot-xg";
 import { buildSnapshot } from "./snapshot";
+import { actionTactics } from "./tactics-parameters";
 import { phaseOf } from "./team-phase";
 import { teamShape } from "./team-shape";
 import type { TeamSheet } from "./team-sheet";
@@ -210,7 +212,18 @@ export const playAction = (ctx: ActionContext): ActionResult => {
   const slot = play.slot ?? nearestSlot(raw[side], ball);
   const shapes = withCarrier(raw, side, slot, ball);
   const carrier = sheet.starters[slot] as TeamSheet["starters"][number];
-  const pressure = pressureOn(ball, side, shapes);
+  const mine = actionTactics(sheet.tactics);
+  const foeTactics = actionTactics(foeSheet.tactics);
+  const edge = homeEdge(side);
+  const foeEdge = homeEdge(foe);
+  const pressure = pressureOn(ball, side, shapes, foeTactics.pressRadius);
+  const ownDepth = side === "home" ? ball.x : PITCH_LENGTH - ball.x;
+  const pressBonus = ownDepth < PITCH_LENGTH / 2 ? foeTactics.turnoverBonus : 0;
+  const transition =
+    phaseOf(side, play.possession, ball, {
+      type: play.lastType,
+      actionsSinceTurnover: play.actionsSinceTurnover,
+    }) === "transition";
   const opponents = challengers(foeSheet, shapes[foe]);
   const outfieldOpponents = opponents.filter((o) => o.slot !== 0);
   const keeper = opponents[0] as Challenger;
@@ -275,6 +288,9 @@ export const playAction = (ctx: ActionContext): ActionResult => {
         to,
         pressure,
         opponents,
+        passSuccess: mine.passSuccess,
+        advantage: edge,
+        interceptBonus: pressBonus + foeEdge,
       },
       sim,
     );
@@ -320,6 +336,7 @@ export const playAction = (ctx: ActionContext): ActionResult => {
         tackler: challenger.player,
         point: ball,
         pressure,
+        advantage: foeEdge,
       },
       sim,
     );
@@ -352,7 +369,11 @@ export const playAction = (ctx: ActionContext): ActionResult => {
   }
 
   const option = chooseOption(
-    buildOptions({ side, slot, players: sheet.starters }, shapes, sheet.tactics),
+    buildOptions(
+      { side, slot, players: sheet.starters, foeTactics: foeSheet.tactics, transition },
+      shapes,
+      sheet.tactics,
+    ),
     sim,
   );
   switch (option.type) {
@@ -370,6 +391,7 @@ export const playAction = (ctx: ActionContext): ActionResult => {
           to: option.to,
           pressure,
           defender: nearest(outfieldOpponents, ball),
+          keptBonus: edge - foeEdge - pressBonus,
         },
         sim,
       );

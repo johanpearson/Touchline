@@ -112,6 +112,12 @@ Decisions use the shape (pressure = weighted count of opponents within a few met
 - Every decision and outcome function is pure and takes the `Rng` as the last argument, so it can be tested with a scripted RNG as `transition.test.ts` does today.
 - The home side gets a small, named `HOME_ADVANTAGE` constant (applied to action success, tuned in the balance issue).
 
+### Tactics and home advantage
+
+`tactics-parameters.ts` (`actionTactics(tactics)`) is the only place that reads the four settings; it returns named parameters: `directness`, `risk`, `shotWeight`, `wideBonus`, `centralShot`, `tempoExponent`, `passSuccess`, `lineHeight`, `compactness`, `width`, `pressRadius` (press trigger distance), `turnoverBonus` and `spaceBehind`. Neutral tactics give 0 (additive) or 1 (multipliers), pinned by a test. The tables behind the values are in `decision-constants.ts` and `shape-constants.ts`. Pressing acts on the opponent: `pressRadius` is the distance within which the pressing side's players count for pressure (`pressureOn(..., radius)`), `turnoverBonus` raises interceptions and lost carries against a build-up in the opponent's own half, and `spaceBehind` raises through passes and carries of a side that has just won the ball (`ActorContext.transition`, `foeTactics`). Tempo shifts pass completion (`passSuccess`) and the action duration draw; width scales the weight of shots from the central channel; mentality scales shot and risky-pass weights and compactness. Tactics are read from the sheet of each side at every action, so `applyChange` tactics (changes issue) take effect from the next one.
+
+`HOME_ADVANTAGE` (`decision-constants.ts`, first guess 0.02, tuned in the balance issue) is added to the success chance of the home side's passes, carries, interceptions and tackles through `homeEdge(side, advantage?)`; an advantage of 0 gives exactly the match without it. It is not applied to shots yet.
+
 ### Shots
 
 - `shotXg(from, pressure, bodyPart?)` (`shot-xg.ts`, exported as `actionShotXg`) is a logistic model of the distance to the goal centre and the angle the posts subtend, in the attacking frame (`toAttackingFrame` mirrors the away side so both attack towards x = 105). Pressure removes up to half the value, headers keep 0.6, and the result is capped at `MAX_SHOT_XG` (0.6). The zone engine keeps its own `shotXg`.

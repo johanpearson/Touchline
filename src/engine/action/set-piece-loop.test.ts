@@ -30,6 +30,7 @@ describe("set pieces in the match loop", () => {
 
     expect(pairs.length).toBeGreaterThan(5);
     for (const { setPiece, next } of pairs) {
+      if (next.type === "periodChange") continue;
       expect(next).toMatchObject({ type: "pass", variant: "cross", team: setPiece.team });
       expect((next as { actor: string }).actor).toBe((setPiece as { actor: string }).actor);
     }

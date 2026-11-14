@@ -1,5 +1,5 @@
 import type { Side } from "../match-state";
-import type { TeamTactics } from "../tactics";
+import { NEUTRAL_TACTICS, type TeamTactics } from "../tactics";
 import type { PassVariant } from "./action-event";
 import { clamp, rating } from "./attribute-rating";
 import {
@@ -17,9 +17,6 @@ import {
   CROSS_WIDE_CHANNEL,
   GOALKEEPER_CARRY_FACTOR,
   LONG_PASS_MIN,
-  MENTALITY_DIRECTNESS,
-  MENTALITY_RISK,
-  MENTALITY_SHOT,
   PASS_BASE_WEIGHT,
   PASS_DISTANCE_SCALE,
   PROGRESS_FACTOR_MAX,
@@ -31,19 +28,28 @@ import {
   SHOT_MIN_XG,
   SHOT_WEIGHT_GAIN,
   TARGET_PRESSURE_PENALTY,
-  TEMPO_DIRECTNESS,
   THROUGH_PASS_MIN_DISTANCE,
   THROUGH_PASS_MIN_PROGRESS,
   WIDE_TARGET_CHANNEL,
-  WIDTH_WIDE_BONUS,
 } from "./decision-constants";
 import type { EnginePlayer } from "./engine-player";
 import { PITCH_LENGTH, PITCH_WIDTH, type Point } from "./pitch-metres";
 import { pressureOn, type Shapes } from "./pressure";
 import { shotXg, toAttackingFrame } from "./shot-xg";
+import { type ActionTactics, actionTactics, isCentralShot } from "./tactics-parameters";
 
-/** The ball carrier: their side, their slot in `shapes[side]` and their side's players in slot order. */
-export type ActorContext = { side: Side; slot: number; players: readonly EnginePlayer[] };
+/**
+ * The ball carrier: their side, their slot in `shapes[side]` and their side's players in slot order.
+ * `foeTactics` are the opponent's tactics (default neutral); `transition` is true while the carrier's
+ * side has just won the ball, when the opponent's pressing leaves space behind.
+ */
+export type ActorContext = {
+  side: Side;
+  slot: number;
+  players: readonly EnginePlayer[];
+  foeTactics?: TeamTactics;
+  transition?: boolean;
+};
 
 export type PassOption = {
   type: "pass";
@@ -86,12 +92,13 @@ const passWeight = (
   side: Side,
   pressure: number,
   shapes: Shapes,
-  tactics: TeamTactics,
+  tactics: ActionTactics,
+  radius: number,
+  spaceBehind: number,
 ): number => {
   const distance = Math.hypot(to.x - from.x, to.y - from.y);
   const progress = (to.x - from.x) * attackDirection(side);
-  const directness =
-    BASE_DIRECTNESS + TEMPO_DIRECTNESS[tactics.tempo] + MENTALITY_DIRECTNESS[tactics.mentality];
+  const directness = BASE_DIRECTNESS + tactics.directness;
   const vision = variant === "short" ? 0 : rating(actor, "vision") * 0.3;
   const skill = 0.5 + rating(actor, "passing") * 0.5 + vision;
   const progressFactor = clamp(
@@ -101,13 +108,11 @@ const passWeight = (
   );
   const forwardness = distance === 0 ? 0 : progress / distance;
   const angleFactor = BACKWARD_ANGLE_FACTOR + (1 - BACKWARD_ANGLE_FACTOR) * ((forwardness + 1) / 2);
-  const space = 1 - TARGET_PRESSURE_PENALTY * pressureOn(to, side, shapes);
+  const space = 1 - TARGET_PRESSURE_PENALTY * pressureOn(to, side, shapes, radius);
   const risky = RISKY_VARIANTS.includes(variant);
-  const risk = risky
-    ? MENTALITY_RISK[tactics.mentality] * (1 - ACTOR_PRESSURE_RISK_PENALTY * pressure)
-    : 1;
-  const wide =
-    isWide(to, WIDE_TARGET_CHANNEL) || variant === "cross" ? WIDTH_WIDE_BONUS[tactics.width] : 1;
+  const risk = risky ? tactics.risk * (1 - ACTOR_PRESSURE_RISK_PENALTY * pressure) : 1;
+  const wide = isWide(to, WIDE_TARGET_CHANNEL) || variant === "cross" ? tactics.wideBonus : 1;
+  const behind = variant === "through" ? spaceBehind : 1;
   return finiteOrZero(
     PASS_BASE_WEIGHT *
       skill *
@@ -116,7 +121,8 @@ const passWeight = (
       angleFactor *
       space *
       risk *
-      wide,
+      wide *
+      behind,
   );
 };
 
@@ -131,17 +137,20 @@ const carryOption = (
   from: Point,
   pressure: number,
   shapes: Shapes,
-  tactics: TeamTactics,
+  tactics: ActionTactics,
+  radius: number,
+  spaceBehind: number,
 ): CarryOption => {
   const to = carryTarget(side, from);
-  const directness = TEMPO_DIRECTNESS[tactics.tempo] + MENTALITY_DIRECTNESS[tactics.mentality];
+  const directness = tactics.directness;
   const keeper = actor.position === "GK" ? GOALKEEPER_CARRY_FACTOR : 1;
   const weight =
     CARRY_BASE_WEIGHT *
     (0.4 + 0.6 * rating(actor, "dribbling")) *
     (1 - ACTOR_PRESSURE_RISK_PENALTY * pressure) *
-    (1 - CARRY_SPACE_PENALTY * pressureOn(to, side, shapes)) *
+    (1 - CARRY_SPACE_PENALTY * pressureOn(to, side, shapes, radius)) *
     (1 + CARRY_DIRECTNESS_GAIN * directness) *
+    spaceBehind *
     keeper;
   return { type: "carry", from, to, weight: finiteOrZero(weight) };
 };
@@ -160,12 +169,13 @@ const shotOption = (
   side: Side,
   from: Point,
   pressure: number,
-  tactics: TeamTactics,
+  tactics: ActionTactics,
 ): ShotOption => {
   const xg = shotXg(toAttackingFrame(side, from), pressure);
   const finishing = 1 + SHOT_FINISHING_GAIN * 2 * (rating(actor, "finishing") - 0.5);
+  const channel = isCentralShot(from.y, PITCH_WIDTH) ? tactics.centralShot : 1;
   const weight =
-    xg < SHOT_MIN_XG ? 0 : SHOT_WEIGHT_GAIN * xg * finishing * MENTALITY_SHOT[tactics.mentality];
+    xg < SHOT_MIN_XG ? 0 : SHOT_WEIGHT_GAIN * xg * finishing * tactics.shotWeight * channel;
   const to = { x: side === "home" ? PITCH_LENGTH : 0, y: PITCH_WIDTH / 2 };
   return { type: "shot", from, to, xg, weight: finiteOrZero(weight) };
 };
@@ -182,17 +192,32 @@ export const buildOptions = (
   const own = shapes[actor.side];
   const from = own[actor.slot] as Point;
   const player = actor.players[actor.slot] as EnginePlayer;
-  const pressure = pressureOn(from, actor.side, shapes);
+  const mine = actionTactics(tactics);
+  const foe = actionTactics(actor.foeTactics ?? NEUTRAL_TACTICS);
+  const radius = foe.pressRadius;
+  const spaceBehind = actor.transition === true ? foe.spaceBehind : 1;
+  const pressure = pressureOn(from, actor.side, shapes, radius);
   const passes = own.flatMap((to, target): PassOption[] => {
     if (target === actor.slot) return [];
     const variant = passVariant(actor.side, from, to);
-    const weight = passWeight(player, variant, from, to, actor.side, pressure, shapes, tactics);
+    const weight = passWeight(
+      player,
+      variant,
+      from,
+      to,
+      actor.side,
+      pressure,
+      shapes,
+      mine,
+      radius,
+      spaceBehind,
+    );
     return [{ type: "pass", variant, target, from, to, weight }];
   });
   return [
     ...passes,
-    carryOption(player, actor.side, from, pressure, shapes, tactics),
+    carryOption(player, actor.side, from, pressure, shapes, mine, radius, spaceBehind),
     clearanceOption(actor.side, from, pressure),
-    shotOption(player, actor.side, from, pressure, tactics),
+    shotOption(player, actor.side, from, pressure, mine),
   ];
 };

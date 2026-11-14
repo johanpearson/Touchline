@@ -29,6 +29,8 @@ export type ChallengeInput = {
   point: Point;
   /** Pressure on the carrier, 0..1. */
   pressure: number;
+  /** Added to the chance that the tackler wins the ball (home advantage); 0 when absent. */
+  advantage?: number;
 };
 
 const inAttackedPenaltyArea = (side: Side, p: Point): boolean => {
@@ -47,7 +49,8 @@ export const tackleWinChance = (input: ChallengeInput): number => {
   return clamp(
     TACKLE_WIN_BASE +
       TACKLE_WIN_SKILL_GAIN * (tacklerSkill - carrierSkill) +
-      TACKLE_WIN_PRESSURE_GAIN * input.pressure,
+      TACKLE_WIN_PRESSURE_GAIN * input.pressure +
+      (input.advantage ?? 0),
     TACKLE_WIN_MIN,
     TACKLE_WIN_MAX,
   );

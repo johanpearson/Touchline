@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createRng } from "../rng";
 import { anEnginePlayer } from "./action-builders";
 import type { Challenger } from "./open-play-types";
-import { type PassInput, resolvePass } from "./resolve-pass";
+import { interceptionChance } from "./resolve-interception";
+import { type PassInput, passCompletionChance, resolvePass } from "./resolve-pass";
 
 const scripted = (...values: number[]) => {
   let i = 0;
@@ -120,5 +121,27 @@ describe("resolvePass", () => {
   it("is deterministic for the same RNG state", () => {
     const a = resolvePass(input(), createRng(5));
     expect(resolvePass(input(), createRng(5))).toEqual(a);
+  });
+});
+
+describe("resolvePass with tactics", () => {
+  it("completes a pass that normal tempo loses when tempo is slow, and fast tempo lowers the chance", () => {
+    const chance = passCompletionChance(input());
+    const draw = chance + 0.01;
+    expect(resolvePass(input(), scripted(draw)).outcome).not.toBe("complete");
+    expect(resolvePass(input({ passSuccess: 0.03 }), scripted(draw)).outcome).toBe("complete");
+    expect(passCompletionChance(input({ passSuccess: -0.03 }))).toBeLessThan(chance);
+  });
+
+  it("lets a pressing opponent read more passes: the interception bonus changes the outcome on the same draws", () => {
+    const opp = [defender(9, at(55))];
+    const chance = interceptionChance(opp[0] as Challenger, 0);
+    const draws = [0.99, chance + 0.01, 0.99];
+    expect(resolvePass(input({ opponents: opp }), scripted(...draws)).outcome).not.toBe(
+      "intercepted",
+    );
+    expect(
+      resolvePass(input({ opponents: opp, interceptBonus: 0.05 }), scripted(...draws)).outcome,
+    ).toBe("intercepted");
   });
 });

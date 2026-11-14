@@ -17,16 +17,25 @@ export type InterceptionInput = {
   interceptor: Challenger;
   /** Pressure on the passer, 0..1: a hurried pass is easier to read. */
   pressure: number;
+  /** Added to the chance (the interceptor's press and home advantage); 0 when absent. */
+  bonus?: number;
 };
 
 export type InterceptionResolution = Resolution<"won"> | { outcome: "missed" };
 
 /** Chance that `interceptor` cuts out the pass (positioning and work rate, pressure on the passer). */
-export const interceptionChance = (interceptor: Challenger, pressure: number): number => {
+export const interceptionChance = (
+  interceptor: Challenger,
+  pressure: number,
+  bonus = 0,
+): number => {
   const skill =
     (rating(interceptor.player, "positioning") + rating(interceptor.player, "workRate")) / 2;
   return clamp(
-    INTERCEPT_BASE + INTERCEPT_SKILL_GAIN * (skill - 0.5) + INTERCEPT_PRESSURE_GAIN * pressure,
+    INTERCEPT_BASE +
+      INTERCEPT_SKILL_GAIN * (skill - 0.5) +
+      INTERCEPT_PRESSURE_GAIN * pressure +
+      bonus,
     INTERCEPT_MIN,
     INTERCEPT_MAX,
   );
@@ -34,7 +43,7 @@ export const interceptionChance = (interceptor: Challenger, pressure: number): n
 
 /** One draw: the interceptor wins the ball at their own position, or misses. */
 export const resolveInterception = (input: InterceptionInput, rng: Rng): InterceptionResolution => {
-  if (rng.next() >= interceptionChance(input.interceptor, input.pressure)) {
+  if (rng.next() >= interceptionChance(input.interceptor, input.pressure, input.bonus)) {
     return { outcome: "missed" };
   }
   const side: Side = input.side === "home" ? "away" : "home";

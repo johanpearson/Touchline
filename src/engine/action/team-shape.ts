@@ -13,17 +13,13 @@ import {
   GOALKEEPER_DEPTH,
   GOALKEEPER_FOLLOW,
   HALF_WAY,
-  MENTALITY_COMPACTNESS,
-  MENTALITY_LINE_HEIGHT,
   MIDFIELD_DEPTH,
   MIN_PLAYER_DISTANCE,
   PHASE_SHIFT,
   PITCH_MARGIN,
-  PRESSING_COMPACTNESS,
-  PRESSING_LINE_HEIGHT,
   SPREAD_PASSES,
-  WIDTH_SCALE,
 } from "./shape-constants";
+import { actionTactics } from "./tactics-parameters";
 import type { TeamPhase } from "./team-phase";
 import type { FormationCounts, TeamSheet } from "./team-sheet";
 
@@ -39,11 +35,10 @@ export type ShapeParameters = {
   width: number;
 };
 
-export const shapeParameters = (tactics: TeamTactics): ShapeParameters => ({
-  lineHeight: PRESSING_LINE_HEIGHT[tactics.pressing] + MENTALITY_LINE_HEIGHT[tactics.mentality],
-  compactness: PRESSING_COMPACTNESS[tactics.pressing] * MENTALITY_COMPACTNESS[tactics.mentality],
-  width: WIDTH_SCALE[tactics.width],
-});
+export const shapeParameters = (tactics: TeamTactics): ShapeParameters => {
+  const { lineHeight, compactness, width } = actionTactics(tactics);
+  return { lineHeight, compactness, width };
+};
 
 const lanes = (count: number, depth: number): Local[] =>
   Array.from({ length: count }, (_, lane) => ({
