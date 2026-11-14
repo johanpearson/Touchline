@@ -1,9 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { parseCareer } from "../../game";
+import { createMatch, NEUTRAL_TACTICS } from "../../engine";
+import {
+  type Career,
+  deriveTeamProfile,
+  type Fixture,
+  getNextFixture,
+  matchSeed,
+  parseCareer,
+  simulateFixture,
+} from "../../game";
 import type { SaveEnvelope } from "../../shared";
 import { createEnvelope, readEnvelope, updateEnvelope } from "./codec";
 import careerV1 from "./fixtures/career-v1.json";
 import careerV2 from "./fixtures/career-v2.json";
+import careerV3 from "./fixtures/career-v3.json";
 import type { Migration } from "./migrations";
 import { CURRENT_SCHEMA_VERSION, MIGRATIONS } from "./schema";
 
@@ -114,22 +124,81 @@ describe("frozen schema v1 fixture", () => {
     expect(result.ok && result.save.createdAt).toBe(careerV1.createdAt);
   });
 
-  it("matches the frozen v2 fixture apart from the version bump and savedAt", () => {
-    const result = readEnvelope(careerV1);
-    expect(result.ok && result.save.game).toEqual(careerV2.game);
+  it("migrates to the same game as the frozen v2 fixture", () => {
+    const fromV1 = readEnvelope(careerV1);
+    const fromV2 = readEnvelope(careerV2);
+    expect(fromV1.ok && fromV2.ok && fromV1.save.game).toEqual(fromV2.ok && fromV2.save.game);
   });
 });
 
+/** The M4 way to play a fixture: best-eleven 4-4-2 profiles and no tactics. */
+const legacyResult = (v2: Career, fixture: Fixture) => {
+  const club = (id: string) =>
+    v2.league.clubs.find((c) => c.id === id) as Career["league"]["clubs"][number];
+  const match = createMatch(
+    {
+      home: deriveTeamProfile(club(fixture.homeClubId), v2.league.players),
+      away: deriveTeamProfile(club(fixture.awayClubId), v2.league.players),
+      homeTactics: NEUTRAL_TACTICS,
+      awayTactics: NEUTRAL_TACTICS,
+    },
+    matchSeed(v2, fixture),
+  );
+  match.advanceTo(1_000_000);
+  match.resume();
+  match.advanceTo(1_000_000);
+  const { home, away } = match.state.score;
+  return {
+    fixtureId: fixture.id,
+    homeClubId: fixture.homeClubId,
+    awayClubId: fixture.awayClubId,
+    homeGoals: home,
+    awayGoals: away,
+  };
+};
+
 /** `career-v2.json` is a frozen schema version 2 save (adds `savedAt`). Never regenerate it. */
 describe("frozen schema v2 fixture", () => {
-  it("loads unchanged and its game parses as a career", () => {
+  it("migrates to a valid v3 career with the 4-4-2 best eleven, neutral tactics and full condition", () => {
     const result = readEnvelope(careerV2);
-    expect(result).toEqual({ ok: true, save: careerV2 });
+    expect(result.ok && result.save.schemaVersion).toBe(3);
     if (!result.ok) return;
-    expect(parseCareer(result.save.game).ok).toBe(true);
+    const parsed = parseCareer(result.save.game);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.career.squadPlan.formation).toBe("4-4-2");
+    expect(parsed.career.squadPlan.tactics).toEqual(NEUTRAL_TACTICS);
+    expect(
+      Object.values(parsed.career.condition).every((c) => c.fitness === 100 && c.form === 5),
+    ).toBe(true);
+  });
+
+  it("plays its next matchday to the same result as before the plan existed", () => {
+    const result = readEnvelope(careerV2);
+    if (!result.ok) throw new Error(result.error);
+    const parsed = parseCareer(result.save.game);
+    if (!parsed.ok) throw new Error(parsed.error);
+    const career = parsed.career;
+    const old = careerV2.game as unknown as Parameters<typeof legacyResult>[0];
+    const fixture = getNextFixture(career.season, career.userClubId);
+    if (!fixture) throw new Error("no fixture");
+
+    expect(simulateFixture(career, fixture)).toEqual(legacyResult(old, fixture));
   });
 
   it("keeps createdAt and savedAt apart", () => {
     expect(careerV2.savedAt > careerV2.createdAt).toBe(true);
+  });
+});
+
+/** `career-v3.json` is a frozen schema version 3 save (adds squad plan and condition). Never regenerate it. */
+describe("frozen schema v3 fixture", () => {
+  it("loads unchanged and its game parses as a career with its plan", () => {
+    const result = readEnvelope(careerV3);
+    expect(result).toEqual({ ok: true, save: careerV3 });
+    if (!result.ok) return;
+    const parsed = parseCareer(result.save.game);
+    expect(parsed.ok && parsed.career.squadPlan.formation).toBe("4-3-3");
+    expect(parsed.ok && parsed.career.squadPlan.tactics.mentality).toBe("attacking");
   });
 });

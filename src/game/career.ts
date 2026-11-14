@@ -1,7 +1,9 @@
 import type { Result } from "./compute-table";
 import type { Fixture } from "./generate-fixtures";
 import type { League } from "./league";
+import type { PlayerCondition } from "./player-condition";
 import type { SeasonSummary } from "./season-summary";
+import type { SquadPlan } from "./squad-plan";
 
 /** One season of a career. Plain JSON-serialisable data. */
 export type Season = {
@@ -22,6 +24,10 @@ export type Career = {
   season: Season;
   /** Summaries of the finished seasons, oldest first. */
   history: SeasonSummary[];
+  /** The user's formation, starters, bench and tactics (schema v3). */
+  squadPlan: SquadPlan;
+  /** Fitness and form of every player in the league, by player id (schema v3). */
+  condition: Record<string, PlayerCondition>;
 };
 
 export type CareerError = "unknown-club";

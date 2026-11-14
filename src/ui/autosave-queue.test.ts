@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMemorySaveStore } from "../platform";
+import { CURRENT_SCHEMA_VERSION, createMemorySaveStore } from "../platform";
 import type { SaveEnvelope, SaveStore } from "../shared";
 import { AUTOSAVE_SLOT, createAutosaveQueue } from "./autosave-queue";
 
@@ -40,7 +40,7 @@ describe("autosave queue", () => {
     await queue.save("career-1", "new");
 
     expect(await store.load(AUTOSAVE_SLOT)).toEqual({
-      schemaVersion: 2,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
       createdAt: "2026-01-01T10:00:00.000Z",
       savedAt: "2026-01-01T10:00:00.000Z",
       game: "career-1",
@@ -74,7 +74,7 @@ describe("autosave queue", () => {
     const store = createMemorySaveStore();
     const queue = createAutosaveQueue(store, clockFrom("2099-01-01"));
     const loaded: SaveEnvelope = {
-      schemaVersion: 2,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
       createdAt: "2025-05-05",
       savedAt: "2025-06-06",
       game: "loaded",

@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { autoPickLineup } from "./auto-pick-lineup";
 import type { Career } from "./career";
 import { aCareer, deepFreeze } from "./career-builders";
 import { parseCareer } from "./parse-career";
 import { playMatchdays, playSeasons } from "./season-test-helpers";
+
+const userSquad = (c: Career) => {
+  const club = c.league.clubs.find((x) => x.id === c.userClubId);
+  return c.league.players.filter((p) => club?.playerIds.includes(p.id));
+};
 
 const roundTrip = (career: Career): unknown => JSON.parse(JSON.stringify(career));
 
@@ -291,5 +297,104 @@ describe("Career JSON safety", () => {
   ])("a %s career contains only JSON-safe values", (_name, career) => {
     expect(unsafe(career)).toEqual([]);
     expect(JSON.parse(JSON.stringify(career))).toEqual(career);
+  });
+});
+
+describe("parseCareer squad plan and condition", () => {
+  const clubPlayerIds = (c: Career, clubId: string): string[] =>
+    (c.league.clubs.find((club) => club.id === clubId) as { playerIds: string[] }).playerIds;
+
+  const reject = (change: (c: Career) => void, error: string): void => {
+    expect(errorOf(mutated(change))).toBe(error);
+  };
+
+  it("accepts a career with a non-default plan", () => {
+    const career = {
+      ...aCareer(),
+      squadPlan: {
+        ...autoPickLineup(userSquad(aCareer()), "3-4-3"),
+        tactics: { mentality: "attacking", pressing: "high", width: "wide", tempo: "fast" },
+      },
+    } as Career;
+    expect(parseCareer(roundTrip(career))).toEqual({ ok: true, career });
+  });
+
+  it("rejects starters that do not fit the formation", () => {
+    reject((c) => {
+      c.squadPlan.formation = "3-4-3";
+    }, "invalid-squad-plan");
+  });
+
+  it("rejects a bench of the wrong size", () => {
+    reject((c) => {
+      c.squadPlan.bench = c.squadPlan.bench.slice(1);
+    }, "invalid-squad-plan");
+  });
+
+  it("rejects duplicate ids", () => {
+    reject((c) => {
+      c.squadPlan.bench[0] = c.squadPlan.starters[0] as string;
+    }, "invalid-squad-plan");
+  });
+
+  it("rejects unknown ids", () => {
+    reject((c) => {
+      c.squadPlan.starters[0] = "nobody";
+    }, "invalid-squad-plan");
+  });
+
+  it("rejects a player from another club", () => {
+    reject((c) => {
+      const other = c.league.clubs.find((club) => club.id !== c.userClubId) as { id: string };
+      c.squadPlan.starters[0] = clubPlayerIds(c, other.id)[0] as string;
+    }, "invalid-squad-plan");
+  });
+
+  it("rejects unknown tactics values", () => {
+    reject((c) => {
+      (c.squadPlan.tactics as { mentality: string }).mentality = "reckless";
+    }, "invalid-squad-plan");
+  });
+
+  it("rejects a missing plan", () => {
+    reject((c) => {
+      delete (c as { squadPlan?: unknown }).squadPlan;
+    }, "invalid-squad-plan");
+  });
+
+  it("rejects fitness outside 0..100", () => {
+    reject((c) => {
+      (Object.values(c.condition)[0] as { fitness: number }).fitness = 101;
+    }, "invalid-condition");
+    reject((c) => {
+      (Object.values(c.condition)[0] as { fitness: number }).fitness = -1;
+    }, "invalid-condition");
+  });
+
+  it("rejects form outside 1..10", () => {
+    reject((c) => {
+      (Object.values(c.condition)[0] as { form: number }).form = 11;
+    }, "invalid-condition");
+    reject((c) => {
+      (Object.values(c.condition)[0] as { form: number }).form = 0;
+    }, "invalid-condition");
+  });
+
+  it("rejects a missing condition for a player", () => {
+    reject((c) => {
+      delete c.condition[c.league.players[0]?.id as string];
+    }, "invalid-condition");
+  });
+
+  it("rejects a condition for an unknown player", () => {
+    reject((c) => {
+      c.condition.nobody = { fitness: 100, form: 5 };
+    }, "invalid-condition");
+  });
+
+  it("rejects a missing condition record", () => {
+    reject((c) => {
+      delete (c as { condition?: unknown }).condition;
+    }, "invalid-condition");
   });
 });

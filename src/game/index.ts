@@ -1,3 +1,4 @@
+export { addSquadPlanAndCondition } from "./add-squad-plan";
 export { attributeGoalScorers } from "./attribute-goal-scorers";
 export { autoPickLineup } from "./auto-pick-lineup";
 export type {
@@ -17,6 +18,8 @@ export { createCareer } from "./create-career";
 export { createSeason } from "./create-season";
 export { deriveLineupProfile } from "./derive-lineup-profile";
 export { deriveTeamProfile } from "./derive-team-profile";
+export type { SetLineupResult } from "./edit-squad-plan";
+export { autoPickUserLineup, setLineup, setTactics } from "./edit-squad-plan";
 export type { Formation } from "./formation";
 export { FORMATION_SHAPE, FORMATIONS } from "./formation";
 export type { PhaseRating } from "./formation-offsets";
@@ -70,6 +73,8 @@ export { FIRST_NAMES, LAST_NAMES } from "./player-names";
 export { playerOverall } from "./player-overall";
 export type { SeasonError, SeasonSummary, SummaryResult, TopScorer } from "./season-summary";
 export { simulateFixture } from "./simulate-fixture";
+export type { SquadPlan } from "./squad-plan";
+export { initialConditions, initialSquadPlan } from "./squad-plan";
 export type { PlayerPosition, SquadPlayer } from "./squad-player";
 export type { NextSeasonResult } from "./start-next-season";
 export { startNextSeason } from "./start-next-season";
