@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "bench:engine": "vite build --ssr src/engine/action/performance.bench.ts --outDir node_modules/.cache/bench --emptyOutDir && node node_modules/.cache/bench/performance.bench.js",
+    "test:perf": "vitest run --config vitest.perf.config.ts",
     "test:balance": "vitest run --config vitest.balance.config.ts",
     "test:coverage": "vitest run --coverage",
     "depcheck": "depcruise src --config .dependency-cruiser.cjs",
