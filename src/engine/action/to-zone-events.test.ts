@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import type { MatchEvent } from "../match-event";
 import { computeMatchStats } from "../match-stats";
 import { aMatchInputV2 } from "./action-builders";
@@ -209,9 +209,14 @@ const playedMatch = (seed: number): readonly ActionEvent[] => {
   return match.events;
 };
 
-describe("toZoneEvents over played matches", () => {
-  const seeds = Array.from({ length: 20 }, (_, i) => i + 1);
+const seeds = Array.from({ length: 20 }, (_, i) => i + 1);
 
+// Simulating 20 whole matches can exceed the default 5 s test timeout on a loaded CI runner.
+beforeAll(() => {
+  for (const seed of seeds) playedMatch(seed);
+}, 120_000);
+
+describe("toZoneEvents over played matches", () => {
   it("keeps the times monotonic", () => {
     for (const seed of seeds) {
       const times = toZoneEvents(playedMatch(seed)).map((e) => e.time);
@@ -260,8 +265,6 @@ describe("toZoneEvents over played matches", () => {
 });
 
 describe("createZoneEventAdapter", () => {
-  const seeds = Array.from({ length: 20 }, (_, i) => i + 1);
-
   const adaptInChunks = (log: readonly ActionEvent[], size: number): MatchEvent[] => {
     const adapter = createZoneEventAdapter();
     const zone: MatchEvent[] = [];
