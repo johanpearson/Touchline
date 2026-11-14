@@ -2,6 +2,7 @@ import type { MatchEvent } from "./match-event";
 import type { MatchInput } from "./match-input";
 import type { MatchState, Side } from "./match-state";
 import { createRng } from "./rng";
+import { tacticsModifiers } from "./tactics";
 import { resolveTransition } from "./transition";
 
 /** A running match simulation. */
@@ -53,8 +54,11 @@ export const createMatch = (input: MatchInput, seed: number): Match => {
     addedTimeRng.int(range.min, range.max) * SECONDS_PER_MINUTE;
   let periodEnd = HALF_SECONDS + addedSeconds(FIRST_HALF_ADDED_MINUTES);
   const secondHalfAdded = addedSeconds(SECOND_HALF_ADDED_MINUTES);
-  const nextStepDelay = () => MIN_STEP_SECONDS + rng.next() * STEP_SPREAD_SECONDS;
-  let nextStepAt = nextStepDelay();
+  const stepDelayOf = (side: Side) =>
+    tacticsModifiers(side === "home" ? input.homeTactics : input.awayTactics).stepDelay;
+  const nextStepDelay = (side: Side) =>
+    (MIN_STEP_SECONDS + rng.next() * STEP_SPREAD_SECONDS) * stepDelayOf(side);
+  let nextStepAt = nextStepDelay(firstPossession);
 
   const isPlaying = () => state.period === "firstHalf" || state.period === "secondHalf";
 
@@ -78,7 +82,7 @@ export const createMatch = (input: MatchInput, seed: number): Match => {
       const transition = resolveTransition({ ...state, time: nextStepAt }, input, rng);
       state = transition.state;
       events.push(...transition.events);
-      nextStepAt += nextStepDelay();
+      nextStepAt += nextStepDelay(state.possession);
     }
     state = { ...state, time: Math.max(state.time, target) };
     if (target === periodEnd) endPeriod(state.period === "firstHalf" ? "halfTime" : "fullTime");
@@ -99,7 +103,7 @@ export const createMatch = (input: MatchInput, seed: number): Match => {
     events.push({ type: "kickoff", time, team, position: centre, intensity: 0.3 });
     state = { ...state, period: "secondHalf", possession: team, ball: centre, danger: 0 };
     periodEnd = time + HALF_SECONDS + secondHalfAdded;
-    nextStepAt = time + nextStepDelay();
+    nextStepAt = time + nextStepDelay(team);
   };
 
   return {

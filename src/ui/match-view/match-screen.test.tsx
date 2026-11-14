@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { MatchInput, PerSide } from "../../engine";
+import { type MatchInput, NEUTRAL_TACTICS, type PerSide } from "../../engine";
 import type { SquadPlayer } from "../../game";
 import { createMemoryLocaleStore } from "../../platform";
 import { I18nProvider } from "../i18n-provider";
@@ -35,8 +35,8 @@ const demoMatch: {
       defending: 0.5,
       goalkeeping: 0.5,
     },
-    homeTactics: {},
-    awayTactics: {},
+    homeTactics: NEUTRAL_TACTICS,
+    awayTactics: NEUTRAL_TACTICS,
   },
   seed: 2026,
   colours: { home: "#ff4b5c", away: "#2f9bff" },

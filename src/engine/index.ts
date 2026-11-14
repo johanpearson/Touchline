@@ -1,11 +1,13 @@
 export type { Match } from "./create-match";
 export { createMatch } from "./create-match";
 export type { MatchEvent, MatchEventType, ShotOutcome } from "./match-event";
-export type { MatchInput, TeamTactics } from "./match-input";
+export type { MatchInput } from "./match-input";
 export type { MatchState, Period, PitchPosition, Side } from "./match-state";
 export type { MatchStats, PerSide } from "./match-stats";
 export { computeMatchStats } from "./match-stats";
 export { momentumSeries } from "./momentum-series";
 export type { Rng } from "./rng";
 export { createRng } from "./rng";
+export type { Mentality, Pressing, TeamTactics, Tempo, Width } from "./tactics";
+export { NEUTRAL_TACTICS } from "./tactics";
 export type { TeamMatchProfile } from "./team-match-profile";
