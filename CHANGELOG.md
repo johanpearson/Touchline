@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0](https://github.com/johanpearson/Touchline/compare/v1.3.0...v1.4.0) (2026-11-14)
+
+
+### Features
+
+* **game:** validate untrusted career data ([#108](https://github.com/johanpearson/Touchline/issues/108)) ([3344772](https://github.com/johanpearson/Touchline/commit/334477225f4b145192d16c62a6ceb95fb73378e8))
+* **platform:** add IndexedDB SaveStore passing the contract suite ([#110](https://github.com/johanpearson/Touchline/issues/110)) ([a77963a](https://github.com/johanpearson/Touchline/commit/a77963a61ff4864633726171279eae838754c0d9)), closes [#101](https://github.com/johanpearson/Touchline/issues/101)
+* **platform:** export and import a save as a JSON file ([#112](https://github.com/johanpearson/Touchline/issues/112)) ([6d9ebc6](https://github.com/johanpearson/Touchline/commit/6d9ebc673c25eae87986b48bec61a75e22ff84a7)), closes [#102](https://github.com/johanpearson/Touchline/issues/102)
+* **platform:** record the last-saved time in the save envelope ([#115](https://github.com/johanpearson/Touchline/issues/115)) ([97abaa1](https://github.com/johanpearson/Touchline/commit/97abaa114db8813d2025c5b75a3edbfe6f1374f2)), closes [#113](https://github.com/johanpearson/Touchline/issues/113)
+* **platform:** versioned save codec with migration registry and frozen v1 fixture ([#111](https://github.com/johanpearson/Touchline/issues/111)) ([793ddfc](https://github.com/johanpearson/Touchline/commit/793ddfc872c39ccdb4ce56ebaba5271601871337)), closes [#100](https://github.com/johanpearson/Touchline/issues/100)
+* **ui:** autosave the career and continue on startup ([#114](https://github.com/johanpearson/Touchline/issues/114)) ([4d42b8c](https://github.com/johanpearson/Touchline/commit/4d42b8c72aed6fadd359418fb3affc9ae2ededfa)), closes [#103](https://github.com/johanpearson/Touchline/issues/103)
+* **ui:** export and import saves from the saves screen ([#117](https://github.com/johanpearson/Touchline/issues/117)) ([4c289a9](https://github.com/johanpearson/Touchline/commit/4c289a90808333080cf0f9033f60f9468fe0101c)), closes [#105](https://github.com/johanpearson/Touchline/issues/105)
+* **ui:** saves screen with manual slots ([#116](https://github.com/johanpearson/Touchline/issues/116)) ([2d3da2a](https://github.com/johanpearson/Touchline/commit/2d3da2a35f9ab43eda7e83f436ee9d1d50c849f3))
+
 ## [1.3.0](https://github.com/johanpearson/Touchline/compare/v1.2.0...v1.3.0) (2026-11-13)
 
 
