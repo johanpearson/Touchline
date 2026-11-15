@@ -91,7 +91,7 @@ export const PRESSING_TURNOVER_BONUS: Record<Pressing, number> = {
   high: 0.03,
 };
 /** Multiplies the weight of through passes and carries of an opponent that has just won the ball (space behind the press). */
-export const PRESSING_SPACE_BEHIND: Record<Pressing, number> = { low: 0.8, medium: 1, high: 2.2 };
+export const PRESSING_SPACE_BEHIND: Record<Pressing, number> = { low: 0.8, medium: 1, high: 3 };
 
 /**
  * Home advantage: added to the success chance of the home side's passes, carries, interceptions and
