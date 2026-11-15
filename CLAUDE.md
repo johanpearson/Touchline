@@ -26,6 +26,17 @@ npm run build           # production build
 
 Before opening a PR, run: `npm run lint && npm run typecheck && npm run depcheck && npm test && npm run build`.
 
+## Nightly status
+
+Before changing `src/engine/**`, read the latest nightly results and check that the balance and mutation results are not red:
+
+```bash
+git fetch origin nightly-status
+git show origin/nightly-status:status.json
+```
+
+`status.json` lists every nightly job (balance, mutation, property tests, e2e) with pass/fail, date, commit, run URL and key numbers. The branch `nightly-status` is written only by the nightly workflow; never push to it by hand.
+
 ## Language
 
 - Everything in the repo is **English**: code, comments, docs, commits, issues, PRs.
