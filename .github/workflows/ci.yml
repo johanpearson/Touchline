@@ -2,6 +2,8 @@ name: CI
 
 on:
   pull_request:
+    # labeled/unlabeled re-run the checks so the `full-balance` label takes effect.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   push:
     branches: [main]
 
@@ -41,14 +43,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Engine balance tests
+      - name: Choose the balance suite
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: |
-          if [ "$(npm pkg get scripts.test:balance)" != "{}" ]; then npm run test:balance; else echo "::notice::no balance tests yet"; fi
+          # Fast subset by default. The full suite (all 81 tactic combinations) runs when the
+          # PR has the `full-balance` label or changes the engine or any balance test.
+          # The full suite also runs every night (nightly.yml).
+          full=false
+          if [ "$EVENT" = "pull_request" ]; then
+            case ",$LABELS," in *,full-balance,*) full=true; echo "Label full-balance set." ;; esac
+            if git diff --name-only "origin/$BASE_REF...HEAD" | grep -E '^src/engine/|\.balance\.test\.ts$|^vitest\.balance\.config\.ts$'; then
+              full=true
+            fi
+          fi
+          echo "full=$full" >> "$GITHUB_OUTPUT"
+          echo "Full balance suite: $full"
+      - name: Engine balance tests (fast)
+        if: steps.scope.outputs.full != 'true'
+        run: npm run test:balance:fast
+      - name: Engine balance tests (full)
+        if: steps.scope.outputs.full == 'true'
+        run: npm run test:balance
 
   e2e:
     name: E2E smoke

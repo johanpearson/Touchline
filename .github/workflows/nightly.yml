@@ -9,6 +9,30 @@ permissions:
   contents: read
 
 jobs:
+  balance-full:
+    name: Balance (full)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Full balance suite
+        run: |
+          set -o pipefail
+          FORCE_COLOR=0 npm run test:balance 2>&1 | tee balance.log
+      - name: Open an issue for the failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/nightly-balance-issue.sh balance.log
+
   mutation:
     name: Mutation testing (engine)
     runs-on: ubuntu-latest
