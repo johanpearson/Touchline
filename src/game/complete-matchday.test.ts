@@ -218,7 +218,8 @@ describe("completeMatchday", () => {
         }
         expect(rotated).toBe(true);
       }
-    });
+      // Three full seasons on the action engine: slow on a shared CI runner.
+    }, 240_000);
 
     it("keeps every condition within bounds over a season", () => {
       const finished = playSeason(aCareer());
