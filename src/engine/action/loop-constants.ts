@@ -21,3 +21,9 @@ export const NO_RECENT_TURNOVER = 99;
  * per second. A sprint is about 10 m/s; the margin below the 12 m/s ceiling absorbs rounding.
  */
 export const MAX_SNAPSHOT_SPEED = 10;
+
+/** Furthest the actor of a pass, carry or shot may stand from the ball in its snapshot, metres. */
+export const ACTOR_BALL_REACH = 1.5;
+
+/** Where the ball is shown relative to an actor who was short of it, metres (inside the reach). */
+export const ACTOR_BALL_HOLD = 1;

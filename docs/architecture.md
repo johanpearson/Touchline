@@ -102,7 +102,7 @@ Every `ActionEvent` has `time` (seconds, one decimal), `period`, `team` (the sid
 
 Implemented in `src/engine/action/`: `team-shape.ts` (`teamShape`, `formationAnchors`, `shapeParameters`), `team-phase.ts` (`phaseOf`), `pressure.ts` (`pressureOn`) and `shape-constants.ts`, which holds every tuning value (line depths, phase shifts, tactic mappings, ball pull, minimum distance, pressure radius). The home side attacks towards x = 105; the away side is the x-mirror. Set-piece set-ups (item 5) are in `set-piece-shape.ts` (see Set pieces).
 
-Decisions use the shape (pressure = weighted count of opponents within a few metres of the actor and of the target). The shape is a pure function of its inputs; only the snapshot jitter (at most 0.5 m, from the presentation stream, clamped to the pitch) is random, and it is added to the snapshot only, never used in a decision.
+Decisions use the shape (pressure = weighted count of opponents within a few metres of the actor and of the target). The shape is a pure function of its inputs; only the snapshot jitter (at most 0.5 m, from the presentation stream, clamped to the pitch) is random, and it is added to the snapshot only, never used in a decision. Snapshots are also capped at `MAX_SNAPSHOT_SPEED` (10 m/s) from the previous one (`limit-snapshot-speed.ts`). When that leaves the actor of a pass, carry or shot more than `ACTOR_BALL_REACH` (1.5 m) from the ball, `keepActorOnBall` shows the ball `ACTOR_BALL_HOLD` (1 m) from the actor instead of moving the player, so the cap holds and the carrier stays on the ball; the decisions and event `from`/`to` are untouched.
 
 ### Decisions and outcomes
 
