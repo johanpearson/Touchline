@@ -47,6 +47,8 @@ describe("mutation testing setup", () => {
         "!src/engine/action/**/*.test.ts",
         "!src/engine/action/arbitraries.ts",
         "!src/engine/action/performance.bench.ts",
+        "!src/engine/action/measure-match-time.ts",
+        "!src/engine/action/balance-test-support.ts",
         "!src/engine/action/*-builders.ts",
       ]);
     });
