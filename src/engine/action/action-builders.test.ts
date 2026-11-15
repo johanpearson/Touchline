@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { NEUTRAL_TACTICS } from "../tactics";
 import { aMatchInputV2, anEnginePlayer, aTeamSheet } from "./action-builders";
 import { ENGINE_ATTRIBUTE_NAMES } from "./engine-player";
 
@@ -40,5 +41,20 @@ describe("action builders", () => {
 
     expect(ids.size).toBe(22);
     expect(aMatchInputV2().build().engineVersion).toBe(2);
+  });
+});
+
+describe("aTeamSheet attribute and tactics helpers", () => {
+  it("sets every attribute of every player to one value", () => {
+    const sheet = aTeamSheet().withAllAttributes(14).build();
+
+    const all = [...sheet.starters, ...sheet.bench].flatMap((p) => Object.values(p.attributes));
+    expect(new Set(all)).toEqual(new Set([14]));
+  });
+
+  it("sets the tactics", () => {
+    const tactics = { ...NEUTRAL_TACTICS, pressing: "high" as const };
+
+    expect(aTeamSheet().withTactics(tactics).build().tactics).toEqual(tactics);
   });
 });

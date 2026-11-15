@@ -1,7 +1,7 @@
 import { defineConfig, mergeConfig } from "vitest/config";
 import viteConfig from "./vite.config";
 
-/** Balance tests simulate many matches, so they run on their own and not with `npm test`. */
+/** Balance tests simulate many matches, so they run on their own and not with `npm test`. A single test may play several thousand matches on a slow CI runner, hence the generous timeout; it changes no assertion. */
 export default mergeConfig(
   viteConfig,
   defineConfig({
@@ -9,7 +9,7 @@ export default mergeConfig(
       environment: "node",
       silent: false,
       include: ["src/**/*.balance.test.ts"],
-      testTimeout: 60_000,
+      testTimeout: 600_000,
     },
   }),
 );

@@ -35,9 +35,9 @@ export const PHASE_SHIFT: Record<TeamPhase, number> = {
 export const PRESSING_LINE_HEIGHT: Record<Pressing, number> = { low: -4, medium: 0, high: 5 };
 /** Added to the block shift from the mentality setting. */
 export const MENTALITY_LINE_HEIGHT: Record<Mentality, number> = {
-  defensive: -3,
+  defensive: -1.5,
   balanced: 0,
-  attacking: 3,
+  attacking: 0,
 };
 
 /** Multiplies the distance between lines, measured from the defensive line. Below 1 is more compact. */
@@ -49,7 +49,7 @@ export const MENTALITY_COMPACTNESS: Record<Mentality, number> = {
 };
 
 /** Multiplies the lateral spread. */
-export const WIDTH_SCALE: Record<Width, number> = { narrow: 0.85, normal: 1, wide: 1.15 };
+export const WIDTH_SCALE: Record<Width, number> = { narrow: 0.9, normal: 1, wide: 1.15 };
 
 /** The block shifts towards the ball: metres per metre of ball offset, capped. */
 export const BALL_PULL_DEPTH = 0.15;

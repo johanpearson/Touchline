@@ -129,7 +129,7 @@ describe("buildOptions shot option", () => {
     expect(shotOf(buildOptions(nearActor(), near, tactics()))).toHaveLength(1);
     expect(shot?.from).toEqual(at(94, 34));
     expect(shot?.to).toEqual(at(105, 34));
-    expect(shot?.xg).toBeCloseTo(0.1729, 4);
+    expect(shot?.xg).toBeCloseTo(0.07834, 4);
     expect(shot?.weight).toBeGreaterThan(0);
   });
 
@@ -139,7 +139,7 @@ describe("buildOptions shot option", () => {
       buildOptions({ side: "away", slot: 1, players: players(2) }, away, tactics()),
     );
     expect(shot?.to).toEqual(at(0, 34));
-    expect(shot?.xg).toBeCloseTo(0.1729, 4);
+    expect(shot?.xg).toBeCloseTo(0.07834, 4);
   });
 
   it("gives practically no weight to shots from far away", () => {
@@ -223,6 +223,22 @@ describe("buildOptions with tactics", () => {
     expect(throughLow).toBeLessThan(throughMedium);
     expect(carryLow).toBeLessThan(carryMedium);
     expect(counter("high", false)).toEqual(counter("medium", false));
+  });
+
+  it("raises the shot weight after a won ball against a high press or an attacking opponent", () => {
+    const counterShot = (foe: Partial<TeamTactics>, transition = true) =>
+      weightOf(
+        buildOptions(
+          { ...actor(0), foeTactics: tactics(foe), transition },
+          { home: [central], away: farAway },
+          tactics(),
+        ),
+        "shot",
+      );
+    expect(counterShot({ pressing: "high" })).toBeGreaterThan(counterShot({}));
+    expect(counterShot({ mentality: "attacking" })).toBeGreaterThan(counterShot({}));
+    expect(counterShot({ mentality: "defensive" })).toBeLessThan(counterShot({}));
+    expect(counterShot({ pressing: "high" }, false)).toBe(counterShot({}, false));
   });
 
   it("makes the opponent's press feel closer: more pressure lowers pass weight against a high press", () => {

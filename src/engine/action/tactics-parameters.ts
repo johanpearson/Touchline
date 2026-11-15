@@ -4,6 +4,7 @@ import {
   MENTALITY_DIRECTNESS,
   MENTALITY_RISK,
   MENTALITY_SHOT,
+  MENTALITY_SPACE_BEHIND,
   PRESSING_SPACE_BEHIND,
   PRESSING_TRIGGER_SCALE,
   PRESSING_TURNOVER_BONUS,
@@ -11,6 +12,7 @@ import {
   TEMPO_DRAW_EXPONENT,
   TEMPO_PASS_SUCCESS,
   WIDTH_CENTRAL_SHOT,
+  WIDTH_SPACE_BEHIND,
   WIDTH_WIDE_BONUS,
 } from "./decision-constants";
 import {
@@ -43,7 +45,7 @@ export type ActionTactics = {
   tempoExponent: number;
   /** Added to the completion chance of the team's own passes. */
   passSuccess: number;
-  /** Metres the block moves up the pitch (pressing and mentality). */
+  /** Metres the block moves up the pitch (pressing, mentality and width). */
   lineHeight: number;
   /** Multiplies the distance between lines (pressing and mentality). */
   compactness: number;
@@ -53,7 +55,7 @@ export type ActionTactics = {
   pressRadius: number;
   /** Added to the chance of winning the ball from an opponent building up in their own half. */
   turnoverBonus: number;
-  /** Multiplies through pass and carry weights of an opponent that has just won the ball. */
+  /** Multiplies through pass, carry and shot weights of an opponent that has just won the ball (pressing and mentality). */
   spaceBehind: number;
 };
 
@@ -70,7 +72,10 @@ export const actionTactics = (tactics: TeamTactics): ActionTactics => ({
   width: WIDTH_SCALE[tactics.width],
   pressRadius: PRESSURE_RADIUS * PRESSING_TRIGGER_SCALE[tactics.pressing],
   turnoverBonus: PRESSING_TURNOVER_BONUS[tactics.pressing],
-  spaceBehind: PRESSING_SPACE_BEHIND[tactics.pressing],
+  spaceBehind:
+    PRESSING_SPACE_BEHIND[tactics.pressing] *
+    MENTALITY_SPACE_BEHIND[tactics.mentality] *
+    WIDTH_SPACE_BEHIND[tactics.width],
 });
 
 /** True when a shot from `y` (metres across the pitch) is in the central channel. */

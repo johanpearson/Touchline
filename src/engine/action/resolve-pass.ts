@@ -3,6 +3,8 @@ import type { Rng } from "../rng";
 import type { PassOutcome, PassVariant } from "./action-event";
 import { clamp, rating } from "./attribute-rating";
 import {
+  CROSS_DEFLECTED_CORNER_SHARE,
+  CROSS_INTERCEPTED_CORNER_SHARE,
   LANE_RADIUS,
   PASS_BASE_COMPLETE,
   PASS_COMPLETE_MAX,
@@ -13,9 +15,9 @@ import {
   PASS_SKILL_GAIN,
 } from "./decision-constants";
 import type { EnginePlayer } from "./engine-player";
-import type { Challenger, Resolution } from "./open-play-types";
-import { exitPoint, restartAfterOutOfPlay } from "./out-of-play";
-import type { Point } from "./pitch-metres";
+import type { Challenger, Resolution, Restart } from "./open-play-types";
+import { type Exit, exitPoint, restartAfterOutOfPlay } from "./out-of-play";
+import { PITCH_LENGTH, PITCH_WIDTH, type Point } from "./pitch-metres";
 import { interceptionChance, resolveInterception } from "./resolve-interception";
 import { distanceToSegment } from "./segment-distance";
 
@@ -73,6 +75,29 @@ const nearestOpponent = (to: Point, opponents: readonly Challenger[]): Challenge
 
 const other = (side: Side): Side => (side === "home" ? "away" : "home");
 
+const outOfPlayRestart = (input: PassInput, exit: Exit, rng: Rng): Restart => {
+  const restart = restartAfterOutOfPlay(input.side, exit);
+  const deflectable =
+    input.variant === "cross" && exit.boundary === "endLine" && restart.variant === "goalKick";
+  if (!deflectable || rng.next() >= CROSS_DEFLECTED_CORNER_SHARE) return restart;
+  return cornerAt(input.side, exit.point);
+};
+
+const cornerAt = (side: Side, point: Point): Restart => ({
+  team: side,
+  variant: "corner",
+  position: {
+    x: side === "home" ? PITCH_LENGTH : 0,
+    y: point.y < PITCH_WIDTH / 2 ? 0 : PITCH_WIDTH,
+  },
+});
+
+/** A defender who reads a cross may put it behind the goal line: a corner for the crossing side. */
+const interceptedCrossCorner = (input: PassInput, rng: Rng): Restart | undefined =>
+  input.variant === "cross" && rng.next() < CROSS_INTERCEPTED_CORNER_SHARE
+    ? cornerAt(input.side, input.to)
+    : undefined;
+
 /**
  * A pass ends `complete`, `intercepted` (a lane opponent reads it), `outOfPlay` or `incomplete`
  * (still in play, an opponent gets the ball). Draws: completion, then the best lane interceptor's
@@ -103,6 +128,15 @@ export const resolvePass = (input: PassInput, rng: Rng): Resolution<PassOutcome>
       rng,
     );
     if (interception.outcome === "won") {
+      const corner = interceptedCrossCorner(input, rng);
+      if (corner !== undefined) {
+        return {
+          outcome: "intercepted",
+          ball: corner.position,
+          possession: { side: corner.team },
+          restart: corner,
+        };
+      }
       return {
         outcome: "intercepted",
         ball: interception.ball,
@@ -112,7 +146,7 @@ export const resolvePass = (input: PassInput, rng: Rng): Resolution<PassOutcome>
   }
   if (rng.next() < PASS_OUT_SHARE[input.variant]) {
     const exit = exitPoint(from, to);
-    const restart = restartAfterOutOfPlay(side, exit);
+    const restart = outOfPlayRestart(input, exit, rng);
     return {
       outcome: "outOfPlay",
       ball: restart.position,

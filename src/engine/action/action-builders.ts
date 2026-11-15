@@ -1,4 +1,4 @@
-import { NEUTRAL_TACTICS } from "../tactics";
+import { NEUTRAL_TACTICS, type TeamTactics } from "../tactics";
 import {
   ENGINE_ATTRIBUTE_NAMES,
   type EngineAttributes,
@@ -52,6 +52,9 @@ type TeamSheetBuilder = {
   withFormation: (formation: FormationCounts) => TeamSheetBuilder;
   withStarters: (starters: readonly EnginePlayer[]) => TeamSheetBuilder;
   withBench: (bench: readonly EnginePlayer[]) => TeamSheetBuilder;
+  /** Sets every attribute of every starter and bench player to `value`. */
+  withAllAttributes: (value: number) => TeamSheetBuilder;
+  withTactics: (tactics: TeamTactics) => TeamSheetBuilder;
   build: () => TeamSheet;
 };
 
@@ -61,6 +64,19 @@ const teamSheetBuilder = (sheet: TeamSheet, prefix: string): TeamSheetBuilder =>
     teamSheetBuilder({ ...sheet, formation, starters: startersFor(prefix, formation) }, prefix),
   withStarters: (starters) => teamSheetBuilder({ ...sheet, starters }, prefix),
   withBench: (bench) => teamSheetBuilder({ ...sheet, bench }, prefix),
+  withAllAttributes: (value) => {
+    const level = (player: EnginePlayer): EnginePlayer => ({
+      ...player,
+      attributes: Object.fromEntries(
+        ENGINE_ATTRIBUTE_NAMES.map((name) => [name, value]),
+      ) as EngineAttributes,
+    });
+    return teamSheetBuilder(
+      { ...sheet, starters: sheet.starters.map(level), bench: sheet.bench.map(level) },
+      prefix,
+    );
+  },
+  withTactics: (tactics) => teamSheetBuilder({ ...sheet, tactics }, prefix),
   build: () => ({
     ...sheet,
     formation: { ...sheet.formation },

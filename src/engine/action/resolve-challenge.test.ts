@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { createRng } from "../rng";
 import { anEnginePlayer } from "./action-builders";
-import { type ChallengeInput, resolveChallenge } from "./resolve-challenge";
+import {
+  FOUL_MAX,
+  FOUL_MIN,
+  PENALTY_AREA_FOUL_FACTOR,
+  TACKLE_WIN_MAX,
+  TACKLE_WIN_MIN,
+} from "./decision-constants";
+import { type ChallengeInput, foulChance, resolveChallenge } from "./resolve-challenge";
 
 const scripted = (value: number) => ({ ...createRng(1), next: () => value });
 const at = (x: number, y = 34) => ({ x, y });
@@ -27,6 +34,23 @@ describe("resolveChallenge", () => {
     expect(r.outcome).toBe("foul");
     expect(r.restart).toEqual({ team: "home", variant: "freeKick", position: at(60) });
     expect(r.possession).toEqual({ side: "home" });
+  });
+
+  it("makes defenders more careful in their own penalty area", () => {
+    const outside = foulChance(anEnginePlayer("t").build());
+
+    expect(
+      resolveChallenge(input({ point: at(95, 34) }), scripted(outside * 0.9)).outcome,
+    ).not.toBe("foul");
+    expect(
+      resolveChallenge(input({ point: at(95, 34) }), scripted(outside * 0.9)).outcome,
+    ).not.toBe("foul");
+    expect(
+      resolveChallenge(
+        input({ point: at(95, 34) }),
+        scripted(outside * PENALTY_AREA_FOUL_FACTOR * 0.9),
+      ).outcome,
+    ).toBe("foul");
   });
 
   it("is a penalty when the carrier is fouled in the attacked penalty area", () => {
@@ -69,19 +93,28 @@ describe("resolveChallenge", () => {
     );
   });
 
-  it("clamps the foul and win chances to named bounds", () => {
-    expect(resolveChallenge(input({ tackler: player(20, 20) }), scripted(0.019)).outcome).toBe(
+  it("clamps the foul chance to named bounds", () => {
+    const best = player(20, 20);
+    const worst = player(1, 1);
+    expect(foulChance(best)).toBeGreaterThanOrEqual(FOUL_MIN);
+    expect(foulChance(worst)).toBeLessThanOrEqual(FOUL_MAX);
+    expect(foulChance(worst)).toBeGreaterThan(foulChance(best));
+    const edge = foulChance(worst);
+    expect(resolveChallenge(input({ tackler: worst }), scripted(edge - 0.001)).outcome).toBe(
       "foul",
     );
-    expect(resolveChallenge(input({ tackler: player(20, 20) }), scripted(0.021)).outcome).not.toBe(
+    expect(resolveChallenge(input({ tackler: worst }), scripted(edge + 0.001)).outcome).not.toBe(
       "foul",
     );
-    expect(resolveChallenge(input({ tackler: player(1, 1) }), scripted(0.279)).outcome).toBe(
-      "foul",
-    );
-    expect(resolveChallenge(input({ tackler: player(1, 1) }), scripted(0.281)).outcome).not.toBe(
-      "foul",
-    );
+    expect(
+      resolveChallenge(input({ tackler: best }), scripted(foulChance(best) - 0.001)).outcome,
+    ).toBe("foul");
+    expect(
+      resolveChallenge(input({ tackler: best }), scripted(foulChance(best) + 0.001)).outcome,
+    ).not.toBe("foul");
+  });
+
+  it("floors the chance to win the ball", () => {
     const weakest = input({
       tackler: player(1, 1),
       carrier: anEnginePlayer("c")
@@ -89,8 +122,10 @@ describe("resolveChallenge", () => {
         .withAttribute("strength", 20)
         .build(),
     });
-    expect(resolveChallenge(weakest, scripted(0.28 + 0.72 * 0.1 - 0.001)).outcome).toBe("won");
-    expect(resolveChallenge(weakest, scripted(0.28 + 0.72 * 0.1 + 0.001)).outcome).toBe("lost");
+    const pFoul = foulChance(player(1, 1));
+    const edge = pFoul + (1 - pFoul) * TACKLE_WIN_MIN;
+    expect(resolveChallenge(weakest, scripted(edge - 0.001)).outcome).toBe("won");
+    expect(resolveChallenge(weakest, scripted(edge + 0.001)).outcome).toBe("lost");
   });
 
   it("caps the chance to win the ball", () => {
@@ -101,7 +136,9 @@ describe("resolveChallenge", () => {
         .withAttribute("strength", 1)
         .build(),
     });
-    expect(resolveChallenge(strongest, scripted(0.02 + 0.98 * 0.8 - 0.001)).outcome).toBe("won");
-    expect(resolveChallenge(strongest, scripted(0.02 + 0.98 * 0.8 + 0.001)).outcome).toBe("lost");
+    const pFoul = foulChance(player(20, 20));
+    const edge = pFoul + (1 - pFoul) * TACKLE_WIN_MAX;
+    expect(resolveChallenge(strongest, scripted(edge - 0.001)).outcome).toBe("won");
+    expect(resolveChallenge(strongest, scripted(edge + 0.001)).outcome).toBe("lost");
   });
 });
