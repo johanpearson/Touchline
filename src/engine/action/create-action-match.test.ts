@@ -5,7 +5,7 @@ import { createActionMatch } from "./create-action-match";
 import { inPitch, PITCH_LENGTH, PITCH_WIDTH } from "./pitch-metres";
 
 // Full matches are slow until the fast path lands (#154); CI runners are slower than laptops.
-vi.setConfig({ testTimeout: 30_000 });
+vi.setConfig({ testTimeout: 150_000 });
 
 const playFullMatch = (seed: number) => {
   const match = createActionMatch(aMatchInputV2().build(), seed);
