@@ -1,5 +1,4 @@
-import type { MatchEvent, PerSide } from "../engine";
-import { createRng } from "../engine";
+import { createRng, type PerSide, type Side } from "../engine";
 import type { PlayerPosition, SquadPlayer } from "./squad-player";
 
 /** How likely each position is to score, relative to a forward. */
@@ -27,17 +26,17 @@ const pickWeighted = (players: readonly SquadPlayer[], roll: number): SquadPlaye
 };
 
 /**
- * Names the scorer of every goal in the log, in goal order. Pure and deterministic: it uses its own
- * RNG stream (forked from `seed`) with exactly one draw per goal, so it never touches the match
- * engine's stream and earlier goals keep their scorer when later goals are added.
+ * Names a scorer for every goal, given the side that scored each one in goal order. Results store
+ * only goals, not who scored them, so the season's top scorers are drawn from the squads (weighted
+ * by position and finishing). Pure and deterministic: it uses its own RNG stream (forked from
+ * `seed`) with exactly one draw per goal, so earlier goals keep their scorer when later goals are
+ * added.
  */
-export const attributeGoalScorers = (
-  events: readonly MatchEvent[],
+export const pickGoalScorers = (
+  scoringSides: readonly Side[],
   squads: PerSide<readonly SquadPlayer[]>,
   seed: number,
 ): string[] => {
   const rng = createRng(seed).fork("scorers");
-  return events.flatMap((event) =>
-    event.type === "goal" ? [pickWeighted(squads[event.team], rng.next()).name] : [],
-  );
+  return scoringSides.map((side) => pickWeighted(squads[side], rng.next()).name);
 };

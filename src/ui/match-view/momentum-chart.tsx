@@ -1,4 +1,4 @@
-import type { MatchEvent } from "../../engine";
+import type { ZoneEvent } from "../../engine";
 import { momentumSeries } from "../../engine";
 import { useI18n } from "../i18n-provider";
 import { momentumBars } from "./momentum-bars";
@@ -11,7 +11,7 @@ const HEIGHT = 80;
 const MIN_SCALE = 1.5;
 
 export type MomentumChartProps = {
-  events: readonly MatchEvent[];
+  events: readonly ZoneEvent[];
   matchTime: number;
   homeColour: string;
   awayColour: string;

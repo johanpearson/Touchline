@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { MatchEvent } from "../../engine";
+import type { ZoneEvent } from "../../engine";
 import { createTerrainDriver } from "./terrain/terrain-driver";
 import {
   createDefaultRenderer,
@@ -9,7 +9,7 @@ import {
 
 export type MomentumTerrainProps = {
   /** The match event log. The terrain only reads it. */
-  events: readonly MatchEvent[];
+  events: readonly ZoneEvent[];
   /** Match time in seconds to show. */
   matchTime: number;
   homeColour: string;

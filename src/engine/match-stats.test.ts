@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createMatch } from "./create-match";
-import { aMatchInput } from "./match-builders";
-import type { MatchEvent } from "./match-event";
+import { aMatchInput } from "./action/action-builders";
+import { createActionMatch } from "./action/create-action-match";
+import { toZoneEvents } from "./action/to-zone-events";
 import type { PitchPosition, Side } from "./match-state";
 import { computeMatchStats } from "./match-stats";
+import type { ZoneEvent } from "./zone-event";
 
 const centre: PitchPosition = { x: 0.5, y: 0.5 };
 const ev = (
@@ -11,14 +12,14 @@ const ev = (
   team: Side,
   type: "kickoff" | "progress" | "turnover" | "corner",
   position: PitchPosition = centre,
-): MatchEvent => ({ type, time, team, position, intensity: 0.5 });
+): ZoneEvent => ({ type, time, team, position, intensity: 0.5 });
 const shot = (
   time: number,
   team: Side,
   outcome: "goal" | "saved" | "missed" | "blocked",
   xg: number,
-): MatchEvent => ({ type: "shot", time, team, position: centre, intensity: 0.8, xg, outcome });
-const goal = (time: number, team: Side, xg: number): MatchEvent => ({
+): ZoneEvent => ({ type: "shot", time, team, position: centre, intensity: 0.8, xg, outcome });
+const goal = (time: number, team: Side, xg: number): ZoneEvent => ({
   type: "goal",
   time,
   team,
@@ -26,7 +27,7 @@ const goal = (time: number, team: Side, xg: number): MatchEvent => ({
   intensity: 1,
   xg,
 });
-const periodChange = (time: number, period: "halfTime" | "fullTime"): MatchEvent => ({
+const periodChange = (time: number, period: "halfTime" | "fullTime"): ZoneEvent => ({
   type: "periodChange",
   time,
   team: "home",
@@ -129,11 +130,12 @@ describe("computeMatchStats", () => {
   });
 
   it("can be computed at any time of a simulated match", () => {
-    const match = createMatch(aMatchInput().build(), 7);
+    const match = createActionMatch(aMatchInput().build(), 7);
     match.advanceTo(2700);
+    const events = toZoneEvents(match.events);
 
-    const half = computeMatchStats(match.events, 1350);
-    const later = computeMatchStats(match.events, 2700);
+    const half = computeMatchStats(events, 1350);
+    const later = computeMatchStats(events, 2700);
 
     expect(later.shots.home + later.shots.away).toBeGreaterThanOrEqual(
       half.shots.home + half.shots.away,

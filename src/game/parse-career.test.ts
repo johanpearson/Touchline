@@ -398,7 +398,7 @@ describe("parseCareer squad plan and condition", () => {
     }, "invalid-condition");
   });
 
-  it.each([0, 3, "2", null, undefined])("rejects engineVersion %j", (value) => {
+  it.each([0, 1, 3, "2", null, undefined])("rejects engineVersion %j", (value) => {
     reject((c) => {
       (c as { engineVersion: unknown }).engineVersion = value;
     }, "invalid-engine-version");
@@ -411,8 +411,8 @@ describe("parseCareer squad plan and condition", () => {
     expect(errorOf(raw)).toBe("invalid-season");
   });
 
-  it("keeps engine 2 careers and results", () => {
-    const played = playMatchdays(aCareer(1, 2), 1);
+  it("keeps careers and results", () => {
+    const played = playMatchdays(aCareer(), 1);
     expect(parseCareer(roundTrip(played))).toEqual({ ok: true, career: played });
   });
 });

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { Club } from "./club";
-import { deriveTeamProfile } from "./derive-team-profile";
 import {
   CLUB_COUNT_RANGE,
   DEFAULT_CLUB_COUNT,
@@ -9,6 +8,7 @@ import {
   STRENGTH_SPREAD,
 } from "./generate-league";
 import type { League } from "./league";
+import { deriveClubLineRatings } from "./line-ratings";
 
 const leagueOf = (seed: number, clubCount?: number): League => {
   const result = generateLeague({ seed, clubCount });
@@ -79,11 +79,9 @@ describe("generateLeague", () => {
 
   it("spreads club strengths from clear underdogs to clear favourites", () => {
     const league = leagueOf(6);
-    const ratings = league.clubs.map((club) => {
-      const { name: _name, ...phases } = deriveTeamProfile(club, league.players);
-      const values = Object.values(phases);
-      return values.reduce((s, v) => s + v, 0) / values.length;
-    });
+    const ratings = league.clubs.map(
+      (club) => deriveClubLineRatings(club, league.players).overall / 100,
+    );
     expect(Math.max(...ratings) - Math.min(...ratings)).toBeGreaterThan(0.25);
   });
 
@@ -95,8 +93,8 @@ describe("generateLeague", () => {
 
   it("does not order club strength by club position in the list", () => {
     const league = leagueOf(9);
-    const first = deriveTeamProfile(league.clubs[0] as Club, league.players);
-    const last = deriveTeamProfile(league.clubs[13] as Club, league.players);
+    const first = deriveClubLineRatings(league.clubs[0] as Club, league.players);
+    const last = deriveClubLineRatings(league.clubs[13] as Club, league.players);
     expect(first).not.toEqual(last);
   });
 });

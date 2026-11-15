@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { EngineVersion, TeamTactics } from "../engine";
+import type { TeamTactics } from "../engine";
 import {
   setLineup as applyLineup,
   setTactics as applyTactics,
@@ -58,11 +58,7 @@ export type CareerStore = {
   /** The running career, or null before one has been started. */
   career: Career | null;
   /** Starts a career and replaces any running one. Returns an error for an unknown club. */
-  startCareer: (
-    seed: number,
-    userClubId: string,
-    engineVersion?: EngineVersion,
-  ) => CareerError | null;
+  startCareer: (seed: number, userClubId: string) => CareerError | null;
   /** Records the user's result, simulates the rest of the round and moves to the next matchday. */
   completeMatch: (userResult: Result, report?: MatchReport) => MatchdayError | null;
   /** Replaces the user's lineup. An invalid lineup returns the error and changes nothing. */
@@ -186,8 +182,8 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
   );
 
   const startCareer = useCallback(
-    (seed: number, userClubId: string, engineVersion?: EngineVersion): CareerError | null => {
-      const result = createCareer({ seed, userClubId, engineVersion });
+    (seed: number, userClubId: string): CareerError | null => {
+      const result = createCareer({ seed, userClubId });
       if (!result.ok) return result.error;
       setCandidate(null);
       setLoadError(null);

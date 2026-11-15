@@ -57,15 +57,10 @@ const choose = (testId: string, value: string) =>
   fireEvent.change(select(testId), { target: { value } });
 const ratings = () =>
   Object.fromEntries(
-    [
-      "buildUp",
-      "progression",
-      "chanceCreation",
-      "finishing",
-      "pressing",
-      "defending",
-      "goalkeeping",
-    ].map((p) => [p, screen.getByTestId(`plan-rating-${p}`).textContent]),
+    ["goalkeeping", "defence", "midfield", "attack", "overall"].map((p) => [
+      p,
+      screen.getByTestId(`plan-rating-${p}`).textContent,
+    ]),
   );
 
 describe("squad screen", () => {
@@ -331,9 +326,10 @@ describe("squad plan and match setup", () => {
     const fixture = getNextFixture(career.season, career.userClubId);
     if (!fixture) throw new Error("fixture");
     const setup = matchSetupFor(career, fixture);
-    if (setup.engineVersion !== 1) throw new Error("expected a zone engine setup");
     const tactics =
-      fixture.homeClubId === career.userClubId ? setup.input.homeTactics : setup.input.awayTactics;
+      fixture.homeClubId === career.userClubId
+        ? setup.input.home.tactics
+        : setup.input.away.tactics;
     expect(tactics).toEqual({
       mentality: "attacking",
       pressing: "high",

@@ -8,7 +8,7 @@ import {
   MAX_ENGINE_ATTRIBUTE,
   MIN_ENGINE_ATTRIBUTE,
 } from "./engine-player";
-import type { MatchInputV2 } from "./match-input-v2";
+import type { MatchInput } from "./match-input";
 import type { FormationCounts, TeamSheet } from "./team-sheet";
 
 /** Test support: random valid inputs for property tests of the action engine. */
@@ -86,6 +86,6 @@ export const arbTeamSheet = (idPrefix = "t"): fc.Arbitrary<TeamSheet> =>
         })),
     );
 
-export const arbMatchInputV2: fc.Arbitrary<MatchInputV2> = fc
+export const arbMatchInputV2: fc.Arbitrary<MatchInput> = fc
   .tuple(arbTeamSheet("h"), arbTeamSheet("a"))
   .map(([home, away]) => ({ engineVersion: 2 as const, home, away }));

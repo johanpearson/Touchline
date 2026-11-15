@@ -18,10 +18,10 @@ import {
   SECOND_HALF_ADDED_MINUTES,
   SECONDS_PER_MINUTE,
 } from "./loop-constants";
-import type { MatchInputV2 } from "./match-input-v2";
+import type { MatchInput } from "./match-input";
 import { kickoffPlay, periodSnapshot, playAction } from "./play-action";
 import type { PlayState } from "./play-state";
-import type { MatchInputValidation } from "./validate-match-input-v2";
+import type { MatchInputValidation } from "./validate-match-input";
 
 const otherSide = (side: Side): Side => (side === "home" ? "away" : "home");
 const round1 = (value: number): number => Math.round(value * 10) / 10;
@@ -36,7 +36,7 @@ const round1 = (value: number): number => Math.round(value * 10) / 10;
  * randomness, so changes applied at the same moments are part of the reproducible input.
  */
 export const createActionMatch = (
-  initialInput: MatchInputV2,
+  initialInput: MatchInput,
   seed: number,
   options: ActionMatchOptions = {},
 ): ActionMatch => {

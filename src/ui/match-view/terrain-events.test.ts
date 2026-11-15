@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { MatchEvent } from "../../engine";
+import type { ZoneEvent } from "../../engine";
 import { terrainEvents } from "./terrain-events";
 
-const at = (time: number, type: "progress" | "periodChange", period?: string): MatchEvent =>
+const at = (time: number, type: "progress" | "periodChange", period?: string): ZoneEvent =>
   ({
     type,
     time,
@@ -10,7 +10,7 @@ const at = (time: number, type: "progress" | "periodChange", period?: string): M
     position: { x: 0.5, y: 0.5 },
     intensity: 0.5,
     ...(period ? { period } : {}),
-  }) as MatchEvent;
+  }) as ZoneEvent;
 
 const firstHalf = [at(10, "progress"), at(2700, "periodChange", "halfTime")];
 const secondHalf = [at(2700, "periodChange", "secondHalf"), at(2800, "progress")];

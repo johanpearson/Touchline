@@ -1,6 +1,6 @@
-import type { MatchEvent } from "./match-event";
 import type { PitchPosition, Side } from "./match-state";
 import { progressOf } from "./pitch";
+import type { ZoneEvent } from "./zone-event";
 
 /** A value for each team. */
 export type PerSide<T> = Record<Side, T>;
@@ -34,13 +34,13 @@ const attackingHalfOf = (position: PitchPosition): Side | undefined => {
 };
 
 /** Time on the ball only runs while play is on; half-time and full time stop the clock. */
-const isStoppage = (event: MatchEvent): boolean =>
+const isStoppage = (event: ZoneEvent): boolean =>
   event.type === "periodChange" && (event.period === "halfTime" || event.period === "fullTime");
 
 type Accumulator = { possession: PerSide<number>; tilt: PerSide<number> };
 
 /** Adds the time the ball stayed as the last event left it, from that event until `until`. */
-const accumulateTime = (acc: Accumulator, event: MatchEvent, until: number): void => {
+const accumulateTime = (acc: Accumulator, event: ZoneEvent, until: number): void => {
   if (isStoppage(event)) return;
   const seconds = Math.max(0, until - event.time);
   acc.possession[event.team] += seconds;
@@ -48,7 +48,7 @@ const accumulateTime = (acc: Accumulator, event: MatchEvent, until: number): voi
   if (attacking) acc.tilt[attacking] += seconds;
 };
 
-const countEvents = (events: readonly MatchEvent[]) => {
+const countEvents = (events: readonly ZoneEvent[]) => {
   const shots = zero();
   const shotsOnTarget = zero();
   const xg = zero();
@@ -69,7 +69,7 @@ const countEvents = (events: readonly MatchEvent[]) => {
  * Computes match statistics from the event log, counting only what happened up to `upTo` seconds.
  * The ball stays where, and with whom, the latest event left it. Pure: nothing outside `events` is read.
  */
-export const computeMatchStats = (events: readonly MatchEvent[], upTo: number): MatchStats => {
+export const computeMatchStats = (events: readonly ZoneEvent[], upTo: number): MatchStats => {
   const seen = events.filter((event) => event.time <= upTo);
   const acc: Accumulator = { possession: zero(), tilt: zero() };
   seen.forEach((event, index) => {

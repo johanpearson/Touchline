@@ -5,7 +5,8 @@ import {
   type Club,
   computeForm,
   computeTable,
-  deriveTeamProfile,
+  deriveClubLineRatings,
+  LINE_RATINGS,
   pickBestEleven,
 } from "../game";
 import type { MessageKey } from "../i18n";
@@ -20,16 +21,6 @@ import {
 } from "./squad-rows";
 
 const UPCOMING_COUNT = 3;
-const PHASES = [
-  "buildUp",
-  "progression",
-  "chanceCreation",
-  "finishing",
-  "pressing",
-  "defending",
-  "goalkeeping",
-] as const;
-
 /** Low is 1-7, mid 8-13, high 14-20. The text value is always shown next to the colour. */
 const bandOf = (value: number): "low" | "mid" | "high" =>
   value <= 7 ? "low" : value <= 13 ? "mid" : "high";
@@ -125,15 +116,15 @@ function History({ clubId, career }: { clubId: string; career: Career }) {
 
 function Ratings({ club, career }: { club: Club; career: Career }) {
   const { t, formatNumber } = useI18n();
-  const profile = deriveTeamProfile(club, career.league.players);
+  const ratings = deriveClubLineRatings(club, career.league.players);
   return (
     <div>
       <h3>{t("club.ratings")}</h3>
       <dl className="club-ratings">
-        {PHASES.map((phase) => (
-          <div key={phase}>
-            <dt>{t(`rating.${phase}`)}</dt>
-            <dd data-testid={`rating-${phase}`}>{formatNumber(profile[phase] * 100, 0)}</dd>
+        {LINE_RATINGS.map((line) => (
+          <div key={line}>
+            <dt>{t(`rating.${line}`)}</dt>
+            <dd data-testid={`rating-${line}`}>{formatNumber(ratings[line], 0)}</dd>
           </div>
         ))}
       </dl>

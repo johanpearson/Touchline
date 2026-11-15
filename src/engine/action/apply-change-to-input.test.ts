@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { aMatchInputV2, anEnginePlayer } from "./action-builders";
+import { aMatchInput, anEnginePlayer } from "./action-builders";
 import { applyChangeToInput } from "./apply-change-to-input";
 
 describe("applyChangeToInput", () => {
   it("moves a substitute from the bench into the starting eleven", () => {
-    const input = aMatchInputV2().build();
+    const input = aMatchInput().build();
     const sub = anEnginePlayer("h-b1").withPosition("MID").build();
     const lineup = input.home.starters.map((p, i) => (i === 5 ? sub : p));
 
@@ -16,7 +16,7 @@ describe("applyChangeToInput", () => {
   });
 
   it("does not mutate the input and keeps unchanged parts", () => {
-    const input = aMatchInputV2().build();
+    const input = aMatchInput().build();
     const tactics = { ...input.home.tactics, pressing: "high" } as const;
 
     const result = applyChangeToInput(input, { side: "home", tactics });
@@ -28,7 +28,7 @@ describe("applyChangeToInput", () => {
 });
 
 describe("applyChangeToInput lineups and tactics", () => {
-  const base = aMatchInputV2().build();
+  const base = aMatchInput().build();
   const input = {
     ...base,
     home: {

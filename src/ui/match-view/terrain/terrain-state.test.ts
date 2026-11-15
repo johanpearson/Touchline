@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
-import type { MatchEvent } from "../../../engine";
+import type { ZoneEvent } from "../../../engine";
 import { GOAL_HOLD_SECONDS } from "./goal-burst";
 import { read, vertexIndexAt } from "./terrain-grid";
 import { consumeEvents, createTerrainState, resetTerrain, stepDynamics } from "./terrain-state";
 import { composeSurface, updateSurface } from "./terrain-surface";
 
-const progress = (time: number, x = 0.7): MatchEvent => ({
+const progress = (time: number, x = 0.7): ZoneEvent => ({
   type: "progress",
   time,
   team: "home",
   position: { x, y: 0.5 },
   intensity: 0.5,
 });
-const goal = (time: number): MatchEvent => ({
+const goal = (time: number): ZoneEvent => ({
   type: "goal",
   time,
   team: "away",

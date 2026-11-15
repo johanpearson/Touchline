@@ -1,23 +1,15 @@
 import { useMemo, useRef, useState } from "react";
-import { generateActionCommentary, generateCommentary } from "../../commentary";
-import type {
-  EngineVersion,
-  MatchInputV1,
-  MatchInputV2,
-  MatchState,
-  PerSide,
-  Side,
-} from "../../engine";
+import { generateActionCommentary } from "../../commentary";
+import type { ActionMatchState, EngineVersion, MatchInput, PerSide, Side } from "../../engine";
 import {
   computeActionStats,
   computeMatchStats,
-  createMatch,
+  createActionMatch,
   createZoneEventAdapter,
-  type MatchEvent,
   playerRatings,
+  type ZoneEvent,
 } from "../../engine";
-import type { MatchReport, SquadPlayer } from "../../game";
-import { attributeGoalScorers } from "../../game";
+import type { MatchReport } from "../../game";
 import { useI18n } from "../i18n-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
@@ -31,20 +23,21 @@ import { useMatchPlayback } from "./use-match-playback";
 
 /** What `onContinue` gets at full time. */
 export type FinishedMatch = {
-  score: MatchState["score"];
+  score: ActionMatchState["score"];
   engineVersion: EngineVersion;
 };
 
-type MatchScreenCommon = {
+export type MatchScreenProps = {
   seed: number;
+  input: MatchInput;
   colours: PerSide<string>;
-  /** The players goals are credited to, by position and finishing (zone engine). */
-  squads: PerSide<readonly SquadPlayer[]>;
+  /** Display name of every player who can appear in the log, by player id. */
+  players: Readonly<Record<string, string>>;
   /** The side the user manages; its players come first in the ratings table. Default home. */
   userSide?: Side;
   /** Replaces the three.js renderer, for tests. */
   createRenderer?: TerrainRendererFactory;
-  /** Replaces the canvas 2D pitch renderer (action engine only), for tests. */
+  /** Replaces the canvas 2D pitch renderer, for tests. */
   createPitchRenderer?: PitchRendererFactory;
   /** How often the clock advances, in milliseconds; tests use a coarser tick. */
   tickMs?: number;
@@ -57,96 +50,12 @@ type MatchScreenCommon = {
   onContinue?: (finished: FinishedMatch, report?: MatchReport) => void;
 };
 
-export type MatchScreenProps = MatchScreenCommon &
-  (
-    | { engineVersion?: 1; input: MatchInputV1 }
-    | {
-        engineVersion: 2;
-        input: MatchInputV2;
-        /** Display name of every player who can appear in the log, by player id. */
-        players: Readonly<Record<string, string>>;
-      }
-  );
-
-type ZoneProps = MatchScreenCommon & { input: MatchInputV1 };
-type ActionProps = MatchScreenCommon & {
-  input: MatchInputV2;
-  players: Readonly<Record<string, string>>;
-};
-
 /**
- * The match screen: terrain, scoreboard, momentum chart, stats panel, feed and speed controls.
- * The match is created once from `input` and `seed` on the engine the setup names (the zone engine
- * unless `engineVersion` is 2); give the component a new `key` to start another.
+ * The match screen: terrain or 2D pitch, scoreboard, momentum chart, stats panel, feed and speed
+ * controls. The match is created once from `input` and `seed`; give the component a new `key` to
+ * start another.
  */
-export function MatchScreen(props: MatchScreenProps) {
-  return props.engineVersion === 2 ? (
-    <ActionMatchScreen {...props} />
-  ) : (
-    <ZoneMatchScreen {...props} />
-  );
-}
-
-function ZoneMatchScreen({
-  input,
-  seed,
-  colours,
-  squads,
-  createRenderer,
-  tickMs,
-  halfTimeEditor,
-  onContinue,
-}: ZoneProps) {
-  const { locale } = useI18n();
-  const [match] = useState(() => createMatch(input, seed));
-  const { matchTime, state, events, eventCount, resume, ...playback } = useMatchPlayback(
-    match,
-    tickMs,
-  );
-  const [report, setReport] = useState<MatchReport | undefined>();
-  const startSecondHalf = (plan?: AppliedHalfTimePlan) => {
-    setReport(plan?.report);
-    resume(plan?.engineVersion === 1 ? plan.change : undefined);
-  };
-  // `events` is appended to in place; `eventCount` tells when it grew.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  const stats = useMemo(() => computeMatchStats(events, matchTime), [eventCount, matchTime]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  const shown = useMemo(() => terrainEvents(events, state.period), [eventCount, state.period]);
-  const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  const lines = useMemo(
-    () =>
-      generateCommentary(
-        events,
-        { locale, names, scorers: attributeGoalScorers(events, squads, seed) },
-        seed,
-      ),
-    [eventCount, locale, names, squads, seed],
-  );
-  return (
-    <MatchLayout
-      names={names}
-      colours={colours}
-      score={state.score}
-      period={state.period}
-      matchTime={matchTime}
-      events={events}
-      terrainEvents={shown}
-      stats={stats}
-      lines={lines}
-      playback={playback}
-      createRenderer={createRenderer}
-      halfTimeEditor={halfTimeEditor}
-      onResume={startSecondHalf}
-      onContinue={
-        onContinue && (() => onContinue({ score: state.score, engineVersion: 1 }, report))
-      }
-    />
-  );
-}
-
-function ActionMatchScreen({
+export function MatchScreen({
   input,
   seed,
   colours,
@@ -157,9 +66,9 @@ function ActionMatchScreen({
   tickMs,
   halfTimeEditor,
   onContinue,
-}: ActionProps) {
+}: MatchScreenProps) {
   const { locale } = useI18n();
-  const [match] = useState(() => createMatch(input, seed));
+  const [match] = useState(() => createActionMatch(input, seed));
   const { matchTime, state, events, eventCount, resume, ...playback } = useMatchPlayback(
     match,
     tickMs,
@@ -167,7 +76,7 @@ function ActionMatchScreen({
   const [report, setReport] = useState<MatchReport | undefined>();
   const startSecondHalf = (plan?: AppliedHalfTimePlan) => {
     setReport(plan?.report);
-    resume(plan?.engineVersion === 2 ? plan.change : undefined);
+    resume(plan?.change);
   };
   // The terrain, the momentum chart and the stats only ever see the adapted events.
   // `events` is appended to in place; `eventCount` tells when it grew, so only the new tail is
@@ -176,7 +85,7 @@ function ActionMatchScreen({
     | {
         adapter: ReturnType<typeof createZoneEventAdapter>;
         consumed: number;
-        zone: MatchEvent[];
+        zone: ZoneEvent[];
       }
     | undefined
   >(undefined);
@@ -245,7 +154,8 @@ function ActionMatchScreen({
       }
       onResume={startSecondHalf}
       onContinue={
-        onContinue && (() => onContinue({ score: state.score, engineVersion: 2 }, report))
+        onContinue &&
+        (() => onContinue({ score: state.score, engineVersion: input.engineVersion }, report))
       }
     />
   );
@@ -253,7 +163,7 @@ function ActionMatchScreen({
 
 /** Ids of the players who played, per side: the starters and everyone a change brought on. */
 const playedIds = (
-  input: MatchInputV2,
+  input: MatchInput,
   changes: readonly { change: { side: Side; lineup?: readonly { id: string }[] } }[],
 ): PerSide<string[]> => {
   const played: PerSide<Set<string>> = {

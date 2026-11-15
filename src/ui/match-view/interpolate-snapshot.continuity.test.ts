@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMatch } from "../../engine";
+import { createActionMatch } from "../../engine";
 import { anActionMatchSetup } from "./action-match-fixture";
 import { interpolateSnapshot } from "./interpolate-snapshot";
 import { SPEEDS } from "./playback";
@@ -14,7 +14,7 @@ const FRAME_SECONDS = 1 / 60;
 
 const playFullMatch = (seed: number) => {
   const { setup } = anActionMatchSetup(seed);
-  const match = createMatch(setup.input, seed);
+  const match = createActionMatch(setup.input, seed);
   while (match.state.period !== "fullTime") {
     match.advanceTo(match.state.time + 600);
     if (match.state.period === "halfTime") match.resume();

@@ -1,5 +1,5 @@
 import type { CommentaryLine } from "../../commentary";
-import type { MatchEvent } from "../../engine";
+import type { ZoneEvent } from "../../engine";
 import { useI18n } from "../i18n-provider";
 import { formatMatchMinute } from "./match-minute";
 
@@ -8,7 +8,7 @@ export const FEED_LENGTH = 6;
 
 export type MatchFeedProps = {
   lines: readonly CommentaryLine[];
-  events: readonly MatchEvent[];
+  events: readonly ZoneEvent[];
   matchTime: number;
   homeColour: string;
   awayColour: string;

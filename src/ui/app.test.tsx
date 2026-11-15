@@ -195,22 +195,13 @@ describe("new career screen", () => {
     expect(screen.getByTestId("hub-club-name").textContent).toBe(club.name);
   });
 
-  it("offers the match engine with the zone engine as the default", () => {
+  it("does not offer a choice of match engine", () => {
     renderApp();
-    const select = screen.getByTestId("engine-version") as HTMLSelectElement;
-    expect(select.value).toBe("1");
-    expect(select.options).toHaveLength(2);
+    expect(screen.queryByTestId("engine-version")).toBeNull();
   });
 
-  it("starts a zone engine career by default and shows play match", () => {
+  it("starts a career that plays on the action engine and quick-sims its matchday", () => {
     renderApp();
-    startCareer(leagueFor(11).clubs[0]?.id ?? "");
-    expect(screen.getByTestId("play-match")).toBeTruthy();
-  });
-
-  it("starts an action engine career when chosen and quick-sims its matchday", () => {
-    renderApp();
-    fireEvent.change(screen.getByTestId("engine-version"), { target: { value: "2" } });
     startCareer(leagueFor(11).clubs[0]?.id ?? "");
     expect(screen.getByTestId("play-match")).toBeTruthy();
 
@@ -219,9 +210,8 @@ describe("new career screen", () => {
     expect(window.location.hash).toBe("#/results");
   });
 
-  it("plays an action engine career's match in the match view", () => {
+  it("plays the career's match in the match view", () => {
     renderApp();
-    fireEvent.change(screen.getByTestId("engine-version"), { target: { value: "2" } });
     startCareer(leagueFor(11).clubs[0]?.id ?? "");
     goTo("#/match");
     expect(screen.getByTestId("match-screen")).toBeTruthy();

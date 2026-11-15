@@ -1,6 +1,5 @@
-import type { ActionMatchChange, MatchChange, Side, TeamTactics } from "../engine";
+import type { ActionMatchChange, Side, TeamTactics } from "../engine";
 import type { Career } from "./career";
-import { deriveLineupProfile } from "./derive-lineup-profile";
 import type { Fixture } from "./generate-fixtures";
 import type { Lineup } from "./lineup";
 import { FITNESS_MATCH_MINUTES } from "./player-condition";
@@ -26,16 +25,13 @@ export type HalfTimeError =
   | "position-mismatch"
   | "duplicate-substitution";
 
-/** A valid plan; `engineVersion` tells which kind of `change` the career's engine takes. */
-export type AppliedHalfTime =
-  | { ok: true; engineVersion: 1; change: MatchChange; report: MatchReport; lineupAfter: Lineup }
-  | {
-      ok: true;
-      engineVersion: 2;
-      change: ActionMatchChange;
-      report: MatchReport;
-      lineupAfter: Lineup;
-    };
+/** A valid plan: the engine `change` for the user's side, the minutes played and the lineup after it. */
+export type AppliedHalfTime = {
+  ok: true;
+  change: ActionMatchChange;
+  report: MatchReport;
+  lineupAfter: Lineup;
+};
 
 export type HalfTimePlan = AppliedHalfTime | { ok: false; error: HalfTimeError };
 
@@ -98,9 +94,9 @@ const minutesOf = (
 /**
  * Plans the user's half-time: validates up to five substitutions (a bench player replaces a pitch
  * player of the same position, nobody twice, no formation change) and an optional tactics change,
- * and returns the engine `change` (for engine v1 the profile of the lineup after the changes at the
- * current condition, for v2 the new `EnginePlayer`s in slot order; plus tactics), the `report` of minutes for `completeMatchday`, and `lineupAfter`
- * (substituted-off players move to the bench). The career is not changed. Expected failures are
+ * and returns the engine `change` (the new `EnginePlayer`s in slot order at the current condition,
+ * plus tactics), the `report` of minutes for `completeMatchday`, and `lineupAfter` (substituted-off
+ * players move to the bench). The career is not changed. Expected failures are
  * returned; a fixture without the user's club is a programmer error and throws a `RangeError`.
  */
 export const planHalfTime = (
@@ -127,16 +123,6 @@ export const planHalfTime = (
   const lineupAfter = applySubstitutions(plan, changes.substitutions);
   const tactics = { ...(changes.tactics ?? plannedTactics) };
   const report = { minutes: minutesOf(plan, changes.substitutions) };
-  if (career.engineVersion === 2) {
-    const lineup = toEnginePlayers(lineupAfter, squad, career.condition);
-    return { ok: true, engineVersion: 2, change: { side, lineup, tactics }, report, lineupAfter };
-  }
-  const profile = deriveLineupProfile(club.name, squad, lineupAfter, career.condition);
-  return {
-    ok: true,
-    engineVersion: 1,
-    change: { side, profile, tactics },
-    report,
-    lineupAfter,
-  };
+  const lineup = toEnginePlayers(lineupAfter, squad, career.condition);
+  return { ok: true, change: { side, lineup, tactics }, report, lineupAfter };
 };

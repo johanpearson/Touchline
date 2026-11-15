@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { aMatchInputV2 } from "./action-builders";
+import { aMatchInput } from "./action-builders";
 import { createActionMatch } from "./create-action-match";
 import { MAX_SNAPSHOT_SPEED } from "./loop-constants";
 
@@ -10,7 +10,7 @@ const MAX_PLAYER_SPEED = 12;
 const SEEDS = [1, 2, 3, 7, 11];
 
 const playFullMatch = (seed: number) => {
-  const match = createActionMatch(aMatchInputV2().build(), seed);
+  const match = createActionMatch(aMatchInput().build(), seed);
   match.advanceTo(10_000);
   match.resume();
   match.advanceTo(20_000);

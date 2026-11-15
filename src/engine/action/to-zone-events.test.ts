@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import type { MatchEvent } from "../match-event";
 import { computeMatchStats } from "../match-stats";
-import { aMatchInputV2 } from "./action-builders";
+import type { ZoneEvent } from "../zone-event";
+import { aMatchInput } from "./action-builders";
 import type { ActionEvent } from "./action-event";
 import {
   carry,
@@ -18,7 +18,7 @@ import { computeActionStats } from "./action-stats";
 import { createActionMatch } from "./create-action-match";
 import { createZoneEventAdapter, toZoneEvents } from "./to-zone-events";
 
-const only = (events: Parameters<typeof toZoneEvents>[0]): MatchEvent[] => toZoneEvents(events);
+const only = (events: Parameters<typeof toZoneEvents>[0]): ZoneEvent[] => toZoneEvents(events);
 
 const ball = (x: number, y: number) => ({ from: { x: 50, y: 34 }, to: { x, y } });
 
@@ -201,7 +201,7 @@ const logs = new Map<number, readonly ActionEvent[]>();
 const playedMatch = (seed: number): readonly ActionEvent[] => {
   const cached = logs.get(seed);
   if (cached) return cached;
-  const match = createActionMatch(aMatchInputV2().build(), seed, { detail: "fast" });
+  const match = createActionMatch(aMatchInput().build(), seed, { detail: "fast" });
   match.advanceTo(6000);
   match.resume();
   match.advanceTo(12000);
@@ -228,7 +228,7 @@ describe("toZoneEvents over played matches", () => {
     for (const seed of seeds) {
       const source = playedMatch(seed);
       const adapted = toZoneEvents(source);
-      const count = (type: MatchEvent["type"]) => adapted.filter((e) => e.type === type).length;
+      const count = (type: ZoneEvent["type"]) => adapted.filter((e) => e.type === type).length;
       expect(count("goal")).toBe(
         source.filter((e) => e.type === "shot" && e.outcome === "goal").length,
       );
@@ -265,9 +265,9 @@ describe("toZoneEvents over played matches", () => {
 });
 
 describe("createZoneEventAdapter", () => {
-  const adaptInChunks = (log: readonly ActionEvent[], size: number): MatchEvent[] => {
+  const adaptInChunks = (log: readonly ActionEvent[], size: number): ZoneEvent[] => {
     const adapter = createZoneEventAdapter();
-    const zone: MatchEvent[] = [];
+    const zone: ZoneEvent[] = [];
     for (let i = 0; i < log.length; i += size) zone.push(...adapter.push(log.slice(i, i + size)));
     return zone;
   };

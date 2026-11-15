@@ -36,7 +36,7 @@ export type PeriodChangeEvent = EventBase & {
 };
 
 /** One thing that happened in a match. The ordered event log drives the match view, commentary and stats. */
-export type MatchEvent =
+export type ZoneEvent =
   | KickoffEvent
   | ProgressEvent
   | LateralEvent
@@ -47,4 +47,4 @@ export type MatchEvent =
   | FoulEvent
   | PeriodChangeEvent;
 
-export type MatchEventType = MatchEvent["type"];
+export type ZoneEventType = ZoneEvent["type"];

@@ -1,4 +1,3 @@
-import type { EngineVersion } from "../engine";
 import type { Result } from "./compute-table";
 import type { Fixture } from "./generate-fixtures";
 import type { League } from "./league";
@@ -29,8 +28,8 @@ export type Career = {
   squadPlan: SquadPlan;
   /** Fitness and form of every player in the league, by player id (schema v3). */
   condition: Record<string, PlayerCondition>;
-  /** The engine used for new matches: 1 is the zone engine, 2 the action engine (schema v4). */
-  engineVersion: EngineVersion;
+  /** The engine used for new matches. Always 2, the action engine (schema v5; the zone engine was removed). */
+  engineVersion: 2;
 };
 
 export type CareerError = "unknown-club";

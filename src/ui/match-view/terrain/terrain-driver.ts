@@ -1,4 +1,4 @@
-import type { MatchEvent } from "../../../engine";
+import type { ZoneEvent } from "../../../engine";
 import { flashAlpha } from "./goal-burst";
 import type { Rgb } from "./terrain-colour";
 import { VERTEX_COUNT } from "./terrain-grid";
@@ -18,7 +18,7 @@ export type TerrainFrame = {
 };
 
 export type TerrainInput = {
-  events: readonly MatchEvent[];
+  events: readonly ZoneEvent[];
   /** Match time in seconds that the terrain should show. */
   matchTime: number;
   /** Seconds of real time since the previous frame. */

@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import type { EngineVersion } from "../engine";
 import { generateLeague } from "../game";
 import { clubRating } from "./club-rating";
 import { ContinuePanel } from "./continue-panel";
@@ -15,7 +14,6 @@ export function NewCareerScreen({ initialSeed }: Props) {
   const { startCareer } = useCareer();
   const [seed, setSeed] = useState(initialSeed);
   const [chosen, setChosen] = useState<string | null>(null);
-  const [engineVersion, setEngineVersion] = useState<EngineVersion>(1);
 
   const rows = useMemo(() => {
     const generated = generateLeague({ seed });
@@ -35,8 +33,7 @@ export function NewCareerScreen({ initialSeed }: Props) {
 
   const start = () => {
     if (!chosenClub) return;
-    if (startCareer(seed, chosenClub.id, engineVersion) === null)
-      window.location.hash = hrefFor({ name: "home" });
+    if (startCareer(seed, chosenClub.id) === null) window.location.hash = hrefFor({ name: "home" });
   };
 
   return (
@@ -61,17 +58,6 @@ export function NewCareerScreen({ initialSeed }: Props) {
           value={seed}
           onChange={(e) => changeSeed(e.target.value)}
         />
-      </label>
-      <label className="engine-field">
-        {t("newCareer.engine")}{" "}
-        <select
-          data-testid="engine-version"
-          value={engineVersion}
-          onChange={(e) => setEngineVersion(e.target.value === "2" ? 2 : 1)}
-        >
-          <option value={1}>{t("newCareer.engine.1")}</option>
-          <option value={2}>{t("newCareer.engine.2")}</option>
-        </select>
       </label>
       <h3>{t("newCareer.clubs")}</h3>
       <ul className="club-list">

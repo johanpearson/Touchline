@@ -1,16 +1,17 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { simulateBalance } from "../engine/balance-harness";
-import { aMatchInput } from "../engine/match-builders";
-import { deriveLineupProfile } from "./derive-lineup-profile";
+import { NEUTRAL_TACTICS, type TeamSheet } from "../engine";
+import { simulateActionBalance } from "../engine/action/action-balance";
 import { FORMATION_SHAPE, FORMATIONS, type Formation } from "./formation";
+import { formationShape } from "./formation-shape";
 import { generateLeague } from "./generate-league";
 import { BENCH_SIZE, type Lineup } from "./lineup";
 import type { Player } from "./player";
 import { playerOverall } from "./player-overall";
+import { toEngineBench, toEnginePlayers } from "./to-engine-players";
 
-const LEAGUE_SEEDS = [1, 2, 3];
-const SEASONS = 5;
-const MATCHDAYS_PER_SEASON = 26;
+const LEAGUE_SEEDS = [1, 2];
+/** Every club plays this many matches per formation, half at home and half away. */
+const MATCHES_PER_CLUB = 40;
 const MAX_SHARE = 0.55;
 const POSITIONS = ["GK", "DEF", "MID", "FWD"] as const;
 
@@ -32,7 +33,25 @@ const lineupFor = (formation: Formation, squad: readonly Player[]): Lineup => {
   return { formation, starters, bench };
 };
 
-/** Every club plays `formation` against its own 4-4-2 self (equal players), 5 seasons of 26 matches. */
+/** The sheet of a lineup with neutral tactics; ids get a prefix so a club can play its own copy. */
+const sheetOf = (
+  name: string,
+  lineup: Lineup,
+  squad: readonly Player[],
+  idPrefix: string,
+): TeamSheet => {
+  const prefixed = <T extends { id: string }>(players: readonly T[]): T[] =>
+    players.map((p) => ({ ...p, id: `${idPrefix}${p.id}` }));
+  return {
+    name,
+    formation: formationShape(lineup.formation),
+    starters: prefixed(toEnginePlayers(lineup, squad, {})),
+    bench: prefixed(toEngineBench(lineup, squad, {})),
+    tactics: NEUTRAL_TACTICS,
+  };
+};
+
+/** Every club plays `formation` against its own 4-4-2 self (equal players, home and away alternating). */
 const simulateAgainst442 = (formation: Formation): Share => {
   const share: Share = { wins: 0, losses: 0, matches: 0 };
   for (const seed of LEAGUE_SEEDS) {
@@ -41,14 +60,23 @@ const simulateAgainst442 = (formation: Formation): Share => {
     const { clubs, players } = generated.league;
     clubs.forEach((club, index) => {
       const squad = players.filter((p) => club.playerIds.includes(p.id));
-      const tested = deriveLineupProfile(club.name, squad, lineupFor(formation, squad), {});
-      const baseline = deriveLineupProfile(club.name, squad, lineupFor("4-4-2", squad), {});
-      const matches = SEASONS * MATCHDAYS_PER_SEASON;
-      const input = aMatchInput().withHome(tested).withAway(baseline).build();
-      const summary = simulateBalance(input, matches, seed * 1_000_000 + index * 1_000);
-      share.wins += summary.homeWinRate * matches;
-      share.losses += summary.awayWinRate * matches;
-      share.matches += matches;
+      const tested = sheetOf(club.name, lineupFor(formation, squad), squad, "t-");
+      const baseline = sheetOf(club.name, lineupFor("4-4-2", squad), squad, "b-");
+      const half = MATCHES_PER_CLUB / 2;
+      const baseSeed = seed * 1_000_000 + index * 1_000;
+      const atHome = simulateActionBalance(
+        { engineVersion: 2, home: tested, away: baseline },
+        half,
+        baseSeed,
+      );
+      const away = simulateActionBalance(
+        { engineVersion: 2, home: baseline, away: tested },
+        half,
+        baseSeed + half,
+      );
+      share.wins += atHome.homeWinRate * half + away.awayWinRate * half;
+      share.losses += atHome.awayWinRate * half + away.homeWinRate * half;
+      share.matches += MATCHES_PER_CLUB;
     });
   }
   return share;
@@ -59,7 +87,7 @@ describe("formation balance: every formation against equal-strength 4-4-2", () =
 
   beforeAll(() => {
     for (const formation of FORMATIONS) shares.set(formation, simulateAgainst442(formation));
-  }, 300_000);
+  }, 600_000);
 
   for (const formation of FORMATIONS) {
     it(`${formation} neither wins nor loses more than 55% of its matches`, () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MatchEvent } from "../../../engine";
+import type { ZoneEvent } from "../../../engine";
 import { bumpsForEvent } from "./event-bump";
 
 const base = { time: 10, team: "home", position: { x: 0.8, y: 0.4 }, intensity: 0.5 } as const;
@@ -41,10 +41,10 @@ describe("bumpsForEvent", () => {
     expect(goal).toBeGreaterThan(shot);
   });
 
-  it.each<MatchEvent["type"]>(["lateral", "turnover", "corner", "foul"])(
+  it.each<ZoneEvent["type"]>(["lateral", "turnover", "corner", "foul"])(
     "adds one bump for a %s",
     (type) => {
-      expect(bumpsForEvent({ ...base, type } as MatchEvent)).toHaveLength(1);
+      expect(bumpsForEvent({ ...base, type } as ZoneEvent)).toHaveLength(1);
     },
   );
 

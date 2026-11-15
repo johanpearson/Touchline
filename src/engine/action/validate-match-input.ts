@@ -5,7 +5,7 @@ import {
   MAX_ENGINE_ATTRIBUTE,
   MIN_ENGINE_ATTRIBUTE,
 } from "./engine-player";
-import type { MatchInputV2 } from "./match-input-v2";
+import type { MatchInput } from "./match-input";
 import { STARTER_COUNT, type TeamSheet } from "./team-sheet";
 
 export type MatchInputErrorCode =
@@ -107,7 +107,7 @@ export const validateLineup = (
 };
 
 /** Checks a v2 input and reports every problem; never throws. Player ids must be unique across both sides. */
-export const validateMatchInputV2 = (input: MatchInputV2): MatchInputValidation => {
+export const validateMatchInput = (input: MatchInput): MatchInputValidation => {
   const seen = new Set<string>();
   const errors = (["home", "away"] as const).flatMap((side) => [
     ...validateStructure(input[side], side),

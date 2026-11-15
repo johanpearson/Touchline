@@ -81,7 +81,7 @@ describe("completeMatchday", () => {
   });
 
   it("rejects a user result played on another engine than the career's", () => {
-    const career = aCareer(1, 2);
+    const career = aCareer();
     const v1Result = { ...userResultOf(career), engineVersion: 1 as const };
 
     expect(completeMatchday(career, v1Result)).toEqual({
@@ -90,8 +90,8 @@ describe("completeMatchday", () => {
     });
   });
 
-  it("simulates the other fixtures of an engine 2 career on engine 2", () => {
-    const career = aCareer(1, 2);
+  it("simulates the other fixtures on the action engine", () => {
+    const career = aCareer();
 
     const done = complete(career);
 
@@ -144,9 +144,9 @@ describe("completeMatchday", () => {
     expect(table.ok && table.table.every((row) => row.played === 26)).toBe(true);
   });
 
-  it("plays an engine 2 season of 26 matchdays to the end", () => {
+  it("plays a season of 26 matchdays to the end", () => {
     // The time budget for this season lives in complete-matchday.perf.test.ts (npm run test:perf).
-    const career = playSeason(aCareer(1, 2));
+    const career = playSeason(aCareer());
 
     expect(career.season.results).toHaveLength(182);
     expect(career.season.results.every((r) => r.engineVersion === 2)).toBe(true);

@@ -1,4 +1,4 @@
-import { aMatchInputV2 } from "./action-builders";
+import { aMatchInput } from "./action-builders";
 import type { MatchDetail } from "./action-match";
 import { createActionMatch } from "./create-action-match";
 
@@ -8,7 +8,7 @@ const percentile = (sorted: readonly number[], fraction: number): number =>
   sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * fraction))] as number;
 
 const playOne = (detail: MatchDetail, seed: number): void => {
-  const match = createActionMatch(aMatchInputV2().build(), seed, { detail });
+  const match = createActionMatch(aMatchInput().build(), seed, { detail });
   match.advanceTo(10_000);
   match.resume();
   match.advanceTo(20_000);

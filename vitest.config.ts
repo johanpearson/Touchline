@@ -6,6 +6,8 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: "jsdom",
+      // A full season of 182 action-engine matches takes several seconds, and the first test of a file that plays one pays for it.
+      testTimeout: 60_000,
       include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts"],
       exclude: ["src/**/*.balance.test.ts", "src/**/*.perf.test.ts", "node_modules/**"],
       coverage: {

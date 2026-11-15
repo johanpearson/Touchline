@@ -3,7 +3,7 @@ import type { TeamTactics } from "../tactics";
 import type { ActionEvent } from "./action-event";
 import type { EnginePlayer } from "./engine-player";
 import type { Point } from "./pitch-metres";
-import type { MatchInputValidation } from "./validate-match-input-v2";
+import type { MatchInputValidation } from "./validate-match-input";
 
 /** The state of an action match after the last `advanceTo` call. */
 export type ActionMatchState = {

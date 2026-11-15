@@ -5,7 +5,7 @@ import {
   type EnginePlayer,
   type EnginePosition,
 } from "./engine-player";
-import type { MatchInputV2 } from "./match-input-v2";
+import type { MatchInput } from "./match-input";
 import type { FormationCounts, TeamSheet } from "./team-sheet";
 
 const averageAttributes = (): EngineAttributes =>
@@ -102,17 +102,17 @@ export const aTeamSheet = (name = "Team", idPrefix = "t"): TeamSheetBuilder =>
 type MatchInputV2Builder = {
   withHome: (sheet: TeamSheet) => MatchInputV2Builder;
   withAway: (sheet: TeamSheet) => MatchInputV2Builder;
-  build: () => MatchInputV2;
+  build: () => MatchInput;
 };
 
-const inputV2Builder = (input: MatchInputV2): MatchInputV2Builder => ({
+const inputV2Builder = (input: MatchInput): MatchInputV2Builder => ({
   withHome: (home) => inputV2Builder({ ...input, home }),
   withAway: (away) => inputV2Builder({ ...input, away }),
   build: () => ({ ...input }),
 });
 
-/** Test builder for `MatchInputV2`; two valid average 4-4-2 teams with distinct player ids. */
-export const aMatchInputV2 = (): MatchInputV2Builder =>
+/** Test builder for `MatchInput`; two valid average 4-4-2 teams with distinct player ids. */
+export const aMatchInput = (): MatchInputV2Builder =>
   inputV2Builder({
     engineVersion: 2,
     home: aTeamSheet("Home", "h").build(),

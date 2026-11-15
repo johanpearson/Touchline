@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { MatchState, MatchStats, TeamTactics } from "../../engine";
+import type { ActionMatchState, MatchStats, TeamTactics } from "../../engine";
 import {
   type HalfTimeChanges,
   type HalfTimeError,
@@ -31,7 +31,7 @@ export type AppliedHalfTimePlan = Extract<HalfTimePlan, { ok: true }>;
 export type HalfTimePanelProps = {
   homeName: string;
   awayName: string;
-  score: MatchState["score"];
+  score: ActionMatchState["score"];
   /** Statistics for the first half. */
   stats: MatchStats;
   /** Without an editor the panel offers no changes. Called with the validated plan, if any. */

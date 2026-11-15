@@ -170,18 +170,12 @@ describe("ClubView", () => {
     );
   });
 
-  it("shows the seven phase ratings from 0 to 100", () => {
+  it("shows the line ratings and the overall from 0 to 100", () => {
     const career = newCareer();
     renderClub(career, career.userClubId);
-    const values = [
-      "buildUp",
-      "progression",
-      "chanceCreation",
-      "finishing",
-      "pressing",
-      "defending",
-      "goalkeeping",
-    ].map((key) => Number(screen.getByTestId(`rating-${key}`).textContent));
+    const values = ["goalkeeping", "defence", "midfield", "attack", "overall"].map((key) =>
+      Number(screen.getByTestId(`rating-${key}`).textContent),
+    );
     for (const v of values) {
       expect(Number.isInteger(v)).toBe(true);
       expect(v).toBeGreaterThanOrEqual(0);

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ActionEvent, MatchState, SetPieceEvent } from "../../engine";
+import type { ActionEvent, ActionMatchState, SetPieceEvent } from "../../engine";
 import { createCanvasPitchRenderer } from "./canvas-pitch-renderer";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import { interpolateSnapshot } from "./interpolate-snapshot";
@@ -14,7 +14,7 @@ export type ClassicPitchProps = {
   events: readonly ActionEvent[];
   /** Match time in seconds to show. */
   matchTime: number;
-  score: MatchState["score"];
+  score: ActionMatchState["score"];
   homeColour: string;
   awayColour: string;
   /** Whether the passing chain is drawn. */

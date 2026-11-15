@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { CommentaryLine } from "../../commentary";
-import type { MatchEvent, MatchStats } from "../../engine";
+import type { MatchStats, ZoneEvent } from "../../engine";
 import { createMemoryLocaleStore } from "../../platform";
 import { I18nProvider } from "../i18n-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
@@ -18,14 +18,14 @@ import { StatsPanel } from "./stats-panel";
 const inLocale = (ui: ReactNode, locale = "en") =>
   render(<I18nProvider store={createMemoryLocaleStore(locale)}>{ui}</I18nProvider>);
 
-const event = (overrides: Partial<MatchEvent> & { time: number }): MatchEvent =>
+const event = (overrides: Partial<ZoneEvent> & { time: number }): ZoneEvent =>
   ({
     type: "progress",
     team: "home",
     position: { x: 0.6, y: 0.5 },
     intensity: 0.5,
     ...overrides,
-  }) as MatchEvent;
+  }) as ZoneEvent;
 
 describe("Scoreboard", () => {
   afterEach(cleanup);

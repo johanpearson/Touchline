@@ -1,4 +1,4 @@
-import type { MatchEvent, Side } from "../../../engine";
+import type { Side, ZoneEvent } from "../../../engine";
 import { attackProgress } from "./attack-progress";
 import { bumpsForEvent } from "./event-bump";
 import { GOAL_HOLD_SECONDS, type GoalBurst } from "./goal-burst";
@@ -65,7 +65,7 @@ const recentre = (state: TerrainState): void => {
   state.target = { x: 0.5, y: 0.5 };
 };
 
-const applyEvent = (state: TerrainState, event: MatchEvent, reducedMotion: boolean): void => {
+const applyEvent = (state: TerrainState, event: ZoneEvent, reducedMotion: boolean): void => {
   for (const bump of bumpsForEvent(event)) addBump(state.field, state.grid, bump);
   state.possession = event.team;
   state.target = { x: event.position.x, y: event.position.y };
@@ -93,7 +93,7 @@ const applyEvent = (state: TerrainState, event: MatchEvent, reducedMotion: boole
  */
 export const consumeEvents = (
   state: TerrainState,
-  events: readonly MatchEvent[],
+  events: readonly ZoneEvent[],
   matchTime: number,
   reducedMotion: boolean,
 ): void => {

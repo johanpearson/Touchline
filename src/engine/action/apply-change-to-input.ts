@@ -1,13 +1,13 @@
 import type { ActionMatchChange } from "./action-match";
-import type { MatchInputV2 } from "./match-input-v2";
+import type { MatchInput } from "./match-input";
 import {
   type MatchInputError,
   type MatchInputValidation,
   validateLineup,
-} from "./validate-match-input-v2";
+} from "./validate-match-input";
 
 export type ApplyChangeResult =
-  | { ok: true; input: MatchInputV2 }
+  | { ok: true; input: MatchInput }
   | { ok: false; errors: readonly MatchInputError[] };
 
 /**
@@ -15,7 +15,7 @@ export type ApplyChangeResult =
  * New starters leave the bench so player ids stay unique within the sheet.
  */
 export const applyChangeToInput = (
-  input: MatchInputV2,
+  input: MatchInput,
   change: ActionMatchChange,
 ): ApplyChangeResult => {
   const other = input[change.side === "home" ? "away" : "home"];

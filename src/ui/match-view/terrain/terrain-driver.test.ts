@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { MatchEvent } from "../../../engine";
+import type { ZoneEvent } from "../../../engine";
 import { createTerrainDriver } from "./terrain-driver";
 
-const goal: MatchEvent = {
+const goal: ZoneEvent = {
   type: "goal",
   time: 5,
   team: "home",

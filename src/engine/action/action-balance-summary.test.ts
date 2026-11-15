@@ -6,10 +6,10 @@ import {
   simulateActionBalance,
 } from "./action-balance";
 import { matchMetrics } from "./action-balance-metrics";
-import { aMatchInputV2 } from "./action-builders";
+import { aMatchInput } from "./action-builders";
 import { createActionMatch } from "./create-action-match";
 
-const input = aMatchInputV2().build();
+const input = aMatchInput().build();
 
 const play = (seed: number) => {
   const match = createActionMatch(input, seed, { detail: "fast" });

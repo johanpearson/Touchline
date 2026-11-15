@@ -1,59 +1,11 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type MatchInputV1, NEUTRAL_TACTICS, type PerSide } from "../../engine";
-import type { SquadPlayer } from "../../game";
+import { NEUTRAL_TACTICS } from "../../engine";
 import { createMemoryLocaleStore } from "../../platform";
 import { I18nProvider } from "../i18n-provider";
 import { anActionMatchSetup } from "./action-match-fixture";
 import { MatchScreen, type MatchScreenProps } from "./match-screen";
 import type { TerrainRenderer } from "./terrain-renderer";
-
-// A fixed fictional fixture used only by these tests.
-const demoMatch: {
-  input: MatchInputV1;
-  seed: number;
-  colours: PerSide<string>;
-  squads: PerSide<readonly SquadPlayer[]>;
-} = {
-  input: {
-    home: {
-      name: "Kvarnby",
-      buildUp: 0.55,
-      progression: 0.55,
-      chanceCreation: 0.5,
-      finishing: 0.5,
-      pressing: 0.5,
-      defending: 0.5,
-      goalkeeping: 0.5,
-    },
-    away: {
-      name: "Västerås Park",
-      buildUp: 0.5,
-      progression: 0.5,
-      chanceCreation: 0.5,
-      finishing: 0.5,
-      pressing: 0.5,
-      defending: 0.5,
-      goalkeeping: 0.5,
-    },
-    homeTactics: NEUTRAL_TACTICS,
-    awayTactics: NEUTRAL_TACTICS,
-  },
-  seed: 2026,
-  colours: { home: "#ff4b5c", away: "#2f9bff" },
-  squads: {
-    home: [
-      { name: "Elias Berg", position: "FWD", finishing: 0.7 },
-      { name: "Oskar Lind", position: "MID", finishing: 0.55 },
-      { name: "Nils Falk", position: "DEF", finishing: 0.4 },
-    ],
-    away: [
-      { name: "Viktor Strand", position: "FWD", finishing: 0.65 },
-      { name: "Anton Hed", position: "MID", finishing: 0.55 },
-      { name: "Leo Sand", position: "DEF", finishing: 0.4 },
-    ],
-  },
-};
 
 const fakeRenderer = (): TerrainRenderer => ({
   resize: vi.fn(),
@@ -61,200 +13,10 @@ const fakeRenderer = (): TerrainRenderer => ({
   dispose: vi.fn(),
 });
 
-const mount = (locale = "en") =>
-  render(
-    <I18nProvider store={createMemoryLocaleStore(locale)}>
-      <MatchScreen {...demoMatch} createRenderer={fakeRenderer} tickMs={1000} />
-    </I18nProvider>,
-  );
-
 const clockText = () => screen.getByTestId("clock").textContent;
 const play = (ms: number) => act(() => vi.advanceTimersByTime(ms));
 
 describe("MatchScreen", () => {
-  beforeEach(() => {
-    // jsdom drives animation frames from setInterval, which the fake timers would run flat out.
-    vi.stubGlobal("requestAnimationFrame", () => 0);
-    vi.stubGlobal("cancelAnimationFrame", vi.fn());
-    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
-  });
-  afterEach(() => {
-    cleanup();
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
-  });
-
-  it("starts at kickoff in the first half", () => {
-    mount();
-    expect(clockText()).toBe("0’");
-    expect(screen.getByTestId("period").textContent).toBe("First half");
-    expect(screen.getByTestId("score").textContent).toBe("0 – 0");
-  });
-
-  it("shows every panel", () => {
-    mount();
-    for (const id of ["scoreboard", "stats-panel", "momentum-chart", "feed", "momentum-terrain"]) {
-      expect(screen.getByTestId(id)).toBeTruthy();
-    }
-  });
-
-  it("advances the clock while playing", () => {
-    mount();
-    play(10_000);
-    expect(clockText()).not.toBe("0’");
-  });
-
-  it("holds the clock while paused and continues after play", () => {
-    mount();
-    play(2000);
-    fireEvent.click(screen.getByTestId("pause-toggle"));
-    const paused = clockText();
-    play(60_000);
-    expect(clockText()).toBe(paused);
-    fireEvent.click(screen.getByTestId("pause-toggle"));
-    play(5000);
-    expect(clockText()).not.toBe(paused);
-  });
-
-  it("runs faster at a higher speed", () => {
-    mount();
-    fireEvent.click(screen.getByTestId("speed-1"));
-    play(5000);
-    expect(clockText()).toBe("2’");
-    cleanup();
-    mount();
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(5000);
-    expect(clockText()).toBe("20’");
-  });
-
-  it("stops at half-time and waits there", () => {
-    mount();
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(15_000);
-    expect(screen.getByTestId("period").textContent).toBe("Half-time");
-    const frozen = clockText();
-    play(60_000);
-    expect(clockText()).toBe(frozen);
-  });
-
-  it("shows the half-time overlay with the first-half stats at half-time", () => {
-    mount();
-    expect(screen.queryByTestId("half-time")).toBeNull();
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(15_000);
-    expect(screen.getByTestId("half-time")).toBeTruthy();
-    expect(screen.getByTestId("half-time-score")).toBeTruthy();
-  });
-
-  it("starts the second half when the button is clicked, and plays on to full time", () => {
-    mount();
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(15_000);
-    fireEvent.click(screen.getByTestId("start-second-half"));
-    expect(screen.queryByTestId("half-time")).toBeNull();
-    expect(screen.getByTestId("period").textContent).toBe("Second half");
-    play(30_000);
-    expect(screen.getByTestId("period").textContent).toBe("Full time");
-    expect(screen.queryByTestId("half-time")).toBeNull();
-  });
-
-  it("fills the stats panel as the match is played", () => {
-    mount();
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(10_000);
-    const shots = screen.getByTestId("stat-shots").textContent ?? "";
-    expect(shots).toMatch(/[1-9]/);
-  });
-
-  it("shows the feed in Swedish when the locale is Swedish", () => {
-    mount("sv");
-    expect(screen.getByText("Kommentarer")).toBeTruthy();
-    expect(screen.getByTestId("period").textContent).toBe("Första halvlek");
-  });
-});
-
-describe("MatchScreen half-time changes", () => {
-  beforeEach(() => {
-    vi.stubGlobal("requestAnimationFrame", () => 0);
-    vi.stubGlobal("cancelAnimationFrame", vi.fn());
-    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
-  });
-  afterEach(() => {
-    cleanup();
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
-  });
-
-  const editor = {
-    players: [
-      { id: "a", name: "Elias Berg", position: "FWD" },
-      { id: "b", name: "Oskar Lind", position: "FWD" },
-    ],
-    starters: ["a"],
-    bench: ["b"],
-    condition: {},
-    tactics: NEUTRAL_TACTICS,
-    plan: (changes: { substitutions: { off: string; on: string }[] }) => ({
-      ok: true as const,
-      change: { side: "home" as const, tactics: NEUTRAL_TACTICS },
-      report: { minutes: { a: changes.substitutions.length ? 45 : 90 } },
-      lineupAfter: { formation: "4-4-2" as const, starters: ["b"], bench: ["a"] },
-    }),
-  };
-
-  it("passes the half-time report to onContinue", () => {
-    const onContinue = vi.fn();
-    render(
-      <I18nProvider store={createMemoryLocaleStore("en")}>
-        <MatchScreen
-          {...demoMatch}
-          createRenderer={fakeRenderer}
-          tickMs={1000}
-          // biome-ignore lint/suspicious/noExplicitAny: a minimal fake editor for this test
-          halfTimeEditor={editor as any}
-          onContinue={onContinue}
-        />
-      </I18nProvider>,
-    );
-    fireEvent.click(screen.getByTestId("speed-4"));
-    act(() => vi.advanceTimersByTime(15_000));
-    fireEvent.click(screen.getByTestId("sub-add"));
-    fireEvent.click(screen.getByTestId("start-second-half"));
-    act(() => vi.advanceTimersByTime(30_000));
-    fireEvent.click(screen.getByTestId("continue"));
-    expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ engineVersion: 1 }), {
-      minutes: { a: 45 },
-    });
-  });
-
-  it("passes no report when nothing changed at half-time", () => {
-    const onContinue = vi.fn();
-    render(
-      <I18nProvider store={createMemoryLocaleStore("en")}>
-        <MatchScreen
-          {...demoMatch}
-          createRenderer={fakeRenderer}
-          tickMs={1000}
-          // biome-ignore lint/suspicious/noExplicitAny: a minimal fake editor for this test
-          halfTimeEditor={editor as any}
-          onContinue={onContinue}
-        />
-      </I18nProvider>,
-    );
-    fireEvent.click(screen.getByTestId("speed-4"));
-    act(() => vi.advanceTimersByTime(15_000));
-    fireEvent.click(screen.getByTestId("start-second-half"));
-    act(() => vi.advanceTimersByTime(30_000));
-    fireEvent.click(screen.getByTestId("continue"));
-    expect(onContinue).toHaveBeenCalledWith(
-      expect.objectContaining({ engineVersion: 1 }),
-      undefined,
-    );
-  });
-});
-
-describe("MatchScreen with the action engine", () => {
   beforeEach(() => {
     vi.stubGlobal("requestAnimationFrame", () => 0);
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
@@ -283,6 +45,65 @@ describe("MatchScreen with the action engine", () => {
       </I18nProvider>,
     );
   };
+
+  it("advances the clock while playing", () => {
+    mountAction();
+    play(10_000);
+    expect(clockText()).not.toBe("0’");
+  });
+
+  it("holds the clock while paused and continues after play", () => {
+    mountAction();
+    play(2000);
+    fireEvent.click(screen.getByTestId("pause-toggle"));
+    const paused = clockText();
+    play(60_000);
+    expect(clockText()).toBe(paused);
+    fireEvent.click(screen.getByTestId("pause-toggle"));
+    play(5000);
+    expect(clockText()).not.toBe(paused);
+  });
+
+  it("runs faster at a higher speed", () => {
+    mountAction();
+    fireEvent.click(screen.getByTestId("speed-1"));
+    play(5000);
+    expect(clockText()).toBe("2’");
+    cleanup();
+    mountAction();
+    fireEvent.click(screen.getByTestId("speed-4"));
+    play(5000);
+    expect(clockText()).toBe("20’");
+  });
+
+  it("passes no report when nothing changed at half-time", () => {
+    const onContinue = vi.fn();
+    const { career } = anActionMatchSetup();
+    const editor = {
+      players: career.league.players,
+      starters: career.squadPlan.starters,
+      bench: career.squadPlan.bench,
+      condition: {},
+      tactics: career.squadPlan.tactics,
+      plan: () => {
+        throw new Error("no plan expected");
+      },
+    };
+    mountAction({
+      // biome-ignore lint/suspicious/noExplicitAny: a minimal fake editor for this test
+      halfTimeEditor: editor as any,
+      onContinue,
+    });
+    fireEvent.click(screen.getByTestId("speed-4"));
+    play(20_000);
+    fireEvent.click(screen.getByTestId("start-second-half"));
+    play(40_000);
+    fireEvent.click(screen.getByTestId("continue"));
+    expect(onContinue).toHaveBeenCalledWith(
+      expect.objectContaining({ engineVersion: 2 }),
+      undefined,
+    );
+  });
 
   describe("view toggle", () => {
     beforeEach(() => window.sessionStorage.clear());
@@ -332,12 +153,6 @@ describe("MatchScreen with the action engine", () => {
       expect(toggle.getAttribute("aria-pressed")).toBe("true");
       fireEvent.click(toggle);
       expect(toggle.getAttribute("aria-pressed")).toBe("false");
-    });
-
-    it("is not offered for zone engine matches", () => {
-      mount();
-      expect(screen.queryByTestId("view-toggle")).toBeNull();
-      expect(screen.getByTestId("momentum-terrain")).toBeTruthy();
     });
 
     it("falls back to the momentum view when storage is unavailable", () => {
@@ -394,7 +209,7 @@ describe("MatchScreen with the action engine", () => {
     expect((home ?? -1) >= 0 && (away ?? -1) >= 0).toBe(true);
   });
 
-  it("applies the half-time plan of the action engine and reports the engine version", () => {
+  it("applies the half-time plan and reports the engine version", () => {
     const onContinue = vi.fn();
     const { career, fixture } = anActionMatchSetup();
     const starter = career.squadPlan.starters[0] ?? "";
@@ -406,7 +221,6 @@ describe("MatchScreen with the action engine", () => {
       tactics: career.squadPlan.tactics,
       plan: () => ({
         ok: true as const,
-        engineVersion: 2 as const,
         change: { side: "home" as const, tactics: NEUTRAL_TACTICS },
         report: { minutes: { [starter]: 45 } },
         lineupAfter: career.squadPlan,
@@ -429,7 +243,7 @@ describe("MatchScreen with the action engine", () => {
     });
   });
 
-  it("shows the action stats rows instead of the zone ones", () => {
+  it("shows the stats rows of the action engine", () => {
     mountAction();
     for (const id of [
       "possession",
