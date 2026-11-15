@@ -54,7 +54,7 @@ export const MENTALITY_RISK: Record<Mentality, number> = {
   attacking: 1.2,
 };
 /** Multiplies the weight of passes to wide targets and of crosses. */
-export const WIDTH_WIDE_BONUS: Record<Width, number> = { narrow: 0.8, normal: 1, wide: 1.5 };
+export const WIDTH_WIDE_BONUS: Record<Width, number> = { narrow: 0.8, normal: 1, wide: 2.5 };
 /** Base directness weight on forward progress before tactics are added. */
 export const BASE_DIRECTNESS = 0.5;
 /** Share of the carry weight added per unit of directness. */
@@ -119,9 +119,9 @@ export const PASS_OUT_SHARE: Record<PassVariant, number> = {
   cross: 0.5,
 };
 /** Share of crosses that go behind the opponent's goal line and are deflected (corner) instead of reaching the goal kick. */
-export const CROSS_DEFLECTED_CORNER_SHARE = 0.6;
+export const CROSS_DEFLECTED_CORNER_SHARE = 0.2;
 /** Share of intercepted crosses that the defender puts behind the goal line (a corner) instead of keeping the ball. */
-export const CROSS_INTERCEPTED_CORNER_SHARE = 0.4;
+export const CROSS_INTERCEPTED_CORNER_SHARE = 0.6;
 /** Distance in metres from the pass lane within which an opponent can reach the ball. */
 export const LANE_RADIUS = 3;
 

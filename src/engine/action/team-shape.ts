@@ -85,14 +85,17 @@ const applyBlock = (
   anchors: readonly Local[],
   params: ShapeParameters,
   phase: TeamPhase,
+  forwards: number,
 ): Local[] => {
+  const firstForward = anchors.length - forwards;
   const shift = PHASE_SHIFT[phase] + params.lineHeight;
   return anchors.map((a, slot) =>
     slot === 0
       ? { depth: a.depth + shift * GOALKEEPER_FOLLOW, y: a.y }
       : {
           depth: DEFENCE_DEPTH + (a.depth - DEFENCE_DEPTH) * params.compactness + shift,
-          y: CENTRE_Y + (a.y - CENTRE_Y) * params.width,
+          // Forwards stay in the central channel: the width setting stretches the other lines only.
+          y: slot >= firstForward ? a.y : CENTRE_Y + (a.y - CENTRE_Y) * params.width,
         },
   );
 };
@@ -191,7 +194,12 @@ export const teamShape = (
     depth: side === "home" ? ball.x : PITCH_LENGTH - ball.x,
     y: ball.y,
   };
-  const block = applyBlock(cachedAnchors(sheet.formation), shapeParameters(tactics), phase);
+  const block = applyBlock(
+    cachedAnchors(sheet.formation),
+    shapeParameters(tactics),
+    phase,
+    sheet.formation.forwards,
+  );
   const placed = closeInOnBall(pullBlock(block, localBall), localBall);
   return keepApart(placed).map((p) => toPitch(p, side));
 };
