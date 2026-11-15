@@ -3,9 +3,14 @@
   "testRunner": "vitest",
   "mutate": ["src/engine/**/*.ts", "!src/engine/**/*.test.ts", "!src/engine/index.ts"],
   "reporters": ["html", "clear-text", "progress"],
-  "htmlReporter": { "fileName": "reports/mutation/index.html" },
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
   "coverageAnalysis": "perTest",
   "ignoreStatic": true,
   "inPlace": true,
-  "allowEmpty": true
+  "allowEmpty": true,
+  "vitest": {
+    "configFile": "vitest.mutation.config.ts"
+  }
 }
