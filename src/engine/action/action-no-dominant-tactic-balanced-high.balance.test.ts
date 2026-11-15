@@ -4,11 +4,11 @@ import type { ActionBalanceSummary } from "./action-balance";
 import { playWith } from "./balance-test-support";
 import { combinationsFor, labelOf } from "./tactic-combinations";
 
-/** One file per mentality, so the 81 combinations run in parallel workers. */
+/** One file per mentality and pressing level, so the 81 combinations spread evenly over the workers. */
 const COMBINATION_MATCHES = 500;
-const combinations = combinationsFor("defensive");
+const combinations = combinationsFor("balanced", "high");
 
-describe("action engine balance: no dominant tactic (defensive)", () => {
+describe("action engine balance: no dominant tactic (balanced, high pressing)", () => {
   let reference: ActionBalanceSummary;
   let results: { t: TeamTactics; s: ActionBalanceSummary }[];
 
