@@ -17,6 +17,7 @@
     "bench:engine": "vite build --ssr src/engine/action/performance.bench.ts --outDir node_modules/.cache/bench --emptyOutDir && node node_modules/.cache/bench/performance.bench.js",
     "test:perf": "vitest run --config vitest.perf.config.ts",
     "test:balance": "vitest run --config vitest.balance.config.ts",
+    "test:balance:fast": "vitest run --config vitest.balance.config.ts --exclude \"**/action-no-dominant-tactic-*.balance.test.ts\"",
     "test:coverage": "vitest run --coverage",
     "depcheck": "depcruise src --config .dependency-cruiser.cjs",
     "test:e2e": "playwright test",

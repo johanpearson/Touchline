@@ -17,7 +17,8 @@ npm run typecheck       # tsc --noEmit
 npm run depcheck        # dependency-cruiser module boundaries
 npm test                # Vitest unit tests
 npm run test:coverage   # unit tests with coverage thresholds
-npm run test:balance    # engine balance tests (many seeded matches)
+npm run test:balance      # full balance suite (all seeded matches, incl. the 81 tactic combinations)
+npm run test:balance:fast # fast subset: skips action-no-dominant-tactic-*.balance.test.ts
 npm run test:perf       # engine performance budget (runs alone, serially)
 npm run test:e2e        # Playwright E2E (smoke: npm run test:e2e:smoke)
 npm run build           # production build
@@ -69,6 +70,7 @@ Never push directly to `main`. Never disable, skip or weaken tests or CI checks 
 - Arrange / act / assert, one behaviour per test. Use builders for test data (`aTeam().withAttack(0.7).build()`).
 - Engine tests are deterministic: fixed seeds, exact expectations where possible.
 - **Balance tests** (`*.balance.test.ts`) simulate many seeded matches and assert realistic ranges (goals per match, shots, xG vs goals, home win rate). Changing engine behaviour requires these to stay green, or a deliberate, documented range change.
+- CI runs the balance suite in two ways: the PR `Balance` job runs `test:balance:fast`, and the full `test:balance` when the PR changes `src/engine/**`, `vitest.balance.config.ts` or any `*.balance.test.ts`, or carries the label `full-balance`. The nightly job `Balance (full)` always runs `test:balance` and opens one `ci: nightly balance failed (<date>)` issue on failure. A regression only the 81 combinations catch can therefore surface the next morning.
 - Coverage thresholds are enforced in CI. `engine` and `game` aim for 90%+ lines and branches.
 - E2E (Playwright) covers user flows, not logic. Use `data-testid` selectors.
 - Mutation testing (Stryker) runs nightly on `engine`. Treat surviving mutants as missing tests.
