@@ -38,7 +38,8 @@ describe("resolveCarry", () => {
   });
 
   it("succeeds more often with better dribbling and against a weaker tackler", () => {
-    const draw = 0.8;
+    // Kept chance: 0.705 for the average carrier, 0.765 for the skilled one, 0.863 against the weak tackler.
+    const draw = 0.73;
     expect(resolveCarry(input(), scripted(draw)).outcome).not.toBe("kept");
     const skilled = anEnginePlayer("c")
       .withAttribute("dribbling", 20)

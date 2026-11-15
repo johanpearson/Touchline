@@ -89,9 +89,10 @@ describe("pass variant geometry", () => {
   it("does not call a pass on the channel line, or shallower than the minimum depth, a cross", () => {
     const deep = CROSS_MIN_DEPTH;
     const edge = CROSS_WIDE_CHANNEL;
-    expect(variantOf("home", at(60, 34), at(deep, edge))).toBe("long");
-    expect(variantOf("home", at(60, 34), at(deep, PITCH_WIDTH - edge))).toBe("long");
-    expect(variantOf("home", at(60, 34), at(deep - 0.01, edge - 0.01))).toBe("long");
+    // Sideways balls of 34 m: too long to be short, with no progress to be through.
+    expect(variantOf("home", at(deep, 48), at(deep, edge))).toBe("long");
+    expect(variantOf("home", at(deep, 20), at(deep, PITCH_WIDTH - edge))).toBe("long");
+    expect(variantOf("home", at(deep, 48), at(deep - 0.01, edge - 0.01))).toBe("long");
   });
 
   it("measures depth from the own goal for the away side", () => {

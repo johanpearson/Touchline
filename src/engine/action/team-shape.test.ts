@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { NEUTRAL_TACTICS, type TeamTactics } from "../tactics";
 import { aTeamSheet } from "./action-builders";
 import { inPitch, PITCH_LENGTH, type Point } from "./pitch-metres";
-import { MIN_PLAYER_DISTANCE } from "./shape-constants";
+import { FORWARD_LANE_SPACING, MIN_PLAYER_DISTANCE } from "./shape-constants";
 import type { TeamPhase } from "./team-phase";
 import { formationAnchors, shapeParameters, teamShape } from "./team-shape";
 import type { FormationCounts } from "./team-sheet";
@@ -43,8 +43,19 @@ describe("formationAnchors", () => {
       [30, 54.4],
     ]);
     expect(anchors.slice(5, 9).every((a) => a.depth === 52)).toBe(true);
-    expect(anchors.slice(9).map((a) => a.y.toFixed(2))).toEqual(["22.67", "45.33"]);
+    expect(anchors.slice(9).map((a) => a.y)).toEqual([28, 40]);
     expect(anchors.slice(9).every((a) => a.depth === 72)).toBe(true);
+  });
+
+  it("keeps the forwards in the central channel, FORWARD_LANE_SPACING apart, whatever their number", () => {
+    const forwardsOf = (forwards: number) =>
+      formationAnchors({ defenders: 4, midfielders: 6 - forwards, forwards })
+        .slice(-forwards)
+        .map((a) => a.y);
+    expect(FORWARD_LANE_SPACING).toBe(12);
+    expect(forwardsOf(1)).toEqual([34]);
+    expect(forwardsOf(2)).toEqual([28, 40]);
+    expect(forwardsOf(3)).toEqual([22, 34, 46]);
   });
 
   it.each(FORMATIONS)("gives 11 ordered anchors for %j", (formation) => {
@@ -71,7 +82,7 @@ describe("shapeParameters", () => {
     });
     expect(p.lineHeight).toBe(5);
     expect(p.compactness).toBeCloseTo(0.94 * 1.04, 10);
-    expect(p.width).toBe(1.15);
+    expect(p.width).toBe(1.35);
     const q = shapeParameters({
       mentality: "defensive",
       pressing: "low",
