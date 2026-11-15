@@ -1,22 +1,35 @@
 import { describe, expect, it } from "vitest";
 import type { Side } from "../match-state";
 import { createRng } from "../rng";
+import { NEUTRAL_TACTICS, type TeamTactics } from "../tactics";
 import { aMatchInputV2 } from "./action-builders";
 import type { ActionEvent, PassEvent, ShotEvent } from "./action-event";
 import { buildOptions } from "./build-options";
-import { PENALTY_XG } from "./decision-constants";
+import {
+  CARRY_KEPT_MAX,
+  CARRY_KEPT_MIN,
+  HOME_ADVANTAGE,
+  PENALTY_XG,
+  PRESSING_TURNOVER_BONUS,
+} from "./decision-constants";
 import type { EnginePlayer } from "./engine-player";
 import { CHALLENGE_PRESSURE_GAIN, NO_RECENT_TURNOVER, PENALTY_SPOT_DEPTH } from "./loop-constants";
 import type { MatchInputV2 } from "./match-input-v2";
+import type { Challenger } from "./open-play-types";
 import { PITCH_LENGTH, type Point } from "./pitch-metres";
 import { type ActionContext, kickoffFor, kickoffPlay, playAction, shapesFor } from "./play-action";
 import type { PlayState } from "./play-state";
 import { pressureOn } from "./pressure";
+import { carryKeptChance } from "./resolve-carry";
 import { foulChance } from "./resolve-challenge";
+import { interceptionChance } from "./resolve-interception";
+import { laneInterceptors } from "./resolve-pass";
 import { FREE_KICK_SHOT_PRESSURE } from "./set-piece-constants";
 import { setPieceShape } from "./set-piece-shape";
 import { shotXg, toAttackingFrame } from "./shot-xg";
 import { actionTactics } from "./tactics-parameters";
+import { phaseOf } from "./team-phase";
+import { teamShape } from "./team-shape";
 
 const input: MatchInputV2 = aMatchInputV2().build();
 const sheets = { home: input.home, away: input.away };
@@ -572,5 +585,246 @@ describe("playAction open play", () => {
     const result = playAction(context(state, scripted([0.999, 0.5, 0, 0]).rng));
     expect(result.duration).toBeGreaterThanOrEqual(2);
     expect(result.duration).toBeLessThanOrEqual(4);
+  });
+});
+
+describe("playAction press, home advantage and transition effects", () => {
+  const highPress: TeamTactics = { ...NEUTRAL_TACTICS, pressing: "high" };
+  const PRESS = PRESSING_TURNOVER_BONUS.high;
+  const EPS = 1e-9;
+
+  /** Everything the carrier's decision uses, worked out with the same pieces the engine uses. */
+  const scenario = (
+    side: Side,
+    ball: Point,
+    foeTactics: TeamTactics,
+    extra: Partial<PlayState> = {},
+    slot = 6,
+  ) => {
+    const foe: Side = side === "home" ? "away" : "home";
+    const custom = aMatchInputV2()
+      .withHome({ ...input.home, tactics: side === "home" ? NEUTRAL_TACTICS : foeTactics })
+      .withAway({ ...input.away, tactics: side === "away" ? NEUTRAL_TACTICS : foeTactics })
+      .build();
+    const state = play({ possession: side, ball, slot, ...extra });
+    const raw = shapesFor(custom, state, ball);
+    const shapes = { ...raw, [side]: raw[side].map((p, i) => (i === slot ? ball : p)) };
+    const mine = side === "home" ? custom.home : custom.away;
+    const theirs = side === "home" ? custom.away : custom.home;
+    const pressure = pressureOn(ball, side, shapes, actionTactics(foeTactics).pressRadius);
+    const opponents: Challenger[] = theirs.starters.map((player, i) => ({
+      slot: i,
+      player,
+      point: shapes[foe][i] as Point,
+    }));
+    const transition =
+      phaseOf(side, state.possession, ball, {
+        type: state.lastType,
+        actionsSinceTurnover: state.actionsSinceTurnover,
+      }) === "transition";
+    const optionsWith = (flag: boolean) =>
+      buildOptions(
+        { side, slot, players: mine.starters, foeTactics: theirs.tactics, transition: flag },
+        shapes,
+        mine.tactics,
+      );
+    const options = optionsWith(transition);
+    const nearestOutfield = opponents
+      .filter((o) => o.slot !== 0)
+      .reduce((a, b) =>
+        Math.hypot(b.point.x - ball.x, b.point.y - ball.y) <
+        Math.hypot(a.point.x - ball.x, a.point.y - ball.y)
+          ? b
+          : a,
+      );
+    return {
+      custom,
+      state,
+      shapes,
+      mine,
+      theirs,
+      pressure,
+      opponents,
+      options,
+      optionsWith,
+      nearestOutfield,
+      slot,
+      run: (draws: number[]) =>
+        playAction({ ...context(state, scripted(draws).rng), input: custom }),
+    };
+  };
+  const bandMiddle = (weights: number[], index: number) => {
+    const total = weights.reduce((a, b) => a + b, 0);
+    const before = weights.slice(0, index).reduce((a, b) => a + b, 0);
+    return (before + (weights[index] as number) / 2) / total;
+  };
+  const bandAt = (weights: number[], draw: number) => {
+    const total = weights.reduce((a, b) => a + b, 0);
+    let acc = 0;
+    for (let i = 0; i < weights.length; i++) {
+      acc += (weights[i] as number) / total;
+      if (draw < acc) return i;
+    }
+    return weights.length - 1;
+  };
+
+  // [side, ball, expected net interception bonus against the passer, expected kept bonus]
+  const cases = [
+    ["home", at(30), PRESS, HOME_ADVANTAGE - PRESS],
+    ["home", at(70), 0, HOME_ADVANTAGE],
+    ["home", at(52.5), 0, HOME_ADVANTAGE],
+    ["away", at(75), PRESS + HOME_ADVANTAGE, -HOME_ADVANTAGE - PRESS],
+    ["away", at(30), HOME_ADVANTAGE, -HOME_ADVANTAGE],
+  ] as const;
+
+  it.each(cases)(
+    "%s passer at %j: the interception chance carries the press and the opponent's home edge",
+    (side, ball, bonus) => {
+      const sc = scenario(side, ball, highPress);
+      const index = sc.options.findIndex(
+        (o) =>
+          o.type === "pass" &&
+          o.variant !== "cross" &&
+          o.weight > 0 &&
+          laneInterceptors(o.from, o.to, sc.opponents).length > 0,
+      );
+      expect(index).toBeGreaterThanOrEqual(0);
+      const draw = bandMiddle(
+        sc.options.map((o) => o.weight),
+        index,
+      );
+      const option = sc.options[index] as Extract<(typeof sc.options)[number], { type: "pass" }>;
+      const lane = laneInterceptors(option.from, option.to, sc.opponents);
+      const best = lane.reduce((a, b) =>
+        interceptionChance(b, sc.pressure, bonus) > interceptionChance(a, sc.pressure, bonus)
+          ? b
+          : a,
+      );
+      const chance = interceptionChance(best, sc.pressure, bonus);
+      const completion = 0.999;
+
+      const taken = sc.run([0.999, draw, completion, chance - EPS]);
+      const intercepted = only<PassEvent>(taken.events);
+      expect(intercepted.outcome).toBe("intercepted");
+      expect(intercepted.opponent).toBe(sc.theirs.starters[best.slot]?.id);
+      expect(taken.play.slot).toBe(best.slot);
+      expect(taken.play.possession).toBe(side === "home" ? "away" : "home");
+
+      const missed = sc.run([0.999, draw, completion, chance + EPS]);
+      const kept = only<PassEvent>(missed.events);
+      expect(kept.outcome).not.toBe("intercepted");
+      expect("opponent" in kept).toBe(false);
+    },
+  );
+
+  it("leaves the opponent off a completed pass", () => {
+    const sc = scenario("home", at(30), highPress);
+    const index = sc.options.findIndex((o) => o.type === "pass" && o.weight > 0.2);
+    const done = sc.run([
+      0.999,
+      bandMiddle(
+        sc.options.map((o) => o.weight),
+        index,
+      ),
+      0,
+    ]);
+    const event = only<PassEvent>(done.events);
+    expect(event.outcome).toBe("complete");
+    expect("opponent" in event).toBe(false);
+  });
+
+  it.each(cases)(
+    "%s carrier at %j: the kept chance carries home edge minus the press",
+    (side, ball, _bonus, keptBonus) => {
+      const sc = scenario(side, ball, highPress);
+      const index = sc.options.findIndex((o) => o.type === "carry");
+      const option = sc.options[index];
+      const chance = carryKeptChance({
+        side,
+        carrier: sc.mine.starters[sc.slot] as EnginePlayer,
+        carrierSlot: sc.slot,
+        from: ball,
+        to: (option as Extract<(typeof sc.options)[number], { type: "carry" }>).to,
+        pressure: sc.pressure,
+        defender: sc.nearestOutfield,
+        keptBonus,
+      });
+      expect(chance).toBeGreaterThan(CARRY_KEPT_MIN);
+      expect(chance).toBeLessThan(CARRY_KEPT_MAX);
+      const draw = bandMiddle(
+        sc.options.map((o) => o.weight),
+        index,
+      );
+      const kept = only(sc.run([0.999, draw, chance - EPS]).events);
+      expect(kept.type === "carry" ? kept.outcome : "").toBe("kept");
+      const lost = only(sc.run([0.999, draw, chance + EPS]).events);
+      expect(lost.type === "carry" ? lost.outcome : "").toBe("tackled");
+    },
+  );
+
+  it("weights through passes and carries with the space behind a press right after a turnover", () => {
+    const ball = at(60);
+    const fresh = scenario("home", ball, highPress, {
+      lastType: "tackle",
+      actionsSinceTurnover: 0,
+    });
+    const weights = (sc: typeof fresh, flag: boolean) => sc.optionsWith(flag).map((o) => o.weight);
+    const carry = fresh.options.findIndex((o) => o.type === "carry");
+    const grid = Array.from({ length: 999 }, (_, i) => (i + 1) / 1000);
+    const typeOf = (sc: typeof fresh, draw: number | undefined) =>
+      only(sc.run([0.999, draw as number, 0]).events).type;
+    // A draw in the carry band only when the space behind the press is counted.
+    const withSpace = weights(fresh, true);
+    const without = weights(fresh, false);
+    const draw = grid.find((d) => bandAt(withSpace, d) === carry && bandAt(without, d) !== carry);
+    expect(draw).toBeDefined();
+    expect(typeOf(fresh, draw)).toBe("carry");
+  });
+
+  it("never lets the goalkeeper challenge the ball carrier", () => {
+    const sc = scenario("home", at(100), NEUTRAL_TACTICS, {}, 9);
+    const keeper = sc.shapes.away[0] as Point;
+    const chosen = sc.nearestOutfield.point;
+    expect(Math.hypot(keeper.x - 100, keeper.y - 34)).toBeLessThan(
+      Math.hypot(chosen.x - 100, chosen.y - 34),
+    );
+    const event = only(sc.run([0, 0]).events);
+    expect(event.type).toBe("foul");
+    expect(event.type === "foul" ? event.opponent : "").toBe(
+      sc.theirs.starters[sc.nearestOutfield.slot]?.id,
+    );
+  });
+});
+
+describe("shapesFor", () => {
+  it("gives each side its own shape for the phase of play, a transition just after a turnover", () => {
+    const ball = at(60);
+    const fresh = play({ lastType: "tackle", actionsSinceTurnover: 0, ball });
+    const settled = play({ lastType: "pass", actionsSinceTurnover: 5, ball });
+    const expected = (state: PlayState) => ({
+      home: teamShape(
+        input.home,
+        input.home.tactics,
+        phaseOf("home", state.possession, ball, {
+          type: state.lastType,
+          actionsSinceTurnover: state.actionsSinceTurnover,
+        }),
+        ball,
+        "home",
+      ),
+      away: teamShape(
+        input.away,
+        input.away.tactics,
+        phaseOf("away", state.possession, ball, {
+          type: state.lastType,
+          actionsSinceTurnover: state.actionsSinceTurnover,
+        }),
+        ball,
+        "away",
+      ),
+    });
+    expect(shapesFor(input, fresh, ball)).toEqual(expected(fresh));
+    expect(shapesFor(input, settled, ball)).toEqual(expected(settled));
+    expect(shapesFor(input, fresh, ball)).not.toEqual(shapesFor(input, settled, ball));
   });
 });
