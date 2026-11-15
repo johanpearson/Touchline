@@ -79,6 +79,33 @@ describe.each(["home", "away"] as const)("set-piece roles for the %s side", (sid
   });
 });
 
+describe("set-piece wall and receivers", () => {
+  it.each([
+    ["kickoff", { x: 52.5, y: 34 }],
+    ["throwIn", { x: 40, y: 0 }],
+    ["goalKick", { x: 5.5, y: 34 }],
+    ["corner", { x: 105, y: 0 }],
+    ["freeKick", { x: 40, y: 20 }],
+    ["penalty", { x: 94, y: 34 }],
+  ] as const)("builds no wall for a %s", (kind, spot) => {
+    expect(setPieceShape(kind, "home", spot, sheets).wall).toEqual([]);
+  });
+
+  it("offers only midfielders and forwards as receivers of a goal kick, and never the keeper", () => {
+    const l = setPieceShape("goalKick", "home", { x: 5.5, y: 34 }, sheets);
+    const starters = sheets.home.starters;
+    expect(l.targets.length).toBeGreaterThan(0);
+    for (const slot of l.targets) {
+      expect(slot).not.toBe(0);
+      expect(["MID", "FWD"]).toContain(starters[slot]?.position);
+    }
+    const outfield = starters.flatMap((p, i) =>
+      p.position === "MID" || p.position === "FWD" ? [i] : [],
+    );
+    expect(sorted(l.targets)).toEqual(sorted(outfield));
+  });
+});
+
 describe("free kick range", () => {
   const goalDistance = (x: number) => PITCH_LENGTH - x;
 
