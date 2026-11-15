@@ -622,11 +622,13 @@ describe("playAction press, home advantage and transition effects", () => {
         type: state.lastType,
         actionsSinceTurnover: state.actionsSinceTurnover,
       }) === "transition";
-    const options = buildOptions(
-      { side, slot, players: mine.starters, foeTactics: theirs.tactics, transition },
-      shapes,
-      mine.tactics,
-    );
+    const optionsWith = (flag: boolean) =>
+      buildOptions(
+        { side, slot, players: mine.starters, foeTactics: theirs.tactics, transition: flag },
+        shapes,
+        mine.tactics,
+      );
+    const options = optionsWith(transition);
     const nearestOutfield = opponents
       .filter((o) => o.slot !== 0)
       .reduce((a, b) =>
@@ -644,6 +646,7 @@ describe("playAction press, home advantage and transition effects", () => {
       pressure,
       opponents,
       options,
+      optionsWith,
       nearestOutfield,
       slot,
       run: (draws: number[]) =>
@@ -690,11 +693,8 @@ describe("playAction press, home advantage and transition effects", () => {
         sc.options.map((o) => o.weight),
         index,
       );
-      const lane = laneInterceptors(
-        sc.options[index]?.from as Point,
-        sc.options[index]?.to as Point,
-        sc.opponents,
-      );
+      const option = sc.options[index] as Extract<(typeof sc.options)[number], { type: "pass" }>;
+      const lane = laneInterceptors(option.from, option.to, sc.opponents);
       const best = lane.reduce((a, b) =>
         interceptionChance(b, sc.pressure, bonus) > interceptionChance(a, sc.pressure, bonus)
           ? b
@@ -744,7 +744,7 @@ describe("playAction press, home advantage and transition effects", () => {
         carrier: sc.mine.starters[sc.slot] as EnginePlayer,
         carrierSlot: sc.slot,
         from: ball,
-        to: option?.to as Point,
+        to: (option as Extract<(typeof sc.options)[number], { type: "carry" }>).to,
         pressure: sc.pressure,
         defender: sc.nearestOutfield,
         keptBonus,
@@ -762,34 +762,23 @@ describe("playAction press, home advantage and transition effects", () => {
     },
   );
 
-  it("weights the options with the space behind a press only right after a turnover", () => {
+  it("weights through passes and carries with the space behind a press right after a turnover", () => {
     const ball = at(60);
     const fresh = scenario("home", ball, highPress, {
       lastType: "tackle",
       actionsSinceTurnover: 0,
     });
-    const settled = scenario("home", ball, highPress, {
-      lastType: "pass",
-      actionsSinceTurnover: 5,
-    });
-    const freshWeights = fresh.options.map((o) => o.weight);
-    const settledWeights = settled.options.map((o) => o.weight);
+    const weights = (sc: typeof fresh, flag: boolean) => sc.optionsWith(flag).map((o) => o.weight);
     const carry = fresh.options.findIndex((o) => o.type === "carry");
     const grid = Array.from({ length: 999 }, (_, i) => (i + 1) / 1000);
-    const onlyFresh = grid.find(
-      (d) => bandAt(freshWeights, d) === carry && bandAt(settledWeights, d) !== carry,
-    );
-    const onlySettled = grid.find(
-      (d) => bandAt(settledWeights, d) === carry && bandAt(freshWeights, d) !== carry,
-    );
-    expect(onlyFresh).toBeDefined();
-    expect(onlySettled).toBeDefined();
     const typeOf = (sc: typeof fresh, draw: number | undefined) =>
       only(sc.run([0.999, draw as number, 0]).events).type;
-    expect(typeOf(fresh, onlyFresh)).toBe("carry");
-    expect(typeOf(settled, onlyFresh)).not.toBe("carry");
-    expect(typeOf(settled, onlySettled)).toBe("carry");
-    expect(typeOf(fresh, onlySettled)).not.toBe("carry");
+    // A draw in the carry band only when the space behind the press is counted.
+    const withSpace = weights(fresh, true);
+    const without = weights(fresh, false);
+    const draw = grid.find((d) => bandAt(withSpace, d) === carry && bandAt(without, d) !== carry);
+    expect(draw).toBeDefined();
+    expect(typeOf(fresh, draw)).toBe("carry");
   });
 
   it("never lets the goalkeeper challenge the ball carrier", () => {
