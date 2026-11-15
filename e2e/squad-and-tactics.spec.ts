@@ -1,14 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 
-const PHASES = [
-  "buildUp",
-  "progression",
-  "chanceCreation",
-  "finishing",
-  "defending",
-  "pressing",
-  "goalkeeping",
-] as const;
+const LINES = ["goalkeeping", "defence", "midfield", "attack", "overall"] as const;
 
 const startCareer = async (page: Page) => {
   await page.goto("./");
@@ -23,7 +15,7 @@ const openSquad = async (page: Page) => {
 };
 
 const ratings = async (page: Page): Promise<string> =>
-  (await Promise.all(PHASES.map((p) => page.getByTestId(`plan-rating-${p}`).textContent()))).join(
+  (await Promise.all(LINES.map((p) => page.getByTestId(`plan-rating-${p}`).textContent()))).join(
     ",",
   );
 
