@@ -65,7 +65,10 @@ describe("mutation testing setup", () => {
 
     it("selects its tests with a config that leaves out the whole-match files", () => {
       expect(action.vitest).toEqual({ configFile: "vitest.mutation-action.config.ts" });
-      expect(read("vitest.mutation-action.config.ts")).toContain("fast-detail.test.ts");
+      const vitestConfig = read("vitest.mutation-action.config.ts");
+      expect(vitestConfig).toContain("fast-detail.test.ts");
+      expect(vitestConfig).toContain("action-match.property.test.ts");
+      expect(vitestConfig).not.toContain("create-action-match.test.ts");
     });
 
     it("selects engine tests only, so the engine-wide run skips wall-clock tests in game", () => {

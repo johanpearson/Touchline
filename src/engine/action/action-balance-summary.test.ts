@@ -21,12 +21,15 @@ const play = (seed: number) => {
 
 describe("simulateActionBalance against an independent replay", () => {
   const seeds = [11, 12, 13];
-  const replays = seeds.map(play);
-  const summary = simulateActionBalance(input, seeds.length, seeds[0] as number);
+  // Computed inside each test, not at describe level: Stryker attributes coverage per test.
+  const playAll = () => seeds.map(play);
+  const summarise = () => simulateActionBalance(input, seeds.length, seeds[0] as number);
   const mean = (pick: (i: number) => number) =>
     seeds.reduce((s, _, i) => s + pick(i), 0) / seeds.length;
 
   it("averages goals per side over the matches", () => {
+    const replays = playAll();
+    const summary = summarise();
     expect(summary.perSide.home.goals).toBeCloseTo(
       mean((i) => replays[i]?.state.score.home ?? 0),
       9,
@@ -58,6 +61,8 @@ describe("simulateActionBalance against an independent replay", () => {
     "centralShots",
     "actions",
   ] as const)("averages %s per side from the metrics of each replayed match", (key) => {
+    const replays = playAll();
+    const summary = summarise();
     for (const side of ["home", "away"] as const) {
       const expected = mean((i) => matchMetrics(replays[i]?.events ?? [])[key][side]);
       expect(summary.perSide[side][key]).toBeCloseTo(expected, 9);
@@ -65,6 +70,8 @@ describe("simulateActionBalance against an independent replay", () => {
   });
 
   it("sums both sides for the per-match totals and derives pass completion from the totals", () => {
+    const replays = playAll();
+    const summary = summarise();
     const totalPasses = mean((i) => {
       const m = matchMetrics(replays[i]?.events ?? []);
       return m.passes.home + m.passes.away;
@@ -82,6 +89,8 @@ describe("simulateActionBalance against an independent replay", () => {
   });
 
   it("counts home wins, draws and away wins from the final scores", () => {
+    const replays = playAll();
+    const summary = summarise();
     const outcomes = replays.map((m) => Math.sign(m.state.score.home - m.state.score.away));
     expect(summary.homeWinRate).toBeCloseTo(outcomes.filter((o) => o > 0).length / seeds.length, 9);
     expect(summary.drawRate).toBeCloseTo(outcomes.filter((o) => o === 0).length / seeds.length, 9);
@@ -89,11 +98,13 @@ describe("simulateActionBalance against an independent replay", () => {
   });
 
   it("uses a different seed for each match, counting up from the base seed", () => {
+    const summary = summarise();
     const shifted = simulateActionBalance(input, seeds.length, (seeds[0] as number) + 1);
     expect(shifted.actionsPerMatch).not.toBe(summary.actionsPerMatch);
   });
 
   it("reports the number of matches and accepts a single match", () => {
+    const summary = summarise();
     expect(summary.matches).toBe(3);
     expect(simulateActionBalance(input, 1, 5).matches).toBe(1);
   });
