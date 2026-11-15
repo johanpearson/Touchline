@@ -9,9 +9,11 @@ import type {
   TimedActionMatchChange,
 } from "./action-match";
 import { applyChangeToInput } from "./apply-change-to-input";
+import { limitSnapshotSpeed } from "./limit-snapshot-speed";
 import {
   FIRST_HALF_ADDED_MINUTES,
   HALF_SECONDS,
+  MAX_SNAPSHOT_SPEED,
   SECOND_HALF_ADDED_MINUTES,
   SECONDS_PER_MINUTE,
 } from "./loop-constants";
@@ -56,6 +58,21 @@ export const createActionMatch = (
   let play: PlayState = kickoffPlay(firstKickoff, { home: 0, away: 0 }, { home: 0, away: 0 });
   let nextActionAt = 0;
 
+  /** Restarts place players freely; every other snapshot is capped at a sprint from the one before. */
+  const limitedSnapshot = (event: ActionEvent): ActionEvent => {
+    if (event.snapshot === undefined) return event;
+    if (event.type === "setPiece" || event.type === "periodChange") return event;
+    const before = events.at(-1);
+    if (before?.snapshot === undefined) return event;
+    const snapshot = limitSnapshotSpeed(
+      before.snapshot,
+      event.snapshot,
+      event.time - before.time,
+      MAX_SNAPSHOT_SPEED,
+    );
+    return { ...event, snapshot };
+  };
+
   const act = (at: number): void => {
     const result = playAction({
       input,
@@ -67,7 +84,7 @@ export const createActionMatch = (
       previous: events.at(-1),
     });
     if (result.replacedPrevious !== undefined) events[events.length - 1] = result.replacedPrevious;
-    events.push(...result.events);
+    for (const event of result.events) events.push(limitedSnapshot(event));
     play = result.play;
     nextActionAt = round1(at + result.duration);
   };
