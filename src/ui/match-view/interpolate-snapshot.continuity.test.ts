@@ -6,11 +6,10 @@ import { SPEEDS } from "./playback";
 
 /**
  * The fastest a player may move on screen between two frames, in metres per match second, outside
- * snaps. Real players sprint at about 10 m/s; the engine's snapshots are only positions at action
- * moments and reach about 33 m/s between close events, so this ceiling catches teleporting, not
- * unrealistic pace.
+ * snaps. Real players sprint at about 10 m/s; the engine caps its snapshots at that pace
+ * (`MAX_SNAPSHOT_SPEED`), so this allows a small margin for interpolation only.
  */
-const MAX_PLAYER_SPEED = 40;
+const MAX_PLAYER_SPEED = 12;
 const FRAME_SECONDS = 1 / 60;
 
 const playFullMatch = (seed: number) => {

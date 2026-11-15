@@ -15,3 +15,9 @@ export const SNAPSHOT_JITTER_MAX = 0.35;
 
 /** Actions since the last turnover that mean "no recent turnover" at kickoff. */
 export const NO_RECENT_TURNOVER = 99;
+
+/**
+ * Fastest a player may move between two consecutive position snapshots outside restarts, metres
+ * per second. A sprint is about 10 m/s; the margin below the 12 m/s ceiling absorbs rounding.
+ */
+export const MAX_SNAPSHOT_SPEED = 10;
