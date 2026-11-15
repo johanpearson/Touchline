@@ -126,7 +126,7 @@ const closeInOnBall = (block: Local[], ball: Local): Local[] => {
 };
 
 /** Pushes players that are too close apart, keeping everyone inside the pitch. Deterministic. */
-const keepApart = (block: Local[]): Local[] => {
+export const keepApart = (block: Local[]): Local[] => {
   let points = block.map(clampLocal);
   for (let pass = 0; pass < SPREAD_PASSES; pass++) {
     const next = points.map((p) => ({ ...p }));

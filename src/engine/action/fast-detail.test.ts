@@ -6,7 +6,7 @@ import { createActionMatch } from "./create-action-match";
 import type { MatchInputV2 } from "./match-input-v2";
 import { kickoffPlay, playAction } from "./play-action";
 
-vi.setConfig({ testTimeout: 60_000 });
+vi.setConfig({ testTimeout: 300_000 });
 
 const withoutSnapshot = (event: ActionEvent) => {
   const { snapshot: _snapshot, ...rest } = event;

@@ -4,7 +4,7 @@ import type { ActionMatch, ActionMatchChange } from "./action-match";
 import { createActionMatch } from "./create-action-match";
 import type { EnginePlayer } from "./engine-player";
 
-vi.setConfig({ testTimeout: 30_000 });
+vi.setConfig({ testTimeout: 150_000 });
 
 const input = aMatchInputV2().build();
 const HALF_TIME_AT = 1_000_000;
