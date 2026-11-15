@@ -37,7 +37,7 @@ export const PRESSING_LINE_HEIGHT: Record<Pressing, number> = { low: -4, medium:
 export const MENTALITY_LINE_HEIGHT: Record<Mentality, number> = {
   defensive: -1.5,
   balanced: 0,
-  attacking: 1.5,
+  attacking: 0,
 };
 
 /** Multiplies the distance between lines, measured from the defensive line. Below 1 is more compact. */

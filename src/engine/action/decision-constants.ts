@@ -67,11 +67,11 @@ export const CARRY_DIRECTNESS_GAIN = 0.3;
 export const MENTALITY_SPACE_BEHIND: Record<Mentality, number> = {
   defensive: 0.75,
   balanced: 1,
-  attacking: 2.6,
+  attacking: 4,
 };
 
 /** Multiplies the same counter weights against a narrow side that leaves the flanks open. */
-export const WIDTH_SPACE_BEHIND: Record<Width, number> = { narrow: 1.4, normal: 1, wide: 1 };
+export const WIDTH_SPACE_BEHIND: Record<Width, number> = { narrow: 1.8, normal: 1, wide: 1 };
 
 export const RISKY_VARIANTS: readonly PassVariant[] = ["long", "through", "cross"];
 
@@ -91,7 +91,7 @@ export const PRESSING_TURNOVER_BONUS: Record<Pressing, number> = {
   high: 0.03,
 };
 /** Multiplies the weight of through passes and carries of an opponent that has just won the ball (space behind the press). */
-export const PRESSING_SPACE_BEHIND: Record<Pressing, number> = { low: 0.8, medium: 1, high: 1.6 };
+export const PRESSING_SPACE_BEHIND: Record<Pressing, number> = { low: 0.8, medium: 1, high: 2.2 };
 
 /**
  * Home advantage: added to the success chance of the home side's passes, carries, interceptions and

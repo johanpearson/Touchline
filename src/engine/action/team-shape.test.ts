@@ -69,7 +69,7 @@ describe("shapeParameters", () => {
       width: "wide",
       tempo: "normal",
     });
-    expect(p.lineHeight).toBe(6.5);
+    expect(p.lineHeight).toBe(5);
     expect(p.compactness).toBeCloseTo(0.94 * 1.04, 10);
     expect(p.width).toBe(1.15);
     const q = shapeParameters({
