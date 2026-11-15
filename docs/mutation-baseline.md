@@ -113,6 +113,24 @@ They assert behaviour and relationships, not tuning values: scripted RNG draws e
 - Equivalent mutants: `<` vs `<=` on float boundaries that an RNG never hits exactly, `dx >= 0` vs `dx > 0`, division by +1 or -1, and symmetric box runners (`centre_y +/- r.y`).
 - Dead `"missed"` fall-through strings and redundant sub-conditions such as the perf-skip check in `resolve-pass.ts`.
 - RNG fork names (`root.fork("action-sim")` and similar): renaming a stream only changes which numbers come out, and no test pins an exact match.
-- `play-action.ts` (82%): the press bonus and transition phase effects, the interceptor `opponent` field and `keptBonus`. These need larger scripted scenarios; see the follow-up issue linked from #166.
+- `play-action.ts`: see "After #208" below.
 
 Per `CLAUDE.md`, treat survivors as missing tests. Compare later runs against this table; the nightly job fails below 80%.
+
+## After #208 (`play-action.ts`)
+
+Scripted-RNG tests in `play-action.test.ts` pin the press bonus (own half only, including the halfway-line boundary), the opponent's home edge on interceptions and kept carries, the interceptor `opponent` field (present on an intercepted pass, absent otherwise), `keptBonus`, the transition effect on option weights, the goalkeeper never challenging the carrier and the phase passed to `shapesFor`. Measured with `npx stryker run stryker.action.config.json --mutate src/engine/action/play-action.ts` (same lower-bound test selection as above).
+
+| File | Before | After | Killed | Survived |
+| --- | --- | --- | --- | --- |
+| `play-action.ts` | 82.55% | **93.45%** | 257 | 18 |
+
+The 18 survivors. Reasoned as equivalent:
+
+- Lines 118 and 156 (`<` vs `<=`): two players at exactly the same distance from the ball; the shapes never produce that tie.
+- Line 96 (`shapeOf("away")` to `shapeOf("")`): `teamShape` treats any side that is not `home` as away, so the result is identical.
+- Line 108 (default `skip` array): the default is never read with a slot in it.
+- Line 196 (`actionDuration("setPiece", ...)`): the type argument is unused (`_type`).
+- Lines 303 and 404 (`slot !== undefined` forced true): when the slot is absent (a cross that ends in a corner), `starters[undefined]` is `undefined`, the same as the guard.
+
+Not killed, left alive because the file is above the 90% target (not claimed equivalent): lines 137 and 143 (branches of `afterResolution` that look redundant with what the resolvers return), 320, 325 and 386 (the `penalty` flag passed to `resolveShot`, which only changes the outcome for a draw in the blocked band with a defender on the lane), 328 (three, the first-pass guard), 334 (the `challenger !== undefined` guard), 355 (`restart?.variant`) and 426 (the carrier left in `teammates`). Each needs a dedicated scenario and is a candidate for a later pass.
