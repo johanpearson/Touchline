@@ -22,29 +22,46 @@ const playFullMatch = (seed: number) => {
   return match;
 };
 
+/** Whether a snap time falls in the frame `(from, to]`; `snapTimes` is sorted ascending. */
+const hasSnapIn = (snapTimes: readonly number[], from: number, to: number): boolean => {
+  let low = 0;
+  let high = snapTimes.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if ((snapTimes[middle] ?? 0) <= from) low = middle + 1;
+    else high = middle;
+  }
+  return low < snapTimes.length && (snapTimes[low] ?? Infinity) <= to;
+};
+
 describe("interpolateSnapshot playback", () => {
   const match = playFullMatch(7);
   const events = match.events;
+  // Looked up once: scanning `events` for every frame made this test load sensitive on CI (#211).
+  const snapTimes = events
+    .filter((e) => e.type === "setPiece" || e.type === "periodChange")
+    .map((e) => e.time)
+    .sort((a, b) => a - b);
+
+  it("finds the snap events of the match", () => {
+    expect(snapTimes.length).toBeGreaterThan(0);
+  });
 
   it.each(SPEEDS)("moves players continuously at %s match seconds per second", (speed) => {
     const step = speed * FRAME_SECONDS;
+    let fastest = 0;
     let previous = interpolateSnapshot(events, 0);
     for (let time = step; time < match.state.time; time += step) {
       const current = interpolateSnapshot(events, time);
-      const snapped = events.some(
-        (e) =>
-          e.time > time - step &&
-          e.time <= time &&
-          (e.type === "setPiece" || e.type === "periodChange"),
-      );
-      if (!snapped && previous && current) {
+      if (previous && current && !hasSnapIn(snapTimes, time - step, time)) {
         current.players.forEach((p, i) => {
           const from = previous?.players[i];
           const moved = Math.hypot(p.x - (from?.x ?? p.x), p.y - (from?.y ?? p.y)) / step;
-          expect(moved).toBeLessThanOrEqual(MAX_PLAYER_SPEED);
+          if (moved > fastest) fastest = moved;
         });
       }
       previous = current;
     }
+    expect(fastest).toBeLessThanOrEqual(MAX_PLAYER_SPEED);
   });
 });
