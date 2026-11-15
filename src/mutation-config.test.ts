@@ -35,6 +35,16 @@ describe("mutation testing setup", () => {
     expect(nightly).toContain("path: reports/mutation");
   });
 
+  it("fails the run below 80% for both configs", () => {
+    for (const path of ["stryker.config.json", "stryker.action.config.json"]) {
+      expect(readJson(path).thresholds).toEqual({ high: 90, low: 85, break: 80 });
+    }
+  });
+
+  it("gives the nightly mutation job time for the whole engine", () => {
+    expect(read(".github/workflows/nightly.yml")).toContain("timeout-minutes: 360");
+  });
+
   it("keeps generated reports out of git", () => {
     expect(read(".gitignore")).toMatch(/^reports$/m);
   });

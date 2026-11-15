@@ -55,7 +55,13 @@ describe("buildSnapshot", () => {
 
   it("draws exactly 44 numbers whatever the positions", () => {
     let count = 0;
-    const rng: Rng = { ...createRng(1), next: () => (count++, 0.5) };
+    const rng: Rng = {
+      ...createRng(1),
+      next: () => {
+        count += 1;
+        return 0.5;
+      },
+    };
     buildSnapshot(shapes(50, 30), { x: 0, y: 0 }, rng);
     expect(count).toBe(44);
   });

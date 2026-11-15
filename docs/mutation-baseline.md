@@ -1,6 +1,6 @@
 # Mutation testing baseline (engine)
 
-First real Stryker run against the engine (`npm run test:mutation`), recorded as a baseline for the nightly workflow. No threshold is enforced yet.
+First real Stryker run against the engine (`npm run test:mutation`), recorded as a baseline for the nightly workflow. The v1 numbers below were taken with no threshold. Engine v2 (`src/engine/action`) has its own section at the end, and both configs now fail the run below 80%.
 
 - Date: 2026-11-13, after #16 (zone-based match simulation v1)
 - Stryker 10.1.1, `vitest` runner, `inPlace: true`, no checker (see #42)
@@ -49,3 +49,70 @@ Three survivors are left on purpose:
 
 - `match-builders.ts` (2): `build()` copies `homeTactics` and `awayTactics`, but `MatchInput` tactics are empty today and the builder cannot set them, so replacing the copy with `{}` is indistinguishable. Revisit when tactics get fields and builder methods.
 - `transition.ts` (1): the exact intensity formula of progress events (see above).
+
+## Action engine (v2), #166
+
+Baseline for `src/engine/action`, run with `npm run test:mutation:action` (`stryker.action.config.json`). The engine-wide config (`stryker.config.json`, nightly) covers the same files plus v1.
+
+- Date: 2026-11-15, Stryker 10.1.1, `vitest` runner, `inPlace: true`, `coverageAnalysis: "perTest"`, `ignoreStatic: true`
+- Run time: about 2 hours for the whole folder on four cores (2,940 mutants), so it is a nightly job, not a PR check
+- Tests: `vitest.mutation-action.config.ts` leaves out two slow files, `fast-detail.test.ts` (200 seeded matches) and `action-match.property.test.ts`. Mutants only those would kill count as survivors, so the scores are a **lower bound**. The nightly engine-wide run keeps them.
+- Not mutated: test files, `arbitraries.ts`, `performance.bench.ts`, `measure-match-time.ts`, `balance-test-support.ts` and the `*-builders.ts` helpers (test support, not engine behaviour).
+- Score = (killed + timeout) / (killed + timeout + survived + no coverage).
+
+The first full run gave 87.69%, with `snapshot.ts` (33%), `create-action-match.ts` (57%) and `action-balance.ts` (68%) under 70%. The causes were no unit test for the snapshot jitter, a summary test that computed its results at describe level (Stryker cannot attribute that to a test, so every mutant looked uncovered), and `create-action-match.test.ts` being left out of the run. After fixing those three, they were measured again on their own; the table merges both runs.
+
+Overall: **90.58%** (2,663 killed or timed out, 273 survived, 4 without coverage).
+
+| File | Score | Killed | Survived | No coverage |
+| --- | --- | --- | --- | --- |
+| `pressure.ts` | 75.00% | 21 | 7 | 0 |
+| `play-action.ts` | 82.18% | 226 | 49 | 0 |
+| `resolve-carry.ts` | 84.51% | 60 | 11 | 0 |
+| `create-action-match.ts` | 84.85% | 140 | 25 | 0 |
+| `team-shape.ts` | 84.88% | 146 | 25 | 1 |
+| `restart-taker.ts` | 87.50% | 28 | 4 | 0 |
+| `set-piece-shape.ts` | 87.50% | 259 | 37 | 0 |
+| `resolve-clearance.ts` | 89.86% | 62 | 7 | 0 |
+| `player-ratings.ts` | 90.57% | 96 | 7 | 3 |
+| `action-balance.ts` | 91.04% | 122 | 12 | 0 |
+| `build-options.ts` | 91.35% | 169 | 16 | 0 |
+| `out-of-play.ts` | 91.43% | 96 | 9 | 0 |
+| `validate-match-input-v2.ts` | 91.96% | 103 | 9 | 0 |
+| `limit-snapshot-speed.ts` | 92.00% | 23 | 2 | 0 |
+| `tactics-parameters.ts` | 92.31% | 12 | 1 | 0 |
+| `resolve-interception.ts` | 92.86% | 26 | 2 | 0 |
+| `resolve-challenge.ts` | 93.06% | 67 | 5 | 0 |
+| `action-balance-metrics.ts` | 93.81% | 106 | 7 | 0 |
+| `action-stats.ts` | 94.03% | 189 | 12 | 0 |
+| `resolve-shot.ts` | 94.08% | 159 | 10 | 0 |
+| `keep-actor-on-ball.ts` | 94.12% | 16 | 1 | 0 |
+| `mark-key-passes.ts` | 94.44% | 34 | 2 | 0 |
+| `choose-option.ts` | 94.44% | 17 | 1 | 0 |
+| `to-zone-events.ts` | 95.10% | 97 | 5 | 0 |
+| `separate-players.ts` | 96.15% | 75 | 3 | 0 |
+| `apply-change-to-input.ts` | 96.43% | 27 | 1 | 0 |
+| `shot-xg.ts` | 97.67% | 42 | 1 | 0 |
+| `resolve-pass.ts` | 98.56% | 137 | 2 | 0 |
+| `attribute-rating.ts` | 100.00% | 3 | 0 | 0 |
+| `home-advantage.ts` | 100.00% | 4 | 0 | 0 |
+| `pitch-metres.ts` | 100.00% | 25 | 0 | 0 |
+| `snapshot.ts` | 100.00% | 12 | 0 | 0 |
+| `tactic-combinations.ts` | 100.00% | 4 | 0 | 0 |
+| `action-duration.ts` | 100.00% | 7 | 0 | 0 |
+| `segment-distance.ts` | 100.00% | 21 | 0 | 0 |
+| `team-phase.ts` | 100.00% | 32 | 0 | 0 |
+
+
+### What the new tests do
+
+They assert behaviour and relationships, not tuning values: scripted RNG draws exactly on a boundary, spec-level checks of the ball pull and close-in rules, cross-checks of summaries against an independent replay, and exact table output. Retuning the constants should not break them.
+
+### Survivors left on purpose
+
+- Equivalent mutants: `<` vs `<=` on float boundaries that an RNG never hits exactly, `dx >= 0` vs `dx > 0`, division by +1 or -1, and symmetric box runners (`centre_y +/- r.y`).
+- Dead `"missed"` fall-through strings and redundant sub-conditions such as the perf-skip check in `resolve-pass.ts`.
+- RNG fork names (`root.fork("action-sim")` and similar): renaming a stream only changes which numbers come out, and no test pins an exact match.
+- `play-action.ts` (82%): the press bonus and transition phase effects, the interceptor `opponent` field and `keptBonus`. These need larger scripted scenarios; see the follow-up issue linked from #166.
+
+Per `CLAUDE.md`, treat survivors as missing tests. Compare later runs against this table; the nightly job fails below 80%.

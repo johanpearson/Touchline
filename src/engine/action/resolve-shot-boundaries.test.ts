@@ -121,11 +121,11 @@ describe("resolveShot remainder bands", () => {
     const chance = goalChance(base);
     const probe = (fraction: number) =>
       resolveShot(base, scripted(drawAt(fraction, chance), 0.99)).outcome;
-    expect(probe(edges[0] - 1e-6)).toBe("woodwork");
-    expect(probe(edges[0] + 1e-6)).toBe(c.blockers > 0 ? "blocked" : "saved");
-    expect(probe(edges[1] + 1e-6)).toBe("saved");
-    expect(probe(edges[2] - 1e-6)).toBe("saved");
-    expect(probe(edges[2] + 1e-6)).toBe("missed");
+    expect(probe((edges[0] as number) - 1e-6)).toBe("woodwork");
+    expect(probe((edges[0] as number) + 1e-6)).toBe(c.blockers > 0 ? "blocked" : "saved");
+    expect(probe((edges[1] as number) + 1e-6)).toBe("saved");
+    expect(probe((edges[2] as number) - 1e-6)).toBe("saved");
+    expect(probe((edges[2] as number) + 1e-6)).toBe("missed");
     expect(probe(0.9999)).toBe("missed");
   });
 });

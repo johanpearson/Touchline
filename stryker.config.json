@@ -12,5 +12,10 @@
   "allowEmpty": true,
   "vitest": {
     "configFile": "vitest.mutation.config.ts"
+  },
+  "thresholds": {
+    "high": 90,
+    "low": 85,
+    "break": 80
   }
 }

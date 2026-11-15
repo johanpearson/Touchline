@@ -66,6 +66,9 @@ const only = <T extends ActionEvent>(events: ActionEvent[]): T => {
   return events[0] as T;
 };
 
+const actorOf = (event: ActionEvent): string | undefined =>
+  "actor" in event ? event.actor : undefined;
+
 describe("kickoffPlay and kickoffFor", () => {
   it("starts a half with a kickoff on the centre spot for the given team", () => {
     const state = kickoffPlay("away", { home: 1, away: 2 }, { home: 3, away: 4 });
@@ -459,7 +462,7 @@ describe("playAction open play", () => {
       .reduce((a, b) => (b.d < a.d ? b : a)).i;
     const state = play({ ball: carrierBall });
     const result = playAction(context(state, scripted([0.999, 0.5]).rng));
-    expect(only(result.events).actor).toBe(idOf("home", nearest));
+    expect(actorOf(only(result.events))).toBe(idOf("home", nearest));
   });
 
   it("shoots when the draw lands in the shot band: the option's xG, the shooter's id, the keeper as opponent", () => {
@@ -507,7 +510,7 @@ describe("playAction open play", () => {
     expect(event.type).toBe("pass");
     expect(event.variant).toBe(option?.type === "pass" ? option.variant : "");
     expect(event.target).toBe(idOf("home", option?.type === "pass" ? option.target : -1));
-    expect(event.actor).toBe(idOf("home", carrierSlot));
+    expect(actorOf(event)).toBe(idOf("home", carrierSlot));
     expect(event.outcome).toBe("complete");
   });
 
@@ -550,7 +553,7 @@ describe("playAction open play", () => {
     );
     const event = only(result.events);
     expect(event.type).toBe("clearance");
-    expect(event.actor).toBe(idOf("home", carrierSlot));
+    expect(actorOf(event)).toBe(idOf("home", carrierSlot));
     expect(event.team).toBe("home");
   });
 
