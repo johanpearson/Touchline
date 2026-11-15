@@ -1,6 +1,6 @@
 import type { Period, Side } from "../match-state";
 import { createRng } from "../rng";
-import type { ActionEvent } from "./action-event";
+import type { ActionEvent, PositionSnapshot } from "./action-event";
 import type {
   ActionMatch,
   ActionMatchChange,
@@ -9,6 +9,7 @@ import type {
   TimedActionMatchChange,
 } from "./action-match";
 import { applyChangeToInput } from "./apply-change-to-input";
+import { keepActorOnBall } from "./keep-actor-on-ball";
 import { limitSnapshotSpeed } from "./limit-snapshot-speed";
 import {
   FIRST_HALF_ADDED_MINUTES,
@@ -70,7 +71,14 @@ export const createActionMatch = (
       event.time - before.time,
       MAX_SNAPSHOT_SPEED,
     );
-    return { ...event, snapshot };
+    return { ...event, snapshot: keepActor(event, snapshot) };
+  };
+
+  /** Keeps the actor of a pass, carry or shot on the ball (slots: home 0 to 10, away 11 to 21). */
+  const keepActor = (event: ActionEvent, snapshot: PositionSnapshot): PositionSnapshot => {
+    if (event.type !== "pass" && event.type !== "carry" && event.type !== "shot") return snapshot;
+    const ids = [...input.home.starters, ...input.away.starters].map((p) => p.id);
+    return keepActorOnBall(snapshot, ids.indexOf(event.actor));
   };
 
   const act = (at: number): void => {
