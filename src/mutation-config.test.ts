@@ -38,4 +38,36 @@ describe("mutation testing setup", () => {
   it("keeps generated reports out of git", () => {
     expect(read(".gitignore")).toMatch(/^reports$/m);
   });
+  describe("action engine config", () => {
+    const action = readJson("stryker.action.config.json");
+
+    it("only mutates non-test, non-fixture files in src/engine/action", () => {
+      expect(action.mutate).toEqual([
+        "src/engine/action/**/*.ts",
+        "!src/engine/action/**/*.test.ts",
+        "!src/engine/action/arbitraries.ts",
+        "!src/engine/action/performance.bench.ts",
+        "!src/engine/action/*-builders.ts",
+      ]);
+    });
+
+    it("is started by npm run test:mutation:action", () => {
+      const scripts = readJson("package.json").scripts as Record<string, string>;
+      expect(scripts["test:mutation:action"]).toBe("stryker run stryker.action.config.json");
+    });
+
+    it("writes its reports to reports/mutation-action, apart from the engine-wide report", () => {
+      expect(action.htmlReporter).toEqual({ fileName: "reports/mutation-action/index.html" });
+      expect(action.jsonReporter).toEqual({ fileName: "reports/mutation-action/mutation.json" });
+    });
+
+    it("selects its tests with a config that leaves out the whole-match files", () => {
+      expect(action.vitest).toEqual({ configFile: "vitest.mutation-action.config.ts" });
+      expect(read("vitest.mutation-action.config.ts")).toContain("fast-detail.test.ts");
+    });
+
+    it("selects engine tests only, so the engine-wide run skips wall-clock tests in game", () => {
+      expect(config.vitest).toEqual({ configFile: "vitest.mutation.config.ts" });
+    });
+  });
 });
