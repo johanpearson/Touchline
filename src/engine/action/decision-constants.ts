@@ -79,7 +79,7 @@ export const RISKY_VARIANTS: readonly PassVariant[] = ["long", "through", "cross
 /** Added to the pass completion chance of the team's own passes. */
 export const TEMPO_PASS_SUCCESS: Record<Tempo, number> = { slow: 0.04, normal: 0, fast: -0.05 };
 /** Multiplies the weight of a shot taken from the central channel. */
-export const WIDTH_CENTRAL_SHOT: Record<Width, number> = { narrow: 1.1, normal: 1, wide: 0.9 };
+export const WIDTH_CENTRAL_SHOT: Record<Width, number> = { narrow: 1.05, normal: 1, wide: 0.9 };
 /** A shot is central when it is at most this many metres from the middle line. */
 export const CENTRAL_SHOT_CHANNEL = 11;
 /** Multiplies the radius within which the team's opponents feel its pressure (press trigger distance). */
