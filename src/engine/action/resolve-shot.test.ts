@@ -39,14 +39,14 @@ describe("goalChance", () => {
 
   it("rises with finishing and falls with keeper handling and reflexes", () => {
     const finisher = anEnginePlayer("s").withAttribute("finishing", 20).build();
-    expect(goalChance(input({ shooter: finisher }))).toBeCloseTo(0.26, 10);
+    expect(goalChance(input({ shooter: finisher }))).toBeCloseTo(0.24, 10);
     const poor = anEnginePlayer("s").withAttribute("finishing", 1).build();
     expect(goalChance(input({ shooter: poor }))).toBeLessThan(0.2);
     const great = anEnginePlayer("k")
       .withAttribute("handling", 20)
       .withAttribute("reflexes", 20)
       .build();
-    expect(goalChance(input({ keeper: { ...keeperAt, player: great } }))).toBeCloseTo(0.14, 10);
+    expect(goalChance(input({ keeper: { ...keeperAt, player: great } }))).toBeCloseTo(0.16, 10);
     const bad = anEnginePlayer("k")
       .withAttribute("handling", 1)
       .withAttribute("reflexes", 1)

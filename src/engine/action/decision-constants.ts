@@ -181,7 +181,7 @@ export const TEMPO_DRAW_EXPONENT: Record<Tempo, number> = { slow: 0.7, normal: 1
 /** Goal centre and width (metres). Posts are `GOAL_WIDTH / 2` either side of the centre line. */
 export const GOAL_WIDTH = 7.32;
 /** Logistic xG model: `logit = XG_INTERCEPT + XG_DISTANCE_GAIN * distance + XG_ANGLE_GAIN * angle` (angle in radians subtended by the posts). */
-export const XG_INTERCEPT = -3.0;
+export const XG_INTERCEPT = -3.1;
 export const XG_DISTANCE_GAIN = -0.15;
 export const XG_ANGLE_GAIN = 2;
 /** Share of xG lost at full pressure (0..1). */
@@ -199,7 +199,7 @@ export const SHOT_MIN_XG = 0.01;
 /** Option weight per unit of xG, before finishing and mentality. */
 export const SHOT_WEIGHT_GAIN = 20;
 /** Share of the shot weight that depends on finishing (an average 10 keeps 1). */
-export const SHOT_FINISHING_GAIN = 0.5;
+export const SHOT_FINISHING_GAIN = 0.25;
 export const MENTALITY_SHOT: Record<Mentality, number> = {
   defensive: 0.95,
   balanced: 1,
@@ -208,8 +208,8 @@ export const MENTALITY_SHOT: Record<Mentality, number> = {
 
 // Shot resolution
 /** Goal chance = xG x finishing factor x keeper factor, clamped. */
-export const FINISHING_GOAL_GAIN = 0.6;
-export const KEEPER_GOAL_GAIN = 0.6;
+export const FINISHING_GOAL_GAIN = 0.4;
+export const KEEPER_GOAL_GAIN = 0.4;
 export const GOAL_CHANCE_MAX = 0.95;
 /** Weights that split the non-goal remainder between woodwork, blocked, saved and missed. */
 export const WOODWORK_WEIGHT = 0.03;

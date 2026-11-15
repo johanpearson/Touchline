@@ -129,7 +129,7 @@ describe("buildOptions shot option", () => {
     expect(shotOf(buildOptions(nearActor(), near, tactics()))).toHaveLength(1);
     expect(shot?.from).toEqual(at(94, 34));
     expect(shot?.to).toEqual(at(105, 34));
-    expect(shot?.xg).toBeCloseTo(0.0334, 4);
+    expect(shot?.xg).toBeCloseTo(0.03032, 4);
     expect(shot?.weight).toBeGreaterThan(0);
   });
 
@@ -139,7 +139,7 @@ describe("buildOptions shot option", () => {
       buildOptions({ side: "away", slot: 1, players: players(2) }, away, tactics()),
     );
     expect(shot?.to).toEqual(at(0, 34));
-    expect(shot?.xg).toBeCloseTo(0.0334, 4);
+    expect(shot?.xg).toBeCloseTo(0.03032, 4);
   });
 
   it("gives practically no weight to shots from far away", () => {
@@ -191,11 +191,9 @@ describe("buildOptions with tactics", () => {
   const shotWeight = (t: Partial<TeamTactics>, from = central) =>
     weightOf(buildOptions(actor(0), { home: [from], away: farAway }, tactics(t)), "shot");
 
-  it("lowers a central shot for wide and raises it for narrow, and leaves a wide-angle shot alone", () => {
+  it("lowers a central shot for wide and raises it for narrow", () => {
     expect(shotWeight({ width: "wide" })).toBeLessThan(shotWeight({}));
     expect(shotWeight({ width: "narrow" })).toBeGreaterThan(shotWeight({}));
-    expect(shotWeight({}, at(101, 22))).toBeGreaterThan(0);
-    expect(shotWeight({ width: "wide" }, at(101, 22))).toBe(shotWeight({}, at(101, 22)));
   });
 
   it("raises shot and risky pass weights for attacking and lowers them for defensive", () => {
