@@ -20,6 +20,6 @@
   "inPlace": true,
   "allowEmpty": true,
   "vitest": {
-    "configFile": "vitest.mutation.config.ts"
+    "configFile": "vitest.mutation-action.config.ts"
   }
 }
