@@ -56,6 +56,7 @@ export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
     <MatchScreen
       key={`${career.season.number}-${fixture.id}`}
       {...setup}
+      userSide={fixture.homeClubId === career.userClubId ? "home" : "away"}
       createRenderer={createRenderer}
       tickMs={tickMs}
       halfTimeEditor={editor}

@@ -7,8 +7,10 @@ import type { CommentaryLine } from "../../commentary";
 import type { MatchEvent, MatchStats } from "../../engine";
 import { createMemoryLocaleStore } from "../../platform";
 import { I18nProvider } from "../i18n-provider";
+import { ActionStatsPanel } from "./action-stats-panel";
 import { MatchFeed } from "./match-feed";
 import { MomentumChart } from "./momentum-chart";
+import { PlayerRatings } from "./player-ratings";
 import { Scoreboard } from "./scoreboard";
 import { SpeedControls } from "./speed-controls";
 import { StatsPanel } from "./stats-panel";
@@ -238,5 +240,102 @@ describe("SpeedControls", () => {
     expect(screen.getByTestId("speed-2").getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByTestId("speed-4"));
     expect(speeds).toEqual([240]);
+  });
+});
+
+describe("ActionStatsPanel", () => {
+  afterEach(cleanup);
+  const teams = {
+    possession: { home: 0.6, away: 0.4 },
+    fieldTilt: { home: 0.5, away: 0.5 },
+    shots: { home: 7, away: 3 },
+    shotsOnTarget: { home: 4, away: 1 },
+    xg: { home: 1.234, away: 0.5 },
+    corners: { home: 5, away: 2 },
+    fouls: { home: 9, away: 11 },
+    throwIns: { home: 0, away: 0 },
+    goalKicks: { home: 0, away: 0 },
+    passes: { home: 400, away: 300 },
+    completedPasses: { home: 340, away: 210 },
+    passCompletion: { home: 0.85, away: 0.7 },
+  };
+  const line = (keyPasses: number) => ({
+    passes: 0,
+    completedPasses: 0,
+    passCompletion: 0,
+    keyPasses,
+    shots: 0,
+    shotsOnTarget: 0,
+    xg: 0,
+    goals: 0,
+    tacklesWon: 0,
+    interceptions: 0,
+    clearances: 0,
+    foulsCommitted: 0,
+  });
+  const stats = { teams, players: { h1: line(2), h2: line(1), a1: line(4) } };
+  const playerIds = { home: ["h1", "h2"], away: ["a1"] };
+
+  it("shows each stat as text for both sides, with key passes totalled per side", () => {
+    inLocale(<ActionStatsPanel stats={stats} playerIds={playerIds} />);
+    const text = (id: string) => screen.getByTestId(`stat-${id}`).textContent;
+    expect(text("shots")).toBe("7Shots3");
+    expect(text("shotsOnTarget")).toBe("4On target1");
+    expect(text("xg")).toBe("1.23xG0.50");
+    expect(text("fouls")).toBe("9Fouls11");
+    expect(text("passes")).toBe("400Passes300");
+    expect(text("keyPasses")).toBe("3Key passes4");
+    expect(text("passCompletion")).toContain("Pass completion");
+    expect(text("possession")).toMatch(/60.*40/);
+  });
+
+  it("is translated to Swedish", () => {
+    inLocale(<ActionStatsPanel stats={stats} playerIds={playerIds} />, "sv");
+    expect(screen.getByTestId("stat-keyPasses").textContent).toContain("Nyckelpassningar");
+  });
+});
+
+describe("PlayerRatings", () => {
+  afterEach(cleanup);
+  const rows = [
+    {
+      id: "h1",
+      name: "Ek",
+      side: "home" as const,
+      rating: 7.46,
+      goals: 1,
+      keyPasses: 2,
+      shots: 3,
+      xg: 0.8,
+      playerOfTheMatch: true,
+    },
+    {
+      id: "a1",
+      name: "Lind",
+      side: "away" as const,
+      rating: 6,
+      goals: 0,
+      keyPasses: 0,
+      shots: 0,
+      xg: 0,
+      playerOfTheMatch: false,
+    },
+  ];
+
+  it("lists rating with one decimal, the stats and the player of the match", () => {
+    inLocale(<PlayerRatings rows={rows} teamNames={{ home: "Kvarnby", away: "Västerås" }} />);
+    const first = screen.getByTestId("rating-row-h1").textContent ?? "";
+    expect(first).toContain("Ek");
+    expect(first).toContain("Kvarnby");
+    expect(first).toContain("7.5");
+    expect(screen.getByTestId("rating-row-a1").textContent).toContain("6.0");
+    expect(screen.getAllByTestId("player-of-the-match")).toHaveLength(1);
+    expect(screen.getByTestId("player-of-the-match").textContent).toContain("Player of the match");
+  });
+
+  it("uses Swedish labels and decimal comma", () => {
+    inLocale(<PlayerRatings rows={rows} teamNames={{ home: "Kvarnby", away: "Västerås" }} />, "sv");
+    expect(screen.getByTestId("player-ratings").textContent).toContain("Spelarbetyg");
+    expect(screen.getByTestId("rating-row-h1").textContent).toContain("7,5");
   });
 });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import type { CommentaryLine } from "../../commentary";
 import type { ActionEvent, MatchEvent, MatchState, MatchStats, PerSide } from "../../engine";
 import { useI18n } from "../i18n-provider";
@@ -38,6 +38,10 @@ export type MatchLayoutProps = {
   pitch?: { events: readonly ActionEvent[]; createRenderer?: PitchRendererFactory };
   halfTimeEditor?: HalfTimeEditor;
   onResume: (plan?: AppliedHalfTimePlan) => void;
+  /** Replaces the zone stats panel (the action engine shows its own). */
+  statsPanel?: ReactNode;
+  /** Shown at full time, above the "Continue" button (the action engine's player ratings). */
+  fullTimePanel?: ReactNode;
   /** When given, a "Continue" button appears at full time. */
   onContinue?: () => void;
 };
@@ -59,6 +63,8 @@ export function MatchLayout({
   halfTimeEditor,
   onResume,
   onContinue,
+  statsPanel,
+  fullTimePanel,
 }: MatchLayoutProps) {
   const { t } = useI18n();
   const halfTime = period === "halfTime";
@@ -144,6 +150,7 @@ export function MatchLayout({
             onResume={onResume}
           />
         )}
+        {period === "fullTime" && fullTimePanel}
         {period === "fullTime" && onContinue && (
           <button type="button" data-testid="continue" onClick={onContinue}>
             {t("match.continue")}
@@ -157,7 +164,7 @@ export function MatchLayout({
         />
       </div>
       <aside className="match-side">
-        {!halfTime && <StatsPanel stats={stats} />}
+        {!halfTime && (statsPanel ?? <StatsPanel stats={stats} />)}
         <MomentumChart
           events={events}
           matchTime={matchTime}
