@@ -144,15 +144,10 @@ describe("completeMatchday", () => {
     expect(table.ok && table.table.every((row) => row.played === 26)).toBe(true);
   });
 
-  it("plays an engine 2 season of 26 matchdays to the end within the time budget", () => {
-    // Budget: 13 background matches per matchday at about 50 ms each on a laptop (see
-    // "Performance and the fast path" in docs/architecture.md); tripled for slow CI runners.
-    const budgetMs = 26 * 13 * 50 * 3;
-    const start = performance.now();
-
+  it("plays an engine 2 season of 26 matchdays to the end", () => {
+    // The time budget for this season lives in complete-matchday.perf.test.ts (npm run test:perf).
     const career = playSeason(aCareer(1, 2));
 
-    expect(performance.now() - start).toBeLessThan(budgetMs);
     expect(career.season.results).toHaveLength(182);
     expect(career.season.results.every((r) => r.engineVersion === 2)).toBe(true);
     expect(career.season.currentMatchday).toBe(27);

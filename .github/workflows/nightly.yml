@@ -32,6 +32,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: bash scripts/nightly-balance-issue.sh balance.log
+      - name: Write the result
+        if: always()
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/nightly-status.mjs result --job balance --outcome ${{ job.status }} --log balance.log --out result-balance.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: nightly-result-balance
+          path: result-balance.json
 
   mutation:
     name: Mutation testing (engine)
@@ -47,13 +57,24 @@ jobs:
       - run: npm ci
       - name: Stryker
         run: |
-          if [ "$(npm pkg get scripts.test:mutation)" != "{}" ]; then npm run test:mutation; else echo "::notice::mutation testing not set up yet"; fi
+          set -o pipefail
+          if [ "$(npm pkg get scripts.test:mutation)" != "{}" ]; then FORCE_COLOR=0 npm run test:mutation 2>&1 | tee mutation.log; else echo "::notice::mutation testing not set up yet" | tee mutation.log; fi
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mutation-report
           path: reports/mutation
           if-no-files-found: ignore
+      - name: Write the result
+        if: always()
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/nightly-status.mjs result --job mutation --outcome ${{ job.status }} --log mutation.log --out result-mutation.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: nightly-result-mutation
+          path: result-mutation.json
 
   property-tests:
     name: Property tests (engine, many runs)
@@ -70,6 +91,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx vitest run src/engine/action/action-match.property.test.ts
+      - name: Write the result
+        if: always()
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/nightly-status.mjs result --job property --outcome ${{ job.status }} --out result-property.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: nightly-result-property
+          path: result-property.json
 
   e2e-full:
     name: E2E full
@@ -89,3 +120,44 @@ jobs:
           else
             echo "::notice::no E2E tests yet"
           fi
+      - name: Write the result
+        if: always()
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/nightly-status.mjs result --job e2e --outcome ${{ job.status }} --out result-e2e.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: nightly-result-e2e
+          path: result-e2e.json
+
+  publish-status:
+    name: Publish nightly status
+    needs: [balance-full, mutation, property-tests, e2e-full]
+    # Runs even when a nightly job failed, so a red job shows up as a red badge.
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v7
+        continue-on-error: true
+        with:
+          pattern: nightly-result-*
+          path: results
+          merge-multiple: true
+      - name: Build status.json and the badges
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          mkdir -p results
+          node scripts/nightly-status.mjs publish --in results --out site
+          cat site/status.json
+      - name: Publish to the nightly-status branch
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash scripts/publish-nightly-status.sh site
