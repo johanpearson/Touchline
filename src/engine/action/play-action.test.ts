@@ -3,15 +3,20 @@ import type { Side } from "../match-state";
 import { createRng } from "../rng";
 import { aMatchInputV2 } from "./action-builders";
 import type { ActionEvent, PassEvent, ShotEvent } from "./action-event";
+import { buildOptions } from "./build-options";
 import { PENALTY_XG } from "./decision-constants";
-import { NO_RECENT_TURNOVER, PENALTY_SPOT_DEPTH } from "./loop-constants";
+import type { EnginePlayer } from "./engine-player";
+import { CHALLENGE_PRESSURE_GAIN, NO_RECENT_TURNOVER, PENALTY_SPOT_DEPTH } from "./loop-constants";
 import type { MatchInputV2 } from "./match-input-v2";
 import { PITCH_LENGTH, type Point } from "./pitch-metres";
-import { type ActionContext, kickoffFor, kickoffPlay, playAction } from "./play-action";
+import { type ActionContext, kickoffFor, kickoffPlay, playAction, shapesFor } from "./play-action";
 import type { PlayState } from "./play-state";
+import { pressureOn } from "./pressure";
+import { foulChance } from "./resolve-challenge";
 import { FREE_KICK_SHOT_PRESSURE } from "./set-piece-constants";
 import { setPieceShape } from "./set-piece-shape";
 import { shotXg, toAttackingFrame } from "./shot-xg";
+import { actionTactics } from "./tactics-parameters";
 
 const input: MatchInputV2 = aMatchInputV2().build();
 const sheets = { home: input.home, away: input.away };
@@ -309,5 +314,260 @@ describe("playAction free kicks and first passes", () => {
       return s;
     })();
     expect(calls).toEqual([]);
+  });
+});
+
+/** Where the ball carrier stands and what he can do, worked out with the same pieces the engine uses. */
+const prepare = (ball: Point, slot: number) => {
+  const state = play({ ball, slot });
+  const raw = shapesFor(input, state, ball);
+  const shapes = { ...raw, home: raw.home.map((p, i) => (i === slot ? ball : p)) };
+  const pressure = pressureOn(ball, "home", shapes, actionTactics(input.away.tactics).pressRadius);
+  const options = buildOptions(
+    {
+      side: "home",
+      slot,
+      players: input.home.starters,
+      foeTactics: input.away.tactics,
+      transition: false,
+    },
+    shapes,
+    input.home.tactics,
+  );
+  const challenger = shapes.away
+    .map((point, awaySlot) => ({ point, awaySlot }))
+    .filter((c) => c.awaySlot !== 0)
+    .reduce((best, c) =>
+      Math.hypot(c.point.x - ball.x, c.point.y - ball.y) <
+      Math.hypot(best.point.x - ball.x, best.point.y - ball.y)
+        ? c
+        : best,
+    );
+  return { state, shapes, pressure, options, challenger: challenger.awaySlot };
+};
+const carrierBall = at(60, 34);
+const carrierSlot = 6;
+
+describe("playAction challenges", () => {
+  const { state, pressure, challenger } = prepare(carrierBall, carrierSlot);
+  const threshold = CHALLENGE_PRESSURE_GAIN * pressure;
+  const tackler = input.away.starters[challenger];
+
+  it("has pressure on the carrier to work with", () => {
+    expect(pressure).toBeGreaterThan(0.2);
+  });
+
+  it("challenges when the draw is just below the pressure threshold and not exactly at it", () => {
+    const challenged = playAction(context(state, scripted([threshold - 1e-9, 0]).rng));
+    expect(["foul", "tackle"]).toContain(only(challenged.events).type);
+    const open = playAction(context(state, scripted([threshold, 0.5]).rng));
+    expect(["foul", "tackle"]).not.toContain(only(open.events).type);
+  });
+
+  it("whistles a foul for the carrier's side: a free kick, a foul counted against the tackler's side", () => {
+    const result = playAction(context(state, scripted([0, 0]).rng));
+    const event = only(result.events);
+    expect(event).toMatchObject({
+      type: "foul",
+      team: "home",
+      actor: idOf("home", carrierSlot),
+      opponent: tackler?.id,
+      outcome: "freeKick",
+      from: carrierBall,
+      to: carrierBall,
+      time: 100,
+      period: "firstHalf",
+    });
+    expect(event.pressure).toBeCloseTo(pressure, 9);
+    expect(result.play.restart).toEqual({
+      team: "home",
+      variant: "freeKick",
+      position: carrierBall,
+    });
+    expect(result.play.fouls).toEqual({ home: 0, away: 1 });
+    expect(result.play.possession).toBe("home");
+    expect(result.play.lastType).toBe("foul");
+    expect(result.play.actionsSinceTurnover).toBe(6);
+  });
+
+  it("counts fouls on top of the earlier ones and against the other side for an away carrier", () => {
+    const counted = playAction(
+      context({ ...state, fouls: { home: 2, away: 4 } }, scripted([0, 0]).rng),
+    );
+    expect(counted.play.fouls).toEqual({ home: 2, away: 5 });
+  });
+
+  it("gives a penalty for a foul inside the attacked box", () => {
+    const box = prepare(at(100, 34), 9);
+    expect(box.pressure).toBeGreaterThan(0);
+    const result = playAction(context(box.state, scripted([0, 0]).rng));
+    const event = only(result.events);
+    expect(event.type).toBe("foul");
+    expect(event.type === "foul" ? event.outcome : "").toBe("penalty");
+    expect(result.play.restart?.variant).toBe("penalty");
+  });
+
+  it("lets the tackler win the ball: a tackle event by the defender and the ball changes sides", () => {
+    const draw = foulChance(tackler as EnginePlayer) + 1e-6;
+    const result = playAction(context(state, scripted([0, draw]).rng));
+    const event = only(result.events);
+    expect(event).toMatchObject({
+      type: "tackle",
+      team: "away",
+      actor: tackler?.id,
+      opponent: idOf("home", carrierSlot),
+      outcome: "won",
+      from: carrierBall,
+      to: carrierBall,
+    });
+    expect(result.play.possession).toBe("away");
+    expect(result.play.slot).toBe(challenger);
+    expect(result.play.actionsSinceTurnover).toBe(0);
+    expect(result.play.lastType).toBe("tackle");
+    expect(result.play.fouls).toEqual({ home: 0, away: 0 });
+  });
+
+  it("lets the carrier keep the ball when the tackle is lost", () => {
+    const result = playAction(context(state, scripted([0, 0.9999]).rng));
+    const event = only(result.events);
+    expect(event).toMatchObject({
+      type: "tackle",
+      team: "away",
+      actor: tackler?.id,
+      outcome: "lost",
+    });
+    expect(result.play.possession).toBe("home");
+    expect(result.play.slot).toBe(carrierSlot);
+    expect(result.play.actionsSinceTurnover).toBe(6);
+  });
+});
+
+describe("playAction open play", () => {
+  /** A draw that lands in the middle of the band of the option at `index`. */
+  const drawFor = (weights: number[], index: number) => {
+    const total = weights.reduce((a, b) => a + b, 0);
+    const before = weights.slice(0, index).reduce((a, b) => a + b, 0);
+    return (before + (weights[index] as number) / 2) / total;
+  };
+  const indexOf = (options: ReturnType<typeof prepare>["options"], type: string) =>
+    options.findIndex((o) => o.type === type);
+
+  it("takes the carrier from the nearest player when no one is named", () => {
+    const { shapes } = prepare(carrierBall, carrierSlot);
+    const nearest = shapes.home
+      .map((p, i) => ({ i, d: Math.hypot(p.x - carrierBall.x, p.y - carrierBall.y) }))
+      .reduce((a, b) => (b.d < a.d ? b : a)).i;
+    const state = play({ ball: carrierBall });
+    const result = playAction(context(state, scripted([0.999, 0.5]).rng));
+    expect(only(result.events).actor).toBe(idOf("home", nearest));
+  });
+
+  it("shoots when the draw lands in the shot band: the option's xG, the shooter's id, the keeper as opponent", () => {
+    const { state, options } = prepare(at(95, 30), 9);
+    const index = indexOf(options, "shot");
+    const shot = options[index];
+    const result = playAction(
+      context(
+        state,
+        scripted([
+          0.999,
+          drawFor(
+            options.map((o) => o.weight),
+            index,
+          ),
+        ]).rng,
+      ),
+    );
+    const event = only<ShotEvent>(result.events);
+    expect(event.type).toBe("shot");
+    expect(event.xg).toBe(shot?.type === "shot" ? shot.xg : -1);
+    expect(event.actor).toBe(idOf("home", 9));
+    expect(event.opponent).toBe(idOf("away", 0));
+    expect(event.from).toEqual(at(95, 30));
+  });
+
+  it("passes to the option's target with its variant when the draw lands in a pass band", () => {
+    const { state, options } = prepare(carrierBall, carrierSlot);
+    const index = options.findIndex((o) => o.type === "pass" && o.weight > 0.2);
+    const option = options[index];
+    const result = playAction(
+      context(
+        state,
+        scripted([
+          0.999,
+          drawFor(
+            options.map((o) => o.weight),
+            index,
+          ),
+          0,
+        ]).rng,
+      ),
+    );
+    const event = only<PassEvent>(result.events);
+    expect(event.type).toBe("pass");
+    expect(event.variant).toBe(option?.type === "pass" ? option.variant : "");
+    expect(event.target).toBe(idOf("home", option?.type === "pass" ? option.target : -1));
+    expect(event.actor).toBe(idOf("home", carrierSlot));
+    expect(event.outcome).toBe("complete");
+  });
+
+  it("carries when the draw lands in the carry band, and names the tackler of a lost carry", () => {
+    const { state, options, challenger } = prepare(carrierBall, carrierSlot);
+    const index = indexOf(options, "carry");
+    const draw = drawFor(
+      options.map((o) => o.weight),
+      index,
+    );
+    const kept = playAction(context(state, scripted([0.999, draw, 0]).rng));
+    const keptEvent = only(kept.events);
+    expect(keptEvent.type).toBe("carry");
+    expect(keptEvent.type === "carry" ? keptEvent.outcome : "").toBe("kept");
+    expect(keptEvent.type === "carry" ? keptEvent.opponent : "x").toBeUndefined();
+    const lost = playAction(context(state, scripted([0.999, draw, 0.999]).rng));
+    const lostEvent = only(lost.events);
+    expect(lostEvent.type).toBe("carry");
+    expect(lostEvent.type === "carry" ? lostEvent.outcome : "").toBe("tackled");
+    expect(lostEvent.type === "carry" ? lostEvent.opponent : "").toBe(idOf("away", challenger));
+    expect(lost.play.possession).toBe("away");
+    expect(lost.play.slot).toBe(challenger);
+  });
+
+  it("clears the ball when the draw lands in the clearance band", () => {
+    const { state, options } = prepare(carrierBall, carrierSlot);
+    const index = indexOf(options, "clearance");
+    expect(options[index]?.weight).toBeGreaterThan(0);
+    const result = playAction(
+      context(
+        state,
+        scripted([
+          0.999,
+          drawFor(
+            options.map((o) => o.weight),
+            index,
+          ),
+        ]).rng,
+      ),
+    );
+    const event = only(result.events);
+    expect(event.type).toBe("clearance");
+    expect(event.actor).toBe(idOf("home", carrierSlot));
+    expect(event.team).toBe("home");
+  });
+
+  it("builds snapshots only when a presentation stream is given", () => {
+    const { state } = prepare(carrierBall, carrierSlot);
+    const without = playAction(context(state, scripted([0.999, 0.5, 0]).rng));
+    expect(only(without.events).snapshot).toBeUndefined();
+    const withPresentation = playAction(
+      context(state, scripted([0.999, 0.5, 0]).rng, { presentation: createRng(7) }),
+    );
+    expect(only(withPresentation.events).snapshot?.players).toHaveLength(22);
+  });
+
+  it("gives every action a duration of two to four seconds", () => {
+    const { state } = prepare(carrierBall, carrierSlot);
+    const result = playAction(context(state, scripted([0.999, 0.5, 0, 0]).rng));
+    expect(result.duration).toBeGreaterThanOrEqual(2);
+    expect(result.duration).toBeLessThanOrEqual(4);
   });
 });
