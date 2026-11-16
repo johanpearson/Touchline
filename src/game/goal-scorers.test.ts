@@ -9,7 +9,12 @@ const pass = (actor: string, time: number): ActionEvent =>
 
 describe("goalScorersOf", () => {
   it("lists the shooter of every goal in the order the goals were scored", () => {
-    const events = [shot("a", "goal", 10), pass("b", 14), shot("c", "goal", 20), shot("a", "goal", 90)];
+    const events = [
+      shot("a", "goal", 10),
+      pass("b", 14),
+      shot("c", "goal", 20),
+      shot("a", "goal", 90),
+    ];
 
     expect(goalScorersOf(events)).toEqual(["a", "c", "a"]);
   });

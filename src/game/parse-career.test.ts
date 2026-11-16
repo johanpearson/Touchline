@@ -416,3 +416,69 @@ describe("parseCareer squad plan and condition", () => {
     expect(parseCareer(roundTrip(played))).toEqual({ ok: true, career: played });
   });
 });
+
+describe("parseCareer scorers", () => {
+  const played = () => roundTrip(playMatchdays(aCareer(), 2)) as Career;
+  const withGoals = (c: Career) => {
+    const result = c.season.results.find((r) => r.homeGoals > 0 && r.awayGoals > 0);
+    if (!result) throw new Error("no result with goals from both sides");
+    return result;
+  };
+  const playersOf = (c: Career, clubId: string) =>
+    c.league.clubs.find((x) => x.id === clubId)?.playerIds ?? [];
+  const change = (edit: (c: Career, r: Career["season"]["results"][number]) => void): unknown => {
+    const copy = played();
+    edit(copy, withGoals(copy));
+    return copy;
+  };
+
+  it("keeps recorded scorers", () => {
+    const career = playMatchdays(aCareer(), 2);
+    const parsed = parseCareer(roundTrip(career));
+    expect(parsed.ok && parsed.career.season.results.some((r) => r.scorers?.length)).toBe(true);
+  });
+
+  it("accepts results without scorers (saves from before schema v6)", () => {
+    const raw = change((_c, r) => {
+      delete r.scorers;
+    });
+    expect(errorOf(raw)).toBeUndefined();
+  });
+
+  it.each([
+    ["not a list", "x"],
+    ["a list with a non-string", [1]],
+  ])("rejects scorers that are %s", (_name, value) => {
+    expect(
+      errorOf(
+        change((_c, r) => {
+          r.scorers = value as never;
+        }),
+      ),
+    ).toBe("invalid-season");
+  });
+
+  it("rejects a scorer that plays for neither club of the match", () => {
+    const raw = change((c, r) => {
+      const outsider = c.league.clubs.find((x) => x.id !== r.homeClubId && x.id !== r.awayClubId)
+        ?.playerIds[0] as string;
+      r.scorers = [outsider, ...(r.scorers ?? []).slice(1)];
+    });
+    expect(errorOf(raw)).toBe("invalid-season");
+  });
+
+  it("rejects scorers that do not add up to the goals of each club", () => {
+    const raw = change((c, r) => {
+      const home = playersOf(c, r.homeClubId)[0] as string;
+      r.scorers = Array.from({ length: r.homeGoals + r.awayGoals }, () => home);
+    });
+    expect(errorOf(raw)).toBe("invalid-season");
+  });
+
+  it("rejects a list that is shorter than the goals scored", () => {
+    const raw = change((_c, r) => {
+      r.scorers = (r.scorers ?? []).slice(1);
+    });
+    expect(errorOf(raw)).toBe("invalid-season");
+  });
+});

@@ -7,6 +7,7 @@ import {
   isNonNegativeInt,
   isRecord,
   isString,
+  isStringArray,
   parseList,
 } from "./json-guards";
 
@@ -29,7 +30,17 @@ const parseResult = (raw: unknown): Result | undefined => {
   if (!isNonNegativeInt(homeGoals) || !isNonNegativeInt(awayGoals)) return undefined;
   if (raw.engineVersion !== 1 && raw.engineVersion !== 2) return undefined;
   const { engineVersion } = raw;
-  return { fixtureId: raw.fixtureId, homeClubId, awayClubId, homeGoals, awayGoals, engineVersion };
+  const result: Result = {
+    fixtureId: raw.fixtureId,
+    homeClubId,
+    awayClubId,
+    homeGoals,
+    awayGoals,
+    engineVersion,
+  };
+  if (raw.scorers === undefined) return result;
+  if (!isStringArray(raw.scorers)) return undefined;
+  return { ...result, scorers: [...raw.scorers] };
 };
 
 const resultsMatchFixtures = (fixtures: Fixture[], results: Result[], current: number): boolean => {
