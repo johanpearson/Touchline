@@ -9,6 +9,7 @@ import {
   type LineupError,
   type Player,
   type PlayerPosition,
+  type SquadPlan,
 } from "../game";
 import type { MessageKey } from "../i18n";
 import { useI18n } from "./i18n-provider";
@@ -85,72 +86,58 @@ function Ratings({ career, players }: PlanProps) {
   );
 }
 
-/** The user's lineup, bench and tactics editor with the derived team ratings. */
-export function LineupEditor({ career }: { career: Career }) {
+type LineupEdit = { starters?: string[]; bench?: string[] };
+type PlanEditorProps = PlanProps & {
+  edit: (next: LineupEdit) => void;
+  byId: ReadonlyMap<string, Player>;
+};
+
+const replaceId = (list: readonly string[], from: string, to: string) =>
+  list.map((id) => (id === from ? to : id));
+
+/** Puts `to` in `from`'s place and, if `to` was in the list, `from` in `to`'s place. */
+const swapIds = (list: readonly string[], from: string, to: string) =>
+  list.map((id) => (id === from ? to : id === to ? from : id));
+
+/** Choosing a bench player as starter sends the starter to that bench slot. */
+const starterEdit = (plan: SquadPlan, from: string, to: string): LineupEdit =>
+  plan.bench.includes(to)
+    ? { starters: replaceId(plan.starters, from, to), bench: replaceId(plan.bench, to, from) }
+    : { starters: replaceId(plan.starters, from, to) };
+
+function FormationControls({ career, onPick }: { career: Career; onPick: (f: Formation) => void }) {
   const { t } = useI18n();
-  const { setLineup, setTactics, autoPickLineup } = useCareer();
-  const [error, setError] = useState<LineupError | null>(null);
-  const club = career.league.clubs.find((c) => c.id === career.userClubId);
-  const ids = new Set(club?.playerIds);
-  const players = career.league.players.filter((p) => ids.has(p.id));
-  const byId = new Map(players.map((p) => [p.id, p]));
+  const { formation } = career.squadPlan;
+  return (
+    <div className="squad-controls">
+      <label>
+        {t("squad.formation")}{" "}
+        <select
+          data-testid="formation"
+          value={formation}
+          onChange={(e) => onPick(e.target.value as Formation)}
+        >
+          {FORMATIONS.map((f) => (
+            <option key={f} value={f}>
+              {f}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type="button" data-testid="auto-pick" onClick={() => onPick(formation)}>
+        {t("squad.autoPick")}
+      </button>
+    </div>
+  );
+}
+
+function StarterLines({ career, players, byId, edit }: PlanEditorProps) {
+  const { t } = useI18n();
   const plan = career.squadPlan;
   const starterSet = new Set(plan.starters);
   const starters = orderedStarters(plan.starters, byId);
-  const benchKeepers = plan.bench.filter((id) => byId.get(id)?.position === "GK");
-
-  const edit = (next: { starters?: string[]; bench?: string[] }) => {
-    const result = setLineup({
-      formation: plan.formation,
-      starters: next.starters ?? plan.starters,
-      bench: next.bench ?? plan.bench,
-    });
-    setError(result.ok ? null : result.error);
-  };
-  const replace = (list: readonly string[], from: string, to: string) =>
-    list.map((id) => (id === from ? to : id));
-  /** Puts `to` in `from`'s place and, if `to` was in the list, `from` in `to`'s place. */
-  const swap = (list: readonly string[], from: string, to: string) =>
-    list.map((id) => (id === from ? to : id === to ? from : id));
-  const benchSet = new Set(plan.bench);
-
   return (
-    <section data-testid="lineup-editor" className="club-screen">
-      {error ? (
-        <p role="alert" data-testid="squad-error">
-          {t(ERROR_KEYS[error])}
-        </p>
-      ) : null}
-      <div className="squad-controls">
-        <label>
-          {t("squad.formation")}{" "}
-          <select
-            data-testid="formation"
-            value={plan.formation}
-            onChange={(e) => {
-              autoPickLineup(e.target.value as Formation);
-              setError(null);
-            }}
-          >
-            {FORMATIONS.map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          data-testid="auto-pick"
-          onClick={() => {
-            autoPickLineup(plan.formation);
-            setError(null);
-          }}
-        >
-          {t("squad.autoPick")}
-        </button>
-      </div>
-      <TacticsEditor tactics={plan.tactics} onChange={setTactics} />
+    <>
       <h3>{t("squad.starters")}</h3>
       {LINE_ORDER.map((line) => (
         <div key={line} className="squad-line">
@@ -168,20 +155,23 @@ export function LineupEditor({ career }: { career: Career }) {
                 position={line}
                 players={players}
                 used={starterSet}
-                onChange={(to) =>
-                  edit(
-                    benchSet.has(to)
-                      ? {
-                          starters: replace(plan.starters, id, to),
-                          bench: replace(plan.bench, to, id),
-                        }
-                      : { starters: replace(plan.starters, id, to) },
-                  )
-                }
+                onChange={(to) => edit(starterEdit(plan, id, to))}
               />
             ))}
         </div>
       ))}
+    </>
+  );
+}
+
+function BenchSlots({ career, players, byId, edit }: PlanEditorProps) {
+  const { t } = useI18n();
+  const plan = career.squadPlan;
+  const starterSet = new Set(plan.starters);
+  const isKeeper = (id: string) => byId.get(id)?.position === "GK";
+  const onlyKeeper = plan.bench.filter(isKeeper).length === 1;
+  return (
+    <>
       <h3>{t("squad.bench")}</h3>
       <div className="squad-line">
         {plan.bench.map((id, i) => (
@@ -192,13 +182,51 @@ export function LineupEditor({ career }: { career: Career }) {
             value={id}
             players={players}
             used={starterSet}
-            locked={(p) =>
-              byId.get(id)?.position === "GK" && benchKeepers.length === 1 && p.position !== "GK"
-            }
-            onChange={(to) => edit({ bench: swap(plan.bench, id, to) })}
+            locked={(p) => isKeeper(id) && onlyKeeper && p.position !== "GK"}
+            onChange={(to) => edit({ bench: swapIds(plan.bench, id, to) })}
           />
         ))}
       </div>
+    </>
+  );
+}
+
+/** The user's lineup, bench and tactics editor with the derived team ratings. */
+export function LineupEditor({ career }: { career: Career }) {
+  const { t } = useI18n();
+  const { setLineup, setTactics, autoPickLineup } = useCareer();
+  const [error, setError] = useState<LineupError | null>(null);
+  const club = career.league.clubs.find((c) => c.id === career.userClubId);
+  const ids = new Set(club?.playerIds);
+  const players = career.league.players.filter((p) => ids.has(p.id));
+  const byId = new Map(players.map((p) => [p.id, p]));
+  const plan = career.squadPlan;
+
+  const edit = (next: LineupEdit) => {
+    const result = setLineup({
+      formation: plan.formation,
+      starters: next.starters ?? plan.starters,
+      bench: next.bench ?? plan.bench,
+    });
+    setError(result.ok ? null : result.error);
+  };
+  const pickFormation = (formation: Formation) => {
+    autoPickLineup(formation);
+    setError(null);
+  };
+  const shared = { career, players, byId, edit };
+
+  return (
+    <section data-testid="lineup-editor" className="club-screen">
+      {error ? (
+        <p role="alert" data-testid="squad-error">
+          {t(ERROR_KEYS[error])}
+        </p>
+      ) : null}
+      <FormationControls career={career} onPick={pickFormation} />
+      <TacticsEditor tactics={plan.tactics} onChange={setTactics} />
+      <StarterLines {...shared} />
+      <BenchSlots {...shared} />
       <Ratings career={career} players={players} />
     </section>
   );
