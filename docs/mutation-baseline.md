@@ -141,4 +141,27 @@ The engine-wide nightly run used to be one job (limit 6 hours). The first schedu
 
 First sharded run (manual, 2026-11-16, run 43814465994): 8 shards of equal source size (20.6 kB each) took 3, 8, 10, 18, 22, 41 and 60 minutes, and the eighth (`create-action-match.ts`, `team-shape.ts`, `resolve-challenge.ts`, `shot-xg.ts`, `keep-actor-on-ball.ts`, `attribute-rating.ts`, `tactics.ts`) was still running after 75 minutes with a forecast of more than 3 hours, so it hit the 120 minute limit. File size is a poor guide to cost: a mutant re-runs every test that covers it, and the initial test run of shard 8 took 3 min 59 s (491 tests) against 1 min 17 s for shard 1 (312 tests), because the two hot files are covered by the slow whole-match tests. The shards are therefore balanced by estimated minutes (`scripts/mutation-weights.json`), the merge job prints the measured minutes of every shard with its files, and the estimates are refreshed from that. The mutated files are those of `stryker.config.json`, which leaves out the same test support as `stryker.action.config.json` (`arbitraries.ts`, `performance.bench.ts`, `measure-match-time.ts`, `balance-test-support.ts`, `*-builders.ts`), so scores are comparable with the action-engine baseline above but not with the first rows of this file, which also counted the builders.
 
-The first balanced run's wall time (longest shard) and merged score go here, from `status.json` (`metrics.durationMinutes`, `metrics.mutationScore`) and the `mutation-report` artifact.
+First balanced run (manual, 2026-11-16, run 43829018324, commit `0df9967`, 15 shards): **wall time 83.4 minutes** (longest shard) and a **merged score of 95.78%** (2,463 killed, 466 timed out, 125 survived, 4 without coverage; the 80% break threshold held). It finished inside the 2 hour limit but not inside the 1 hour target, because one shard was 4 times slower than the plan expected.
+
+| Shard | Measured | Files |
+| --- | --- | --- |
+| 9 | 83.4 min | `build-options.ts`, `segment-distance.ts`, `shape-constants.ts`, `to-zone-events.ts` |
+| 14 | 39.2 min | `resolve-pass.ts`, `restart-taker.ts`, `separate-players.ts` and four small files |
+| 15 | 22.0 min | `out-of-play.ts`, `resolve-shot.ts`, `mark-key-passes.ts` and four small files |
+| 4, 1, 2 | 20.9, 20.6, 19.9 min | `set-piece-shape.ts:187-392`, `create-action-match.ts` (then one file), `team-shape.ts:139-205` |
+| the other 8 | 1.9 to 17.6 min | the rest, including `play-action.ts` (shard 12, 12.5 min) |
+
+What the run showed:
+
+- `build-options.ts` was estimated at 14 minutes and took about 78. It has 185 mutants, 108 of them timeouts: a mutant that makes a loop or a weight run away is only killed when it hits Stryker's timeout, so timeouts cost far more than ordinary kills. File size and mutant count do not predict this.
+- `team-shape.ts` was estimated at 85 minutes and took about 28 in total, so it no longer needs to be cut into five ranges. `set-piece-shape.ts` was estimated at 40 and took about 26.
+- Setup per shard (checkout, install, the initial test run) is about 2 minutes, not the 5 the plan assumes, so the shard count is a little high and safe.
+- Sharding did not change the score: 95.78% is above the action-folder lower bound of 90.58% because the engine-wide run includes the slow tests (`fast-detail.test.ts`, `action-match.property.test.ts`) that the action config leaves out. Files under 90%: `pressure.ts` (78.57%) and `momentum-series.ts` (79.41%).
+
+Decisions for #209:
+
+- Timeout and break threshold stay as they are (120 minutes per shard, 80%): the longest shard is under the limit and the score is 15 points above the threshold.
+- `scripts/mutation-weights.json` is refreshed from the measured shard times (see its `comment`). With the new estimates the plan makes 11 shards of about 29 to 31 estimated minutes, with `build-options.ts` cut into four line ranges. The next nightly run should show a wall time of about 35 minutes; if the longest shard differs a lot from the plan, refresh the weights from the merge log again.
+- `fast-detail.test.ts` and `action-match.property.test.ts` are **not** added to `stryker.action.config.json`. The nightly run, which does include them, is now the reference score; the action config is the local, faster check and adding two slow suites would make it slower than the nightly job. Its scores stay a lower bound.
+- Possible later work: `build-options.ts` has many timeout mutants; a lower `timeoutFactor` for the shard config or a test that kills them earlier would shorten the run. Not done here because it changes what counts as killed.
+
