@@ -23,7 +23,10 @@ const startCareerAndSave = async (page: Page) => {
   await page.getByTestId("start-career").click();
   await page.getByTestId("quick-sim").click();
   await page.getByTestId("results-continue").click();
-  await page.getByTestId("nav-saves").click();
+  // By hash: the Saves link sits in the More sheet on a phone.
+  await page.evaluate(() => {
+    window.location.hash = "#/saves";
+  });
   await page.getByTestId("save-slot-1").click();
   await page
     .getByTestId("slot-info-slot-1")
