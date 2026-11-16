@@ -16,7 +16,7 @@ A football management game inspired by Football Manager, but smaller: fewer scre
 
 | Topic | Decision |
 |---|---|
-| Platform | Desktop browser first (1280 px and wider). Mobile is a late milestone. |
+| Platform | Desktop browser first (1280 px and wider), but every screen is also designed for tablet and phone widths in M5c (see "UI overhaul (M5c)"). |
 | Stack | TypeScript, Vite, React for screens, three.js for the match view. Chosen because coding agents work well with it. |
 | Hosting | GitHub Pages (free). Later packaged as a desktop app with Tauri. |
 | Backend | None. Single player, all logic runs in the client. |
@@ -55,6 +55,8 @@ A football management game inspired by Football Manager, but smaller: fewer scre
 | Save versioning for the engine | `schemaVersion` **4** added `Result.engineVersion` and `Career.engineVersion`; **5** (#167) moves every career to the action engine (`Career.engineVersion` 2) and leaves recorded results as they are. |
 | Recorded scorers (#216) | `Result.scorers` lists the player id of every goal in the order the goals were scored (both sides mixed), taken from the action log by `simulateFixture` and from the match screen for the user's match. This is `schemaVersion` **6**; the migration changes nothing (the field is optional), so results from older saves have no scorers and the season summary still draws their scorers with `pickGoalScorers`. `parseCareer` rejects scorers that do not add up to each club's goals or belong to another club. |
 | Names | Club, player and league names are generated data (proper nouns), not UI strings, so they are not translated. Pools are Swedish-flavoured fictional names. |
+| UI overhaul (M5c) | A full UI overhaul, direction **"Floodlight"**: dark-first, calm, rounded, Barlow Condensed and Barlow with tabular numbers. Three themes (Midnight default, Graphite, Light), selectable in settings and remembered; amber `#FFB547` is the app accent (primary actions, focus, highlights), club colours are identity only (crest, scoreboard, the user's table row, match visuals, never buttons); pitch and match visuals sit on a dark stage in every theme. Sidebar, icon rail and bottom tab bar by width, command palette on Ctrl/Cmd+K, a start flow (continue, load, league, club), compact tables that become cards on phones, and a match screen with a side panel that becomes tabs. WCAG 2.2 AA, 44 px touch targets, reduced motion, English and Swedish. Stack: React, Tailwind CSS v4 on CSS custom property tokens, Radix UI primitives in shadcn/ui-style owned components, lucide icons, Motion, Storybook, all free. Details, tokens, boards (`reference/ui/`) and the issue plan: `docs/design.md`, epic #246. Mobile and polish scope moved here from M8. |
+| Kits (M5c) | Every club has a home kit (primary body, secondary trim) and an away kit (secondary body, primary trim), derived from the club colours (no save change). If the two home kit body colours are closer than a tested threshold the away team wears its away kit; the match view, scoreboard and stats use the colours worn. |
 
 ## Out of scope (for now)
 

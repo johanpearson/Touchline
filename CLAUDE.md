@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidance for Claude Code sessions in this repository. Read this file, `docs/vision.md` and `docs/architecture.md` before starting any task. `AGENTS.md` describes how to check and improve Code Health with the CodeScene MCP server; follow it before committing and before opening a PR.
+Guidance for Claude Code sessions in this repository. Read this file, `docs/vision.md` and `docs/architecture.md` before starting any task; for UI work also read `docs/design.md` (binding design decisions) and the boards in `reference/ui/`. `AGENTS.md` describes how to check and improve Code Health with the CodeScene MCP server; follow it before committing and before opening a PR.
 
 ## Project
 
