@@ -1,37 +1,12 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  type Career,
-  completeMatchday,
-  createCareer,
-  generateLeague,
-  getNextFixture,
-  simulateFixture,
-} from "../game";
+import { type Career, getNextFixture } from "../game";
 import { createMemoryLocaleStore } from "../platform";
 import { CareerHubView } from "./career-hub-screen";
 import { installBrowserStubs } from "./components/overlay-test-setup";
 import { I18nProvider } from "./i18n-provider";
 import { LOW_FITNESS } from "./plan-rows";
-
-const SEED = 11;
-
-const careerAfter = (matchdays: number): Career => {
-  const league = generateLeague({ seed: SEED });
-  if (!league.ok) throw new Error("league");
-  const userClubId = league.league.clubs[2]?.id ?? "";
-  const created = createCareer({ seed: SEED, userClubId });
-  if (!created.ok) throw new Error("career");
-  let career = created.career;
-  for (let i = 0; i < matchdays; i++) {
-    const fixture = getNextFixture(career.season, userClubId);
-    if (!fixture) throw new Error("season over");
-    const next = completeMatchday(career, simulateFixture(career, fixture));
-    if (!next.ok) throw new Error(next.error);
-    career = next.career;
-  }
-  return career;
-};
+import { careerAfter, startersOf } from "./test-career";
 
 const renderHub = (career: Career, locale = "en", onQuickSim = vi.fn()) => {
   render(
@@ -163,7 +138,7 @@ describe("career hub", () => {
 
     it("lists tired players, three at most, with a count of the rest", () => {
       const career = careerAfter(0);
-      const ids = career.squadPlan.starters.slice(0, 5);
+      const ids = startersOf(career, 5);
       const tired: Career = {
         ...career,
         condition: {

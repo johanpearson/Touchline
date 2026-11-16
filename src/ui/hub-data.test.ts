@@ -1,14 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  type Career,
-  completeMatchday,
-  computeTable,
-  createCareer,
-  generateLeague,
-  getNextFixture,
-  type Result,
-  simulateFixture,
-} from "../game";
+import { type Career, computeTable, type Result } from "../game";
 import {
   clubComparison,
   goalsPerGame,
@@ -18,33 +9,26 @@ import {
   roundCount,
 } from "./hub-data";
 import { LOW_FITNESS } from "./plan-rows";
+import { careerAfter, startersOf } from "./test-career";
 
-const SEED = 11;
+type Score = [home: string, away: string, homeGoals: number, awayGoals: number];
 
-const careerAfter = (matchdays: number): Career => {
-  const league = generateLeague({ seed: SEED });
-  if (!league.ok) throw new Error("league");
-  const userClubId = league.league.clubs[0]?.id ?? "";
-  const created = createCareer({ seed: SEED, userClubId });
-  if (!created.ok) throw new Error("career");
-  let career = created.career;
-  for (let i = 0; i < matchdays; i++) {
-    const fixture = getNextFixture(career.season, userClubId);
-    if (!fixture) throw new Error("season over");
-    const next = completeMatchday(career, simulateFixture(career, fixture));
-    if (!next.ok) throw new Error(next.error);
-    career = next.career;
-  }
-  return career;
-};
-
-const result = (id: string, home: string, away: string, hg: number, ag: number): Result => ({
+/** A result from `[home, away, homeGoals, awayGoals]`. */
+const result = (id: string, [home, away, homeGoals, awayGoals]: Score): Result => ({
   fixtureId: id,
   homeClubId: home,
   awayClubId: away,
-  homeGoals: hg,
-  awayGoals: ag,
+  homeGoals,
+  awayGoals,
   engineVersion: 2,
+});
+
+const withFitness = (career: Career, fitness: Record<string, number>): Career => ({
+  ...career,
+  condition: {
+    ...career.condition,
+    ...Object.fromEntries(Object.entries(fitness).map(([id, f]) => [id, { fitness: f, form: 5 }])),
+  },
 });
 
 describe("roundCount", () => {
@@ -56,18 +40,18 @@ describe("roundCount", () => {
 describe("lastFivePoints", () => {
   it("adds 3 per win and 1 per draw over the last five matches only", () => {
     const results = [
-      result("1", "a", "b", 0, 3),
-      result("2", "a", "c", 1, 0),
-      result("3", "d", "a", 1, 1),
-      result("4", "a", "e", 2, 0),
-      result("5", "f", "a", 0, 1),
-      result("6", "a", "g", 0, 2),
+      result("1", ["a", "b", 0, 3]),
+      result("2", ["a", "c", 1, 0]),
+      result("3", ["d", "a", 1, 1]),
+      result("4", ["a", "e", 2, 0]),
+      result("5", ["f", "a", 0, 1]),
+      result("6", ["a", "g", 0, 2]),
     ];
     expect(lastFivePoints("a", results)).toEqual({ points: 10, played: 5 });
   });
 
   it("counts fewer than five matches early in the season", () => {
-    expect(lastFivePoints("a", [result("1", "a", "b", 1, 1)])).toEqual({ points: 1, played: 1 });
+    expect(lastFivePoints("a", [result("1", ["a", "b", 1, 1])])).toEqual({ points: 1, played: 1 });
   });
 
   it("is empty without results", () => {
@@ -77,7 +61,7 @@ describe("lastFivePoints", () => {
 
 describe("goalsPerGame", () => {
   it("is goals scored divided by matches played, home and away", () => {
-    const results = [result("1", "a", "b", 2, 0), result("2", "c", "a", 0, 1)];
+    const results = [result("1", ["a", "b", 2, 0]), result("2", ["c", "a", 0, 1])];
     expect(goalsPerGame("a", results)).toBe(1.5);
   });
 
@@ -146,17 +130,12 @@ describe("hubSquadStatus", () => {
 
   it("lists squad players below the low-fitness threshold, lowest first", () => {
     const career = careerAfter(0);
-    const [a, b, c] = career.squadPlan.starters;
-    if (!a || !b || !c) throw new Error("starters");
-    const tired: Career = {
-      ...career,
-      condition: {
-        ...career.condition,
-        [a]: { fitness: 40, form: 5 },
-        [b]: { fitness: LOW_FITNESS - 20, form: 5 },
-        [c]: { fitness: LOW_FITNESS, form: 5 },
-      },
-    };
+    const [a, b, c] = startersOf(career, 3);
+    const tired = withFitness(career, {
+      [a as string]: 40,
+      [b as string]: LOW_FITNESS - 20,
+      [c as string]: LOW_FITNESS,
+    });
     const status = hubSquadStatus(tired);
     expect(status.low.map((p) => p.player.id)).toEqual([b, a]);
     expect(status.low[0]?.fitness).toBe(30);
