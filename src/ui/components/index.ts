@@ -6,8 +6,18 @@ export { ConfirmDialog, type ConfirmDialogProps } from "./confirm-dialog";
 export { Dialog, type DialogProps } from "./dialog";
 export { Drawer, type DrawerProps } from "./drawer";
 export { EmptyState, type EmptyStateProps } from "./empty-state";
+export { Field, type FieldControlProps, type FieldProps } from "./field";
 export { IconButton, type IconButtonProps } from "./icon-button";
+export { Input, type InputProps } from "./input";
+export { ScrollArea, type ScrollAreaProps } from "./scroll-area";
+export {
+  SegmentedControl,
+  type SegmentedControlProps,
+  type SegmentedOption,
+} from "./segmented-control";
+export { Select, type SelectOption, type SelectProps } from "./select";
 export { Skeleton, type SkeletonProps } from "./skeleton";
+export { Tabs, TabsContent, TabsList, type TabsListProps, TabsTrigger } from "./tabs";
 export {
   type ToastInput,
   ToastProvider,

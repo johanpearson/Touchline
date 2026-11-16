@@ -140,6 +140,27 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+  # Component behaviour that jsdom cannot show (real scrollbars, focus scrolling) on a Storybook story in all three engines (#250).
+  # Not a required check; it adds browsers, so it stays a separate job from the single-browser app smoke test.
+  e2e-stories:
+    name: E2E stories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e:stories
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-stories-report
+          path: playwright-report/
+          retention-days: 7
+
   pr-title:
     name: PR title
     if: github.event_name == 'pull_request'
