@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createBrowserLocaleStore, createMemoryLocaleStore } from "./locale-store";
 
 describe("memory locale store", () => {
@@ -28,5 +28,29 @@ describe("browser locale store", () => {
     const store = createBrowserLocaleStore(broken);
     expect(() => store.save("sv")).not.toThrow();
     expect(store.load()).toBeNull();
+  });
+
+  describe("when reading window.localStorage itself throws", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    const blockLocalStorage = () => {
+      vi.spyOn(window, "localStorage", "get").mockImplementation(() => {
+        throw new DOMException("blocked", "SecurityError");
+      });
+    };
+
+    it("can be created without throwing", () => {
+      blockLocalStorage();
+      expect(() => createBrowserLocaleStore()).not.toThrow();
+    });
+
+    it("loads null and ignores saves", () => {
+      blockLocalStorage();
+      const store = createBrowserLocaleStore();
+      expect(store.load()).toBeNull();
+      expect(() => store.save("sv")).not.toThrow();
+    });
   });
 });
