@@ -165,3 +165,25 @@ Decisions for #209:
 - `fast-detail.test.ts` and `action-match.property.test.ts` are **not** added to `stryker.action.config.json`. The nightly run, which does include them, is now the reference score; the action config is the local, faster check and adding two slow suites would make it slower than the nightly job. Its scores stay a lower bound.
 - Possible later work: `build-options.ts` has many timeout mutants; a lower `timeoutFactor` for the shard config or a test that kills them earlier would shorten the run. Not done here because it changes what counts as killed.
 
+### Second balanced run (manual, after #245)
+
+Run 43843846345 (2026-11-16, commit `408af16`, 15 shards of the plan from #245): **wall time 119.5 minutes** and a **merged score of 97.04%**. It passed, but shard 3 ended 30 seconds before its 120 minute limit, so the plan is not safe yet and the 1 hour target is missed.
+
+| Shard | Measured | Files |
+| --- | --- | --- |
+| 3 | 119.5 min | `team-shape.ts` (whole file), `change-loop.ts`, `limit-snapshot-speed.ts`, `open-play-types.ts`, `pressure.ts` |
+| 9 | 53.1 min | `advance-loop.ts`, `limit-event-snapshot.ts`, `loop-state.ts`, `resolve-carry.ts`, `separate-players.ts`, three small files |
+| 10 | 42.9 min | `create-action-match.ts`, `player-ratings.ts`, `resolve-challenge.ts`, `resolve-clearance.ts`, `resolve-shot.ts` and three small files |
+| 11 | 34.1 min | `out-of-play.ts`, `shot-xg.ts`, `to-zone-events.ts` and four small files |
+| 8 | 31.4 min | `play-action.ts`, `restart-taker.ts` and six small files |
+| the other 7 | 6.8 to 20.2 min | the three other `build-options.ts` line ranges, `set-piece-shape.ts`, and small files |
+
+What the run showed:
+
+- The first balanced run showed `team-shape.ts` at about 28 minutes in four line ranges, so #245 lowered its estimate to 20 minutes and the plan stopped cutting it. As a single unit it took about 117 minutes. Cutting a file into line ranges is therefore much cheaper than the sum of its parts suggests, and the same may hold for other large files. The weight of `team-shape.ts` is back at 85 so that the plan cuts it into four ranges again (the weights file explains this in its `comment`).
+- `build-options.ts` in four line ranges took 7 to 20 minutes per range, about 35 minutes in total, against 78 minutes as a single unit in the first run. Ranges also cut the cost of its timeout mutants.
+- Shards 9, 10 and 11 took 1.4 to 2.1 times their estimate; their weights are refreshed from this run.
+- The merged score rose from 95.78% to 97.04%: `play-action.ts` 93.45% to 99.64%, `pressure.ts` 78.57% to 92.86%, and the `build-options.ts` ranges stayed at 100%. Files under 90% are `momentum-series.ts` (79.41%, unchanged).
+- Setup per shard is still about 2 minutes.
+
+Next steps: with the refreshed weights the plan makes 16 shards of about 28 to 33 estimated minutes (the maximum shard count). If the next run's longest shard is still far above that, the next lever is the line-range cut for more files (weight above 25), not a longer timeout; see #244 for the timeout mutants.
