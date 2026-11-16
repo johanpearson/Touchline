@@ -226,3 +226,7 @@ The engine plays individual players, so the ratings shown in the club, squad and
 ## Desktop later (Tauri)
 
 The Vite build runs unchanged in Tauri. Adding a Tauri file-system `SaveStore` and a release workflow (tauri-action) should be the only work needed. Keep all browser-specific code in `platform` to protect this.
+
+## Code coverage in CodeScene
+
+`.github/workflows/codescene-coverage.yml` runs `npm run test:coverage` on every push to `main` and on every pull request from this repository (fork PRs are skipped, they have no secrets; the PR head commit is checked out so the coverage matches the commit CodeScene analyzes) and uploads `coverage/lcov.info` with the CodeScene `cs-coverage` CLI (line, branch and function coverage in one upload). It needs the repository secret `CS_ACCESS_TOKEN` (a CodeScene API token) and, for a CodeScene on-prem installation, `CS_ONPREM_URL` (the instance base URL; the workflow strips a trailing slash). The GitHub runner must be able to reach that instance over HTTPS. The workflow is deliberately not a required check: a CodeScene outage must not block merges. The data shows up in CodeScene after its next analysis. Local coverage thresholds in `vitest.config.ts` are unchanged.

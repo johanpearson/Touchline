@@ -1,0 +1,44 @@
+name: CodeScene coverage
+
+# Uploads unit-test coverage to CodeScene for each push to main and for each pull request, so the data matches the commit
+# CodeScene analyzes. Not a required check: a CodeScene outage must not block merges. Fork PRs are skipped (no secrets).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: codescene-coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    name: Upload coverage to CodeScene
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      # On pull requests, check out the PR head commit (not the synthetic merge commit) so the coverage matches what CodeScene analyzes.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:coverage
+      - name: Install CodeScene Coverage CLI
+        run: curl https://downloads.codescene.io/enterprise/cli/install-cs-coverage-tool.sh | bash -s -- -y
+      - name: Upload coverage to CodeScene
+        run: |
+          # Drop a trailing slash so the CLI never builds a double-slash API path.
+          export CS_ONPREM_URL="${CS_ONPREM_URL%/}"
+          cs-coverage upload coverage/lcov.info
+        env:
+          CS_ACCESS_TOKEN: ${{ secrets.CS_ACCESS_TOKEN }}
+          # Only needed for a CodeScene on-prem installation; the secret is the instance base URL.
+          CS_ONPREM_URL: ${{ secrets.CS_ONPREM_URL }}
