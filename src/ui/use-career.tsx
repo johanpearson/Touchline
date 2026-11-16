@@ -3,7 +3,6 @@ import {
   type ReactNode,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -29,11 +28,8 @@ import {
 import { createEnvelope, parseSaveFile, saveFileName, serializeSave } from "../platform";
 import type { FileTransfer, SaveEnvelope, SaveStore } from "../shared";
 import { createAutosaveQueue, type SaveLineage } from "./autosave-queue";
-import {
-  type ContinueCandidate,
-  type ContinueError,
-  findContinueCandidate,
-} from "./find-continue-candidate";
+import { type ContinueInfo, continueInfoOf } from "./continue-info";
+import type { ContinueError } from "./find-continue-candidate";
 import {
   type ImportError,
   type ImportOffer,
@@ -48,11 +44,11 @@ import {
   type SlotActionResult,
   type SlotsResult,
 } from "./save-slots";
+import { useContinueCandidate } from "./use-continue-candidate";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-/** What the Continue button shows about the save it would load. */
-export type ContinueInfo = { clubName: string; season: number; matchday: number };
+export type { ContinueInfo };
 
 export type CareerStore = {
   /** The running career, or null before one has been started. */
@@ -83,6 +79,13 @@ export type CareerStore = {
   loadError: ContinueError | null;
   /** Hides the load error so the user can start a new career. */
   dismissLoadError: () => void;
+  /**
+   * Deletes the unusable save behind `loadError`, then looks again for a save to continue.
+   * Fails (and keeps the error) when the storage refuses or the damaged slot is not known.
+   */
+  discardLoadError: () => Promise<SlotActionResult>;
+  /** False until the first look for a save to continue has finished. */
+  startupChecked: boolean;
   /** Describes the autosave and the manual slots. Never throws. */
   listSlots: () => Promise<SlotsResult>;
   /** Writes the running career into a manual slot with a fresh save time. */
@@ -121,8 +124,6 @@ const fileNameFor = (career: Career): string =>
 
 const CareerContext = createContext<CareerStore | null>(null);
 
-type FoundCandidate = Extract<ContinueCandidate, { kind: "found" }>;
-
 export type CareerProviderProps = {
   children: ReactNode;
   saveStore: SaveStore;
@@ -141,8 +142,6 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
   const [career, setCareer] = useState<Career | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
-  const [candidate, setCandidate] = useState<FoundCandidate | null>(null);
-  const [loadError, setLoadError] = useState<ContinueError | null>(null);
   const [importOffer, setImportOffer] = useState<ImportOffer | null>(null);
   const [importError, setImportError] = useState<ImportError | null>(null);
   const [lastImportedSlot, setLastImportedSlot] = useState<string | null>(null);
@@ -152,17 +151,14 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
   const queue = useMemo(() => createAutosaveQueue(saveStore, () => nowRef.current()), [saveStore]);
   const pending = useRef(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    void findContinueCandidate(saveStore).then((found) => {
-      if (cancelled) return;
-      if (found.kind === "found") setCandidate(found);
-      if (found.kind === "error") setLoadError(found.error);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [saveStore]);
+  const {
+    candidate,
+    loadError,
+    checked: startupChecked,
+    clear: clearCandidate,
+    dismissError: dismissLoadError,
+    discardError: discardLoadError,
+  } = useContinueCandidate(saveStore);
 
   const persist = useCallback(
     (game: Career, lineage: SaveLineage) => {
@@ -185,13 +181,12 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
     (seed: number, userClubId: string): CareerError | null => {
       const result = createCareer({ seed, userClubId });
       if (!result.ok) return result.error;
-      setCandidate(null);
-      setLoadError(null);
+      clearCandidate();
       setCareer(result.career);
       persist(result.career, "new");
       return null;
     },
-    [persist],
+    [persist, clearCandidate],
   );
   const completeMatch = useCallback(
     (userResult: Result, report?: MatchReport): MatchdayError | null => {
@@ -238,11 +233,9 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
     if (!candidate) return false;
     queue.adopt(candidate.envelope);
     setCareer(candidate.career);
-    setCandidate(null);
+    clearCandidate();
     return true;
-  }, [candidate, queue]);
-  const dismissLoadError = useCallback(() => setLoadError(null), []);
-
+  }, [candidate, queue, clearCandidate]);
   const listSlots = useCallback(() => listSlotEntries(saveStore), [saveStore]);
   const saveToSlot = useCallback(
     async (id: string): Promise<SlotActionResult> => {
@@ -265,15 +258,14 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
         const read = await readSlot(saveStore, id);
         if (read.kind !== "found") return { ok: false, error: read.kind };
         queue.adopt(read.envelope);
-        setCandidate(null);
-        setLoadError(null);
+        clearCandidate();
         setCareer(read.career);
         return { ok: true };
       } catch {
         return { ok: false, error: "store" };
       }
     },
-    [saveStore, queue],
+    [saveStore, queue, clearCandidate],
   );
   const deleteSlot = useCallback(
     async (id: string): Promise<SlotActionResult> => {
@@ -361,16 +353,10 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
     [importOffer, saveStore],
   );
 
-  const continueInfo = useMemo<ContinueInfo | null>(() => {
-    if (!candidate) return null;
-    const { career: saved } = candidate;
-    const club = saved.league.clubs.find((c) => c.id === saved.userClubId);
-    return {
-      clubName: club?.name ?? saved.userClubId,
-      season: saved.season.number,
-      matchday: saved.season.currentMatchday,
-    };
-  }, [candidate]);
+  const continueInfo = useMemo<ContinueInfo | null>(
+    () => (candidate ? continueInfoOf(candidate.career, candidate.envelope) : null),
+    [candidate],
+  );
 
   const value = useMemo<CareerStore>(
     () => ({
@@ -388,6 +374,8 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       loadAutosave,
       loadError,
       dismissLoadError,
+      discardLoadError,
+      startupChecked,
       listSlots,
       saveToSlot,
       loadSlot,
@@ -416,6 +404,8 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       loadAutosave,
       loadError,
       dismissLoadError,
+      discardLoadError,
+      startupChecked,
       listSlots,
       saveToSlot,
       loadSlot,

@@ -1,9 +1,7 @@
 import { useMemo, useState } from "react";
 import { generateLeague } from "../game";
 import { clubRating } from "./club-rating";
-import { ContinuePanel } from "./continue-panel";
 import { useI18n } from "./i18n-provider";
-import { ImportControls } from "./import-controls";
 import { hrefFor } from "./routes";
 import { useCareer } from "./use-career";
 
@@ -39,15 +37,9 @@ export function NewCareerScreen({ initialSeed }: Props) {
   return (
     <section className="new-career" data-testid="new-career">
       <h2>{t("newCareer.title")}</h2>
-      <ContinuePanel />
-      <a data-testid="nav-saves" href={hrefFor({ name: "saves" })}>
-        {t("nav.saves")}
+      <a data-testid="new-back" href={hrefFor({ name: "home" })}>
+        {t("saves.back")}
       </a>
-      <ImportControls
-        onPicked={() => {
-          window.location.hash = hrefFor({ name: "saves" });
-        }}
-      />
       <p>{t("newCareer.intro")}</p>
       <label className="seed-field">
         {t("newCareer.seed")}{" "}

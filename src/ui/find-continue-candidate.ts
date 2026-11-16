@@ -8,7 +8,7 @@ export type ContinueError = "invalid-envelope" | "newer-version" | "invalid-care
 export type ContinueCandidate =
   | { kind: "none" }
   | { kind: "found"; slotId: string; envelope: SaveEnvelope; career: Career }
-  | { kind: "error"; error: ContinueError };
+  | { kind: "error"; error: ContinueError; slotId?: string };
 
 type Loaded = Extract<ContinueCandidate, { kind: "found" } | { kind: "error" }>;
 
@@ -20,10 +20,11 @@ async function loadSlot(store: SaveStore, slotId: string): Promise<Loaded | null
     return {
       kind: "error",
       error: read.error === "newer-version" ? "newer-version" : "invalid-envelope",
+      slotId,
     };
   }
   const parsed = parseCareer(read.save.game);
-  if (!parsed.ok) return { kind: "error", error: "invalid-career" };
+  if (!parsed.ok) return { kind: "error", error: "invalid-career", slotId };
   return { kind: "found", slotId, envelope: read.save, career: parsed.career };
 }
 

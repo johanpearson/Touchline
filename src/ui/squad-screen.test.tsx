@@ -46,6 +46,7 @@ const startCareer = () => {
   const league = generateLeague({ seed: SEED });
   const club = league.ok ? league.league.clubs[0] : undefined;
   if (!club) throw new Error("club");
+  goTo("#/new");
   fireEvent.click(screen.getByTestId(`club-option-${club.id}`));
   fireEvent.click(screen.getByTestId("start-career"));
   goTo("#/squad");
