@@ -23,12 +23,23 @@ export const BALANCE_GROUPS = {
   "tactics-defensive": [...tactics("defensive"), `${ENGINE}/action-tactics.balance.test.ts`],
 };
 
-/** The files of a group; throws RangeError for a name that is not a group. */
+/**
+ * The fast subset of the PR gate (everything except the 81 tactic combinations) as parallel jobs, so no job shares its CPUs between the
+ * heavy suites: in one job the formation suite hit the 600 s hook timeout next to the league and tactics suites (#292).
+ */
+export const FAST_GROUPS = {
+  "fast-formation": [`${GAME}/formation.balance.test.ts`],
+  "fast-league": [`${GAME}/league.balance.test.ts`, `${GAME}/season.balance.test.ts`],
+  "fast-engine": [`${ENGINE}/action.balance.test.ts`, `${ENGINE}/action-strength.balance.test.ts`, `${ENGINE}/action-tactics.balance.test.ts`],
+};
+
+/** The files of a full or fast group; throws RangeError for a name that is not a group. */
 export const filesOfGroup = (group) => {
-  if (!Object.hasOwn(BALANCE_GROUPS, group)) {
-    throw new RangeError(`Unknown balance group "${group}". Groups: ${Object.keys(BALANCE_GROUPS).join(", ")}`);
+  const groups = { ...BALANCE_GROUPS, ...FAST_GROUPS };
+  if (!Object.hasOwn(groups, group)) {
+    throw new RangeError(`Unknown balance group "${group}". Groups: ${Object.keys(groups).join(", ")}`);
   }
-  return BALANCE_GROUPS[group];
+  return groups[group];
 };
 
 /** The balance files in `files` that no group lists. */

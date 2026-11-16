@@ -72,11 +72,16 @@ jobs:
           echo "full=$full" >> "$GITHUB_OUTPUT"
           echo "Full balance suite: $full"
 
+  # The fast subset as parallel jobs (FAST_GROUPS in scripts/balance-groups.mjs, balance-groups.test.ts checks the list), #292.
   balance-fast:
-    name: Balance (fast)
+    name: Balance ${{ matrix.group }}
     needs: balance-scope
     if: needs.balance-scope.outputs.full != 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [fast-formation, fast-league, fast-engine]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -84,7 +89,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run test:balance:fast
+      - run: npm run test:balance:group -- ${{ matrix.group }}
 
   # Keep the group list in step with BALANCE_GROUPS in scripts/balance-groups.mjs (balance-groups.test.ts checks it).
   balance-shard:
