@@ -6,6 +6,7 @@ import {
   STORY_VIEWPORTS,
   type StoryEntry,
   snapshotName,
+  themesFor,
 } from "./visual-matrix";
 
 const STORYBOOK = "http://localhost:6008";
@@ -18,7 +19,11 @@ const stories = Object.values(index.entries).filter((entry) => entry.type === "s
 
 for (const story of stories) {
   test.describe(story.id, () => {
-    for (const combination of combinations(STORY_VIEWPORTS, localesFor(story.tags))) {
+    for (const combination of combinations(
+      STORY_VIEWPORTS,
+      localesFor(story.tags),
+      themesFor(story.tags),
+    )) {
       const { viewport, theme, locale } = combination;
       test(`${viewport.name} ${theme} ${locale}`, async ({ page }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });

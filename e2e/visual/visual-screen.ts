@@ -1,12 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import {
-  combinations,
-  LOCALES,
-  type Locale,
-  SCREEN_VIEWPORTS,
-  snapshotName,
-  type Theme,
-} from "./visual-matrix";
+import { type Locale, screenCombinations, snapshotName, type Theme } from "./visual-matrix";
 
 const APP = "http://localhost:4174/Touchline/";
 
@@ -19,6 +12,11 @@ export type VisualScreenState = {
   readonly state?: (page: Page) => Promise<void>;
   /** Selectors of non-deterministic areas (a WebGL canvas) that are masked in the screenshot. */
   readonly mask?: readonly string[];
+  /**
+   * Shoot the full matrix (3 widths x 3 themes x 2 languages) instead of the core one (desktop and phone,
+   * midnight, English). Reserve it for the few screens where theme, tablet or Swedish layout is a real risk.
+   */
+  readonly full?: boolean;
 };
 
 const FIXED_TIME = new Date("2030-01-15T12:00:00Z");
@@ -40,13 +38,19 @@ async function preparePage(page: Page, theme: Theme, locale: Locale) {
 }
 
 /**
- * Registers a screenshot test for every combination of 3 widths x 3 themes x 2 languages of one screen
- * state. Each screen issue calls it with its own key states; a PR that changes a screen updates the
- * baselines in the same PR.
+ * Registers a screenshot test for every combination of the core matrix (desktop and phone, midnight,
+ * English) of one screen state, or of the full matrix with `full: true`. Each screen issue calls it with
+ * its own key states; a PR that changes a screen updates the baselines in the same PR.
  */
-export function visualScreen({ name, route = "#/", state, mask = [] }: VisualScreenState): void {
+export function visualScreen({
+  name,
+  route = "#/",
+  state,
+  mask = [],
+  full = false,
+}: VisualScreenState): void {
   test.describe(`screen ${name}`, () => {
-    for (const combination of combinations(SCREEN_VIEWPORTS, LOCALES)) {
+    for (const combination of screenCombinations(full)) {
       const { viewport, theme, locale } = combination;
       test(`${viewport.name} ${theme} ${locale}`, async ({ page }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
