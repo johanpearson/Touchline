@@ -8,6 +8,7 @@ import careerV2 from "./fixtures/career-v2.json";
 import careerV3 from "./fixtures/career-v3.json";
 import careerV4 from "./fixtures/career-v4.json";
 import careerV5 from "./fixtures/career-v5.json";
+import careerV6 from "./fixtures/career-v6.json";
 import type { Migration } from "./migrations";
 import { CURRENT_SCHEMA_VERSION, MIGRATIONS } from "./schema";
 
@@ -216,9 +217,12 @@ describe("frozen schema v4 fixture", () => {
 
 /** `career-v5.json` is a frozen schema version 5 save (every career plays on the action engine): a career after two matchdays. Never regenerate it. */
 describe("frozen schema v5 fixture", () => {
-  it("loads unchanged and parses as an engine 2 career", () => {
+  it("migrates to the current version and parses as an engine 2 career", () => {
     const result = readEnvelope(careerV5);
-    expect(result).toEqual({ ok: true, save: careerV5 });
+    expect(result).toEqual({
+      ok: true,
+      save: { ...careerV5, schemaVersion: CURRENT_SCHEMA_VERSION },
+    });
     if (!result.ok) return;
     const parsed = parseCareer(result.save.game);
     expect(parsed.ok && parsed.career.engineVersion).toBe(2);
@@ -233,5 +237,39 @@ describe("frozen schema v5 fixture", () => {
     const fixture = getNextFixture(parsed.career.season, parsed.career.userClubId);
     if (!fixture) throw new Error("no fixture");
     expect(simulateFixture(parsed.career, fixture).engineVersion).toBe(2);
+  });
+});
+
+/** `career-v6.json` is a frozen schema version 6 save (results record their scorers): a career after two matchdays. Never regenerate it. */
+describe("frozen schema v6 fixture", () => {
+  it("loads unchanged and parses with a scorer for every goal", () => {
+    const result = readEnvelope(careerV6);
+    expect(result).toEqual({ ok: true, save: careerV6 });
+    if (!result.ok) return;
+    const parsed = parseCareer(result.save.game);
+    if (!parsed.ok) throw new Error(parsed.error);
+    const { results } = parsed.career.season;
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((r) => r.scorers?.length === r.homeGoals + r.awayGoals)).toBe(true);
+  });
+
+  it("is what a v5 save becomes: results from before v6 keep no scorers", () => {
+    const result = readEnvelope(careerV5);
+    if (!result.ok) throw new Error(result.error);
+    expect(result.save.schemaVersion).toBe(6);
+    const parsed = parseCareer(result.save.game);
+    if (!parsed.ok) throw new Error(parsed.error);
+    expect(parsed.career.season.results.every((r) => r.scorers === undefined)).toBe(true);
+  });
+
+  it("records scorers for the next matchday it plays", () => {
+    const result = readEnvelope(careerV6);
+    if (!result.ok) throw new Error(result.error);
+    const parsed = parseCareer(result.save.game);
+    if (!parsed.ok) throw new Error(parsed.error);
+    const fixture = getNextFixture(parsed.career.season, parsed.career.userClubId);
+    if (!fixture) throw new Error("no fixture");
+    const played = simulateFixture(parsed.career, fixture);
+    expect(played.scorers).toHaveLength(played.homeGoals + played.awayGoals);
   });
 });

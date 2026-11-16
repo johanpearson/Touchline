@@ -1,8 +1,8 @@
 import { type ActionEvent, createActionMatch } from "../engine";
 import type { Career } from "./career";
 import type { Result } from "./compute-table";
-import { goalScorersOf } from "./goal-scorers";
 import type { Fixture } from "./generate-fixtures";
+import { goalScorersOf } from "./goal-scorers";
 import { matchInputFor, matchSeed } from "./match-input-for";
 
 /** Far beyond any match length: `advanceTo` stops at half-time and at full time by itself. */

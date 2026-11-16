@@ -31,6 +31,10 @@ const pickWeighted = (players: readonly SquadPlayer[], roll: number): SquadPlaye
  * by position and finishing). Pure and deterministic: it uses its own RNG stream (forked from
  * `seed`) with exactly one draw per goal, so earlier goals keep their scorer when later goals are
  * added.
+ *
+ * Only used by `summariseSeason` for results saved before schema v6, which carry no recorded
+ * scorers (`Result.scorers`). Saves are kept for ever, so such results can still be loaded and
+ * this function stays until old saves are no longer supported.
  */
 export const pickGoalScorers = (
   scoringSides: readonly Side[],

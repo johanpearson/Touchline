@@ -78,4 +78,48 @@ describe("summariseSeason", () => {
       expect(attributed).toBe(row.goalsFor);
     }
   });
+
+  it("tallies the scorers recorded in the results", () => {
+    const career = finished();
+    const names = new Map(career.league.players.map((p) => [p.id, p.name]));
+    const expected = new Map<string, number>();
+    for (const result of career.season.results) {
+      for (const id of result.scorers ?? []) {
+        const club = career.league.clubs.find((c) => c.playerIds.includes(id))?.id;
+        const key = `${club}|${names.get(id)}`;
+        expected.set(key, (expected.get(key) ?? 0) + 1);
+      }
+    }
+
+    const all = summariseSeason(career, { topScorerCount: Number.POSITIVE_INFINITY });
+    if (!all.ok) throw new Error(all.error);
+
+    const actual = new Map(all.summary.topScorers.map((s) => [`${s.clubId}|${s.name}`, s.goals]));
+    expect(actual).toEqual(expected);
+  });
+
+  it("draws scorers only for results saved without them and still adds up to the goals", () => {
+    const career = finished();
+    const stripped: typeof career = {
+      ...career,
+      season: {
+        ...career.season,
+        results: career.season.results.map((r, i) => {
+          if (i % 2 === 0) return r;
+          const { scorers: _scorers, ...rest } = r;
+          return rest;
+        }),
+      },
+    };
+
+    const all = summariseSeason(stripped, { topScorerCount: Number.POSITIVE_INFINITY });
+    if (!all.ok) throw new Error(all.error);
+
+    for (const row of all.summary.finalTable) {
+      const attributed = all.summary.topScorers
+        .filter((s) => s.clubId === row.clubId)
+        .reduce((sum, s) => sum + s.goals, 0);
+      expect(attributed).toBe(row.goalsFor);
+    }
+  });
 });

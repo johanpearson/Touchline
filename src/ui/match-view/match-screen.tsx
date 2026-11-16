@@ -157,10 +157,15 @@ export function MatchScreen({
       onResume={startSecondHalf}
       onContinue={
         onContinue &&
-        (() => onContinue(
-          { score: state.score, scorers: goalScorersOf(events), engineVersion: input.engineVersion },
-          report,
-        ))
+        (() =>
+          onContinue(
+            {
+              score: state.score,
+              scorers: goalScorersOf(events),
+              engineVersion: input.engineVersion,
+            },
+            report,
+          ))
       }
     />
   );

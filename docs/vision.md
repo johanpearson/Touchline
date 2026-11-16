@@ -53,6 +53,7 @@ A football management game inspired by Football Manager, but smaller: fewer scre
 | Player stats and ratings | Stats gain pass completion, key passes, per-player shots and xG, and a 1 to 10 player rating computed from events. Ratings are derived data, never stored in saves. |
 | Engine version field | `MatchInput.engineVersion` (2) is kept for a future engine and every recorded result stores the version it was played with; results from the zone engine keep the label 1 and are never replayed. |
 | Save versioning for the engine | `schemaVersion` **4** added `Result.engineVersion` and `Career.engineVersion`; **5** (#167) moves every career to the action engine (`Career.engineVersion` 2) and leaves recorded results as they are. |
+| Recorded scorers (#216) | `Result.scorers` lists the player id of every goal in the order the goals were scored (both sides mixed), taken from the action log by `simulateFixture` and from the match screen for the user's match. This is `schemaVersion` **6**; the migration changes nothing (the field is optional), so results from older saves have no scorers and the season summary still draws their scorers with `pickGoalScorers`. `parseCareer` rejects scorers that do not add up to each club's goals or belong to another club. |
 | Names | Club, player and league names are generated data (proper nouns), not UI strings, so they are not translated. Pools are Swedish-flavoured fictional names. |
 
 ## Out of scope (for now)
