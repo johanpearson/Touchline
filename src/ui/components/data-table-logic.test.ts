@@ -62,31 +62,41 @@ describe("sortRows", () => {
   const tieBreak = (r: Row) => r.name;
 
   it.each([
-    ["numbers ascending", byPts, { direction: "asc" }, "id", ["d", "a", "c", "b"]],
-    ["numbers descending", byPts, { direction: "desc" }, "id", ["b", "a", "c", "d"]],
-    [
-      "text with Swedish collation",
-      byName,
-      { locale: "sv" },
-      "name",
-      ["Alba", "Zeta", "Åre", "Örebro"],
-    ],
-    [
-      "text with English collation",
-      byName,
-      { locale: "en" },
-      "name",
-      ["Alba", "Åre", "Örebro", "Zeta"],
-    ],
-    ["ties by key ascending", byPts, { direction: "asc", tieBreak }, "id", ["d", "c", "a", "b"]],
-    [
-      "ties by key when descending",
-      byPts,
-      { direction: "desc", tieBreak },
-      "id",
-      ["b", "c", "a", "d"],
-    ],
-  ] as const)("sorts %s", (_name, column, options, field, expected) => {
+    { name: "numbers ascending", column: byPts, options: {}, expected: ["d", "a", "c", "b"] },
+    {
+      name: "numbers descending",
+      column: byPts,
+      options: { direction: "desc" },
+      expected: ["b", "a", "c", "d"],
+    },
+    {
+      name: "text with Swedish collation",
+      column: byName,
+      options: { locale: "sv" },
+      expected: ["Alba", "Zeta", "Åre", "Örebro"],
+      field: "name",
+    },
+    {
+      name: "text with English collation",
+      column: byName,
+      options: { locale: "en" },
+      expected: ["Alba", "Åre", "Örebro", "Zeta"],
+      field: "name",
+    },
+    {
+      name: "ties by key ascending",
+      column: byPts,
+      options: { tieBreak },
+      expected: ["d", "c", "a", "b"],
+    },
+    {
+      name: "ties by key when descending",
+      column: byPts,
+      options: { direction: "desc", tieBreak },
+      expected: ["b", "c", "a", "d"],
+    },
+  ] as const)("sorts $name", ({ column, options, expected, ...rest }) => {
+    const field = "field" in rest ? rest.field : "id";
     expect(order(column, options, field)).toEqual(expected);
   });
 
