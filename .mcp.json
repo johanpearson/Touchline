@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "codescene": {
+      "command": "cs-mcp",
+      "env": {
+        "CS_ONPREM_URL": "${CS_ONPREM_URL}"
+      }
+    }
+  }
+}

@@ -230,3 +230,7 @@ The Vite build runs unchanged in Tauri. Adding a Tauri file-system `SaveStore` a
 ## Code coverage in CodeScene
 
 `.github/workflows/codescene-coverage.yml` runs `npm run test:coverage` on every push to `main` and on every pull request from this repository (fork PRs are skipped, they have no secrets; the PR head commit is checked out so the coverage matches the commit CodeScene analyzes) and uploads `coverage/lcov.info` with the CodeScene `cs-coverage` CLI (line, branch and function coverage in one upload). It needs the repository secret `CS_ACCESS_TOKEN` (a CodeScene API token) and, for a CodeScene on-prem installation, `CS_ONPREM_URL` (the instance base URL; the workflow strips a trailing slash). The GitHub runner must be able to reach that instance over HTTPS. The workflow is deliberately not a required check: a CodeScene outage must not block merges. The data shows up in CodeScene after its next analysis. Local coverage thresholds in `vitest.config.ts` are unchanged.
+
+## CodeScene MCP server for agents
+
+`.mcp.json` registers the CodeScene MCP server (`cs-mcp`) for Claude Code and other MCP clients. It reads the on-prem URL from the developer's environment variable `CS_ONPREM_URL` (nothing secret is committed). `AGENTS.md` tells agents to run the Code Health safeguards before committing and before opening a PR, and how to refactor with Code Health feedback. The server does not read or improve test coverage; coverage is uploaded to CodeScene by `.github/workflows/codescene-coverage.yml` and is shown in its dashboard.
