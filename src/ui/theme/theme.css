@@ -68,6 +68,29 @@
   }
 }
 
+/* A thin themed scrollbar for the rare vertical scroll area. */
+@utility scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--track) transparent;
+}
+
+/*
+ * Edge fade for a horizontal scroll area. The content is inset by the fade width (and so is the
+ * scroll padding), so an item at rest or a focused item is never under the mask.
+ */
+@utility scroll-fade {
+  --fade: 1.5rem;
+  padding-inline: var(--fade);
+  scroll-padding-inline: var(--fade);
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black var(--fade),
+    black calc(100% - var(--fade)),
+    transparent
+  );
+}
+
 @layer base {
   body {
     margin: 0;
