@@ -5,6 +5,7 @@ import { parseHistory } from "./parse-history";
 import { parseLeague } from "./parse-league";
 import { parseSeason } from "./parse-season";
 import { parseCondition, parseSquadPlan } from "./parse-squad-plan";
+import { scorersBelongToClubs } from "./scorers-belong-to-clubs";
 import { clubSquad } from "./squad-plan";
 
 export type CareerParseError =
@@ -34,6 +35,7 @@ const parseUnchecked = (raw: unknown): CareerParseResult => {
   if (!isString(raw.userClubId) || !clubIds.has(raw.userClubId)) return fail("unknown-user-club");
   const season = parseSeason(raw.season, clubIds);
   if (!season.ok) return fail(season.error);
+  if (!scorersBelongToClubs(season.season.results, league.clubs)) return fail("invalid-season");
   const history = parseHistory(raw.history, clubIds);
   if (!history) return fail("invalid-history");
   const userClub = league.clubs.find((c) => c.id === raw.userClubId);

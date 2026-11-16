@@ -42,6 +42,7 @@ export { generatePlayer } from "./generate-player";
 export type { SquadSpec } from "./generate-squad";
 export { generateSquad, SQUAD_SHAPE } from "./generate-squad";
 export { getNextFixture } from "./get-next-fixture";
+export { goalScorersOf } from "./goal-scorers";
 export { isSeasonComplete } from "./is-season-complete";
 export type { League } from "./league";
 export type { LineRating, LineRatings } from "./line-ratings";

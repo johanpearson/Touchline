@@ -9,7 +9,7 @@ import {
   playerRatings,
   type ZoneEvent,
 } from "../../engine";
-import type { MatchReport } from "../../game";
+import { goalScorersOf, type MatchReport } from "../../game";
 import { useI18n } from "../i18n-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
@@ -24,6 +24,8 @@ import { useMatchPlayback } from "./use-match-playback";
 /** What `onContinue` gets at full time. */
 export type FinishedMatch = {
   score: ActionMatchState["score"];
+  /** Player ids of the scorers in the order the goals were scored. */
+  scorers: string[];
   engineVersion: EngineVersion;
 };
 
@@ -155,7 +157,15 @@ export function MatchScreen({
       onResume={startSecondHalf}
       onContinue={
         onContinue &&
-        (() => onContinue({ score: state.score, engineVersion: input.engineVersion }, report))
+        (() =>
+          onContinue(
+            {
+              score: state.score,
+              scorers: goalScorersOf(events),
+              engineVersion: input.engineVersion,
+            },
+            report,
+          ))
       }
     />
   );
