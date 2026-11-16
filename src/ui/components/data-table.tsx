@@ -302,7 +302,7 @@ function HeaderContent<Row>({
       type="button"
       onClick={onSort}
       className={cn(
-        "inline-flex cursor-pointer items-center gap-1 rounded-sm uppercase hover:text-text",
+        "inline-flex cursor-pointer items-center gap-1 rounded-sm border-0 bg-transparent p-0 text-muted uppercase [font:inherit] [letter-spacing:inherit] hover:text-text",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
         density === "comfortable" && "min-h-11",
         active && "text-text",

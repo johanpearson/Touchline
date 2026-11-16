@@ -19,7 +19,7 @@ export function TabsTrigger({ className, ...rest }: ComponentProps<typeof RadixT
     <RadixTabs.Trigger
       {...rest}
       className={cn(
-        "min-h-11 cursor-pointer border-b-2 border-transparent px-4 text-[15px] font-semibold text-muted",
+        "min-h-11 cursor-pointer border-0 border-b-2 border-solid border-transparent bg-transparent px-4 text-[15px] font-semibold text-muted",
         "transition-colors duration-150 hover:text-text",
         "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus",
         "disabled:cursor-not-allowed disabled:opacity-50",

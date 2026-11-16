@@ -1,6 +1,6 @@
 import { TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
-import { ATTRIBUTE_NAMES } from "../game";
+import { ATTRIBUTE_NAMES, MAX_ATTRIBUTE } from "../game";
 import type { Translator } from "../i18n";
 import { Badge, type Column } from "./components";
 import { LOW_FITNESS, type PlanRow, type PlanStatus } from "./plan-rows";
@@ -105,17 +105,8 @@ export function squadColumns(ctx: SquadColumnContext): Column<PlanRow>[] {
       (row) => (
         <span className="inline-flex items-center justify-end gap-2">
           <span>{formatNumber(row.overall, 1)}</span>
-          <Gauge value={row.overall} colour={ctx.barColour} />
+          <Gauge value={(row.overall / MAX_ATTRIBUTE) * 100} colour={ctx.barColour} />
         </span>
-      ),
-    ),
-    ...ATTRIBUTE_NAMES.map((name) =>
-      numberColumn(
-        name,
-        t(`attr.${name}.short`),
-        3,
-        (row) => row.player[name],
-        (row) => formatNumber(row.player[name], 0),
       ),
     ),
     numberColumn(
@@ -147,5 +138,14 @@ export function squadColumns(ctx: SquadColumnContext): Column<PlanRow>[] {
         </Badge>
       ),
     },
+    ...ATTRIBUTE_NAMES.map((name) =>
+      numberColumn(
+        name,
+        t(`attr.${name}.short`),
+        3,
+        (row) => row.player[name],
+        (row) => formatNumber(row.player[name], 0),
+      ),
+    ),
   ];
 }
