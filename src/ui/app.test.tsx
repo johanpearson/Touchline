@@ -132,28 +132,28 @@ describe("new career, club step", () => {
   beforeEach(() => goTo("#/"));
   afterEach(cleanup);
 
-  it("lists the 14 clubs sorted by rating, highest first", () => {
+  it("lists the 14 clubs sorted by rating, highest first, in the club strip", () => {
     renderApp();
     toClubStep();
     const league = leagueFor(11);
-    const options = screen.getAllByTestId(/^club-option-/);
+    const options = screen.getAllByTestId(/^club-option-(?!name)/);
     expect(options).toHaveLength(14);
     const expected = league.clubs
       .map((club) => ({ club, rating: clubRating(club, league.players) }))
       .sort((a, b) => b.rating - a.rating || a.club.name.localeCompare(b.club.name))
       .map(({ club }) => club.name);
-    const shown = options.map((o) => within(o).getByTestId("club-name").textContent);
+    const shown = options.map((o) => within(o).getByTestId("club-option-name").textContent);
     expect(shown).toEqual(expected);
   });
 
-  it("shows each club's rating", () => {
+  it("shows the selected club's rating on the card", () => {
     renderApp();
     toClubStep();
     const league = leagueFor(11);
     const club = league.clubs[0];
     if (!club) throw new Error("no club");
-    const option = screen.getByTestId(`club-option-${club.id}`);
-    expect(within(option).getByTestId("club-rating").textContent).toBe(
+    fireEvent.click(screen.getByTestId(`club-option-${club.id}`));
+    expect(screen.getByTestId("club-rating").textContent).toBe(
       String(clubRating(club, league.players)),
     );
   });
@@ -167,38 +167,38 @@ describe("new career, club step", () => {
   it("regenerates the league when the seed changes", () => {
     renderApp();
     toClubStep();
-    const before = screen.getAllByTestId("club-name").map((n) => n.textContent);
+    const before = screen.getAllByTestId("club-option-name").map((n) => n.textContent);
     fireEvent.change(screen.getByTestId("seed-input"), { target: { value: "99" } });
-    const after = screen.getAllByTestId("club-name").map((n) => n.textContent);
+    const after = screen.getAllByTestId("club-option-name").map((n) => n.textContent);
     expect(after).not.toEqual(before);
     fireEvent.change(screen.getByTestId("seed-input"), { target: { value: "11" } });
-    expect(screen.getAllByTestId("club-name").map((n) => n.textContent)).toEqual(before);
+    expect(screen.getAllByTestId("club-option-name").map((n) => n.textContent)).toEqual(before);
   });
 
   it("ignores a seed that is not a whole number", () => {
     renderApp();
     toClubStep();
-    const before = screen.getAllByTestId("club-name").map((n) => n.textContent);
+    const before = screen.getAllByTestId("club-option-name").map((n) => n.textContent);
     fireEvent.change(screen.getByTestId("seed-input"), { target: { value: "1.5" } });
-    expect(screen.getAllByTestId("club-name").map((n) => n.textContent)).toEqual(before);
+    expect(screen.getAllByTestId("club-option-name").map((n) => n.textContent)).toEqual(before);
   });
 
-  it("cannot start before a club is chosen", () => {
+  it("can start at once: the card shows the first club and the button names it", () => {
     renderApp();
     toClubStep();
-    expect((screen.getByTestId("start-career") as HTMLButtonElement).disabled).toBe(true);
+    const button = screen.getByTestId("start-career") as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    expect(button.textContent).toBe(`Manage ${screen.getByTestId("club-name").textContent}`);
   });
 
-  it("clears the chosen club when it is not in the regenerated league", () => {
+  it("keeps the selection by position when the seed regenerates the league", () => {
     renderApp();
     toClubStep();
-    const first = leagueFor(11).clubs[0];
-    if (!first) throw new Error("no club");
-    fireEvent.click(screen.getByTestId(`club-option-${first.id}`));
+    fireEvent.click(screen.getAllByTestId(/^club-option-(?!name)/)[4] as HTMLElement);
     fireEvent.change(screen.getByTestId("seed-input"), { target: { value: "99" } });
-    expect((screen.getByTestId("start-career") as HTMLButtonElement).disabled).toBe(
-      !leagueFor(99).clubs.some((c) => c.id === first.id),
-    );
+    const options = screen.getAllByTestId(/^club-option-(?!name)/);
+    expect(options[4]?.getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("club-position").textContent).toBe("5 of 14, sorted by rating");
   });
 
   it("starts the career and shows the hub for the chosen club", () => {

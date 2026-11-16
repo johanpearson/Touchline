@@ -5,15 +5,41 @@ const APP = "http://localhost:4174/Touchline/";
 
 // Key states of screens. Each screen issue adds its own states here (#253 registers the first one).
 
-// The new-career wizard: step 1 (#257) and step 2, the club list that the club-picker issue replaces.
+// The new-career wizard: step 1 (#257) and step 2, the club picker (#258).
 visualScreen({ name: "new-career-league", route: "#/new" });
 
+const openClubStep = async (page: Page) => {
+  await page.getByTestId("choose-club").click();
+  await page.getByTestId("club-card").waitFor();
+};
+
+// Language-neutral: pick strip options by position or by the longest name.
 visualScreen({
-  name: "new-career",
+  name: "new-career-club-easy",
+  route: "#/new",
+  state: openClubStep,
+});
+
+visualScreen({
+  name: "new-career-club-very-hard",
   route: "#/new",
   state: async (page) => {
-    await page.getByTestId("choose-club").click();
-    await page.getByTestId("new-career").waitFor();
+    await openClubStep(page);
+    await page.getByRole("option").last().click();
+  },
+});
+
+visualScreen({
+  name: "new-career-club-long-name",
+  route: "#/new",
+  state: async (page) => {
+    await openClubStep(page);
+    const names = await page.getByTestId("club-option-name").allTextContents();
+    const longest = names.reduce(
+      (best, name, i) => (name.length > (names[best]?.length ?? 0) ? i : best),
+      0,
+    );
+    await page.getByRole("option").nth(longest).click();
   },
 });
 

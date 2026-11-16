@@ -10,6 +10,7 @@ export type {
   Season,
 } from "./career";
 export type { Club } from "./club";
+export { clubStarPlayer } from "./club-star-player";
 export { completeMatchday } from "./complete-matchday";
 export type { Outcome, Result, TableError, TableResult, TableRow } from "./compute-table";
 export { computeForm, computeTable } from "./compute-table";
