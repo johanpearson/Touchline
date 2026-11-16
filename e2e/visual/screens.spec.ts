@@ -28,10 +28,8 @@ const startCareerAndSave = async (page: Page) => {
     window.location.hash = "#/saves";
   });
   await page.getByTestId("save-slot-1").click();
-  await page
-    .getByTestId("slot-info-slot-1")
-    .getByText(/season/i)
-    .waitFor();
+  // Language-neutral: a filled slot offers Load.
+  await page.getByTestId("load-slot-1").waitFor();
 };
 
 visualScreen({
