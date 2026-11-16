@@ -58,26 +58,78 @@ function SavedRow({ entry, nowIso, busy, onLoad }: RowProps) {
   );
 }
 
-/** The saved careers (autosave and manual slots) with Load, and the way to import a save file. */
-export function SavedCareersPanel({ id, nowIso }: { id: string; nowIso: string }) {
-  const { t } = useI18n();
-  const { listSlots, loadSlot } = useCareer();
-  const [slots, setSlots] = useState<SlotEntry[] | null>(null);
-  const [listFailed, setListFailed] = useState(false);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [failure, setFailure] = useState<SlotError | null>(null);
+type SavedListProps = {
+  slots: SlotEntry[] | null;
+  failed: boolean;
+  nowIso: string;
+  busy: string | null;
+  onLoad: (id: string) => void;
+};
 
+/** The states of the list: loading, unreadable, empty, or the saved rows. */
+function SavedList({ slots, failed, nowIso, busy, onLoad }: SavedListProps) {
+  const { t } = useI18n();
+  if (failed) {
+    return (
+      <p className="m-0 text-bad" role="alert" data-testid="saved-list-error">
+        {t("saves.listError")}
+      </p>
+    );
+  }
+  if (slots === null) {
+    return (
+      <div role="status" aria-label={t("start.load.loading")} className="flex flex-col gap-2">
+        <Skeleton className="h-11" />
+        <Skeleton className="h-11" />
+      </div>
+    );
+  }
+  const rows = slots.filter((entry) => entry.state.kind !== "empty");
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        data-testid="saved-empty"
+        className="px-2 py-6"
+        title={t("start.load.emptyTitle")}
+        text={t("start.load.emptyText")}
+      />
+    );
+  }
+  return (
+    <ul className="m-0 flex list-none flex-col gap-1 p-0">
+      {rows.map((entry) => (
+        <SavedRow key={entry.id} entry={entry} nowIso={nowIso} busy={busy} onLoad={onLoad} />
+      ))}
+    </ul>
+  );
+}
+
+/** Reads the slots once; `failed` when the storage cannot describe them. */
+function useSavedSlots() {
+  const { listSlots } = useCareer();
+  const [slots, setSlots] = useState<SlotEntry[] | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let cancelled = false;
     void listSlots().then((result) => {
       if (cancelled) return;
       if (result.ok) setSlots(result.slots);
-      else setListFailed(true);
+      else setFailed(true);
     });
     return () => {
       cancelled = true;
     };
   }, [listSlots]);
+  return { slots, failed };
+}
+
+/** The saved careers (autosave and manual slots) with Load, and the way to import a save file. */
+export function SavedCareersPanel({ id, nowIso }: { id: string; nowIso: string }) {
+  const { t } = useI18n();
+  const { loadSlot } = useCareer();
+  const { slots, failed } = useSavedSlots();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [failure, setFailure] = useState<SlotError | null>(null);
 
   const load = useCallback(
     async (slotId: string) => {
@@ -94,7 +146,6 @@ export function SavedCareersPanel({ id, nowIso }: { id: string; nowIso: string }
     [loadSlot],
   );
 
-  const rows = slots?.filter((entry) => entry.state.kind !== "empty") ?? [];
   return (
     <section
       id={id}
@@ -106,32 +157,7 @@ export function SavedCareersPanel({ id, nowIso }: { id: string; nowIso: string }
         <h2 className="m-0 font-heading text-[22px] font-semibold">{t("start.load.title")}</h2>
         <span className="text-[13px] text-muted">{t("start.load.hint")}</span>
       </div>
-      {slots === null && !listFailed ? (
-        <div role="status" aria-label={t("start.load.loading")} className="flex flex-col gap-2">
-          <Skeleton className="h-11" />
-          <Skeleton className="h-11" />
-        </div>
-      ) : null}
-      {listFailed ? (
-        <p className="m-0 text-bad" role="alert" data-testid="saved-list-error">
-          {t("saves.listError")}
-        </p>
-      ) : null}
-      {slots !== null && rows.length === 0 ? (
-        <EmptyState
-          data-testid="saved-empty"
-          className="px-2 py-6"
-          title={t("start.load.emptyTitle")}
-          text={t("start.load.emptyText")}
-        />
-      ) : null}
-      {rows.length > 0 ? (
-        <ul className="m-0 flex list-none flex-col gap-1 p-0">
-          {rows.map((entry) => (
-            <SavedRow key={entry.id} entry={entry} nowIso={nowIso} busy={busy} onLoad={load} />
-          ))}
-        </ul>
-      ) : null}
+      <SavedList slots={slots} failed={failed} nowIso={nowIso} busy={busy} onLoad={load} />
       {failure ? (
         <p className="m-0 text-bad" role="alert" data-testid="load-failure">
           {t(SLOT_ERROR_KEYS[failure])}

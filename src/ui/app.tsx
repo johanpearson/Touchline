@@ -1,3 +1,4 @@
+import type { Career } from "../game";
 import { createMemoryThemeStore } from "../platform";
 import type { FileTransfer, LocaleStore, SaveStore, ThemeStore } from "../shared";
 import { CareerHubScreen } from "./career-hub-screen";
@@ -29,18 +30,10 @@ type RendererProp = Pick<MatchScreenProps, "createRenderer" | "tickMs">;
 const BARE_ROUTES: readonly Route["name"][] = ["new", "saves", "not-found"];
 
 type ScreenProps = RendererProp & { initialSeed: number };
+type CareerScreenProps = RendererProp & { career: Career; route: Route };
 
-function Screen({ createRenderer, tickMs, initialSeed }: ScreenProps) {
-  const route = useRoute();
-  const { career } = useCareer();
-  if (route.name === "not-found") return <NotFoundScreen />;
-  if (route.name === "saves") return <SavesScreen />;
-  if (!career) return <NewCareerScreen initialSeed={initialSeed} />;
+function CareerScreen({ career, route, createRenderer, tickMs }: CareerScreenProps) {
   switch (route.name) {
-    case "new":
-      return <Redirect to={{ name: "home" }} />;
-    case "home":
-      return <CareerHubScreen />;
     case "league":
       return <LeagueScreen />;
     case "club":
@@ -53,7 +46,22 @@ function Screen({ createRenderer, tickMs, initialSeed }: ScreenProps) {
       return <MatchdayResultsScreen />;
     case "season-end":
       return <SeasonEndScreen />;
+    case "new":
+      return <Redirect to={{ name: "home" }} />;
+    default:
+      return <CareerHubScreen />;
   }
+}
+
+function Screen({ createRenderer, tickMs, initialSeed }: ScreenProps) {
+  const route = useRoute();
+  const { career } = useCareer();
+  if (route.name === "not-found") return <NotFoundScreen />;
+  if (route.name === "saves") return <SavesScreen />;
+  if (!career) return <NewCareerScreen initialSeed={initialSeed} />;
+  return (
+    <CareerScreen career={career} route={route} createRenderer={createRenderer} tickMs={tickMs} />
+  );
 }
 
 type ShellProps = ScreenProps & { storageAvailable: boolean; now: () => string };

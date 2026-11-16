@@ -5,7 +5,7 @@ import { useI18n } from "../i18n-provider";
 import { hrefFor } from "../routes";
 import { StorageWarning } from "../storage-warning";
 import { useCareer } from "../use-career";
-import { ContinueCard, ContinueCardSkeleton, LoadErrorCard } from "./continue-card";
+import { ContinueSlot } from "./continue-slot";
 import { HeroArtwork } from "./hero-artwork";
 import { SavedCareersPanel } from "./saved-careers-panel";
 import { StartHeader } from "./start-header";
@@ -25,7 +25,7 @@ type StartScreenProps = {
  */
 export function StartScreen({ now, storageAvailable }: StartScreenProps) {
   const { t } = useI18n();
-  const { continueInfo, loadError, startupChecked } = useCareer();
+  const { continueInfo, startupChecked } = useCareer();
   const [nowIso] = useState(now);
   // Open by default when there is nothing to continue; decided once, after the first look for a save.
   const [loadOpen, setLoadOpen] = useState<boolean | null>(null);
@@ -48,11 +48,7 @@ export function StartScreen({ now, storageAvailable }: StartScreenProps) {
           <p className="m-0 max-w-[40ch] text-[17px] leading-normal text-muted">
             {t("start.hero.text")}
           </p>
-          {!startupChecked ? <ContinueCardSkeleton /> : null}
-          {startupChecked && loadError ? <LoadErrorCard error={loadError} /> : null}
-          {startupChecked && !loadError && continueInfo ? (
-            <ContinueCard info={continueInfo} nowIso={nowIso} />
-          ) : null}
+          <ContinueSlot nowIso={nowIso} />
           <div className="flex flex-wrap gap-2.5">
             <Button asChild variant="primary" size="lg">
               <a
