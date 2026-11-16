@@ -4,7 +4,7 @@ import { Button } from "./button";
 
 const meta = {
   title: "Components/Button",
-  tags: ["i18n-wide"],
+  tags: ["i18n-wide", "theme-wide"],
   component: Button,
   args: { children: "Play next match", variant: "primary", size: "md" },
   argTypes: {

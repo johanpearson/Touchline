@@ -4,7 +4,7 @@ import { fieldControlStyles } from "./field-styles";
 
 const meta = {
   title: "Components/Field",
-  tags: ["i18n-wide"],
+  tags: ["i18n-wide", "theme-wide"],
   component: Field,
   args: { label: "Club name", children: () => null },
 } satisfies Meta<typeof Field>;

@@ -204,7 +204,7 @@ Epic #246, milestone "M5c UI overhaul". One session and one PR each, in dependen
 | #271 | Motion and feedback pass | all screens, #251 |
 | #272 | Accessibility audit with axe | all screens, #253, #271 |
 
-Every screen issue names its board (if any) and has acceptance criteria for desktop, tablet and phone, all three themes, keyboard use, en and sv, and updated visual snapshots.
+Every screen issue names its board (if any) and has acceptance criteria for desktop, tablet and phone, all three themes, keyboard use, en and sv, and its key states registered in `e2e/visual/screens.spec.ts` (baselines update themselves after merge).
 
 ## Risks
 

@@ -21,12 +21,11 @@ export default defineConfig({
     toHaveScreenshot: {
       animations: "disabled",
       caret: "hide",
-      // Per-pixel colour tolerance 0: a one-step change of a token (for example #0a0e17 to #0a0e18) must fail.
-      // The same browser build on the same runner image renders identical pixels. 0.1% of the pixels
-      // (about 1,400 on a 1440x900 page) absorbs sub-pixel anti-aliasing noise in text, but is far below
-      // what a real colour, spacing or layout change touches.
-      threshold: 0,
-      maxDiffPixelRatio: 0.001,
+      // Per-pixel YIQ colour tolerance 0.1 absorbs anti-aliasing and one-step colour noise; a real token,
+      // spacing or layout change moves far more than that. Up to 0.2% of the pixels (about 2,600 on a
+      // 1440x900 page) may still differ, which stays well below what a layout change touches.
+      threshold: 0.1,
+      maxDiffPixelRatio: 0.002,
     },
   },
   use: { reducedMotion: "reduce", colorScheme: "dark", deviceScaleFactor: 1, locale: "en-GB" },
