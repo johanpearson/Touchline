@@ -136,3 +136,47 @@ visualScreen({
     await page.getByRole("listbox").waitFor();
   },
 });
+
+// The squad table (#260): default, filtered to defenders, no search result, and comfortable density.
+const openSquadTable = async (page: Page) => {
+  await startCareerAtHub(page);
+  // By hash: the Squad link sits in the tab bar or the rail depending on width.
+  await page.evaluate(() => {
+    window.location.hash = "#/squad";
+  });
+  await page.getByTestId("squad-screen").waitFor();
+  await page.getByTestId("squad-table").waitFor();
+};
+
+visualScreen({ name: "squad-default", route: "#/new", state: openSquadTable });
+
+visualScreen({
+  name: "squad-filtered",
+  route: "#/new",
+  state: async (page) => {
+    await openSquadTable(page);
+    await page.getByTestId("squad-filter-DEF").click();
+    await page.getByTestId("squad-table").waitFor();
+  },
+});
+
+visualScreen({
+  name: "squad-no-results",
+  route: "#/new",
+  state: async (page) => {
+    await openSquadTable(page);
+    await page.getByTestId("squad-search").fill("zzzzqq");
+    await page.getByTestId("squad-empty").waitFor();
+  },
+});
+
+visualScreen({
+  name: "squad-comfortable",
+  route: "#/new",
+  state: async (page) => {
+    // The density option has no settings screen yet (#270), so set what the store reads.
+    await page.evaluate(() => window.localStorage.setItem("touchline.density", "comfortable"));
+    await page.reload();
+    await openSquadTable(page);
+  },
+});

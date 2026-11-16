@@ -1,315 +1,167 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import type { Career } from "../game";
+import type { SortState } from "./components";
 import {
-  type Career,
-  deriveLineRatings,
-  FORMATION_SHAPE,
-  FORMATIONS,
-  type Formation,
-  LINE_RATINGS,
-  type LineupError,
-  type Player,
-  type PlayerPosition,
-} from "../game";
-import type { MessageKey } from "../i18n";
+  Button,
+  DataTable,
+  EmptyState,
+  Input,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "./components";
 import { useI18n } from "./i18n-provider";
-import {
-  DEFAULT_PLAN_SORT,
-  firstDirection,
-  LOW_FITNESS,
-  PLAN_SORT_COLUMNS,
-  type PlanRow,
-  type PlanSort,
-  type PlanSortColumn,
-  planRows,
-} from "./plan-rows";
-import { TacticsEditor } from "./tactics-editor";
-import { useCareer } from "./use-career";
+import { LineupEditor } from "./lineup-editor";
+import { DEFAULT_PLAN_SORT, planRows } from "./plan-rows";
+import { type SquadColumnContext, squadColumns, squadTieBreak } from "./squad-columns";
+import { averageAge, filterRows, POSITION_FILTERS, type PositionFilter } from "./squad-filter";
+import { loadSquadSort, saveSquadSort } from "./squad-sort-session";
+import { useDensity } from "./theme/density-provider";
 
-const LINE_ORDER: readonly PlayerPosition[] = ["GK", "DEF", "MID", "FWD"];
-
-const ERROR_KEYS: Record<LineupError, MessageKey> = {
-  "wrong-formation-shape": "squad.error.wrongFormationShape",
-  "wrong-bench-size": "squad.error.wrongBenchSize",
-  "bench-without-keeper": "squad.error.benchWithoutKeeper",
-  "duplicate-player": "squad.error.duplicatePlayer",
-  "unknown-player": "squad.error.unknownPlayer",
+const FIRST_SORT: SortState = {
+  id: DEFAULT_PLAN_SORT.column,
+  direction: DEFAULT_PLAN_SORT.direction,
 };
 
-type PlanProps = { career: Career; players: readonly Player[] };
+const GROUP_ORDER = ["GK", "DEF", "MID", "FWD"] as const;
 
-/** Starters ordered GK, DEF, MID, FWD (stable within a line), keeping the plan's order otherwise. */
-const orderedStarters = (ids: readonly string[], byId: ReadonlyMap<string, Player>): string[] =>
-  LINE_ORDER.flatMap((line) => ids.filter((id) => byId.get(id)?.position === line));
-
-function PlayerSelect(props: {
-  testId: string;
-  label: string;
-  value: string;
-  position?: PlayerPosition;
-  players: readonly Player[];
-  used: ReadonlySet<string>;
-  /** Players that must stay selectable (or not) beyond the "used elsewhere" rule. */
-  locked?: (player: Player) => boolean;
-  onChange: (id: string) => void;
-}) {
-  const { t } = useI18n();
-  const candidates = props.players.filter(
-    (p) => props.position === undefined || p.position === props.position,
-  );
-  return (
-    <select
-      data-testid={props.testId}
-      data-position={props.position}
-      aria-label={props.label}
-      value={props.value}
-      onChange={(e) => props.onChange(e.target.value)}
-    >
-      {candidates.map((p) => (
-        <option
-          key={p.id}
-          value={p.id}
-          disabled={p.id !== props.value && (props.used.has(p.id) || (props.locked?.(p) ?? false))}
-        >
-          {`${p.name} (${t(`position.short.${p.position}`)})`}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function Ratings({ career, players }: PlanProps) {
-  const { t, formatNumber } = useI18n();
-  const ratings = deriveLineRatings(players, career.squadPlan, career.condition);
-  return (
-    <section>
-      <h3>{t("squad.ratings")}</h3>
-      <dl className="club-ratings" data-testid="plan-ratings">
-        {LINE_RATINGS.map((line) => (
-          <div key={line}>
-            <dt>{t(`rating.${line}`)}</dt>
-            <dd data-testid={`plan-rating-${line}`}>{formatNumber(ratings[line], 0)}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-  );
-}
-
-function PlanTable({ career, players }: PlanProps) {
-  const { t, formatNumber } = useI18n();
-  const [sort, setSort] = useState<PlanSort>(DEFAULT_PLAN_SORT);
-  const rows = planRows(players, career.squadPlan, career.condition, sort);
-  const onSort = (column: PlanSortColumn) =>
-    setSort((s) =>
-      s.column === column
-        ? { column, direction: s.direction === "asc" ? "desc" : "asc" }
-        : { column, direction: firstDirection(column) },
-    );
-  return (
-    <table className="squad-table" data-testid="plan-table">
-      <thead>
-        <tr>
-          {PLAN_SORT_COLUMNS.map((column) => (
-            <th
-              key={column}
-              scope="col"
-              className={column === "name" || column === "status" ? undefined : "num"}
-              aria-sort={
-                sort.column === column
-                  ? sort.direction === "asc"
-                    ? "ascending"
-                    : "descending"
-                  : "none"
-              }
-            >
-              <button
-                type="button"
-                data-testid={`plan-sort-${column}`}
-                onClick={() => onSort(column)}
-              >
-                {t(`squad.col.${column}`)}
-              </button>
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <PlanTableRow key={row.player.id} row={row} format={formatNumber} />
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-function PlanTableRow({
-  row,
-  format,
-}: {
-  row: PlanRow;
-  format: (value: number, digits: number) => string;
-}) {
-  const { t } = useI18n();
-  const { player } = row;
-  const low = row.fitness < LOW_FITNESS;
-  return (
-    <tr
-      data-testid={`plan-row-${player.id}`}
-      data-position={player.position}
-      className={row.status === "starter" ? "best-eleven" : undefined}
-    >
-      <td>{player.name}</td>
-      <td className="num">{t(`position.short.${player.position}`)}</td>
-      <td className="num">{format(row.overall, 1)}</td>
-      <td className={low ? "num low-fitness" : "num"} data-testid={`plan-fitness-${player.id}`}>
-        {low ? (
-          <span
-            role="img"
-            aria-label={t("squad.lowFitness")}
-            title={t("squad.lowFitness")}
-            data-testid={`plan-low-fitness-${player.id}`}
-          >
-            ⚠{" "}
-          </span>
-        ) : null}
-        {format(row.fitness, 0)}
-        <meter
-          min={0}
-          max={100}
-          low={LOW_FITNESS}
-          optimum={100}
-          value={row.fitness}
-          aria-hidden="true"
-        />
-      </td>
-      <td className="num" data-testid={`plan-form-${player.id}`}>
-        {format(row.form, 0)}
-      </td>
-      <td data-testid={`plan-status-${player.id}`} data-status={row.status}>
-        {t(`squad.status.${row.status}`)}
-      </td>
-    </tr>
-  );
-}
-
-/** The user's lineup, bench and tactics editor with the derived team ratings. */
+/** The squad as a player table; the lineup and tactics editors are one click away until they get their own screen. */
 export function SquadScreen({ career }: { career: Career }) {
-  const { t } = useI18n();
-  const { setLineup, setTactics, autoPickLineup } = useCareer();
-  const [error, setError] = useState<LineupError | null>(null);
+  const { t, formatNumber, locale } = useI18n();
+  const { density } = useDensity();
+  const [position, setPosition] = useState<PositionFilter>("all");
+  const [query, setQuery] = useState("");
+  const [grouped, setGrouped] = useState(false);
+  const [editing, setEditing] = useState(false);
   const club = career.league.clubs.find((c) => c.id === career.userClubId);
   const ids = new Set(club?.playerIds);
   const players = career.league.players.filter((p) => ids.has(p.id));
-  const byId = new Map(players.map((p) => [p.id, p]));
-  const plan = career.squadPlan;
-  const starterSet = new Set(plan.starters);
-  const starters = orderedStarters(plan.starters, byId);
-  const benchKeepers = plan.bench.filter((id) => byId.get(id)?.position === "GK");
 
-  const edit = (next: { starters?: string[]; bench?: string[] }) => {
-    const result = setLineup({
-      formation: plan.formation,
-      starters: next.starters ?? plan.starters,
-      bench: next.bench ?? plan.bench,
-    });
-    setError(result.ok ? null : result.error);
-  };
-  const replace = (list: readonly string[], from: string, to: string) =>
-    list.map((id) => (id === from ? to : id));
-  /** Puts `to` in `from`'s place and, if `to` was in the list, `from` in `to`'s place. */
-  const swap = (list: readonly string[], from: string, to: string) =>
-    list.map((id) => (id === from ? to : id === to ? from : id));
-  const benchSet = new Set(plan.bench);
+  const columns = useMemo(() => {
+    const context: SquadColumnContext = {
+      t,
+      formatNumber,
+      barColour: club?.colours.primary ?? "var(--accent)",
+    };
+    return squadColumns(context);
+  }, [t, formatNumber, club?.colours.primary]);
+  const initialSort = useMemo(
+    () => loadSquadSort(new Set(columns.map((c) => c.id))) ?? FIRST_SORT,
+    [columns],
+  );
+
+  const all = planRows(players, career.squadPlan, career.condition, DEFAULT_PLAN_SORT);
+  const rows = filterRows(all, position, query);
+  const positionLabel = (value: PositionFilter) =>
+    value === "all" ? t("squad.filter.all") : t(`position.short.${value}`);
+
+  const table = (
+    <DataTable
+      label={t("squad.table")}
+      columns={columns}
+      rows={rows}
+      rowKey={(row) => row.player.id}
+      rowAttributes={(row) => ({
+        "data-testid": `plan-row-${row.player.id}`,
+        "data-position": row.player.position,
+      })}
+      labels={{
+        sortBy: t("squad.sort.by"),
+        ascending: t("squad.sort.ascending"),
+        descending: t("squad.sort.descending"),
+      }}
+      density={density}
+      locale={locale}
+      defaultSort={initialSort}
+      onSortChange={saveSquadSort}
+      tieBreak={squadTieBreak}
+      groupBy={grouped ? (row) => row.player.position : undefined}
+      groupLabel={(key) => t(`position.${key as (typeof GROUP_ORDER)[number]}`)}
+      empty={
+        <EmptyState
+          data-testid="squad-empty"
+          title={t("squad.empty.title")}
+          text={t("squad.empty.hint")}
+        />
+      }
+    />
+  );
 
   return (
-    <section data-testid="squad-screen" className="club-screen">
-      <h2>{t("squad.title")}</h2>
-      {error ? (
-        <p role="alert" data-testid="squad-error">
-          {t(ERROR_KEYS[error])}
+    <section data-testid="squad-screen" className="flex flex-col gap-4">
+      <header className="flex flex-col gap-1">
+        <h2 className="m-0 font-heading text-3xl text-text">{t("squad.title")}</h2>
+        <p className="m-0 text-muted" data-testid="squad-summary">
+          {t("squad.summary", {
+            club: club?.name ?? "",
+            players: t("squad.players", { count: players.length }),
+            age: formatNumber(averageAge(players), 1),
+          })}
         </p>
-      ) : null}
-      <div className="squad-controls">
-        <label>
-          {t("squad.formation")}{" "}
-          <select
-            data-testid="formation"
-            value={plan.formation}
-            onChange={(e) => {
-              autoPickLineup(e.target.value as Formation);
-              setError(null);
-            }}
-          >
-            {FORMATIONS.map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
+      </header>
+      <Tabs
+        value={position}
+        onValueChange={(value) => setPosition(value as PositionFilter)}
+        className="flex flex-col gap-3"
+      >
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+          <TabsList aria-label={t("squad.filter.label")} data-testid="squad-filter">
+            {POSITION_FILTERS.map((value) => (
+              <TabsTrigger key={value} value={value} data-testid={`squad-filter-${value}`}>
+                {positionLabel(value)}
+              </TabsTrigger>
             ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          data-testid="auto-pick"
-          onClick={() => {
-            autoPickLineup(plan.formation);
-            setError(null);
-          }}
-        >
-          {t("squad.autoPick")}
-        </button>
-      </div>
-      <TacticsEditor tactics={plan.tactics} onChange={setTactics} />
-      <h3>{t("squad.starters")}</h3>
-      {LINE_ORDER.map((line) => (
-        <div key={line} className="squad-line">
-          <h4>
-            {t(`position.${line}`)} ({FORMATION_SHAPE[plan.formation][line]})
-          </h4>
-          {starters
-            .filter((id) => byId.get(id)?.position === line)
-            .map((id) => (
-              <PlayerSelect
-                key={id}
-                testId={`starter-${starters.indexOf(id)}`}
-                label={t(`position.${line}`)}
-                value={id}
-                position={line}
-                players={players}
-                used={starterSet}
-                onChange={(to) =>
-                  edit(
-                    benchSet.has(to)
-                      ? {
-                          starters: replace(plan.starters, id, to),
-                          bench: replace(plan.bench, to, id),
-                        }
-                      : { starters: replace(plan.starters, id, to) },
-                  )
-                }
-              />
-            ))}
-        </div>
-      ))}
-      <h3>{t("squad.bench")}</h3>
-      <div className="squad-line">
-        {plan.bench.map((id, i) => (
-          <PlayerSelect
-            key={id}
-            testId={`bench-${i}`}
-            label={t("squad.benchSlot", { slot: i + 1 })}
-            value={id}
-            players={players}
-            used={starterSet}
-            locked={(p) =>
-              byId.get(id)?.position === "GK" && benchKeepers.length === 1 && p.position !== "GK"
-            }
-            onChange={(to) => edit({ bench: swap(plan.bench, id, to) })}
+          </TabsList>
+          <Input
+            variant="search"
+            label={t("squad.search")}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            data-testid="squad-search"
+            className="min-w-56"
           />
+          <label className="inline-flex min-h-11 items-center gap-2 text-soft">
+            <input
+              type="checkbox"
+              checked={grouped}
+              onChange={(event) => setGrouped(event.target.checked)}
+              data-testid="squad-group"
+              className="size-5 accent-[var(--accent)]"
+            />
+            {t("squad.groupBy")}
+          </label>
+          <p role="status" className="m-0 text-sm text-muted" data-testid="squad-results">
+            {t("squad.results", { count: rows.length })}
+          </p>
+        </div>
+        {POSITION_FILTERS.map((value) => (
+          <TabsContent
+            key={value}
+            value={value}
+            forceMount
+            className="data-[state=inactive]:hidden"
+          >
+            {value === position ? <div data-testid="squad-table">{table}</div> : null}
+          </TabsContent>
         ))}
+      </Tabs>
+      <div>
+        <Button
+          variant="secondary"
+          aria-expanded={editing}
+          aria-controls="lineup-editor"
+          data-testid="edit-lineup"
+          onClick={() => setEditing((open) => !open)}
+        >
+          {t(editing ? "squad.editLineup.hide" : "squad.editLineup")}
+        </Button>
       </div>
-      <Ratings career={career} players={players} />
-      <h3>{t("club.squad")}</h3>
-      <PlanTable career={career} players={players} />
+      {editing ? (
+        <div id="lineup-editor">
+          <LineupEditor career={career} />
+        </div>
+      ) : null}
     </section>
   );
 }
