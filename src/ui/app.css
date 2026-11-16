@@ -8,28 +8,6 @@
   justify-content: space-between;
   gap: 16px;
 }
-.career-nav {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-bottom: 16px;
-  padding: 8px 0;
-  border-bottom: 1px solid currentColor;
-}
-.career-nav ul {
-  display: flex;
-  gap: 16px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.career-nav a[aria-current="page"] {
-  font-weight: 700;
-}
-.career-nav .nav-club-name {
-  margin-left: auto;
-  font-weight: 600;
-}
 .club-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -235,6 +235,12 @@ describe("career navigation", () => {
     expect(screen.queryByTestId("nav-hub")).toBeNull();
   });
 
+  it("wraps the screens in the app shell once a career exists", () => {
+    startedClub();
+    expect(screen.getByTestId("app-shell")).toBeTruthy();
+    expect(within(screen.getByRole("main")).getByTestId("career-hub")).toBeTruthy();
+  });
+
   it("shows the club name and season progress", () => {
     const club = startedClub();
     expect(screen.getByTestId("nav-club-name").textContent).toBe(club.name);

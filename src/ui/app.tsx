@@ -1,23 +1,20 @@
 import { createMemoryThemeStore } from "../platform";
 import type { FileTransfer, LocaleStore, SaveStore, ThemeStore } from "../shared";
 import { CareerHubScreen } from "./career-hub-screen";
-import { CareerNav } from "./career-nav";
 import { ClubView } from "./club-screen";
-import { I18nProvider, useI18n } from "./i18n-provider";
+import { I18nProvider } from "./i18n-provider";
 import { LeagueScreen } from "./league-screen";
-import { LocaleSwitch } from "./locale-switch";
 import { MatchFlowScreen } from "./match-flow-screen";
 import type { MatchScreenProps } from "./match-view";
 import { MatchdayResultsScreen } from "./matchday-results-screen";
 import { NewCareerScreen } from "./new-career-screen";
 import { NotFoundScreen } from "./not-found-screen";
-import { SaveStatus } from "./save-status";
 import { SavesScreen } from "./saves-screen";
 import { SeasonEndScreen } from "./season-end-screen";
+import { AppShell } from "./shell/app-shell";
+import { BareShell } from "./shell/bare-shell";
 import { SquadScreen } from "./squad-screen";
-import { StorageWarning } from "./storage-warning";
 import { ThemeProvider } from "./theme/theme-provider";
-import { ThemeSwitch } from "./theme/theme-switch";
 import { CareerProvider, useCareer } from "./use-career";
 import { useRoute } from "./use-route";
 import "./theme/theme.css";
@@ -52,20 +49,14 @@ function Screen({ createRenderer, tickMs, initialSeed }: RendererProp & { initia
 type ShellProps = RendererProp & { initialSeed: number; storageAvailable: boolean };
 
 function Shell({ createRenderer, tickMs, initialSeed, storageAvailable }: ShellProps) {
-  const { t } = useI18n();
-  const route = useRoute();
-  return (
-    <main className="app-shell">
-      <header className="app-header">
-        <h1 data-testid="app-title">{t("app.title")}</h1>
-        <SaveStatus />
-        <LocaleSwitch />
-        <ThemeSwitch />
-      </header>
-      {storageAvailable ? null : <StorageWarning />}
-      <CareerNav route={route} />
-      <Screen createRenderer={createRenderer} tickMs={tickMs} initialSeed={initialSeed} />
-    </main>
+  const { career } = useCareer();
+  const screen = (
+    <Screen createRenderer={createRenderer} tickMs={tickMs} initialSeed={initialSeed} />
+  );
+  return career ? (
+    <AppShell storageAvailable={storageAvailable}>{screen}</AppShell>
+  ) : (
+    <BareShell storageAvailable={storageAvailable}>{screen}</BareShell>
   );
 }
 
