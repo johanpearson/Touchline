@@ -8,6 +8,9 @@ const APP = "http://localhost:4174/Touchline/";
 // The new-career wizard: step 1 (#257) and step 2, the club picker (#258).
 visualScreen({ name: "new-career-league", route: "#/new", full: true });
 
+// Scoped to the club strip: the theme and language selects in the shell also expose `option` roles.
+const clubOptions = (page: Page) => page.getByTestId("club-strip").getByRole("option");
+
 const openClubStep = async (page: Page) => {
   await page.getByTestId("choose-club").click();
   await page.getByTestId("club-card").waitFor();
@@ -25,7 +28,7 @@ visualScreen({
   route: "#/new",
   state: async (page) => {
     await openClubStep(page);
-    await page.getByRole("option").last().click();
+    await clubOptions(page).last().click();
   },
 });
 
@@ -40,7 +43,7 @@ visualScreen({
       (best, name, i) => (name.length > (names[best]?.length ?? 0) ? i : best),
       0,
     );
-    await page.getByRole("option").nth(longest).click();
+    await clubOptions(page).nth(longest).click();
   },
 });
 
