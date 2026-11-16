@@ -10,7 +10,12 @@ import type { Career } from "./career";
 import { aCareer } from "./career-builders";
 import type { Fixture } from "./generate-fixtures";
 import { matchInputFor, matchSeed } from "./match-input-for";
-import { EMPTY_MATCH_CHANGES, type MatchChanges, planChange } from "./plan-change";
+import {
+  EMPTY_MATCH_CHANGES,
+  type MatchChange,
+  type MatchChanges,
+  planChange,
+} from "./plan-change";
 import { SHOUT_DURATION_MINUTES, type ShoutKind } from "./shouts";
 
 const MATCHES = 500;
@@ -62,9 +67,9 @@ const playMatch = (
 ): Run => {
   const match = createActionMatch(mirrorInput(career, fixture), seed, { detail: "fast" });
   let changes: MatchChanges = EMPTY_MATCH_CHANGES;
-  const give = (minute: number, change: Parameters<typeof planChange>[3]) => {
+  const give = (minute: number, change: Omit<MatchChange, "minute">) => {
     advance(match, minute);
-    const planned = planChange(career, fixture, minute, change, changes);
+    const planned = planChange(career, fixture, { ...change, minute }, { previous: changes });
     if (!planned.ok) throw new Error(planned.error);
     changes = planned.changes;
     match.applyChange(planned.change);

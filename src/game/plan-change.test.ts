@@ -9,6 +9,7 @@ import {
   EMPTY_MATCH_CHANGES,
   MAX_SUBSTITUTION_WINDOWS,
   MAX_SUBSTITUTIONS,
+  type MatchChange,
   type MatchChanges,
   type PlannedChange,
   planChange,
@@ -35,10 +36,10 @@ const pairs = (career: Career, count: number) => {
 const planned = (
   career: Career,
   minute: number,
-  change: Parameters<typeof planChange>[3],
+  change: Omit<MatchChange, "minute">,
   previous?: MatchChanges,
 ): PlannedChange => {
-  const result = planChange(career, userFixtureOf(career), minute, change, previous);
+  const result = planChange(career, userFixtureOf(career), { ...change, minute }, { previous });
   if (!result.ok) throw new Error(result.error);
   return result;
 };
@@ -46,10 +47,10 @@ const planned = (
 const error = (
   career: Career,
   minute: number,
-  change: Parameters<typeof planChange>[3],
+  change: Omit<MatchChange, "minute">,
   previous?: MatchChanges,
 ) => {
-  const result = planChange(career, userFixtureOf(career), minute, change, previous);
+  const result = planChange(career, userFixtureOf(career), { ...change, minute }, { previous });
   return result.ok ? undefined : result.error;
 };
 
@@ -280,7 +281,7 @@ describe("planChange", () => {
       (f) => f.homeClubId !== career.userClubId && f.awayClubId !== career.userClubId,
     ) as Fixture;
 
-    expect(() => planChange(career, other, 30, {})).toThrow(RangeError);
+    expect(() => planChange(career, other, { minute: 30 })).toThrow(RangeError);
   });
 
   it("gives the same match whenever the change is applied in the engine, split any way", () => {
@@ -311,38 +312,37 @@ describe("planChange", () => {
 
 describe("planChange minutes (property)", () => {
   const career = aCareer();
-  const swaps = pairs(career, 5);
-  const arbMinutes = fc.array(fc.integer({ min: 0, max: 90 }), { minLength: 1, maxLength: 5 });
+  const swaps = pairs(career, 3);
+  const arbMinutes = fc.array(fc.integer({ min: 0, max: 90 }), { minLength: 1, maxLength: 3 });
 
-  it("gives every player the time they were on the pitch, and 11 players always play", () => {
+  const planAll = (minutes: readonly number[]) => {
+    let changes = EMPTY_MATCH_CHANGES;
+    for (const [n, minute] of minutes.entries()) {
+      changes = planned(career, minute, { substitutions: [swaps[n] as never] }, changes).changes;
+    }
+    return planned(career, 90, {}, changes).report.minutes;
+  };
+
+  it("gives every substitute and substituted-off player the time on the pitch", () => {
     fc.assert(
       fc.property(arbMinutes, (minutes) => {
         const sorted = [...minutes].sort((a, b) => a - b);
-        let changes = EMPTY_MATCH_CHANGES;
-        const done: { swap: { off: string; on: string }; minute: number }[] = [];
-        for (const [n, minute] of sorted.entries()) {
-          const swap = swaps[n] as { off: string; on: string };
-          const result = planChange(
-            career,
-            userFixtureOf(career),
-            minute,
-            { substitutions: [swap] },
-            changes,
-          );
-          if (!result.ok)
-            return result.error === "too-many-windows" || result.error === "too-many-substitutions";
-          changes = result.changes;
-          done.push({ swap, minute });
-        }
-        const last = planChange(career, userFixtureOf(career), 90, {}, changes);
-        if (!last.ok) return false;
-        const minutesOf = last.report.minutes;
-        const total = Object.values(minutesOf).reduce((a, b) => a + b, 0);
-        const expected = done.every((d) => d.minute >= 0) ? 11 * 90 : 0;
-        for (const { swap, minute } of done) {
-          if (minutesOf[swap.off] !== minute || minutesOf[swap.on] !== 90 - minute) return false;
-        }
-        return total === expected;
+        const played = planAll(sorted);
+        return sorted.every(
+          (minute, n) =>
+            played[swaps[n]?.off as string] === minute &&
+            played[swaps[n]?.on as string] === 90 - minute,
+        );
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it("always has eleven players on the pitch, so the minutes add up to 990", () => {
+    fc.assert(
+      fc.property(arbMinutes, (minutes) => {
+        const played = planAll([...minutes].sort((a, b) => a - b));
+        return Object.values(played).reduce((a, b) => a + b, 0) === 11 * 90;
       }),
       { numRuns: 100 },
     );

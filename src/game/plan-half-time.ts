@@ -2,7 +2,7 @@ import type { ActionMatchChange, TeamTactics } from "../engine";
 import type { Career } from "./career";
 import type { Fixture } from "./generate-fixtures";
 import type { Lineup } from "./lineup";
-import { EMPTY_MATCH_CHANGES, HALF_TIME_MINUTE, planChange } from "./plan-change";
+import { HALF_TIME_MINUTE, planChange } from "./plan-change";
 import type { MatchReport } from "./update-condition";
 
 /** What the user changes at half-time: substitutions (bench player on, pitch player off) and tactics. */
@@ -63,9 +63,12 @@ export const planHalfTime = (
   const planned = planChange(
     career,
     fixture,
-    HALF_TIME_MINUTE,
-    { substitutions: changes.substitutions, tactics: changes.tactics, halfTime: true },
-    EMPTY_MATCH_CHANGES,
+    {
+      minute: HALF_TIME_MINUTE,
+      substitutions: changes.substitutions,
+      tactics: changes.tactics,
+      halfTime: true,
+    },
     { requireSamePosition: true },
   );
   if (!planned.ok) return fail(planned.error as HalfTimeError);

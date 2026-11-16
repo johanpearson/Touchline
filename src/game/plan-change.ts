@@ -37,6 +37,8 @@ export const EMPTY_MATCH_CHANGES: MatchChanges = { substitutions: [], shouts: []
 
 /** One request: substitutions, new base tactics and/or a shout, all at the same moment. */
 export type MatchChange = {
+  /** The match minute of the change (0 up to the end). */
+  minute: number;
   substitutions?: readonly { off: string; on: string }[];
   tactics?: TeamTactics;
   shout?: ShoutKind;
@@ -68,7 +70,11 @@ export type PlannedChange = {
 export type PlanChangeResult = PlannedChange | { ok: false; error: PlanChangeError };
 
 /** Rules a caller can add; half-time keeps the old same-position rule until its panel allows more. */
-export type PlanChangeOptions = { requireSamePosition?: boolean };
+export type PlanChangeOptions = {
+  /** The `changes` of the last planned change; none when absent. */
+  previous?: MatchChanges;
+  requireSamePosition?: boolean;
+};
 
 const fail = (error: PlanChangeError): PlanChangeResult => ({ ok: false, error });
 
@@ -97,25 +103,22 @@ type SubstitutionCheck = {
   samePosition: boolean;
 };
 
+const hasDuplicateSubstitution = (substitutions: SubstitutionCheck["substitutions"]): boolean =>
+  hasDuplicates(substitutions.map((s) => s.off)) || hasDuplicates(substitutions.map((s) => s.on));
+
+/** True when these substitutions need a new window and all three are used. */
+const exceedsWindows = (c: SubstitutionCheck): boolean => {
+  if (c.substitutions.length === 0 || c.halfTime) return false;
+  const inWindow = c.changes.substitutions.some((s) => !s.halfTime && s.minute === c.minute);
+  return !inWindow && windowsOf(c.changes.substitutions) >= MAX_SUBSTITUTION_WINDOWS;
+};
+
 const checkLimits = (c: SubstitutionCheck): PlanChangeError | undefined => {
-  const total = c.changes.substitutions.length + c.substitutions.length;
-  if (total > MAX_SUBSTITUTIONS) return "too-many-substitutions";
-  if (
-    hasDuplicates(c.substitutions.map((s) => s.off)) ||
-    hasDuplicates(c.substitutions.map((s) => s.on))
-  ) {
-    return "duplicate-substitution";
+  if (c.changes.substitutions.length + c.substitutions.length > MAX_SUBSTITUTIONS) {
+    return "too-many-substitutions";
   }
-  const opensWindow = c.substitutions.length > 0 && !c.halfTime;
-  const sameMinute = c.changes.substitutions.some((s) => !s.halfTime && s.minute === c.minute);
-  if (
-    opensWindow &&
-    !sameMinute &&
-    windowsOf(c.changes.substitutions) >= MAX_SUBSTITUTION_WINDOWS
-  ) {
-    return "too-many-windows";
-  }
-  return undefined;
+  if (hasDuplicateSubstitution(c.substitutions)) return "duplicate-substitution";
+  return exceedsWindows(c) ? "too-many-windows" : undefined;
 };
 
 const checkSubstitutions = (c: SubstitutionCheck): PlanChangeError | undefined => {
@@ -157,7 +160,7 @@ const reportOf = (
 /**
  * Plans a change at `atMinute` (a match minute, 0 to the end): substitutions (a bench player replaces a
  * pitch player of any position; at most 5 in all, in at most 3 windows plus half-time; a player
- * substituted off never returns), new base tactics and/or one shout (see `shouts.ts`). `previous` is the
+ * substituted off never returns), new base tactics and/or one shout (see `shouts.ts`). `options.previous` is the
  * `changes` of the last planned change. An empty change is valid and only brings the tactics up to date,
  * for example to end a shout. The career is not changed and nothing here uses randomness. The
  * returned engine change has the eleven on the pitch at the current condition, each rated at the
@@ -169,11 +172,11 @@ const reportOf = (
 export const planChange = (
   career: Career,
   fixture: Fixture,
-  atMinute: number,
   change: MatchChange,
-  previous: MatchChanges = EMPTY_MATCH_CHANGES,
   options: PlanChangeOptions = {},
 ): PlanChangeResult => {
+  const atMinute = change.minute;
+  const previous = options.previous ?? EMPTY_MATCH_CHANGES;
   const { side, squad } = userMatchSide(career, fixture);
   const positions = new Map(squad.map((p) => [p.id, p.position]));
   const natural = (id: string): PlayerPosition => positions.get(id) ?? "MID";
