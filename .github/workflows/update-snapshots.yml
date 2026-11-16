@@ -1,0 +1,70 @@
+name: Update visual snapshots
+
+# Regenerates the visual regression baselines (e2e/visual/__screenshots__) on the CI Linux runner image, so
+# contributors never commit platform-specific PNGs (#253). Run it from the Actions tab on a branch, or put the
+# label `update-snapshots` on a pull request from this repository. The new baselines are committed to that branch.
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+
+concurrency:
+  group: update-snapshots-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: Update snapshots
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.label.name == 'update-snapshots' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx storybook build --quiet
+      - run: npx vite build
+      - name: Regenerate the baselines
+        run: |
+          rm -rf e2e/visual/__screenshots__
+          npx playwright test -c playwright.visual.config.ts --update-snapshots
+      - name: Check that a second run has no diffs
+        run: npx playwright test -c playwright.visual.config.ts
+      - name: Commit the baselines
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A e2e/visual/__screenshots__
+          if git diff --cached --quiet; then
+            echo "Baselines are already up to date."
+          else
+            git commit -m "test(ui): update visual snapshots"
+            git push
+            echo "::notice::Baselines committed. Commits pushed with GITHUB_TOKEN do not start CI; push another commit to re-run the checks."
+          fi
+      - name: Remove the label
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --remove-label update-snapshots
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: visual-update-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
