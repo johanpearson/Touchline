@@ -8,7 +8,7 @@ import { LeagueScreen } from "./league-screen";
 import { MatchFlowScreen } from "./match-flow-screen";
 import type { MatchScreenProps } from "./match-view";
 import { MatchdayResultsScreen } from "./matchday-results-screen";
-import { NewCareerScreen } from "./new-career-screen";
+import { NewCareerWizard } from "./new-career/new-career-wizard";
 import { NotFoundScreen } from "./not-found-screen";
 import { Redirect } from "./redirect";
 import type { Route } from "./routes";
@@ -27,7 +27,7 @@ import "./app.css";
 type RendererProp = Pick<MatchScreenProps, "createRenderer" | "tickMs">;
 
 /** Routes that show the plain header instead of the start screen while there is no career. */
-const BARE_ROUTES: readonly Route["name"][] = ["new", "saves", "not-found"];
+const BARE_ROUTES: readonly Route["name"][] = ["new", "new-club", "saves", "not-found"];
 
 type ScreenProps = RendererProp & { initialSeed: number };
 type CareerScreenProps = RendererProp & { career: Career; route: Route };
@@ -47,6 +47,7 @@ function CareerScreen({ career, route, createRenderer, tickMs }: CareerScreenPro
     case "season-end":
       return <SeasonEndScreen />;
     case "new":
+    case "new-club":
       return <Redirect to={{ name: "home" }} />;
     default:
       return <CareerHubScreen />;
@@ -58,7 +59,10 @@ function Screen({ createRenderer, tickMs, initialSeed }: ScreenProps) {
   const { career } = useCareer();
   if (route.name === "not-found") return <NotFoundScreen />;
   if (route.name === "saves") return <SavesScreen />;
-  if (!career) return <NewCareerScreen initialSeed={initialSeed} />;
+  if (!career) {
+    const step = route.name === "new-club" ? "club" : "league";
+    return <NewCareerWizard step={step} initialSeed={initialSeed} />;
+  }
   return (
     <CareerScreen career={career} route={route} createRenderer={createRenderer} tickMs={tickMs} />
   );

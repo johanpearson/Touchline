@@ -1,16 +1,17 @@
 import { useMemo, useState } from "react";
-import { generateLeague } from "../game";
-import { clubRating } from "./club-rating";
-import { useI18n } from "./i18n-provider";
-import { hrefFor } from "./routes";
-import { useCareer } from "./use-career";
+import { generateLeague } from "../../game";
+import { clubRating } from "../club-rating";
+import { useI18n } from "../i18n-provider";
+import { hrefFor } from "../routes";
+import { useCareer } from "../use-career";
+import { WizardHeader } from "./wizard-header";
 
-type Props = { initialSeed: number };
+type ClubStepProps = { seed: number; onSeedChange: (seed: number) => void };
 
-export function NewCareerScreen({ initialSeed }: Props) {
+/** Step 2: the plain club list; the club-picker issue (#258) replaces it with the club card. */
+export function ClubStep({ seed, onSeedChange }: ClubStepProps) {
   const { t } = useI18n();
   const { startCareer } = useCareer();
-  const [seed, setSeed] = useState(initialSeed);
   const [chosen, setChosen] = useState<string | null>(null);
 
   const rows = useMemo(() => {
@@ -26,7 +27,7 @@ export function NewCareerScreen({ initialSeed }: Props) {
 
   const changeSeed = (text: string) => {
     const value = Number(text);
-    if (text.trim() !== "" && Number.isSafeInteger(value)) setSeed(value);
+    if (text.trim() !== "" && Number.isSafeInteger(value)) onSeedChange(value);
   };
 
   const start = () => {
@@ -36,10 +37,13 @@ export function NewCareerScreen({ initialSeed }: Props) {
 
   return (
     <section className="new-career" data-testid="new-career">
-      <h2>{t("newCareer.title")}</h2>
-      <a data-testid="new-back" href={hrefFor({ name: "home" })}>
-        {t("saves.back")}
-      </a>
+      <WizardHeader
+        step={2}
+        total={2}
+        title={t("newCareer.club.title")}
+        backHref={hrefFor({ name: "new" })}
+        backLabel={t("newCareer.backToLeague")}
+      />
       <p>{t("newCareer.intro")}</p>
       <label className="seed-field">
         {t("newCareer.seed")}{" "}

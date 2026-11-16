@@ -4,6 +4,7 @@ const LINES = ["goalkeeping", "defence", "midfield", "attack", "overall"] as con
 
 const startCareer = async (page: Page) => {
   await page.goto("./#/new");
+  await page.getByTestId("choose-club").click();
   await page.getByTestId("club-name").first().click();
   await page.getByTestId("start-career").click();
   await expect(page.getByTestId("career-hub")).toBeVisible();

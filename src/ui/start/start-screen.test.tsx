@@ -372,7 +372,7 @@ describe("start screen", () => {
       fireEvent.click(await screen.findByTestId("start-new-career"));
 
       expect(window.location.hash).toBe("#/new");
-      expect(screen.getByTestId("new-career")).toBeTruthy();
+      expect(screen.getByTestId("league-step")).toBeTruthy();
     });
 
     it("explains a newer-version autosave", async () => {

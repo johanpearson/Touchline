@@ -7,6 +7,7 @@ type Snapshot = { club: string; matchday: string; table: string[] };
 
 const startCareer = async (page: Page): Promise<string> => {
   await page.goto("./#/new");
+  await page.getByTestId("choose-club").click();
   const first = page.getByTestId("club-name").first();
   const club = (await first.textContent()) ?? "";
   await first.click();
