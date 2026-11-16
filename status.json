@@ -1,39 +1,44 @@
 {
   "schemaVersion": 1,
   "updated": "2026-11-16",
-  "sha": "c2e0657be8016938537715b7c5b5ac7db3e8546b",
+  "sha": "761ac7131ae619e7b933de88700c08a7813e0b3f",
   "ref": "main",
-  "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/43790338865",
-  "ok": true,
-  "failing": [],
+  "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/43814465994",
+  "ok": false,
+  "failing": [
+    "mutation"
+  ],
   "jobs": [
     {
       "job": "balance",
       "label": "balance",
       "status": "pass",
-      "message": "pass, 2.80 goals, 23.1 shots, 46% home",
+      "message": "pass, 2.54 goals, 27.0 shots, 43% home",
       "outcome": "success",
       "date": "2026-11-16",
-      "sha": "c2e0657be8016938537715b7c5b5ac7db3e8546b",
+      "sha": "761ac7131ae619e7b933de88700c08a7813e0b3f",
       "ref": "main",
-      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/43790338865",
+      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/43814465994",
       "metrics": {
-        "goalsPerMatch": 2.8,
-        "shotsPerMatch": 23.1,
-        "homeWinPercent": 45.9
+        "goalsPerMatch": 2.54,
+        "shotsPerMatch": 27,
+        "homeWinPercent": 42.7
       }
     },
     {
       "job": "mutation",
       "label": "mutation",
-      "status": "unknown",
-      "message": "mutation not run",
-      "outcome": "cancelled",
+      "status": "red",
+      "message": "mutation failed",
+      "outcome": "failure",
       "date": "2026-11-16",
-      "sha": "c2e0657be8016938537715b7c5b5ac7db3e8546b",
+      "sha": "761ac7131ae619e7b933de88700c08a7813e0b3f",
       "ref": "main",
-      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/43790338865",
-      "metrics": {}
+      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/43814465994",
+      "metrics": {
+        "mutationScore": 95.18,
+        "durationMinutes": 59.5
+      }
     },
     {
       "job": "property",
@@ -42,9 +47,9 @@
       "message": "pass",
       "outcome": "success",
       "date": "2026-11-16",
-      "sha": "c2e0657be8016938537715b7c5b5ac7db3e8546b",
+      "sha": "761ac7131ae619e7b933de88700c08a7813e0b3f",
       "ref": "main",
-      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/43790338865",
+      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/43814465994",
       "metrics": {}
     },
     {
@@ -54,9 +59,9 @@
       "message": "pass",
       "outcome": "success",
       "date": "2026-11-16",
-      "sha": "c2e0657be8016938537715b7c5b5ac7db3e8546b",
+      "sha": "761ac7131ae619e7b933de88700c08a7813e0b3f",
       "ref": "main",
-      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/43790338865",
+      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/43814465994",
       "metrics": {}
     }
   ]
