@@ -11,6 +11,7 @@ Guidance for Claude Code sessions in this repository. Read this file, `docs/visi
 ```bash
 npm ci                  # install
 npm run dev             # dev server
+npm run storybook       # component stories (npm run build-storybook compiles them)
 npm run lint            # Biome lint + format check
 npm run format          # Biome format (write)
 npm run typecheck       # tsc --noEmit
