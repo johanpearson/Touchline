@@ -41,9 +41,12 @@ describe("visual regression setup (#253)", () => {
     expect(baselines).toContain("--auto --squash");
   });
 
-  it("uses the BOT_TOKEN secret so the baseline pull request starts CI, and skips with a warning without it", () => {
-    expect(baselines).toContain("secrets.BOT_TOKEN");
-    expect(baselines).toContain("::warning::Secret BOT_TOKEN is not set");
+  it("uses a GitHub App token so the baseline pull request starts CI, and skips with a warning without it", () => {
+    expect(baselines).toContain("actions/create-github-app-token@v2");
+    expect(baselines).toContain("secrets.APP_ID");
+    expect(baselines).toContain("secrets.APP_PRIVATE_KEY");
+    expect(baselines).not.toContain("BOT_TOKEN");
+    expect(baselines).toContain("::warning::Secrets APP_ID and APP_PRIVATE_KEY are not set");
   });
 
   it("writes baselines without a platform suffix and keeps tolerance explicit", () => {

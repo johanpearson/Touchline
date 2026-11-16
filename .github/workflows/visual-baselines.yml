@@ -6,9 +6,9 @@ name: Visual baselines
 # auto-merge. Pull requests only get a report of visual differences (job `Visual`); they are never blocked by
 # them and never need baseline commits. Run it by hand from the Actions tab to rebuild all baselines.
 #
-# Needs the repository secret BOT_TOKEN (a fine-grained personal access token or a GitHub App installation
-# token with contents and pull requests write access). A pull request opened with the default GITHUB_TOKEN does
-# not start CI, so auto-merge would wait for ever; see docs/architecture.md, "Visual baselines".
+# Needs the repository secrets APP_ID and APP_PRIVATE_KEY of a GitHub App with contents and pull requests write
+# access. A pull request opened with the default GITHUB_TOKEN does not start CI, so auto-merge would wait for
+# ever; see docs/architecture.md, "Visual baselines".
 on:
   workflow_dispatch:
   push:
@@ -38,22 +38,30 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+      APP_ID: ${{ secrets.APP_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       BRANCH: bot/visual-baselines
     steps:
-      - name: Check that the bot token is configured
+      - name: Check that the GitHub App is configured
         id: token
         run: |
-          if [ -z "$BOT_TOKEN" ]; then
-            echo "::warning::Secret BOT_TOKEN is not set, so the visual baselines were not updated. Add a token with contents and pull requests write access (see docs/architecture.md, Visual baselines)."
+          if [ -z "$APP_ID" ] || [ -z "$APP_PRIVATE_KEY" ]; then
+            echo "::warning::Secrets APP_ID and APP_PRIVATE_KEY are not set, so the visual baselines were not updated. Create the GitHub App described in docs/architecture.md (Visual baselines)."
             echo "ready=false" >> "$GITHUB_OUTPUT"
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Create a GitHub App token
+        id: app
+        if: steps.token.outputs.ready == 'true'
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - uses: actions/checkout@v7
         if: steps.token.outputs.ready == 'true'
         with:
-          token: ${{ secrets.BOT_TOKEN }}
+          token: ${{ steps.app.outputs.token }}
       - uses: actions/setup-node@v7
         if: steps.token.outputs.ready == 'true'
         with:
@@ -78,7 +86,7 @@ jobs:
       - name: Open or update the baseline pull request
         if: steps.token.outputs.ready == 'true'
         env:
-          GH_TOKEN: ${{ secrets.BOT_TOKEN }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
