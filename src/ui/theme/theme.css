@@ -1,0 +1,127 @@
+/*
+ * Tailwind CSS v4 on the design tokens. Only the theme and utilities layers are loaded: Tailwind's
+ * preflight (a global reset) would restyle every screen that is not redone yet, so it is left out
+ * until the screens are migrated.
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@import "@fontsource/barlow-condensed/500.css";
+@import "@fontsource/barlow-condensed/600.css";
+@import "@fontsource/barlow-condensed/700.css";
+@import "@fontsource/barlow-condensed/800.css";
+@import "@fontsource/barlow/400.css";
+@import "@fontsource/barlow/500.css";
+@import "@fontsource/barlow/600.css";
+
+@import "./tokens.css";
+
+/* Utilities such as `bg-surface`, `text-muted`, `border-line` and `rounded-lg` read the tokens. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-side: var(--side);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-sunk: var(--sunk);
+  --color-track: var(--track);
+  --color-text: var(--text);
+  --color-soft: var(--soft);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-glow: var(--glow);
+  --color-stage: var(--stage);
+  --color-stage-glow: var(--stage-glow);
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+  --color-info: var(--info);
+  --color-warn: var(--warn);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-focus: var(--focus);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-pill: var(--r-pill);
+
+  --font-heading: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Barlow", system-ui, sans-serif;
+}
+
+/* Stats, scores, clocks, table cells and ratings use tabular figures. */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility font-display-numbers {
+  font-family: var(--font-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+/* No default scrollbars: hide them, or use the themed thin one where a vertical scroll is rare. */
+@utility scroll-hidden {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer base {
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  a {
+    color: var(--info);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+  }
+
+  table,
+  th,
+  td {
+    font-variant-numeric: tabular-nums;
+  }
+
+  small {
+    font-size: 13px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--track) transparent;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: the global reduced-motion reset must beat component styles */
+    animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: the global reduced-motion reset must beat component styles */
+    animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: the global reduced-motion reset must beat component styles */
+    transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: the global reduced-motion reset must beat component styles */
+    scroll-behavior: auto !important;
+  }
+}

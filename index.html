@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Touchline</title>
+    <script>
+      // Sets the saved theme before the first paint (no flash). Keep the key and the theme names in
+      // sync with src/platform/theme-store.ts and src/ui/theme/themes.ts (index-html.test.ts checks).
+      (() => {
+        var theme = "midnight";
+        var saved = null;
+        try {
+          saved = window.localStorage.getItem("touchline.theme");
+        } catch {}
+        if (saved === "midnight" || saved === "graphite" || saved === "light") theme = saved;
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
