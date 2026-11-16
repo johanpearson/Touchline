@@ -91,7 +91,7 @@ describe("shapeParameters", () => {
     });
     expect(q.lineHeight).toBe(-5.5);
     expect(q.compactness).toBeCloseTo(1.05 * 0.96, 10);
-    expect(q.width).toBe(0.9);
+    expect(q.width).toBe(0.95);
   });
 });
 
