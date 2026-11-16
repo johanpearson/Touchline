@@ -107,3 +107,19 @@ visualScreen({
     }
   },
 });
+
+// The command palette (#255) open over the hub, with a query that matches clubs and players.
+visualScreen({
+  name: "command-palette",
+  route: "#/new",
+  state: async (page) => {
+    await page.getByTestId("club-name").first().click();
+    await page.getByTestId("start-career").click();
+    await page.getByTestId("career-hub").waitFor();
+    await page.getByTestId("palette-open").click();
+    await page.getByTestId("palette-input").fill("a");
+    await page.getByTestId("command-palette").waitFor();
+    // Let the open animation finish (the screenshot disables animations, so this is a safety net).
+    await page.getByRole("listbox").waitFor();
+  },
+});

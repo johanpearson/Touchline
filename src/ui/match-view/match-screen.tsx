@@ -10,6 +10,7 @@ import {
 } from "../../engine";
 import { goalScorersOf, type MatchReport } from "../../game";
 import { useI18n } from "../i18n-provider";
+import { useSuspendPaletteShortcut } from "../palette/palette-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import type { AppliedHalfTimePlan, HalfTimeEditor } from "./half-time-panel";
@@ -73,6 +74,10 @@ export function MatchScreen({
   const { matchTime, state, events, eventCount, resume, ...playback } = useMatchPlayback(
     match,
     tickMs,
+  );
+  // Space and the arrow keys belong to the match while it runs; Ctrl+K waits until it is paused.
+  useSuspendPaletteShortcut(
+    !playback.paused && (state.period === "firstHalf" || state.period === "secondHalf"),
   );
   const [report, setReport] = useState<MatchReport | undefined>();
   const startSecondHalf = (plan?: AppliedHalfTimePlan) => {
