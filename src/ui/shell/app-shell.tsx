@@ -1,6 +1,8 @@
 import { type ReactNode, useRef } from "react";
 import { cn } from "../components";
 import { useI18n } from "../i18n-provider";
+import { CommandPalette } from "../palette/command-palette";
+import { PaletteProvider } from "../palette/palette-provider";
 import { StorageWarning } from "../storage-warning";
 import { useCareer } from "../use-career";
 import { AppHeader } from "./app-header";
@@ -21,38 +23,41 @@ export function AppShell({ children, storageAvailable }: AppShellProps) {
   const club = career?.league.clubs.find((c) => c.id === career.userClubId);
   const focusMain = () => main.current?.focus();
   return (
-    <div
-      data-testid="app-shell"
-      data-mode={mode}
-      style={club ? ({ "--club": club.colours.primary } as React.CSSProperties) : undefined}
-      className="flex min-h-dvh bg-bg text-text"
-    >
-      <button
-        type="button"
-        onClick={focusMain}
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:font-semibold focus:text-on-accent"
+    <PaletteProvider>
+      <div
+        data-testid="app-shell"
+        data-mode={mode}
+        style={club ? ({ "--club": club.colours.primary } as React.CSSProperties) : undefined}
+        className="flex min-h-dvh bg-bg text-text"
       >
-        {t("shell.skipToContent")}
-      </button>
-      {mode === "tabs" ? <TabBar /> : <SideNav mode={mode} />}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <AppHeader showBrand={mode === "tabs"} />
-        <main
-          id="main"
-          ref={main}
-          tabIndex={-1}
-          className={cn(
-            "mx-auto box-border w-full max-w-[1280px] flex-1 p-4 outline-none sm:p-6",
-            mode === "tabs" && "pb-[calc(5rem+env(safe-area-inset-bottom))]",
-          )}
+        <button
+          type="button"
+          onClick={focusMain}
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:font-semibold focus:text-on-accent"
         >
-          {storageAvailable ? null : <StorageWarning />}
-          {children}
-        </main>
-        <output className="sr-only" aria-live="polite" data-testid="page-announcement">
-          {title}
-        </output>
+          {t("shell.skipToContent")}
+        </button>
+        {mode === "tabs" ? <TabBar /> : <SideNav mode={mode} />}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <AppHeader showBrand={mode === "tabs"} />
+          <main
+            id="main"
+            ref={main}
+            tabIndex={-1}
+            className={cn(
+              "mx-auto box-border w-full max-w-[1280px] flex-1 p-4 outline-none sm:p-6",
+              mode === "tabs" && "pb-[calc(5rem+env(safe-area-inset-bottom))]",
+            )}
+          >
+            {storageAvailable ? null : <StorageWarning />}
+            {children}
+          </main>
+          <output className="sr-only" aria-live="polite" data-testid="page-announcement">
+            {title}
+          </output>
+        </div>
+        <CommandPalette />
       </div>
-    </div>
+    </PaletteProvider>
   );
 }
