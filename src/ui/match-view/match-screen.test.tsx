@@ -105,6 +105,21 @@ describe("MatchScreen", () => {
     );
   });
 
+  it("hands over the scorer of every goal with the final score", () => {
+    const onContinue = vi.fn();
+    mountAction({ onContinue });
+    fireEvent.click(screen.getByTestId("speed-4"));
+    play(20_000);
+    fireEvent.click(screen.getByTestId("start-second-half"));
+    play(40_000);
+    fireEvent.click(screen.getByTestId("continue"));
+    const [finished] = onContinue.mock.calls[0] as [
+      { score: { home: number; away: number }; scorers: string[] },
+    ];
+    expect(finished.scorers).toHaveLength(finished.score.home + finished.score.away);
+    expect(finished.scorers.every((id) => typeof id === "string" && id.length > 0)).toBe(true);
+  });
+
   describe("view toggle", () => {
     beforeEach(() => window.sessionStorage.clear());
     const pitchRenderer = () => ({ resize: vi.fn(), render: vi.fn(), dispose: vi.fn() });

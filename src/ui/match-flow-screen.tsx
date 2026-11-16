@@ -40,7 +40,7 @@ export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
     plan: (changes) => planHalfTime(career, fixture, changes),
   };
 
-  const finish = ({ score, engineVersion }: FinishedMatch, report?: MatchReport) => {
+  const finish = ({ score, scorers, engineVersion }: FinishedMatch, report?: MatchReport) => {
     const result: Result = {
       fixtureId: fixture.id,
       homeClubId: fixture.homeClubId,
@@ -48,6 +48,7 @@ export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
       homeGoals: score.home,
       awayGoals: score.away,
       engineVersion,
+      scorers,
     };
     if (completeMatch(result, report) === null) window.location.hash = hrefFor({ name: "results" });
   };

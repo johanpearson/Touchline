@@ -9,6 +9,12 @@ export type Result = {
   awayGoals: number;
   /** The engine the match was played with (schema v4). Fixed when the match is created. */
   engineVersion: EngineVersion;
+  /**
+   * Player ids of the scorers in the order the goals were scored, both sides mixed (schema v6).
+   * Absent on results from older saves. When present there is one id per goal, and each id
+   * belongs to the club that scored.
+   */
+  scorers?: string[];
 };
 
 export type TableRow = {
