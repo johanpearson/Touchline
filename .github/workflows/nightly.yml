@@ -43,11 +43,17 @@ jobs:
           name: nightly-result-balance
           path: result-balance.json
 
-  mutation:
-    name: Mutation testing (engine)
+  # The mutation run is split into parallel shards (#209): the whole nightly run has to finish in two hours at most, aiming for
+  # one. `scripts/mutation-shards.mjs` spreads the mutated files over the shards by size, so a new engine file joins a shard by
+  # itself. Keep the shard list below, `--shards` in the merge job and `shards` in scripts/nightly-workflow.test.ts the same.
+  mutation-shard:
+    name: Mutation shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
-    # The action engine alone takes about two hours on four cores.
-    timeout-minutes: 360
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -58,12 +64,47 @@ jobs:
       - name: Stryker
         run: |
           set -o pipefail
-          if [ "$(npm pkg get scripts.test:mutation)" != "{}" ]; then FORCE_COLOR=0 npm run test:mutation 2>&1 | tee mutation.log; else echo "::notice::mutation testing not set up yet" | tee mutation.log; fi
+          start=$SECONDS
+          files=$(node scripts/mutation-shards.mjs --shard ${{ matrix.shard }} --of ${{ strategy.job-total }})
+          echo "Mutating: $files"
+          status=0
+          FORCE_COLOR=0 npx stryker run stryker.shard.config.json --mutate "$files" 2>&1 | tee mutation.log || status=$?
+          mkdir -p reports/mutation
+          echo "{\"seconds\": $((SECONDS - start))}" > reports/mutation/meta.json
+          exit $status
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mutation-shard-${{ matrix.shard }}
+          path: reports/mutation
+          if-no-files-found: ignore
+
+  mutation:
+    name: Mutation testing (engine)
+    needs: mutation-shard
+    # Runs even when a shard failed or timed out: the merge names the shard without a report and the badge goes red.
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v7
+        continue-on-error: true
+        with:
+          pattern: mutation-shard-*
+          path: shards
+      - name: Merge the shard reports
+        run: |
+          mkdir -p shards
+          node scripts/merge-mutation-reports.mjs --in shards --shards 8 --out mutation.log
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mutation-report
-          path: reports/mutation
+          path: mutation.log
           if-no-files-found: ignore
       - name: Write the result
         if: always()

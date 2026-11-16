@@ -11,11 +11,16 @@ describe("mutation testing setup", () => {
     expect(config.testRunner).toBe("vitest");
   });
 
-  it("only mutates non-test files in src/engine", () => {
+  it("only mutates non-test, non-fixture files in src/engine", () => {
     expect(config.mutate).toEqual([
       "src/engine/**/*.ts",
       "!src/engine/**/*.test.ts",
       "!src/engine/index.ts",
+      "!src/engine/action/arbitraries.ts",
+      "!src/engine/action/performance.bench.ts",
+      "!src/engine/action/measure-match-time.ts",
+      "!src/engine/action/balance-test-support.ts",
+      "!src/engine/action/*-builders.ts",
     ]);
   });
 
@@ -29,9 +34,11 @@ describe("mutation testing setup", () => {
     expect(scripts["test:mutation"]).toBe("stryker run");
   });
 
-  it("is run by the nightly workflow and uploads the report", () => {
+  it("is run by the nightly workflow in parallel shards that upload their reports and a merge job", () => {
     const nightly = read(".github/workflows/nightly.yml");
-    expect(nightly).toContain("npm run test:mutation");
+    expect(nightly).toContain("stryker run stryker.shard.config.json");
+    expect(nightly).toContain("scripts/mutation-shards.mjs");
+    expect(nightly).toContain("scripts/merge-mutation-reports.mjs");
     expect(nightly).toContain("path: reports/mutation");
   });
 
@@ -41,8 +48,33 @@ describe("mutation testing setup", () => {
     }
   });
 
-  it("gives the nightly mutation job time for the whole engine", () => {
-    expect(read(".github/workflows/nightly.yml")).toContain("timeout-minutes: 360");
+  it("gives each nightly mutation shard at most two hours, not the six of the single job", () => {
+    const nightly = read(".github/workflows/nightly.yml");
+    expect(nightly).toContain("timeout-minutes: 120");
+    expect(nightly).not.toContain("timeout-minutes: 360");
+  });
+
+  describe("shard config", () => {
+    const shard = readJson("stryker.shard.config.json");
+
+    it("mutates what the shard script passes in, so it has no mutate list of its own", () => {
+      expect(shard.mutate).toBeUndefined();
+    });
+
+    it("has no break threshold, because the merged score is judged and not a shard's", () => {
+      expect(shard.thresholds).toEqual({ high: 90, low: 85, break: null });
+    });
+
+    it("writes the JSON report the merge job reads", () => {
+      expect(shard.reporters).toContain("json");
+      expect(shard.jsonReporter).toEqual({ fileName: "reports/mutation/mutation.json" });
+    });
+
+    it("runs the same tests the engine-wide config runs", () => {
+      expect(shard.testRunner).toBe(config.testRunner);
+      expect(shard.vitest).toEqual(config.vitest);
+      expect(shard.coverageAnalysis).toBe(config.coverageAnalysis);
+    });
   });
 
   it("keeps generated reports out of git", () => {
