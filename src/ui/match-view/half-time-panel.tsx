@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ActionMatchState, MatchStats, TeamTactics } from "../../engine";
+import type { ActionMatchState, ActionStats, PerSide, TeamTactics } from "../../engine";
 import {
   type HalfTimeChanges,
   type HalfTimeError,
@@ -11,7 +11,7 @@ import {
 import type { MessageKey } from "../../i18n";
 import { useI18n } from "../i18n-provider";
 import { TacticsEditor } from "../tactics-editor";
-import { StatsPanel } from "./stats-panel";
+import { ActionStatsPanel } from "./action-stats-panel";
 
 /** What the half-time panel needs to let the user change their side. */
 export type HalfTimeEditor = {
@@ -33,7 +33,9 @@ export type HalfTimePanelProps = {
   awayName: string;
   score: ActionMatchState["score"];
   /** Statistics for the first half. */
-  stats: MatchStats;
+  stats: ActionStats;
+  /** Ids of the players of each side, to total their key passes. */
+  playerIds: PerSide<readonly string[]>;
   /** Without an editor the panel offers no changes. Called with the validated plan, if any. */
   editor?: HalfTimeEditor;
   onResume: (plan?: AppliedHalfTimePlan) => void;
@@ -234,6 +236,7 @@ export function HalfTimePanel({
   awayName,
   score,
   stats,
+  playerIds,
   editor,
   onResume,
 }: HalfTimePanelProps) {
@@ -249,7 +252,7 @@ export function HalfTimePanel({
       <p className="half-time-score" data-testid="half-time-score">
         {homeName} {score.home} – {score.away} {awayName}
       </p>
-      <StatsPanel stats={stats} />
+      <ActionStatsPanel stats={stats} playerIds={playerIds} />
       {editor ? (
         <Changes editor={editor} onResume={onResume} />
       ) : (

@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from "react";
 import type { CommentaryLine } from "../../commentary";
-import type { ActionEvent, ActionMatchState, MatchStats, PerSide, ZoneEvent } from "../../engine";
+import type { ActionEvent, ActionMatchState, ActionStats, PerSide, ZoneEvent } from "../../engine";
 import { useI18n } from "../i18n-provider";
 import { ClassicPitch } from "./classic-pitch";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
@@ -24,7 +24,10 @@ export type MatchLayoutProps = {
   events: readonly ZoneEvent[];
   /** The part of it the terrain shows. */
   terrainEvents: readonly ZoneEvent[];
-  stats: MatchStats;
+  /** First-half stats shown by the half-time panel. */
+  stats: ActionStats;
+  /** Ids of the players who played, per side. */
+  playerIds: PerSide<readonly string[]>;
   lines: readonly CommentaryLine[];
   playback: {
     paused: boolean;
@@ -55,6 +58,7 @@ export function MatchLayout({
   events,
   terrainEvents,
   stats,
+  playerIds,
   lines,
   playback,
   createRenderer,
@@ -145,6 +149,7 @@ export function MatchLayout({
             awayName={names.away}
             score={score}
             stats={stats}
+            playerIds={playerIds}
             editor={halfTimeEditor}
             onResume={onResume}
           />

@@ -14,7 +14,6 @@ export const en = {
   "scoreboard.label": "Scoreboard",
   "stats.title": "Match stats",
   "stats.label.possession": "Possession",
-  "stats.label.fieldTilt": "Field tilt",
   "stats.label.shots": "Shots",
   "stats.label.shotsOnTarget": "On target",
   "stats.label.xg": "xG",
