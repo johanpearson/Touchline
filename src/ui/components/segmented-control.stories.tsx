@@ -11,6 +11,7 @@ const SPEEDS: SegmentedOption<string>[] = [
 
 const meta = {
   title: "Components/SegmentedControl",
+  tags: ["i18n-wide"],
   component: SegmentedControl<string>,
   args: { label: "Speed", options: SPEEDS, value: "x1", onValueChange: () => {} },
 } satisfies Meta<typeof SegmentedControl<string>>;

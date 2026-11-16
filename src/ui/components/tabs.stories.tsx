@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 
 const meta = {
   title: "Components/Tabs",
+  tags: ["i18n-wide"],
   component: Tabs,
 } satisfies Meta<typeof Tabs>;
 

@@ -5,6 +5,7 @@ import { EmptyState } from "./empty-state";
 
 const meta = {
   title: "Components/EmptyState",
+  tags: ["i18n-wide"],
   component: EmptyState,
   args: {
     icon: <Inbox className="size-10" />,

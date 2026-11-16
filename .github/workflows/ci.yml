@@ -161,6 +161,80 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+  # Visual regression (#253): screenshots of every story and registered screen state against baselines in
+  # e2e/visual/__screenshots__ (made on this runner image by the `Update visual snapshots` workflow). Path-filtered
+  # to UI, Storybook and CSS changes, sharded, and not a required check until it has run clean for a week.
+  visual-scope:
+    name: Visual scope
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.scope.outputs.run }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Check whether visuals can have changed
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          run=true
+          if [ "$EVENT" = "pull_request" ]; then
+            run=false
+            if git diff --name-only "origin/$BASE_REF...HEAD" | grep -E '^src/ui/|^e2e/visual/|^\.storybook/|^playwright\.visual\.config\.ts$|^scripts/serve-static\.mjs$|\.css$|^package-lock\.json$|^index\.html$|^\.github/workflows/(ci|update-snapshots)\.yml$'; then
+              run=true
+            fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "Visual regression: $run"
+
+  # Keep the shard list and the --shard total in step.
+  visual-shard:
+    name: Visual shard ${{ matrix.shard }}
+    needs: visual-scope
+    if: needs.visual-scope.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx storybook build --quiet
+      - run: npx vite build
+      - run: npx playwright test -c playwright.visual.config.ts --shard=${{ matrix.shard }}/4
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: visual-report-${{ matrix.shard }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  visual:
+    name: Visual
+    needs: [visual-scope, visual-shard]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every visual job to pass or be skipped
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in success|skipped) ;; *) echo "::error::A visual job ended with: $result"; exit 1 ;; esac
+          done
+
   pr-title:
     name: PR title
     if: github.event_name == 'pull_request'

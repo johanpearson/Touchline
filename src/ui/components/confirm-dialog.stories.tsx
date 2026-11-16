@@ -4,6 +4,7 @@ import { ConfirmDialog } from "./confirm-dialog";
 
 const meta = {
   title: "Components/ConfirmDialog",
+  tags: ["i18n-wide"],
   component: ConfirmDialog,
   args: {
     open: true,
