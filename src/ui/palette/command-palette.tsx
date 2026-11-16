@@ -1,20 +1,15 @@
 import * as RadixDialog from "@radix-ui/react-dialog";
 import { Search, X } from "lucide-react";
 import { motion } from "motion/react";
-import { useId, useMemo, useRef, useState } from "react";
+import { type RefObject, useRef, useState } from "react";
 import { cn, EmptyState, IconButton } from "../components";
 import { useOverlayMotion } from "../components/use-overlay-motion";
 import { useI18n } from "../i18n-provider";
-import { hrefFor } from "../routes";
 import { ClubCrest } from "../shell/club-crest";
-import { useTheme } from "../theme/theme-provider";
-import { useCareer } from "../use-career";
-import { isNavigationKey, nextActiveIndex } from "./active-index";
-import { buildPaletteItems, type PaletteItem } from "./palette-items";
+import type { PaletteItem } from "./palette-items";
 import { usePalette } from "./palette-provider";
-import { buildSearchIndex, type GroupResult, searchPalette } from "./search";
-
-const optionId = (listId: string, itemId: string) => `${listId}-${itemId}`;
+import type { GroupResult } from "./search";
+import { optionId, type PaletteSearch, usePaletteSearch } from "./use-palette-search";
 
 function ResultIcon({ item }: { item: PaletteItem }) {
   if (item.crest) {
@@ -96,52 +91,72 @@ export function CommandPalette() {
   );
 }
 
+function SearchField({
+  search,
+  input,
+}: {
+  search: PaletteSearch;
+  input: RefObject<HTMLInputElement | null>;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="flex items-center gap-2 border-b border-line px-3">
+      <Search aria-hidden="true" className="size-5 shrink-0 text-muted" />
+      <input
+        ref={input}
+        data-testid="palette-input"
+        type="text"
+        role="combobox"
+        aria-label={t("palette.inputLabel")}
+        aria-expanded="true"
+        aria-controls={search.listId}
+        aria-activedescendant={search.activeId}
+        aria-autocomplete="list"
+        autoComplete="off"
+        spellCheck={false}
+        placeholder={t("palette.placeholder")}
+        value={search.query}
+        onChange={(event) => search.setQuery(event.target.value)}
+        onKeyDown={search.onKeyDown}
+        className="min-h-14 min-w-0 flex-1 bg-transparent text-base text-text outline-none placeholder:text-muted"
+      />
+      <RadixDialog.Close asChild>
+        <IconButton label={t("palette.close")} icon={<X className="size-5" />} />
+      </RadixDialog.Close>
+    </div>
+  );
+}
+
+function Results({ search }: { search: PaletteSearch }) {
+  const { t } = useI18n();
+  if (search.count === 0) {
+    return (
+      <EmptyState
+        data-testid="palette-empty"
+        icon={<Search className="size-8" />}
+        title={t("palette.empty", { query: search.query.trim() })}
+        text={t("palette.emptyHint")}
+      />
+    );
+  }
+  return (
+    <ResultList
+      groups={search.groups}
+      listId={search.listId}
+      activeId={search.activeId}
+      onHover={search.setActiveId}
+      onChoose={search.choose}
+    />
+  );
+}
+
 function PaletteContent() {
-  const i18n = useI18n();
-  const { t } = i18n;
-  const { career } = useCareer();
-  const { theme, setTheme } = useTheme();
-  const { setOpen } = usePalette();
+  const { t } = useI18n();
+  const search = usePaletteSearch();
   const motionProps = useOverlayMotion();
-  const listId = useId();
-  const [query, setQuery] = useState("");
-  const [activeKey, setActiveKey] = useState<string | undefined>();
   const input = useRef<HTMLInputElement>(null);
   // Radix only returns focus to a Trigger; the palette has none, so it remembers the opener.
   const [opener] = useState(() => document.activeElement);
-
-  const index = useMemo(
-    () =>
-      career
-        ? buildSearchIndex(buildPaletteItems({ career, translator: i18n, theme }))
-        : buildSearchIndex<PaletteItem>([]),
-    [career, i18n, theme],
-  );
-  const groups = useMemo(() => searchPalette(index, query), [index, query]);
-  const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
-  const activeItem = flat.find((item) => optionId(listId, item.id) === activeKey) ?? flat[0];
-  const activeId = activeItem ? optionId(listId, activeItem.id) : undefined;
-
-  const choose = (item: PaletteItem) => {
-    setOpen(false);
-    const { target } = item;
-    if (target.kind === "route") window.location.hash = hrefFor(target.route);
-    else if (target.kind === "theme") setTheme(target.theme);
-    else i18n.setLocale(target.locale);
-  };
-
-  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (isNavigationKey(event.key)) {
-      event.preventDefault();
-      const current = activeItem ? flat.indexOf(activeItem) : -1;
-      const next = flat[nextActiveIndex(current, flat.length, event.key)];
-      if (next) setActiveKey(optionId(listId, next.id));
-    } else if (event.key === "Enter" && activeItem) {
-      event.preventDefault();
-      choose(activeItem);
-    }
-  };
-
   return (
     <>
       <RadixDialog.Overlay className="fixed inset-0 z-50 bg-bg/70" />
@@ -170,54 +185,12 @@ function PaletteContent() {
           <RadixDialog.Description className="sr-only">
             {t("palette.description")}
           </RadixDialog.Description>
-          <div className="flex items-center gap-2 border-b border-line px-3">
-            <Search aria-hidden="true" className="size-5 shrink-0 text-muted" />
-            <input
-              ref={input}
-              data-testid="palette-input"
-              // The palette handles its own Ctrl+K (it toggles), so the field is not an opt-out.
-              type="text"
-              role="combobox"
-              aria-label={t("palette.inputLabel")}
-              aria-expanded="true"
-              aria-controls={listId}
-              aria-activedescendant={activeId}
-              aria-autocomplete="list"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder={t("palette.placeholder")}
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setActiveKey(undefined);
-              }}
-              onKeyDown={onKeyDown}
-              className="min-h-14 min-w-0 flex-1 bg-transparent text-base text-text outline-none placeholder:text-muted"
-            />
-            <RadixDialog.Close asChild>
-              <IconButton label={t("palette.close")} icon={<X className="size-5" />} />
-            </RadixDialog.Close>
-          </div>
+          <SearchField search={search} input={input} />
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
-            {flat.length > 0 ? (
-              <ResultList
-                groups={groups}
-                listId={listId}
-                activeId={activeId}
-                onHover={setActiveKey}
-                onChoose={choose}
-              />
-            ) : (
-              <EmptyState
-                data-testid="palette-empty"
-                icon={<Search className="size-8" />}
-                title={t("palette.empty", { query: query.trim() })}
-                text={t("palette.emptyHint")}
-              />
-            )}
+            <Results search={search} />
           </div>
           <output className="sr-only" aria-live="polite">
-            {t("palette.resultCount", { count: flat.length })}
+            {t("palette.resultCount", { count: search.count })}
           </output>
         </motion.div>
       </RadixDialog.Content>
