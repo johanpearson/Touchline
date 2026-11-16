@@ -207,3 +207,23 @@ What the run showed:
 - Merged score: 96.49% (97.04% in the second run); no file fell below 79.41% (`momentum-series.ts`, unchanged).
 
 Next steps: read the next nightly. If the slowest shard is still above 45 minutes, cut `out-of-play.ts` and `shot-xg.ts` into line ranges (weight above 25) and consider #244.
+
+### Fourth balanced run (manual, after #285)
+
+Run 43876008326 (2026-11-16, commit `572e70a`, 16 shards): **wall time 37.6 minutes** and a **merged score of 96.97%**. This meets the 1 hour target (second run: 119.5 min, third: 61.4 min) with the weights from #285.
+
+| Shard | Measured | Files |
+| --- | --- | --- |
+| 6 | 37.6 min | `set-piece-shape.ts`, `resolve-clearance.ts`, `action-duration.ts` and two small files |
+| 4 | 36.3 min | `out-of-play.ts` and four small files |
+| 14, 12 | 30.7, 28.8 min | `choose-option.ts`, `player-ratings.ts`, `separate-players.ts` and two more; `create-action-match.ts`, `resolve-challenge.ts` and three more |
+| the other 12 | 4.1 to 24.8 min | the rest, including the four `team-shape.ts` and four `build-options.ts` line ranges (21.6 and 19.9 min for the largest) |
+
+What the run showed:
+
+- The slowest shard went from 61.4 to 37.6 minutes. The plan estimated about 31 for every shard, so the two slowest are within about 20% of it and no shard is a clear outlier any more.
+- `out-of-play.ts` (shard 4, 36.3 min with four small files) is the heaviest single file, about 30 minutes; `shot-xg.ts` took 9.8 minutes with `pitch.ts`. The scaled-up weights from #285 were therefore right for `out-of-play.ts` and too high for `shot-xg.ts`; the plan is within the target, so they are left as they are.
+- Merged score 96.97% (96.49% in the third run). The run to run spread of one shard (shard 16 at 61.4 min, then the same files in shards 3, 4 and 13 at 9.8, 36.3 and 18.9 min) is the reason to keep the plan's margin.
+- The 80% break threshold and the 120 minute shard limit are unchanged and not close to being hit.
+
+Next steps: the weights are good enough, so nothing further is changed for #209. #244 (cost of timed-out mutants) remains the way to shorten the run further, but its target of 45 minutes for the slowest shard is already met; it is now an optimisation, not a need.
