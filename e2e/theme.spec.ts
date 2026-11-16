@@ -57,6 +57,7 @@ test.describe("themes and typography", () => {
 
   test("renders table figures as tabular numbers", async ({ page }) => {
     await page.goto("./#/new");
+    await page.getByTestId("choose-club").click();
     await page.getByTestId("club-name").first().click();
     await page.getByTestId("start-career").click();
     await page

@@ -5,8 +5,17 @@ const APP = "http://localhost:4174/Touchline/";
 
 // Key states of screens. Each screen issue adds its own states here (#253 registers the first one).
 
-// The club list of the new-career flow; the next start-flow issues replace it.
-visualScreen({ name: "new-career", route: "#/new" });
+// The new-career wizard: step 1 (#257) and step 2, the club list that the club-picker issue replaces.
+visualScreen({ name: "new-career-league", route: "#/new" });
+
+visualScreen({
+  name: "new-career",
+  route: "#/new",
+  state: async (page) => {
+    await page.getByTestId("choose-club").click();
+    await page.getByTestId("new-career").waitFor();
+  },
+});
 
 // The start screen (#256): nothing saved, a continue card with saved careers, and a damaged autosave.
 visualScreen({
@@ -19,6 +28,7 @@ visualScreen({
 
 const startCareerAndSave = async (page: Page) => {
   await page.goto(`${APP}#/new`);
+  await page.getByTestId("choose-club").click();
   await page.getByTestId("club-name").first().click();
   await page.getByTestId("start-career").click();
   await page.getByTestId("quick-sim").click();
@@ -80,6 +90,7 @@ visualScreen({
   name: "app-shell-hub",
   route: "#/new",
   state: async (page) => {
+    await page.getByTestId("choose-club").click();
     await page.getByTestId("club-name").first().click();
     await page.getByTestId("start-career").click();
     await page.getByTestId("career-hub").waitFor();
@@ -88,6 +99,7 @@ visualScreen({
 
 // The home dashboard (#259): first matchday (empty table) and after four quick-simmed matchdays.
 const startCareerAtHub = async (page: Page) => {
+  await page.getByTestId("choose-club").click();
   await page.getByTestId("club-name").first().click();
   await page.getByTestId("start-career").click();
   await page.getByTestId("career-hub").waitFor();
@@ -113,6 +125,7 @@ visualScreen({
   name: "command-palette",
   route: "#/new",
   state: async (page) => {
+    await page.getByTestId("choose-club").click();
     await page.getByTestId("club-name").first().click();
     await page.getByTestId("start-career").click();
     await page.getByTestId("career-hub").waitFor();

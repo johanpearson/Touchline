@@ -36,8 +36,16 @@ const leagueFor = (seed: number) => {
   return result.league;
 };
 
+const toClubStep = () => {
+  goTo("#/new");
+  fireEvent.click(screen.getByTestId("choose-club"));
+  goTo("#/new/club");
+};
+
 const startCareer = (clubId: string) => {
   goTo("#/new");
+  fireEvent.click(screen.getByTestId("choose-club"));
+  goTo("#/new/club");
   fireEvent.click(screen.getByTestId(`club-option-${clubId}`));
   fireEvent.click(screen.getByTestId("start-career"));
 };
@@ -120,12 +128,13 @@ describe("App", () => {
   });
 });
 
-describe("new career screen", () => {
-  beforeEach(() => goTo("#/new"));
+describe("new career, club step", () => {
+  beforeEach(() => goTo("#/"));
   afterEach(cleanup);
 
   it("lists the 14 clubs sorted by rating, highest first", () => {
     renderApp();
+    toClubStep();
     const league = leagueFor(11);
     const options = screen.getAllByTestId(/^club-option-/);
     expect(options).toHaveLength(14);
@@ -139,6 +148,7 @@ describe("new career screen", () => {
 
   it("shows each club's rating", () => {
     renderApp();
+    toClubStep();
     const league = leagueFor(11);
     const club = league.clubs[0];
     if (!club) throw new Error("no club");
@@ -150,11 +160,13 @@ describe("new career screen", () => {
 
   it("starts with the seed given by the composition root", () => {
     renderApp(undefined, 42);
+    toClubStep();
     expect((screen.getByTestId("seed-input") as HTMLInputElement).value).toBe("42");
   });
 
   it("regenerates the league when the seed changes", () => {
     renderApp();
+    toClubStep();
     const before = screen.getAllByTestId("club-name").map((n) => n.textContent);
     fireEvent.change(screen.getByTestId("seed-input"), { target: { value: "99" } });
     const after = screen.getAllByTestId("club-name").map((n) => n.textContent);
@@ -165,6 +177,7 @@ describe("new career screen", () => {
 
   it("ignores a seed that is not a whole number", () => {
     renderApp();
+    toClubStep();
     const before = screen.getAllByTestId("club-name").map((n) => n.textContent);
     fireEvent.change(screen.getByTestId("seed-input"), { target: { value: "1.5" } });
     expect(screen.getAllByTestId("club-name").map((n) => n.textContent)).toEqual(before);
@@ -172,11 +185,13 @@ describe("new career screen", () => {
 
   it("cannot start before a club is chosen", () => {
     renderApp();
+    toClubStep();
     expect((screen.getByTestId("start-career") as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("clears the chosen club when it is not in the regenerated league", () => {
     renderApp();
+    toClubStep();
     const first = leagueFor(11).clubs[0];
     if (!first) throw new Error("no club");
     fireEvent.click(screen.getByTestId(`club-option-${first.id}`));
@@ -188,6 +203,7 @@ describe("new career screen", () => {
 
   it("starts the career and shows the hub for the chosen club", () => {
     renderApp();
+    toClubStep();
     const club = leagueFor(11).clubs[3];
     if (!club) throw new Error("no club");
     startCareer(club.id);
@@ -198,11 +214,13 @@ describe("new career screen", () => {
 
   it("does not offer a choice of match engine", () => {
     renderApp();
+    toClubStep();
     expect(screen.queryByTestId("engine-version")).toBeNull();
   });
 
   it("starts a career that plays on the action engine and quick-sims its matchday", () => {
     renderApp();
+    toClubStep();
     startCareer(leagueFor(11).clubs[0]?.id ?? "");
     expect(screen.getByTestId("play-match")).toBeTruthy();
 
@@ -213,6 +231,7 @@ describe("new career screen", () => {
 
   it("plays the career's match in the match view", () => {
     renderApp();
+    toClubStep();
     startCareer(leagueFor(11).clubs[0]?.id ?? "");
     goTo("#/match");
     expect(screen.getByTestId("match-screen")).toBeTruthy();

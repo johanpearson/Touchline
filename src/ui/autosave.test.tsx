@@ -72,6 +72,8 @@ const firstClub = () => {
 const startCareer = () => {
   const club = firstClub();
   goTo("#/new");
+  fireEvent.click(screen.getByTestId("choose-club"));
+  goTo("#/new/club");
   fireEvent.click(screen.getByTestId(`club-option-${club.id}`));
   fireEvent.click(screen.getByTestId("start-career"));
   return club;

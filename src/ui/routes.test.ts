@@ -17,6 +17,14 @@ describe("parseRoute", () => {
     expect(parseRoute("#/new")).toEqual({ name: "new" });
   });
 
+  it("parses the club step of the new-career wizard", () => {
+    expect(parseRoute("#/new/club")).toEqual({ name: "new-club" });
+  });
+
+  it("returns not-found for unknown wizard steps", () => {
+    expect(parseRoute("#/new/league")).toEqual({ name: "not-found" });
+  });
+
   it("parses a club route with its id", () => {
     expect(parseRoute("#/club/kvarnby")).toEqual({ name: "club", clubId: "kvarnby" });
   });
@@ -44,6 +52,7 @@ describe("hrefFor", () => {
       { name: "saves" },
       { name: "squad" },
       { name: "new" },
+      { name: "new-club" },
       { name: "match" },
       { name: "season-end" },
       { name: "club", clubId: "a b" },
