@@ -6,6 +6,7 @@ import {
   groupRows,
   nextSort,
   parseSortKey,
+  type SortOptions,
   sortKey,
   sortOptions,
   sortRows,
@@ -53,52 +54,45 @@ describe("columnsForWidth", () => {
 describe("sortRows", () => {
   const byName = col("name", 1, { sortValue: (r) => r.name });
   const byPts = col("pts", 1, { sortValue: (r) => r.pts });
+  const order = (
+    column: Column<Row>,
+    options: Partial<SortOptions<Row>>,
+    field: "id" | "name" = "id",
+  ) => sortRows(rows, column, { direction: "asc", locale: "en", ...options }).map((r) => r[field]);
+  const tieBreak = (r: Row) => r.name;
 
-  it("sorts numbers ascending and descending", () => {
-    expect(sortRows(rows, byPts, { direction: "asc", locale: "en" }).map((r) => r.id)).toEqual([
-      "d",
-      "a",
-      "c",
-      "b",
-    ]);
-    expect(sortRows(rows, byPts, { direction: "desc", locale: "en" }).map((r) => r.id)).toEqual([
-      "b",
-      "a",
-      "c",
-      "d",
-    ]);
+  it.each([
+    ["numbers ascending", byPts, { direction: "asc" }, "id", ["d", "a", "c", "b"]],
+    ["numbers descending", byPts, { direction: "desc" }, "id", ["b", "a", "c", "d"]],
+    [
+      "text with Swedish collation",
+      byName,
+      { locale: "sv" },
+      "name",
+      ["Alba", "Zeta", "Åre", "Örebro"],
+    ],
+    [
+      "text with English collation",
+      byName,
+      { locale: "en" },
+      "name",
+      ["Alba", "Åre", "Örebro", "Zeta"],
+    ],
+    ["ties by key ascending", byPts, { direction: "asc", tieBreak }, "id", ["d", "c", "a", "b"]],
+    [
+      "ties by key when descending",
+      byPts,
+      { direction: "desc", tieBreak },
+      "id",
+      ["b", "c", "a", "d"],
+    ],
+  ] as const)("sorts %s", (_name, column, options, field, expected) => {
+    expect(order(column, options, field)).toEqual(expected);
   });
 
-  it("is stable for equal values", () => {
-    const asc = sortRows(rows, byPts, { direction: "asc", locale: "en" }).map((r) => r.id);
-    expect(asc.indexOf("a")).toBeLessThan(asc.indexOf("c"));
-    const desc = sortRows(rows, byPts, { direction: "desc", locale: "en" }).map((r) => r.id);
-    expect(desc.indexOf("a")).toBeLessThan(desc.indexOf("c"));
-  });
-
-  it("breaks ties with the given key, ascending regardless of direction", () => {
-    const tie = (r: Row) => r.name;
-    expect(
-      sortRows(rows, byPts, { direction: "asc", locale: "en", tieBreak: tie }).map((r) => r.id),
-    ).toEqual(["d", "c", "a", "b"]);
-    expect(
-      sortRows(rows, byPts, { direction: "desc", locale: "en", tieBreak: tie }).map((r) => r.id),
-    ).toEqual(["b", "c", "a", "d"]);
-  });
-
-  it("uses the locale's collation for text", () => {
-    expect(sortRows(rows, byName, { direction: "asc", locale: "sv" }).map((r) => r.name)).toEqual([
-      "Alba",
-      "Zeta",
-      "Åre",
-      "Örebro",
-    ]);
-    expect(sortRows(rows, byName, { direction: "asc", locale: "en" }).map((r) => r.name)).toEqual([
-      "Alba",
-      "Åre",
-      "Örebro",
-      "Zeta",
-    ]);
+  it.each(["asc", "desc"] as const)("is stable for equal values when %s", (direction) => {
+    const ids = order(byPts, { direction });
+    expect(ids.indexOf("a")).toBeLessThan(ids.indexOf("c"));
   });
 
   it("returns the rows unchanged for a column without a sort value", () => {
