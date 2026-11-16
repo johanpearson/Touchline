@@ -59,66 +59,85 @@ type SideNavProps = {
   mode: "sidebar" | "rail";
 };
 
-/** The desktop sidebar and the tablet icon rail, one landmark so test ids stay unique. */
-export function SideNav({ mode }: SideNavProps) {
+function Scrim({ onClose }: { onClose: () => void }) {
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      aria-hidden="true"
+      className="fixed inset-0 z-30 cursor-default bg-bg/70"
+      onClick={onClose}
+    />
+  );
+}
+
+function RailToggle({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
   const { t } = useI18n();
+  const Icon = expanded ? PanelLeftClose : PanelLeftOpen;
+  return (
+    <IconButton
+      size="sm"
+      aria-expanded={expanded}
+      label={t(expanded ? "shell.collapseNav" : "shell.expandNav")}
+      icon={<Icon className="size-5" />}
+      onClick={onToggle}
+    />
+  );
+}
+
+function NavFooter() {
+  return (
+    <div className="mt-auto flex flex-col gap-2 text-sm text-soft">
+      <LocaleSwitch />
+      <ThemeSwitch />
+    </div>
+  );
+}
+
+const navStyles = (mode: SideNavProps["mode"], overlay: boolean): string =>
+  cn(
+    "box-border flex h-dvh flex-col gap-4 overflow-y-auto border-r border-line bg-side p-3",
+    mode === "sidebar" ? "sticky top-0" : "fixed inset-y-0 left-0 z-20 w-18",
+    overlay && "z-40 w-60 shadow-xl",
+  );
+
+/** Expanded state of the rail: collapses on Escape and whenever the layout is the sidebar. */
+function useRailExpansion(mode: SideNavProps["mode"]) {
   const [expanded, setExpanded] = useState(false);
-  const overlay = mode === "rail" && expanded;
-  const compact = mode === "rail" && !expanded;
   useEffect(() => {
     if (mode === "sidebar") setExpanded(false);
   }, [mode]);
+  const collapse = () => setExpanded(false);
   const onKeyDown = (event: KeyboardEvent) => {
-    if (event.key === "Escape" && expanded) setExpanded(false);
+    if (event.key === "Escape") collapse();
   };
+  return { expanded, toggle: () => setExpanded(!expanded), collapse, onKeyDown };
+}
+
+/** The desktop sidebar and the tablet icon rail, one landmark so test ids stay unique. */
+export function SideNav({ mode }: SideNavProps) {
+  const { t } = useI18n();
+  const rail = mode === "rail";
+  const { expanded, toggle, collapse, onKeyDown } = useRailExpansion(mode);
+  const overlay = rail && expanded;
+  const compact = rail && !expanded;
   return (
-    <div className={cn("shrink-0", mode === "sidebar" ? "w-60" : "w-18")}>
-      {overlay ? (
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden="true"
-          className="fixed inset-0 z-30 cursor-default bg-bg/70"
-          onClick={() => setExpanded(false)}
-        />
-      ) : null}
+    <div className={cn("shrink-0", rail ? "w-18" : "w-60")}>
+      {overlay ? <Scrim onClose={collapse} /> : null}
       <nav
         aria-label={t("nav.label")}
         data-testid="career-nav"
         onKeyDown={onKeyDown}
-        className={cn(
-          "box-border flex h-dvh flex-col gap-4 overflow-y-auto border-r border-line bg-side p-3",
-          mode === "sidebar" ? "sticky top-0" : "fixed inset-y-0 left-0",
-          overlay ? "z-40 w-60 shadow-xl" : mode === "rail" && "z-20 w-18",
-        )}
+        className={navStyles(mode, overlay)}
       >
         <div
           className={cn("flex items-center px-1", compact ? "justify-center" : "justify-between")}
         >
           <Brand hidden={compact} />
-          {mode === "rail" ? (
-            <IconButton
-              size="sm"
-              aria-expanded={expanded}
-              label={t(expanded ? "shell.collapseNav" : "shell.expandNav")}
-              icon={
-                expanded ? (
-                  <PanelLeftClose className="size-5" />
-                ) : (
-                  <PanelLeftOpen className="size-5" />
-                )
-              }
-              onClick={() => setExpanded(!expanded)}
-            />
-          ) : null}
+          {rail ? <RailToggle expanded={expanded} onToggle={toggle} /> : null}
         </div>
-        <NavList compact={compact} onNavigate={() => setExpanded(false)} />
-        {compact ? null : (
-          <div className="mt-auto flex flex-col gap-2 text-sm text-soft">
-            <LocaleSwitch />
-            <ThemeSwitch />
-          </div>
-        )}
+        <NavList compact={compact} onNavigate={collapse} />
+        {compact ? null : <NavFooter />}
       </nav>
     </div>
   );
