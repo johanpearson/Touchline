@@ -1,4 +1,5 @@
-import type { FileTransfer, LocaleStore, SaveStore } from "../shared";
+import { createMemoryThemeStore } from "../platform";
+import type { FileTransfer, LocaleStore, SaveStore, ThemeStore } from "../shared";
 import { CareerHubScreen } from "./career-hub-screen";
 import { CareerNav } from "./career-nav";
 import { ClubView } from "./club-screen";
@@ -15,8 +16,11 @@ import { SavesScreen } from "./saves-screen";
 import { SeasonEndScreen } from "./season-end-screen";
 import { SquadScreen } from "./squad-screen";
 import { StorageWarning } from "./storage-warning";
+import { ThemeProvider } from "./theme/theme-provider";
+import { ThemeSwitch } from "./theme/theme-switch";
 import { CareerProvider, useCareer } from "./use-career";
 import { useRoute } from "./use-route";
+import "./theme/theme.css";
 import "./app.css";
 
 type RendererProp = Pick<MatchScreenProps, "createRenderer" | "tickMs">;
@@ -56,6 +60,7 @@ function Shell({ createRenderer, tickMs, initialSeed, storageAvailable }: ShellP
         <h1 data-testid="app-title">{t("app.title")}</h1>
         <SaveStatus />
         <LocaleSwitch />
+        <ThemeSwitch />
       </header>
       {storageAvailable ? null : <StorageWarning />}
       <CareerNav route={route} />
@@ -66,6 +71,8 @@ function Shell({ createRenderer, tickMs, initialSeed, storageAvailable }: ShellP
 
 export type AppProps = {
   localeStore: LocaleStore;
+  /** Remembers the chosen theme. Defaults to an in-memory store (no persistence). */
+  themeStore?: ThemeStore;
   /** Where autosaves are written. The composition root passes IndexedDB, or memory as a fallback. */
   saveStore: SaveStore;
   /** Downloads and file picking for save export and import. */
@@ -78,8 +85,11 @@ export type AppProps = {
   initialSeed: number;
 } & RendererProp;
 
+const fallbackThemeStore = createMemoryThemeStore();
+
 export function App({
   localeStore,
+  themeStore,
   saveStore,
   fileTransfer,
   now,
@@ -90,14 +100,16 @@ export function App({
 }: AppProps) {
   return (
     <I18nProvider store={localeStore}>
-      <CareerProvider saveStore={saveStore} now={now} fileTransfer={fileTransfer}>
-        <Shell
-          createRenderer={createRenderer}
-          tickMs={tickMs}
-          initialSeed={initialSeed}
-          storageAvailable={storageAvailable}
-        />
-      </CareerProvider>
+      <ThemeProvider store={themeStore ?? fallbackThemeStore}>
+        <CareerProvider saveStore={saveStore} now={now} fileTransfer={fileTransfer}>
+          <Shell
+            createRenderer={createRenderer}
+            tickMs={tickMs}
+            initialSeed={initialSeed}
+            storageAvailable={storageAvailable}
+          />
+        </CareerProvider>
+      </ThemeProvider>
     </I18nProvider>
   );
 }

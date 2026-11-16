@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   createBrowserFileTransfer,
   createBrowserLocaleStore,
+  createBrowserThemeStore,
   createIndexedDbSaveStore,
   createMemorySaveStore,
   isIndexedDbAvailable,
@@ -21,6 +22,7 @@ async function start() {
     <StrictMode>
       <App
         localeStore={createBrowserLocaleStore()}
+        themeStore={createBrowserThemeStore()}
         saveStore={storageAvailable ? createIndexedDbSaveStore() : createMemorySaveStore()}
         fileTransfer={createBrowserFileTransfer()}
         storageAvailable={storageAvailable}

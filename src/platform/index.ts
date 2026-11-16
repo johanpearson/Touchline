@@ -10,3 +10,4 @@ export { migrateSave } from "./save/migrations";
 export type { ParseSaveFileResult, SaveFileError } from "./save/save-file";
 export { MAX_SAVE_FILE_BYTES, parseSaveFile, saveFileName, serializeSave } from "./save/save-file";
 export { CURRENT_SCHEMA_VERSION } from "./save/schema";
+export { createBrowserThemeStore, createMemoryThemeStore, THEME_STORAGE_KEY } from "./theme-store";
