@@ -187,3 +187,23 @@ What the run showed:
 - Setup per shard is still about 2 minutes.
 
 Next steps: with the refreshed weights the plan makes 16 shards of about 28 to 33 estimated minutes (the maximum shard count). If the next run's longest shard is still far above that, the next lever is the line-range cut for more files (weight above 25), not a longer timeout; see #244 for the timeout mutants.
+
+### Third balanced run (manual, after #277)
+
+Run 43864011566 (2026-11-16, commit `4e650a6`, 16 shards of the plan from #277): **wall time 61.4 minutes** and a **merged score of 96.49%** (above the 80% break threshold). It is inside the 2 hour limit and only just over the 1 hour target, but the slowest shard took about twice the plan's 28 to 33 minutes.
+
+| Shard | Measured | Files |
+| --- | --- | --- |
+| 16 | 61.4 min | `action-balance-metrics.ts`, `out-of-play.ts`, `shot-xg.ts` and three small files |
+| 12 | 31.0 min | `action-stats.ts`, `apply-change-to-input.ts`, `limit-snapshot-speed.ts`, `pressure.ts`, `separate-players.ts` |
+| 2, 15, 1 | 24.2, 23.1, 22.2 min | `build-options.ts:55-131`; `choose-option.ts`, `resolve-shot.ts` and three more; `team-shape.ts:139-205` |
+| the other 12 | 4.4 to 19.3 min | the rest, including the other three `team-shape.ts` and `build-options.ts` ranges |
+
+What the run showed:
+
+- Cutting `team-shape.ts` into four line ranges worked: the ranges took 22.2, 14.8 (shared), 8.0 (shared) and 4.4 (shared) minutes, against 117 minutes as one unit in the second run. The slowest `build-options.ts` range took 24.2 minutes.
+- Shard 16 is the only shard far above its estimate (about 28 minutes planned, 61 measured). Its heavy files are `out-of-play.ts` and `shot-xg.ts` (35 and 37 timed-out mutants): in the second run they shared a 34 minute shard with four other files. The log cannot say which file took the time, so their weights are scaled up in proportion to their estimates (each is now below the 25 minute cut-off, so they are not cut, but they no longer share a shard with each other by default).
+- Timeout mutants drive the variance (see #244); runner speed also moves them.
+- Merged score: 96.49% (97.04% in the second run); no file fell below 79.41% (`momentum-series.ts`, unchanged).
+
+Next steps: read the next nightly. If the slowest shard is still above 45 minutes, cut `out-of-play.ts` and `shot-xg.ts` into line ranges (weight above 25) and consider #244.
