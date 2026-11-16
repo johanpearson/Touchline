@@ -55,6 +55,12 @@ export const parseMutationScore = (log) => {
   return match ? toNumber(match[1]) : null;
 };
 
+/** Wall time in minutes of the longest mutation shard, from the merged report's last section, or null. */
+export const parseMutationMinutes = (log) => {
+  const match = /Wall time \(longest shard\):\s*([\d.]+)\s*min/.exec(stripColour(log));
+  return match ? toNumber(match[1]) : null;
+};
+
 /** The result a nightly job writes. `outcome` is the GitHub job status: success, failure, cancelled or skipped. */
 export const makeResult = ({ job, outcome, date, sha, ref, runUrl, metrics }) => ({
   job,
@@ -155,7 +161,9 @@ const metricsFor = (job, log) => {
   if (job === "balance") return parseBalanceLog(log) ?? {};
   if (job === "mutation") {
     const mutationScore = parseMutationScore(log);
-    return mutationScore === null ? {} : { mutationScore };
+    const durationMinutes = parseMutationMinutes(log);
+    if (mutationScore === null) return {};
+    return durationMinutes === null ? { mutationScore } : { mutationScore, durationMinutes };
   }
   return {};
 };

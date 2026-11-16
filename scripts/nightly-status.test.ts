@@ -39,6 +39,15 @@ describe("parseMutationScore", () => {
   });
 });
 
+describe("parseMutationMinutes", () => {
+  it("reads the wall time of the longest shard", () => {
+    expect(status.parseMutationMinutes("All files | 90.00 |\n\nWall time (longest shard): 47.6 min")).toBe(47.6);
+  });
+  it("returns null for a single-job log", () => {
+    expect(status.parseMutationMinutes("All files       |   98.86 |      203 |")).toBeNull();
+  });
+});
+
 describe("badges and status entries", () => {
   it("makes a passing balance job green with the key numbers", () => {
     const r = result({ metrics: { goalsPerMatch: 2.71, shotsPerMatch: 24.3, homeWinPercent: 45.2 } });
