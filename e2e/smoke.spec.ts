@@ -17,6 +17,25 @@ test.describe("smoke", () => {
   });
 });
 
+test.describe("blocked storage", () => {
+  test("renders and switches language when window.localStorage throws", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        get() {
+          throw new DOMException("blocked", "SecurityError");
+        },
+      });
+    });
+    await page.goto("./");
+    await expect(page.getByTestId("app-title")).toHaveText("Touchline");
+
+    await page.getByTestId("locale-switch").selectOption("sv");
+
+    await expect(page.getByLabel("Språk")).toBeVisible();
+  });
+});
+
 test.describe("new career", () => {
   test("picks a club, starts the career and shows the hub", async ({ page }) => {
     await page.goto("./");
