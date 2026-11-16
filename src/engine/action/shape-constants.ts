@@ -55,7 +55,7 @@ export const MENTALITY_COMPACTNESS: Record<Mentality, number> = {
 };
 
 /** Multiplies the lateral spread. */
-export const WIDTH_SCALE: Record<Width, number> = { narrow: 0.9, normal: 1, wide: 1.35 };
+export const WIDTH_SCALE: Record<Width, number> = { narrow: 0.95, normal: 1, wide: 1.35 };
 
 /** The block shifts towards the ball: metres per metre of ball offset, capped. */
 export const BALL_PULL_DEPTH = 0.15;
