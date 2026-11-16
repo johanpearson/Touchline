@@ -38,6 +38,30 @@ describe("the balance groups", () => {
   });
 });
 
+describe("the fast balance groups", () => {
+  const all = Object.values(balance.BALANCE_GROUPS).flat() as string[];
+  const fastFiles = Object.values(balance.FAST_GROUPS).flat() as string[];
+
+  it("cover every balance file except the 81 tactic combinations, each exactly once", () => {
+    const expected = all.filter((f) => !f.includes("action-no-dominant-tactic-"));
+    expect([...fastFiles].sort()).toEqual([...expected].sort());
+    expect(new Set(fastFiles).size).toBe(fastFiles.length);
+  });
+
+  it("keep the formation suite in a job of its own, because it timed out next to the league suites (#292)", () => {
+    const formationGroups = Object.values(balance.FAST_GROUPS).filter((files) => (files as string[]).some((f) => f.endsWith("formation.balance.test.ts")));
+    expect(formationGroups).toHaveLength(1);
+    expect(formationGroups[0]).toHaveLength(1);
+  });
+
+  it("are found by name and do not clash with the full groups", () => {
+    for (const name of Object.keys(balance.FAST_GROUPS)) {
+      expect(balance.filesOfGroup(name)).toEqual(balance.FAST_GROUPS[name]);
+      expect(Object.keys(balance.BALANCE_GROUPS)).not.toContain(name);
+    }
+  });
+});
+
 describe("the balance workflows", () => {
   const ci = readFileSync(".github/workflows/ci.yml", "utf8");
   const nightly = readFileSync(".github/workflows/nightly.yml", "utf8");
@@ -46,6 +70,11 @@ describe("the balance workflows", () => {
   it("run one matrix job per group on pull requests", () => {
     const matrix = /balance-shard:[\s\S]*?group:\s*\[([^\]]*)\]/.exec(ci);
     expect((matrix?.[1] ?? "").split(",").map((g) => g.trim())).toEqual(groups);
+  });
+
+  it("run one fast job per fast group on pull requests", () => {
+    const matrix = /balance-fast:[\s\S]*?group:\s*\[([^\]]*)\]/.exec(ci);
+    expect((matrix?.[1] ?? "").split(",").map((g) => g.trim())).toEqual(Object.keys(balance.FAST_GROUPS));
   });
 
   it("keep a final job named Balance that waits for the shards and the fast run", () => {
