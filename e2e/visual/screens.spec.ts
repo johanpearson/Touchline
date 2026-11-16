@@ -89,7 +89,7 @@ visualScreen({
 // The command palette (#255) open over the hub, with a query that matches clubs and players.
 visualScreen({
   name: "command-palette",
-  route: "#/",
+  route: "#/new",
   state: async (page) => {
     await page.getByTestId("club-name").first().click();
     await page.getByTestId("start-career").click();
