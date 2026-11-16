@@ -3,6 +3,12 @@ export { Button, type ButtonProps } from "./button";
 export { Card, type CardProps } from "./card";
 export { cn } from "./cn";
 export { ConfirmDialog, type ConfirmDialogProps } from "./confirm-dialog";
+export {
+  DataTable,
+  type DataTableLabels,
+  type DataTableProps,
+} from "./data-table";
+export type { Column, ColumnPriority, SortState } from "./data-table-logic";
 export { Dialog, type DialogProps } from "./dialog";
 export { Drawer, type DrawerProps } from "./drawer";
 export { EmptyState, type EmptyStateProps } from "./empty-state";
