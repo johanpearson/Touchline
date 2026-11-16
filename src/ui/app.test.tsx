@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateLeague } from "../game";
 import {
+  createMemoryDensityStore,
   createMemoryFileTransfer,
   createMemoryLocaleStore,
   createMemorySaveStore,
@@ -96,6 +97,25 @@ describe("App", () => {
     startCareer(leagueFor(11).clubs[0]?.id ?? "");
     expect(screen.getByTestId("career-hub")).toBeTruthy();
     expect(screen.getByTestId("locale-switch")).toBeTruthy();
+  });
+
+  it("gives the squad table the density from the density store", () => {
+    const league = leagueFor(11);
+    render(
+      <App
+        createRenderer={createRenderer}
+        localeStore={createMemoryLocaleStore("en")}
+        densityStore={createMemoryDensityStore("comfortable")}
+        saveStore={createMemorySaveStore()}
+        fileTransfer={createMemoryFileTransfer()}
+        now={fixedNow}
+        initialSeed={11}
+      />,
+    );
+    startCareer(league.clubs[0]?.id ?? "");
+    goTo("#/squad");
+    const row = screen.getAllByTestId(/^plan-row-/)[0] as HTMLElement;
+    expect(within(row).getAllByRole("cell")[1]?.className).toContain("py-3.5");
   });
 
   it("does not show the demo match on the root route", () => {
