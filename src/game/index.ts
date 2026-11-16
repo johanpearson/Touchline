@@ -44,6 +44,8 @@ export { generateSquad, SQUAD_SHAPE } from "./generate-squad";
 export { getNextFixture } from "./get-next-fixture";
 export { goalScorersOf } from "./goal-scorers";
 export { isSeasonComplete } from "./is-season-complete";
+export type { ClubKits, Kit } from "./kits";
+export { chooseKits, colourDistance, KIT_CLASH_THRESHOLD, kitsOf } from "./kits";
 export type { League } from "./league";
 export type { LineRating, LineRatings } from "./line-ratings";
 export {
