@@ -1,5 +1,11 @@
 import type { ActionMatchChange, TeamTactics } from "../engine";
 import type { Career } from "./career";
+import {
+  checkSubstitutions,
+  MAX_SUBSTITUTION_WINDOWS,
+  MAX_SUBSTITUTIONS,
+  type SubstitutionError,
+} from "./check-substitutions";
 import type { Fixture } from "./generate-fixtures";
 import { liveSquadAfter, minutesOnPitch, type SubstitutionRecord } from "./live-squad";
 import type { Player } from "./player";
@@ -17,12 +23,9 @@ import { toEnginePlayers } from "./to-engine-players";
 import type { MatchReport } from "./update-condition";
 import { userMatchSide } from "./user-match-side";
 
-/** Most substitutions in a match, however they are spread over the windows. */
-export const MAX_SUBSTITUTIONS = 5;
-/** Most substitution windows besides half-time. */
-export const MAX_SUBSTITUTION_WINDOWS = 3;
-
 /** The minute of the half-time window. */
+export { MAX_SUBSTITUTION_WINDOWS, MAX_SUBSTITUTIONS };
+
 export const HALF_TIME_MINUTE = FITNESS_MATCH_MINUTES / 2;
 
 /** Everything the user has changed so far in a match; start from `EMPTY_MATCH_CHANGES`. */
@@ -49,12 +52,7 @@ export type MatchChange = {
 export type PlanChangeError =
   | "minute-out-of-range"
   | "change-in-the-past"
-  | "too-many-substitutions"
-  | "too-many-windows"
-  | "duplicate-substitution"
-  | "player-not-on-pitch"
-  | "player-not-on-bench"
-  | "position-mismatch"
+  | SubstitutionError
   | ShoutError;
 
 export type PlannedChange = {
@@ -78,11 +76,6 @@ export type PlanChangeOptions = {
 
 const fail = (error: PlanChangeError): PlanChangeResult => ({ ok: false, error });
 
-const hasDuplicates = (ids: readonly string[]): boolean => new Set(ids).size !== ids.length;
-
-const windowsOf = (substitutions: readonly SubstitutionRecord[]): number =>
-  new Set(substitutions.filter((s) => !s.halfTime).map((s) => s.minute)).size;
-
 const checkMoment = (minute: number, changes: MatchChanges): PlanChangeError | undefined => {
   if (!Number.isFinite(minute) || minute < 0) return "minute-out-of-range";
   const last = [...changes.substitutions, ...changes.shouts].reduce(
@@ -90,46 +83,6 @@ const checkMoment = (minute: number, changes: MatchChanges): PlanChangeError | u
     0,
   );
   return minute < last ? "change-in-the-past" : undefined;
-};
-
-type SubstitutionCheck = {
-  substitutions: readonly { off: string; on: string }[];
-  minute: number;
-  halfTime: boolean;
-  changes: MatchChanges;
-  onPitch: readonly string[];
-  bench: readonly string[];
-  position: (id: string) => PlayerPosition;
-  samePosition: boolean;
-};
-
-const hasDuplicateSubstitution = (substitutions: SubstitutionCheck["substitutions"]): boolean =>
-  hasDuplicates(substitutions.map((s) => s.off)) || hasDuplicates(substitutions.map((s) => s.on));
-
-/** True when these substitutions need a new window and all three are used. */
-const exceedsWindows = (c: SubstitutionCheck): boolean => {
-  if (c.substitutions.length === 0 || c.halfTime) return false;
-  const inWindow = c.changes.substitutions.some((s) => !s.halfTime && s.minute === c.minute);
-  return !inWindow && windowsOf(c.changes.substitutions) >= MAX_SUBSTITUTION_WINDOWS;
-};
-
-const checkLimits = (c: SubstitutionCheck): PlanChangeError | undefined => {
-  if (c.changes.substitutions.length + c.substitutions.length > MAX_SUBSTITUTIONS) {
-    return "too-many-substitutions";
-  }
-  if (hasDuplicateSubstitution(c.substitutions)) return "duplicate-substitution";
-  return exceedsWindows(c) ? "too-many-windows" : undefined;
-};
-
-const checkSubstitutions = (c: SubstitutionCheck): PlanChangeError | undefined => {
-  const limit = checkLimits(c);
-  if (limit) return limit;
-  for (const { off, on } of c.substitutions) {
-    if (!c.onPitch.includes(off)) return "player-not-on-pitch";
-    if (!c.bench.includes(on)) return "player-not-on-bench";
-    if (c.samePosition && c.position(off) !== c.position(on)) return "position-mismatch";
-  }
-  return undefined;
 };
 
 const recordsOf = (
