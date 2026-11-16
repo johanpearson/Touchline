@@ -12,7 +12,7 @@ export default mergeConfig(
       exclude: ["src/**/*.balance.test.ts", "src/**/*.perf.test.ts", "node_modules/**"],
       coverage: {
         provider: "v8",
-        // lcov is read by the CodeScene upload (.github/workflows/codescene-coverage.yml).
+        // lcov is read by the CodeScene upload (the "Upload coverage to CodeScene" step in .github/workflows/ci.yml).
         reporter: ["text", "lcov"],
         include: ["src/**/*.{ts,tsx}"],
         exclude: [

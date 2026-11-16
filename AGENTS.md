@@ -21,7 +21,7 @@ CodeScene's MCP server (`.mcp.json` at the root, `.vscode/mcp.json` for VS Code)
 ### Repo specifics
 
 - `src/engine` is guarded by balance tests and nightly mutation testing. A refactoring there must keep the seeded results identical (see the nightly status check in `CLAUDE.md`).
-- Coverage is not an MCP tool. `.github/workflows/codescene-coverage.yml` uploads it to the CodeScene dashboard; for coverage work use `npm run test:coverage`.
+- Coverage is not an MCP tool. the `Verify` job in `.github/workflows/ci.yml` uploads it (from its single coverage run) to the CodeScene dashboard; for coverage work use `npm run test:coverage`.
 
 ### Setup (per developer)
 
