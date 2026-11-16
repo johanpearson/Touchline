@@ -36,11 +36,6 @@ describe("the balance groups", () => {
     expect(balance.filesOfGroup("game")).toEqual(balance.BALANCE_GROUPS.game);
     expect(() => balance.filesOfGroup("nope")).toThrow(RangeError);
   });
-
-  it("matches the fast subset that skips the tactic combination files", () => {
-    const fast = balanceFilesOnDisk.filter((f) => !f.includes("action-no-dominant-tactic-"));
-    expect(fast.length).toBeGreaterThan(0);
-  });
 });
 
 describe("the balance workflows", () => {

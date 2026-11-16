@@ -9,8 +9,43 @@ permissions:
   contents: read
 
 jobs:
+  # The full balance suite runs as parallel groups (#219), the same groups as the PR `Balance` job (scripts/balance-groups.mjs).
+  # Keep the group list below the same as BALANCE_GROUPS there (balance-groups.test.ts checks it). Each shard uploads its log and
+  # outcome; `balance-full` joins them (merge reads `balance-shard-<group>` folders), so the status, the badge and the failure issue still see one `balance` result.
+  balance-shard:
+    name: Balance ${{ matrix.group }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [game, tactics-attacking, tactics-balanced, tactics-defensive]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Balance group
+        run: |
+          set -o pipefail
+          mkdir -p shard
+          FORCE_COLOR=0 npm run test:balance:group -- ${{ matrix.group }} 2>&1 | tee shard/balance.log
+      - name: Write the outcome
+        if: always()
+        run: echo "${{ job.status }}" > shard/outcome.txt
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: balance-shard-${{ matrix.group }}
+          path: shard
+          if-no-files-found: ignore
+
   balance-full:
     name: Balance (full)
+    needs: balance-shard
+    # Runs even when a shard failed, so the result and the issue are written.
+    if: always()
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -20,17 +55,20 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Full balance suite
-        run: |
-          set -o pipefail
-          FORCE_COLOR=0 npm run test:balance 2>&1 | tee balance.log
+      - uses: actions/download-artifact@v7
+        continue-on-error: true
+        with:
+          pattern: balance-shard-*
+          path: shards
+      - name: Join the shard logs
+        id: join
+        run: node scripts/balance-groups.mjs merge --in shards --out balance.log
       - name: Open an issue for the failure
         if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILED_GROUPS: ${{ steps.join.outputs.failed_groups }}
         run: bash scripts/nightly-balance-issue.sh balance.log
       - name: Write the result
         if: always()

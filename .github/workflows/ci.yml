@@ -38,18 +38,18 @@ jobs:
         run: npm run test:perf
       - run: npm run build
 
-  balance:
-    name: Balance
+  # Balance runs as separate jobs (#219). `balance-scope` decides whether the full suite is needed; the fast subset is one job, the
+  # full suite a matrix of groups from scripts/balance-groups.mjs (explicit groups of similar run time, a test checks that every
+  # balance file is in one). The final `Balance` job keeps the required check name and fails if any part failed.
+  balance-scope:
+    name: Balance scope
     runs-on: ubuntu-latest
+    outputs:
+      full: ${{ steps.scope.outputs.full }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
       - name: Choose the balance suite
         id: scope
         env:
@@ -58,7 +58,7 @@ jobs:
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: |
           # Fast subset by default. The full suite (all 81 tactic combinations) runs when the
-          # PR has the `full-balance` label or changes the engine or any balance test.
+          # PR has the `full-balance` label or changes the engine, a balance test or the balance workflow scripts.
           # The full suite also runs every night (nightly.yml).
           full=false
           if [ "$EVENT" = "pull_request" ]; then
@@ -69,12 +69,55 @@ jobs:
           fi
           echo "full=$full" >> "$GITHUB_OUTPUT"
           echo "Full balance suite: $full"
-      - name: Engine balance tests (fast)
-        if: steps.scope.outputs.full != 'true'
-        run: npm run test:balance:fast
-      - name: Engine balance tests (full)
-        if: steps.scope.outputs.full == 'true'
-        run: npm run test:balance
+
+  balance-fast:
+    name: Balance (fast)
+    needs: balance-scope
+    if: needs.balance-scope.outputs.full != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:balance:fast
+
+  # Keep the group list in step with BALANCE_GROUPS in scripts/balance-groups.mjs (balance-groups.test.ts checks it).
+  balance-shard:
+    name: Balance ${{ matrix.group }}
+    needs: balance-scope
+    if: needs.balance-scope.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [game, tactics-attacking, tactics-balanced, tactics-defensive]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:balance:group -- ${{ matrix.group }}
+
+  balance:
+    name: Balance
+    needs: [balance-scope, balance-fast, balance-shard]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every balance job to pass or be skipped
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in success|skipped) ;; *) echo "::error::A balance job ended with: $result"; exit 1 ;; esac
+          done
+          case "$RESULTS" in *success*) ;; *) echo "::error::No balance job ran"; exit 1 ;; esac
 
   e2e:
     name: E2E smoke
