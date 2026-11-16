@@ -1,0 +1,114 @@
+name: Visual baselines
+
+# Keeps the visual regression baselines (e2e/visual/__screenshots__) current without anyone running anything.
+# After a push to main that can change visuals, this workflow regenerates the baselines on the CI Linux runner,
+# checks that a second run is identical, and opens (or updates) one pull request `bot/visual-baselines` with
+# auto-merge. Pull requests only get a report of visual differences (job `Visual`); they are never blocked by
+# them and never need baseline commits. Run it by hand from the Actions tab to rebuild all baselines.
+#
+# Needs the repository secrets APP_ID and APP_PRIVATE_KEY of a GitHub App with contents and pull requests write
+# access. A pull request opened with the default GITHUB_TOKEN does not start CI, so auto-merge would wait for
+# ever; see docs/architecture.md, "Visual baselines".
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/ui/**"
+      - "e2e/visual/**"
+      - "!e2e/visual/__screenshots__/**"
+      - ".storybook/**"
+      - "playwright.visual.config.ts"
+      - "scripts/serve-static.mjs"
+      - "**/*.css"
+      - "package-lock.json"
+      - "index.html"
+      - ".github/workflows/visual-baselines.yml"
+
+concurrency:
+  group: visual-baselines
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  baselines:
+    name: Update baselines
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      APP_ID: ${{ secrets.APP_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      BRANCH: bot/visual-baselines
+    steps:
+      - name: Check that the GitHub App is configured
+        id: token
+        run: |
+          if [ -z "$APP_ID" ] || [ -z "$APP_PRIVATE_KEY" ]; then
+            echo "::warning::Secrets APP_ID and APP_PRIVATE_KEY are not set, so the visual baselines were not updated. Create the GitHub App described in docs/architecture.md (Visual baselines)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create a GitHub App token
+        id: app
+        if: steps.token.outputs.ready == 'true'
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v7
+        if: steps.token.outputs.ready == 'true'
+        with:
+          token: ${{ steps.app.outputs.token }}
+      - uses: actions/setup-node@v7
+        if: steps.token.outputs.ready == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.token.outputs.ready == 'true'
+        run: npm ci
+      - if: steps.token.outputs.ready == 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.token.outputs.ready == 'true'
+        run: npx storybook build --quiet
+      - if: steps.token.outputs.ready == 'true'
+        run: npx vite build
+      - name: Regenerate the baselines
+        if: steps.token.outputs.ready == 'true'
+        run: |
+          rm -rf e2e/visual/__screenshots__
+          npx playwright test -c playwright.visual.config.ts --update-snapshots
+      - name: Check that a second run has no diffs
+        if: steps.token.outputs.ready == 'true'
+        run: npx playwright test -c playwright.visual.config.ts
+      - name: Open or update the baseline pull request
+        if: steps.token.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A e2e/visual/__screenshots__
+          if git diff --cached --quiet; then
+            echo "Baselines are already up to date."
+            exit 0
+          fi
+          git checkout -B "$BRANCH"
+          git commit -m "test(ui): update visual snapshots"
+          git push --force origin "$BRANCH"
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
+            gh pr create --head "$BRANCH" --base main \
+              --title "test(ui): update visual snapshots" \
+              --body "Baselines regenerated on the CI runner after a change to the UI. Opened by the \`Visual baselines\` workflow; review the image diffs if you like, otherwise it merges itself."
+          fi
+          gh pr merge "$BRANCH" --auto --squash
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: visual-baselines-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

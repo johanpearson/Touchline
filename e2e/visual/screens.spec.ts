@@ -6,7 +6,10 @@ const APP = "http://localhost:4174/Touchline/";
 // Key states of screens. Each screen issue adds its own states here (#253 registers the first one).
 
 // The new-career wizard: step 1 (#257) and step 2, the club picker (#258).
-visualScreen({ name: "new-career-league", route: "#/new" });
+visualScreen({ name: "new-career-league", route: "#/new", full: true });
+
+// Scoped to the club strip: the theme and language selects in the shell also expose `option` roles.
+const clubOptions = (page: Page) => page.getByTestId("club-strip").getByRole("option");
 
 const openClubStep = async (page: Page) => {
   await page.getByTestId("choose-club").click();
@@ -25,12 +28,13 @@ visualScreen({
   route: "#/new",
   state: async (page) => {
     await openClubStep(page);
-    await page.getByRole("option").last().click();
+    await clubOptions(page).last().click();
   },
 });
 
 visualScreen({
   name: "new-career-club-long-name",
+  full: true,
   route: "#/new",
   state: async (page) => {
     await openClubStep(page);
@@ -39,7 +43,7 @@ visualScreen({
       (best, name, i) => (name.length > (names[best]?.length ?? 0) ? i : best),
       0,
     );
-    await page.getByRole("option").nth(longest).click();
+    await clubOptions(page).nth(longest).click();
   },
 });
 
@@ -114,6 +118,7 @@ visualScreen({
 // The app shell around the career hub (#254): sidebar, icon rail and bottom tabs by width.
 visualScreen({
   name: "app-shell-hub",
+  full: true,
   route: "#/new",
   state: async (page) => {
     await page.getByTestId("choose-club").click();
@@ -135,6 +140,7 @@ visualScreen({ name: "hub-first-matchday", route: "#/new", state: startCareerAtH
 
 visualScreen({
   name: "hub-mid-season",
+  full: true,
   route: "#/new",
   state: async (page) => {
     await startCareerAtHub(page);
