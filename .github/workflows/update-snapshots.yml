@@ -52,6 +52,7 @@ jobs:
           else
             git commit -m "test(ui): update visual snapshots"
             git push
+            echo "::notice::Baselines committed. Commits pushed with GITHUB_TOKEN do not start CI; push another commit to re-run the checks."
           fi
       - name: Remove the label
         if: github.event_name == 'pull_request'
