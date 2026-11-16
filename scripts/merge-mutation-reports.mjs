@@ -49,13 +49,22 @@ const row = (name, counts) =>
   `${name.padEnd(48)} | ${scoreOf(counts).toFixed(2).padStart(7)} | ${String(sum(counts, ["Killed"])).padStart(8)} | ${String(sum(counts, ["Timeout"])).padStart(9)} | ${String(sum(counts, ["Survived"])).padStart(10)} | ${String(sum(counts, ["NoCoverage"])).padStart(11)}`;
 
 /** The clear-text report: a table in Stryker's layout, then the shard count and the wall time of the longest shard. */
-export const formatLog = (summary, { shards, minutes }) =>
+export const formatLog = (summary, { shards, minutes, timings = [] }) =>
   [
     `Mutation testing report (${shards} shards)`,
     `${"File".padEnd(48)} | % score | # killed | # timeout | # survived | # no cov`,
     row("All files", summary.total),
     ...summary.files.map((file) => row(file.path, file.counts)),
     "",
+    ...(timings.length === 0
+      ? []
+      : [
+          "Measured time of every shard, slowest first (compare with scripts/mutation-weights.json):",
+          ...[...timings]
+            .sort((a, b) => b.minutes - a.minutes || a.shard - b.shard)
+            .map((t) => `shard ${String(t.shard).padEnd(3)} ${t.minutes.toFixed(1).padStart(6)} min  ${t.files}`),
+          "",
+        ]),
     `Wall time (longest shard): ${minutes} min`,
   ].join("\n");
 
@@ -70,6 +79,11 @@ export const run = ({ dir, shards, breakAt }) => {
   const problems = [];
   const reports = [];
   const seconds = [];
+  const timings = [];
+  if (!Number.isInteger(shards) || shards < 1) {
+    problems.push(`The mutation plan did not give a shard count (got ${shards}): the plan job failed, so nothing was merged.`);
+    return { ok: false, log: [formatLog(summarise([]), { shards: 0, minutes: 0 }), ...problems].join("\n"), score: 0, minutes: 0 };
+  }
   for (let n = 1; n <= shards; n++) {
     const shardDir = join(dir, `mutation-shard-${n}`);
     const reportPath = join(shardDir, "mutation.json");
@@ -79,7 +93,9 @@ export const run = ({ dir, shards, breakAt }) => {
     }
     try {
       reports.push(readJson(reportPath));
-      seconds.push(existsSync(join(shardDir, "meta.json")) ? Number(readJson(join(shardDir, "meta.json")).seconds) : 0);
+      const meta = existsSync(join(shardDir, "meta.json")) ? readJson(join(shardDir, "meta.json")) : {};
+      seconds.push(Number(meta.seconds ?? 0));
+      timings.push({ shard: n, minutes: Number(meta.seconds ?? 0) / 60, files: String(meta.files ?? "") });
     } catch (error) {
       problems.push(`Shard ${n} has an unreadable report: ${error.message}`);
     }
@@ -90,7 +106,7 @@ export const run = ({ dir, shards, breakAt }) => {
   if (problems.length === 0 && score < breakAt) {
     problems.push(`Mutation score ${score.toFixed(2)} is below the break threshold of ${breakAt}.`);
   }
-  const log = [formatLog(summary, { shards, minutes }), ...problems].join("\n");
+  const log = [formatLog(summary, { shards, minutes, timings }), ...problems].join("\n");
   return { ok: problems.length === 0, log, score, minutes };
 };
 

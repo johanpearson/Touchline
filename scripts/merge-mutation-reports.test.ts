@@ -109,6 +109,34 @@ describe("run", () => {
     expect(result.log).toContain("Shard 2 produced no report");
   });
 
+  it("fails when the plan gave no shard count, instead of passing with nothing merged", () => {
+    const dir = mkdtempSync(join(tmpdir(), "mutation-"));
+
+    for (const shards of [0, Number.NaN]) {
+      const result = merge.run({ dir, shards, breakAt: 80 });
+      expect(result.ok).toBe(false);
+      expect(result.log).toContain("did not give a shard count");
+    }
+  });
+
+  it("lists the measured minutes and the files of every shard, slowest first, so the estimates can be refreshed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "mutation-"));
+    const writeMeta = (shard: number, seconds: number, files: string) => {
+      write(dir, shard, { "src/engine/a.ts": ["Killed"] }, seconds);
+      writeFileSync(join(dir, `mutation-shard-${shard}`, "meta.json"), JSON.stringify({ seconds, files }));
+    };
+    writeMeta(1, 600, "src/engine/a.ts");
+    writeMeta(2, 3000, "src/engine/b.ts:1-40,src/engine/c.ts");
+
+    const { log } = merge.run({ dir, shards: 2, breakAt: 80 });
+
+    const slow = log.indexOf("shard 2");
+    const quick = log.indexOf("shard 1");
+    expect(slow).toBeGreaterThan(-1);
+    expect(quick).toBeGreaterThan(slow);
+    expect(log).toMatch(/shard 2\s+50\.0 min\s+src\/engine\/b\.ts:1-40,src\/engine\/c\.ts/);
+  });
+
   it("fails when a report cannot be read", () => {
     const dir = mkdtempSync(join(tmpdir(), "mutation-"));
     mkdirSync(join(dir, "mutation-shard-1"), { recursive: true });
