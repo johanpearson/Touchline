@@ -1,3 +1,8 @@
+export {
+  createBrowserDensityStore,
+  createMemoryDensityStore,
+  DENSITY_STORAGE_KEY,
+} from "./density-store";
 export type { MemoryFileTransfer } from "./file-transfer";
 export { createBrowserFileTransfer, createMemoryFileTransfer } from "./file-transfer";
 export { createBrowserLocaleStore, createMemoryLocaleStore } from "./locale-store";
