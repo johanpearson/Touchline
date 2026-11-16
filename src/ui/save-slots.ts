@@ -1,7 +1,8 @@
-import { type Career, parseCareer } from "../game";
+import { type Career, type Kit, kitsOf, parseCareer } from "../game";
 import { readEnvelope } from "../platform";
 import type { SaveEnvelope, SaveStore } from "../shared";
 import { AUTOSAVE_SLOT } from "./autosave-queue";
+import { FALLBACK_KIT } from "./start/fallback-kit";
 
 export const MANUAL_SLOTS = ["slot-1", "slot-2", "slot-3"] as const;
 export const SLOT_IDS = [AUTOSAVE_SLOT, ...MANUAL_SLOTS] as const;
@@ -13,6 +14,8 @@ export const isKnownSlot = (id: string): boolean => (SLOT_IDS as readonly string
 /** What a slot row shows about a readable save. */
 export type SlotSummary = {
   clubName: string;
+  /** The club's home kit, for the swatch. */
+  kit: Kit;
   leagueName: string;
   season: number;
   matchday: number;
@@ -57,13 +60,17 @@ export async function readSlot(store: SaveStore, id: string): Promise<ReadSlot> 
   return { kind: "found", envelope: read.save, career: parsed.career };
 }
 
-export const summariseSlot = (envelope: SaveEnvelope, career: Career): SlotSummary => ({
-  clubName: career.league.clubs.find((c) => c.id === career.userClubId)?.name ?? career.userClubId,
-  leagueName: career.league.name,
-  season: career.season.number,
-  matchday: career.season.currentMatchday,
-  savedAt: envelope.savedAt,
-});
+export const summariseSlot = (envelope: SaveEnvelope, career: Career): SlotSummary => {
+  const club = career.league.clubs.find((c) => c.id === career.userClubId);
+  return {
+    clubName: club?.name ?? career.userClubId,
+    kit: club ? kitsOf(club).home : FALLBACK_KIT,
+    leagueName: career.league.name,
+    season: career.season.number,
+    matchday: career.season.currentMatchday,
+    savedAt: envelope.savedAt,
+  };
+};
 
 /** Describes every slot. A damaged slot never fails the whole list. */
 export async function listSlotEntries(store: SaveStore): Promise<SlotsResult> {

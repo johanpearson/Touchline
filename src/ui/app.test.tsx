@@ -37,6 +37,7 @@ const leagueFor = (seed: number) => {
 };
 
 const startCareer = (clubId: string) => {
+  goTo("#/new");
   fireEvent.click(screen.getByTestId(`club-option-${clubId}`));
   fireEvent.click(screen.getByTestId("start-career"));
 };
@@ -97,7 +98,7 @@ describe("App", () => {
   it("asks to start a career on #/match without one", () => {
     renderApp();
     goTo("#/match");
-    expect(screen.getByTestId("new-career")).toBeTruthy();
+    expect(screen.getByTestId("start-screen")).toBeTruthy();
     expect(screen.queryByTestId("match-screen")).toBeNull();
   });
 
@@ -115,12 +116,12 @@ describe("App", () => {
     expect(screen.getByTestId("not-found")).toBeTruthy();
     goTo("#/");
     expect(screen.queryByTestId("not-found")).toBeNull();
-    expect(screen.getByTestId("new-career")).toBeTruthy();
+    expect(screen.getByTestId("start-screen")).toBeTruthy();
   });
 });
 
 describe("new career screen", () => {
-  beforeEach(() => goTo("#/"));
+  beforeEach(() => goTo("#/new"));
   afterEach(cleanup);
 
   it("lists the 14 clubs sorted by rating, highest first", () => {
@@ -261,10 +262,10 @@ describe("career navigation", () => {
     expect(screen.getByTestId("nav-squad").getAttribute("href")).toBe("#/squad");
   });
 
-  it("shows the new-career screen on the squad route without a career", () => {
+  it("shows the start screen on the squad route without a career", () => {
     renderApp();
     goTo("#/squad");
-    expect(screen.getByTestId("start-career")).toBeTruthy();
+    expect(screen.getByTestId("start-screen")).toBeTruthy();
     expect(screen.queryByTestId("squad-screen")).toBeNull();
   });
 
@@ -297,6 +298,6 @@ describe("career navigation", () => {
   it("asks to start a career when a career route is opened without one", () => {
     renderApp();
     goTo("#/league");
-    expect(screen.getByTestId("new-career")).toBeTruthy();
+    expect(screen.getByTestId("start-screen")).toBeTruthy();
   });
 });

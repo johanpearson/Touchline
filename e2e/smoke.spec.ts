@@ -39,6 +39,7 @@ test.describe("blocked storage", () => {
 test.describe("new career", () => {
   test("picks a club, starts the career and shows the hub", async ({ page }) => {
     await page.goto("./");
+    await page.getByTestId("new-career-link").click();
 
     const first = page.getByTestId("club-name").first();
     const name = (await first.textContent()) ?? "";
@@ -54,7 +55,7 @@ test.describe("new career", () => {
 
 test.describe("league screen", () => {
   test("shows 14 clubs on zero points after starting a career", async ({ page }) => {
-    await page.goto("./");
+    await page.goto("./#/new");
     await page.getByTestId("club-name").first().click();
     await page.getByTestId("start-career").click();
 
@@ -69,7 +70,7 @@ test.describe("league screen", () => {
 });
 
 const startMatch = async (page: Page) => {
-  await page.goto("./");
+  await page.goto("./#/new");
   await page.getByTestId("club-name").first().click();
   await page.getByTestId("start-career").click();
   await page.getByTestId("play-match").click();
@@ -112,7 +113,7 @@ test.describe("half-time", () => {
 
 test.describe("club screen", () => {
   test("opens My club and shows the squad table", async ({ page }) => {
-    await page.goto("./");
+    await page.goto("./#/new");
     await page.getByTestId("club-name").first().click();
     await page.getByTestId("start-career").click();
 

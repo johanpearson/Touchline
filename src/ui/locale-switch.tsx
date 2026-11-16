@@ -1,12 +1,19 @@
 import { isLocale, locales } from "../i18n";
 import { useI18n } from "./i18n-provider";
 
-export function LocaleSwitch() {
+export function LocaleSwitch({
+  className,
+  selectClassName,
+}: {
+  className?: string;
+  selectClassName?: string;
+} = {}) {
   const { t, locale, setLocale } = useI18n();
   return (
-    <label>
+    <label className={className}>
       {t("locale.label")}{" "}
       <select
+        className={selectClassName}
         data-testid="locale-switch"
         value={locale}
         onChange={(e) => {

@@ -36,6 +36,7 @@ const mount = (locale?: string) => {
   );
   const club = league.league.clubs[0];
   if (!club) throw new Error("club");
+  goTo("#/new");
   fireEvent.click(screen.getByTestId(`club-option-${club.id}`));
   fireEvent.click(screen.getByTestId("start-career"));
   return club;

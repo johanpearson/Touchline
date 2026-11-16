@@ -36,6 +36,7 @@ const startCareer = () => {
   const club = result.league.clubs[0];
   if (!club) throw new Error("no club");
   renderApp();
+  goTo("#/new");
   fireEvent.click(screen.getByTestId(`club-option-${club.id}`));
   fireEvent.click(screen.getByTestId("start-career"));
   return club;

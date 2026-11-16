@@ -9,11 +9,14 @@ import type { MatchScreenProps } from "./match-view";
 import { MatchdayResultsScreen } from "./matchday-results-screen";
 import { NewCareerScreen } from "./new-career-screen";
 import { NotFoundScreen } from "./not-found-screen";
+import { Redirect } from "./redirect";
+import type { Route } from "./routes";
 import { SavesScreen } from "./saves-screen";
 import { SeasonEndScreen } from "./season-end-screen";
 import { AppShell } from "./shell/app-shell";
 import { BareShell } from "./shell/bare-shell";
 import { SquadScreen } from "./squad-screen";
+import { StartScreen } from "./start/start-screen";
 import { ThemeProvider } from "./theme/theme-provider";
 import { CareerProvider, useCareer } from "./use-career";
 import { useRoute } from "./use-route";
@@ -22,13 +25,20 @@ import "./app.css";
 
 type RendererProp = Pick<MatchScreenProps, "createRenderer" | "tickMs">;
 
-function Screen({ createRenderer, tickMs, initialSeed }: RendererProp & { initialSeed: number }) {
+/** Routes that show the plain header instead of the start screen while there is no career. */
+const BARE_ROUTES: readonly Route["name"][] = ["new", "saves", "not-found"];
+
+type ScreenProps = RendererProp & { initialSeed: number };
+
+function Screen({ createRenderer, tickMs, initialSeed }: ScreenProps) {
   const route = useRoute();
   const { career } = useCareer();
   if (route.name === "not-found") return <NotFoundScreen />;
   if (route.name === "saves") return <SavesScreen />;
   if (!career) return <NewCareerScreen initialSeed={initialSeed} />;
   switch (route.name) {
+    case "new":
+      return <Redirect to={{ name: "home" }} />;
     case "home":
       return <CareerHubScreen />;
     case "league":
@@ -46,10 +56,14 @@ function Screen({ createRenderer, tickMs, initialSeed }: RendererProp & { initia
   }
 }
 
-type ShellProps = RendererProp & { initialSeed: number; storageAvailable: boolean };
+type ShellProps = ScreenProps & { storageAvailable: boolean; now: () => string };
 
-function Shell({ createRenderer, tickMs, initialSeed, storageAvailable }: ShellProps) {
+function Shell({ createRenderer, tickMs, initialSeed, storageAvailable, now }: ShellProps) {
   const { career } = useCareer();
+  const route = useRoute();
+  if (!career && !BARE_ROUTES.includes(route.name)) {
+    return <StartScreen now={now} storageAvailable={storageAvailable} />;
+  }
   const screen = (
     <Screen createRenderer={createRenderer} tickMs={tickMs} initialSeed={initialSeed} />
   );
@@ -98,6 +112,7 @@ export function App({
             tickMs={tickMs}
             initialSeed={initialSeed}
             storageAvailable={storageAvailable}
+            now={now}
           />
         </CareerProvider>
       </ThemeProvider>

@@ -18,6 +18,8 @@ import {
   completeMatchday,
   createCareer,
   type Formation,
+  type Kit,
+  kitsOf,
   type Lineup,
   type LineupError,
   type MatchdayError,
@@ -48,11 +50,23 @@ import {
   type SlotActionResult,
   type SlotsResult,
 } from "./save-slots";
+import { FALLBACK_KIT } from "./start/fallback-kit";
+import { userPosition } from "./start/user-position";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-/** What the Continue button shows about the save it would load. */
-export type ContinueInfo = { clubName: string; season: number; matchday: number };
+/** What the Continue card shows about the save it would load. */
+export type ContinueInfo = {
+  clubName: string;
+  /** The club's home kit, for the swatch. */
+  kit: Kit;
+  season: number;
+  matchday: number;
+  /** The club's place in the league table, or null when it cannot be worked out. */
+  position: number | null;
+  /** When the save was written (ISO 8601, from the injected clock). */
+  savedAt: string;
+};
 
 export type CareerStore = {
   /** The running career, or null before one has been started. */
@@ -83,6 +97,13 @@ export type CareerStore = {
   loadError: ContinueError | null;
   /** Hides the load error so the user can start a new career. */
   dismissLoadError: () => void;
+  /**
+   * Deletes the unusable save behind `loadError`, then looks again for a save to continue.
+   * Fails (and keeps the error) when the storage refuses or the damaged slot is not known.
+   */
+  discardLoadError: () => Promise<SlotActionResult>;
+  /** False until the first look for a save to continue has finished. */
+  startupChecked: boolean;
   /** Describes the autosave and the manual slots. Never throws. */
   listSlots: () => Promise<SlotsResult>;
   /** Writes the running career into a manual slot with a fresh save time. */
@@ -143,6 +164,8 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<FoundCandidate | null>(null);
   const [loadError, setLoadError] = useState<ContinueError | null>(null);
+  const [loadErrorSlot, setLoadErrorSlot] = useState<string | null>(null);
+  const [startupChecked, setStartupChecked] = useState(false);
   const [importOffer, setImportOffer] = useState<ImportOffer | null>(null);
   const [importError, setImportError] = useState<ImportError | null>(null);
   const [lastImportedSlot, setLastImportedSlot] = useState<string | null>(null);
@@ -152,17 +175,22 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
   const queue = useMemo(() => createAutosaveQueue(saveStore, () => nowRef.current()), [saveStore]);
   const pending = useRef(0);
 
+  const applyCandidate = useCallback((found: ContinueCandidate) => {
+    setCandidate(found.kind === "found" ? found : null);
+    setLoadError(found.kind === "error" ? found.error : null);
+    setLoadErrorSlot(found.kind === "error" ? (found.slotId ?? null) : null);
+    setStartupChecked(true);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     void findContinueCandidate(saveStore).then((found) => {
-      if (cancelled) return;
-      if (found.kind === "found") setCandidate(found);
-      if (found.kind === "error") setLoadError(found.error);
+      if (!cancelled) applyCandidate(found);
     });
     return () => {
       cancelled = true;
     };
-  }, [saveStore]);
+  }, [saveStore, applyCandidate]);
 
   const persist = useCallback(
     (game: Career, lineage: SaveLineage) => {
@@ -242,6 +270,16 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
     return true;
   }, [candidate, queue]);
   const dismissLoadError = useCallback(() => setLoadError(null), []);
+  const discardLoadError = useCallback(async (): Promise<SlotActionResult> => {
+    if (loadErrorSlot === null) return { ok: false, error: "unknown-slot" };
+    try {
+      await saveStore.delete(loadErrorSlot);
+      applyCandidate(await findContinueCandidate(saveStore));
+      return { ok: true };
+    } catch {
+      return { ok: false, error: "store" };
+    }
+  }, [loadErrorSlot, saveStore, applyCandidate]);
 
   const listSlots = useCallback(() => listSlotEntries(saveStore), [saveStore]);
   const saveToSlot = useCallback(
@@ -367,8 +405,11 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
     const club = saved.league.clubs.find((c) => c.id === saved.userClubId);
     return {
       clubName: club?.name ?? saved.userClubId,
+      kit: club ? kitsOf(club).home : FALLBACK_KIT,
       season: saved.season.number,
       matchday: saved.season.currentMatchday,
+      position: userPosition(saved),
+      savedAt: candidate.envelope.savedAt,
     };
   }, [candidate]);
 
@@ -388,6 +429,8 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       loadAutosave,
       loadError,
       dismissLoadError,
+      discardLoadError,
+      startupChecked,
       listSlots,
       saveToSlot,
       loadSlot,
@@ -416,6 +459,8 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       loadAutosave,
       loadError,
       dismissLoadError,
+      discardLoadError,
+      startupChecked,
       listSlots,
       saveToSlot,
       loadSlot,
