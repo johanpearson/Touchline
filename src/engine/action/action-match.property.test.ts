@@ -4,7 +4,7 @@ import type { Side } from "../match-state";
 import { type ActionEvent, SNAPSHOT_PLAYER_COUNT } from "./action-event";
 import { arbMatchInputV2, arbSeed, propertyRuns } from "./arbitraries";
 import { createActionMatch } from "./create-action-match";
-import type { MatchInputV2 } from "./match-input-v2";
+import type { MatchInput } from "./match-input";
 import { inPitch } from "./pitch-metres";
 
 vi.setConfig({ testTimeout: 120_000 });
@@ -18,7 +18,7 @@ const WHOLE_MATCH_RUNS = 8;
 const DEFAULT_FC_SEED = 20_260_514;
 const fcSeed = Number.parseInt(process.env.FC_SEED ?? "", 10) || DEFAULT_FC_SEED;
 
-type Run = readonly [input: MatchInputV2, seed: number];
+type Run = readonly [input: MatchInput, seed: number];
 
 /** Fails with the shrunk counterexample and `seed`; rerun it with `FC_SEED=<seed>`. */
 const forAll = <T>(arb: fc.Arbitrary<T>, check: (value: T) => boolean, defaultRuns = 25) =>
@@ -45,7 +45,7 @@ const playMatch = ([input, seed]: Run, detail: "full" | "fast" = "fast", wholeMa
 
 const arbRun: fc.Arbitrary<Run> = fc.tuple(arbMatchInputV2, arbSeed);
 const other = (side: Side): Side => (side === "home" ? "away" : "home");
-const idsOf = (input: MatchInputV2, side: Side) =>
+const idsOf = (input: MatchInput, side: Side) =>
   new Set([...input[side].starters, ...input[side].bench].map((p) => p.id));
 const withoutSnapshot = (event: ActionEvent) => {
   const { snapshot: _snapshot, ...rest } = event;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NEUTRAL_TACTICS } from "../tactics";
-import { aMatchInputV2, anEnginePlayer, aTeamSheet } from "./action-builders";
+import { aMatchInput, anEnginePlayer, aTeamSheet } from "./action-builders";
 import { ENGINE_ATTRIBUTE_NAMES } from "./engine-player";
 
 describe("action builders", () => {
@@ -36,11 +36,11 @@ describe("action builders", () => {
   });
 
   it("gives home and away different player ids", () => {
-    const { home, away } = aMatchInputV2().build();
+    const { home, away } = aMatchInput().build();
     const ids = new Set([...home.starters, ...away.starters].map((p) => p.id));
 
     expect(ids.size).toBe(22);
-    expect(aMatchInputV2().build().engineVersion).toBe(2);
+    expect(aMatchInput().build().engineVersion).toBe(2);
   });
 });
 

@@ -1,6 +1,5 @@
 export { addEngineVersion } from "./add-engine-version";
 export { addSquadPlanAndCondition } from "./add-squad-plan";
-export { attributeGoalScorers } from "./attribute-goal-scorers";
 export { autoPickLineup } from "./auto-pick-lineup";
 export type {
   Career,
@@ -17,14 +16,10 @@ export { computeForm, computeTable } from "./compute-table";
 export type { CareerSpec } from "./create-career";
 export { createCareer } from "./create-career";
 export { createSeason } from "./create-season";
-export { deriveLineupProfile } from "./derive-lineup-profile";
-export { deriveTeamProfile } from "./derive-team-profile";
 export type { SetLineupResult } from "./edit-squad-plan";
 export { autoPickUserLineup, setLineup, setTactics } from "./edit-squad-plan";
 export type { Formation } from "./formation";
 export { FORMATION_SHAPE, FORMATIONS } from "./formation";
-export type { PhaseRating } from "./formation-offsets";
-export { FORMATION_OFFSETS, MAX_FORMATION_OFFSET, PHASE_RATINGS } from "./formation-offsets";
 export { formationShape } from "./formation-shape";
 export type {
   ClubIdentity,
@@ -49,12 +44,19 @@ export { generateSquad, SQUAD_SHAPE } from "./generate-squad";
 export { getNextFixture } from "./get-next-fixture";
 export { isSeasonComplete } from "./is-season-complete";
 export type { League } from "./league";
+export type { LineRating, LineRatings } from "./line-ratings";
+export {
+  deriveClubLineRatings,
+  deriveLineRatings,
+  LINE_RATINGS,
+} from "./line-ratings";
 export type { Lineup, LineupError, LineupResult } from "./lineup";
 export { BENCH_SIZE, validateLineup } from "./lineup";
-export { matchInputFor, matchInputV1For, matchInputV2For, matchSeed } from "./match-input-for";
+export { matchInputFor, matchSeed } from "./match-input-for";
 export type { CareerParseError, CareerParseResult } from "./parse-career";
 export { parseCareer } from "./parse-career";
 export { pickBestEleven } from "./pick-best-eleven";
+export { pickGoalScorers } from "./pick-goal-scorers";
 export type {
   AppliedHalfTime,
   HalfTimeChanges,
@@ -92,3 +94,4 @@ export { summariseSeason } from "./summarise-season";
 export { toEngineBench, toEnginePlayers } from "./to-engine-players";
 export { toSquadPlayer } from "./to-squad-player";
 export type { MatchReport } from "./update-condition";
+export { useActionEngine } from "./use-action-engine";

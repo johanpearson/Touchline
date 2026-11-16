@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { aMatchInputV2 } from "./action-builders";
+import { aMatchInput } from "./action-builders";
 import type { ActionEvent } from "./action-event";
 import { createActionMatch } from "./create-action-match";
 import { inPitch, PITCH_LENGTH, PITCH_WIDTH } from "./pitch-metres";
@@ -8,7 +8,7 @@ vi.setConfig({ testTimeout: 60_000 });
 
 const SEEDS = [1, 2, 3, 4, 5, 6];
 const matches = SEEDS.map((seed) => {
-  const match = createActionMatch(aMatchInputV2().build(), seed);
+  const match = createActionMatch(aMatchInput().build(), seed);
   match.advanceTo(10_000);
   match.resume();
   match.advanceTo(20_000);

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Side } from "../match-state";
 import { createRng } from "../rng";
 import { NEUTRAL_TACTICS, type TeamTactics } from "../tactics";
-import { aMatchInputV2 } from "./action-builders";
+import { aMatchInput } from "./action-builders";
 import type { ActionEvent, PassEvent, ShotEvent } from "./action-event";
 import { buildOptions } from "./build-options";
 import {
@@ -14,7 +14,7 @@ import {
 } from "./decision-constants";
 import type { EnginePlayer } from "./engine-player";
 import { CHALLENGE_PRESSURE_GAIN, NO_RECENT_TURNOVER, PENALTY_SPOT_DEPTH } from "./loop-constants";
-import type { MatchInputV2 } from "./match-input-v2";
+import type { MatchInput } from "./match-input";
 import type { Challenger } from "./open-play-types";
 import { PITCH_LENGTH, type Point } from "./pitch-metres";
 import { type ActionContext, kickoffFor, kickoffPlay, playAction, shapesFor } from "./play-action";
@@ -31,7 +31,7 @@ import { actionTactics } from "./tactics-parameters";
 import { phaseOf } from "./team-phase";
 import { teamShape } from "./team-shape";
 
-const input: MatchInputV2 = aMatchInputV2().build();
+const input: MatchInput = aMatchInput().build();
 const sheets = { home: input.home, away: input.away };
 const at = (x: number, y = 34): Point => ({ x, y });
 
@@ -602,7 +602,7 @@ describe("playAction press, home advantage and transition effects", () => {
     slot = 6,
   ) => {
     const foe: Side = side === "home" ? "away" : "home";
-    const custom = aMatchInputV2()
+    const custom = aMatchInput()
       .withHome({ ...input.home, tactics: side === "home" ? NEUTRAL_TACTICS : foeTactics })
       .withAway({ ...input.away, tactics: side === "away" ? NEUTRAL_TACTICS : foeTactics })
       .build();

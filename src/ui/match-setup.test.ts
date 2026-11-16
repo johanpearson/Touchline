@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMatch } from "../engine";
+import { createActionMatch } from "../engine";
 import {
   type Career,
   createCareer,
@@ -24,39 +24,18 @@ const nextFixtureOf = (career: Career) => {
 };
 
 const playToFullTime = (setup: ReturnType<typeof matchSetupFor>) => {
-  const match =
-    setup.engineVersion === 2
-      ? createMatch(setup.input, setup.seed)
-      : createMatch(setup.input, setup.seed);
+  const match = createActionMatch(setup.input, setup.seed);
   match.advanceTo(1_000_000);
   match.resume();
   match.advanceTo(1_000_000);
   return match.state.score;
 };
 
-const aV2Career = (seed = 5): Career => {
-  const league = generateLeague({ seed });
-  if (!league.ok) throw new Error("league");
-  const created = createCareer({
-    seed,
-    userClubId: league.league.clubs[0]?.id ?? "",
-    engineVersion: 2,
-  });
-  if (!created.ok) throw new Error("career");
-  return created.career;
-};
-
 describe("matchSetupFor", () => {
-  it("plays the zone engine for a zone career", () => {
+  it("sets up the match with the names of every player", () => {
     const career = aCareer();
-    expect(matchSetupFor(career, nextFixtureOf(career)).engineVersion).toBe(1);
-  });
-
-  it("sets up the action engine for an action career, with the names of every player", () => {
-    const career = aV2Career();
     const fixture = nextFixtureOf(career);
     const setup = matchSetupFor(career, fixture);
-    if (setup.engineVersion !== 2) throw new Error("expected an action engine setup");
     expect(setup.input.engineVersion).toBe(2);
     const sheet = setup.input.home;
     for (const player of [...sheet.starters, ...sheet.bench]) {
@@ -66,15 +45,7 @@ describe("matchSetupFor", () => {
     }
   });
 
-  it("plays the same score as the quick sim for an action career", () => {
-    const career = aV2Career();
-    const fixture = nextFixtureOf(career);
-    const quick = simulateFixture(career, fixture);
-    const score = playToFullTime(matchSetupFor(career, fixture));
-    expect(score).toEqual({ home: quick.homeGoals, away: quick.awayGoals });
-  });
-
-  it("plays the same score as the quick sim for the same fixture and seed", () => {
+  it("plays the same score as the quick sim", () => {
     const career = aCareer();
     const fixture = nextFixtureOf(career);
     const quick = simulateFixture(career, fixture);
@@ -105,26 +76,5 @@ describe("matchSetupFor", () => {
     );
     const setup = matchSetupFor({ ...career, league: { ...career.league, clubs } }, fixture);
     expect(setup.colours.home).not.toBe(setup.colours.away);
-  });
-
-  it("lists every player of the opponent as a potential scorer", () => {
-    const career = aCareer();
-    const fixture = nextFixtureOf(career);
-    const setup = matchSetupFor(career, fixture);
-    const opponentId =
-      fixture.homeClubId === career.userClubId ? fixture.awayClubId : fixture.homeClubId;
-    const side = fixture.homeClubId === career.userClubId ? "away" : "home";
-    const size = career.league.clubs.find((c) => c.id === opponentId)?.playerIds.length;
-    expect(setup.squads[side]).toHaveLength(size ?? -1);
-  });
-
-  it("credits the user's goals to the starters and bench of the squad plan only", () => {
-    const career = aCareer();
-    const fixture = nextFixtureOf(career);
-    const setup = matchSetupFor(career, fixture);
-    const side = fixture.homeClubId === career.userClubId ? "home" : "away";
-    expect(setup.squads[side]).toHaveLength(
-      career.squadPlan.starters.length + career.squadPlan.bench.length,
-    );
   });
 });

@@ -1,6 +1,6 @@
-import type { MatchEvent, MatchState } from "../../engine";
+import type { ActionMatchState, ZoneEvent } from "../../engine";
 
-const isSecondHalfStart = (event: MatchEvent): boolean =>
+const isSecondHalfStart = (event: ZoneEvent): boolean =>
   event.type === "periodChange" && event.period === "secondHalf";
 
 /**
@@ -8,9 +8,9 @@ const isSecondHalfStart = (event: MatchEvent): boolean =>
  * resets while the match is paused) and starts from the second-half kickoff afterwards.
  */
 export const terrainEvents = (
-  events: readonly MatchEvent[],
-  period: MatchState["period"],
-): readonly MatchEvent[] => {
+  events: readonly ZoneEvent[],
+  period: ActionMatchState["period"],
+): readonly ZoneEvent[] => {
   if (period === "halfTime") return [];
   const start = events.findIndex(isSecondHalfStart);
   return start === -1 ? events : events.slice(start);

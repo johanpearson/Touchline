@@ -51,8 +51,7 @@ describe("createCareer", () => {
     ).toBe(true);
   });
 
-  it("plays on engine 1 unless asked otherwise", () => {
-    expect(aCareer(5).engineVersion).toBe(1);
-    expect(aCareer(5, 2).engineVersion).toBe(2);
+  it("plays on the action engine", () => {
+    expect(aCareer(5).engineVersion).toBe(2);
   });
 });

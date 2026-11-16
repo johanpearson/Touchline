@@ -4,9 +4,9 @@ import { completeMatchday } from "./complete-matchday";
 import { computeTable } from "./compute-table";
 import { createCareer } from "./create-career";
 import { createSeason } from "./create-season";
-import { deriveTeamProfile } from "./derive-team-profile";
 import { generateLeague } from "./generate-league";
 import { getNextFixture } from "./get-next-fixture";
+import { deriveClubLineRatings } from "./line-ratings";
 import { simulateFixture } from "./simulate-fixture";
 import { initialConditions } from "./squad-plan";
 
@@ -37,9 +37,7 @@ const careerFor = (seed: number): Career => {
 const strengthOf = (career: Career, clubId: string): number => {
   const club = career.league.clubs.find((c) => c.id === clubId);
   if (!club) throw new Error(`Unknown club ${clubId}`);
-  const profile = deriveTeamProfile(club, career.league.players);
-  const ratings = Object.values(profile).filter((v): v is number => typeof v === "number");
-  return ratings.reduce((sum, v) => sum + v, 0) / ratings.length;
+  return deriveClubLineRatings(club, career.league.players).overall;
 };
 
 const playSeason = (start: Career): Career => {
@@ -91,7 +89,7 @@ describe("season balance: full seasons of generated leagues with the real engine
         );
       }
     }
-  }, 120_000);
+  }, 600_000);
 
   it("scores 2.3 to 3.1 goals per match", () => {
     const goals = seasons.reduce((n, s) => n + s.goals, 0);

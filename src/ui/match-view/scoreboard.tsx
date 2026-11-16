@@ -1,4 +1,4 @@
-import type { MatchEvent, MatchState } from "../../engine";
+import type { ActionMatchState, ZoneEvent } from "../../engine";
 import { useI18n } from "../i18n-provider";
 import { formatMatchMinute } from "./match-minute";
 
@@ -7,10 +7,10 @@ export type ScoreboardProps = {
   awayName: string;
   homeColour: string;
   awayColour: string;
-  score: MatchState["score"];
-  period: MatchState["period"];
+  score: ActionMatchState["score"];
+  period: ActionMatchState["period"];
   matchTime: number;
-  events: readonly MatchEvent[];
+  events: readonly ZoneEvent[];
 };
 
 /** Team names in their colours, the score, the match clock and the period. */

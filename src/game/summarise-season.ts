@@ -1,11 +1,11 @@
-import type { MatchEvent } from "../engine";
-import { attributeGoalScorers } from "./attribute-goal-scorers";
+import type { Side } from "../engine";
 import type { Career } from "./career";
 import { computeTable, type Result, type TableRow } from "./compute-table";
 import type { Fixture } from "./generate-fixtures";
 import { isSeasonComplete } from "./is-season-complete";
 import { matchSeed } from "./match-input-for";
 import { pickBestEleven } from "./pick-best-eleven";
+import { pickGoalScorers } from "./pick-goal-scorers";
 import type { SeasonSummary, SummaryResult, TopScorer } from "./season-summary";
 import { toSquadPlayer } from "./to-squad-player";
 
@@ -16,19 +16,10 @@ export type SummaryOptions = {
   topScorerCount?: number;
 };
 
-const goalEvent = (team: "home" | "away"): MatchEvent => ({
-  type: "goal",
-  time: 0,
-  team,
-  position: { x: 0.5, y: 0.5 },
-  intensity: 1,
-  xg: 0,
-});
-
-/** One goal event per goal in the stored result, so scorers always add up to the score. */
-const goalEventsOf = (result: Result): MatchEvent[] => [
-  ...Array.from({ length: result.homeGoals }, () => goalEvent("home")),
-  ...Array.from({ length: result.awayGoals }, () => goalEvent("away")),
+/** The scoring side of every goal in the stored result, home goals first. */
+const goalSidesOf = (result: Result): Side[] => [
+  ...Array.from({ length: result.homeGoals }, (): Side => "home"),
+  ...Array.from({ length: result.awayGoals }, (): Side => "away"),
 ];
 
 const tallyScorers = (career: Career): TopScorer[] => {
@@ -42,17 +33,17 @@ const tallyScorers = (career: Career): TopScorer[] => {
   const tally = new Map<string, TopScorer>();
   for (const result of career.season.results) {
     const fixture = fixtures.get(result.fixtureId) as Fixture;
-    const events = goalEventsOf(result);
-    const names = attributeGoalScorers(
-      events,
+    const sides = goalSidesOf(result);
+    const names = pickGoalScorers(
+      sides,
       {
         home: squads.get(result.homeClubId) ?? [],
         away: squads.get(result.awayClubId) ?? [],
       },
       matchSeed(career, fixture),
     );
-    events.forEach((event, i) => {
-      const clubId = event.team === "home" ? result.homeClubId : result.awayClubId;
+    sides.forEach((side, i) => {
+      const clubId = side === "home" ? result.homeClubId : result.awayClubId;
       const name = names[i] as string;
       const key = `${clubId}|${name}`;
       tally.set(key, { name, clubId, goals: (tally.get(key)?.goals ?? 0) + 1 });

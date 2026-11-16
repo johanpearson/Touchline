@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { formatBalanceTable, simulateActionBalance } from "./action-balance";
-import { aMatchInputV2 } from "./action-builders";
+import { aMatchInput } from "./action-builders";
 
 describe("simulateActionBalance", () => {
-  const input = aMatchInputV2().build();
+  const input = aMatchInput().build();
 
   it("gives the same summary for the same arguments", () => {
     expect(simulateActionBalance(input, 3, 7)).toEqual(simulateActionBalance(input, 3, 7));

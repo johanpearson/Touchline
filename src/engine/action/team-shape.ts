@@ -10,6 +10,7 @@ import {
   BALL_PULL_LATERAL_MAX,
   CENTRE_Y,
   DEFENCE_DEPTH,
+  FORWARD_LANE_SPACING,
   GOALKEEPER_DEPTH,
   GOALKEEPER_FOLLOW,
   HALF_WAY,
@@ -46,12 +47,19 @@ const lanes = (count: number, depth: number): Local[] =>
     y: (PITCH_WIDTH * (lane + 1)) / (count + 1),
   }));
 
+/** `count` lanes a fixed distance apart around the middle line. */
+const centredLanes = (count: number, depth: number, spacing: number): Local[] =>
+  Array.from({ length: count }, (_, lane) => ({
+    depth,
+    y: CENTRE_Y + (lane - (count - 1) / 2) * spacing,
+  }));
+
 /** Neutral anchors: goalkeeper, then defenders, midfielders and forwards, lanes from left to right. */
 export const formationAnchors = (formation: FormationCounts): Local[] => [
   { depth: GOALKEEPER_DEPTH, y: CENTRE_Y },
   ...lanes(formation.defenders, DEFENCE_DEPTH),
   ...lanes(formation.midfielders, MIDFIELD_DEPTH),
-  ...lanes(formation.forwards, ATTACK_DEPTH),
+  ...centredLanes(formation.forwards, ATTACK_DEPTH, FORWARD_LANE_SPACING),
 ];
 
 const anchorCache = new WeakMap<FormationCounts, readonly Local[]>();
@@ -77,14 +85,17 @@ const applyBlock = (
   anchors: readonly Local[],
   params: ShapeParameters,
   phase: TeamPhase,
+  forwards: number,
 ): Local[] => {
+  const firstForward = anchors.length - forwards;
   const shift = PHASE_SHIFT[phase] + params.lineHeight;
   return anchors.map((a, slot) =>
     slot === 0
       ? { depth: a.depth + shift * GOALKEEPER_FOLLOW, y: a.y }
       : {
           depth: DEFENCE_DEPTH + (a.depth - DEFENCE_DEPTH) * params.compactness + shift,
-          y: CENTRE_Y + (a.y - CENTRE_Y) * params.width,
+          // Forwards stay in the central channel: the width setting stretches the other lines only.
+          y: slot >= firstForward ? a.y : CENTRE_Y + (a.y - CENTRE_Y) * params.width,
         },
   );
 };
@@ -183,7 +194,12 @@ export const teamShape = (
     depth: side === "home" ? ball.x : PITCH_LENGTH - ball.x,
     y: ball.y,
   };
-  const block = applyBlock(cachedAnchors(sheet.formation), shapeParameters(tactics), phase);
+  const block = applyBlock(
+    cachedAnchors(sheet.formation),
+    shapeParameters(tactics),
+    phase,
+    sheet.formation.forwards,
+  );
   const placed = closeInOnBall(pullBlock(block, localBall), localBall);
   return keepApart(placed).map((p) => toPitch(p, side));
 };

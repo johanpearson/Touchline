@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { MatchEvent } from "./match-event";
 import type { Side } from "./match-state";
 import { momentumSeries } from "./momentum-series";
+import type { ZoneEvent } from "./zone-event";
 
-const ev = (time: number, team: Side, type: MatchEvent["type"], intensity: number): MatchEvent =>
-  ({ type, time, team, position: { x: 0.5, y: 0.5 }, intensity }) as MatchEvent;
+const ev = (time: number, team: Side, type: ZoneEvent["type"], intensity: number): ZoneEvent =>
+  ({ type, time, team, position: { x: 0.5, y: 0.5 }, intensity }) as ZoneEvent;
 
 describe("momentumSeries", () => {
   it("returns one value per time bucket up to the requested time", () => {

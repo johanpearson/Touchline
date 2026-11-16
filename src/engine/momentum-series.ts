@@ -1,7 +1,7 @@
-import type { MatchEvent, MatchEventType } from "./match-event";
+import type { ZoneEvent, ZoneEventType } from "./zone-event";
 
 /** Events that put the opponent under pressure; their intensity is the danger they create. */
-const DANGEROUS_EVENTS: ReadonlySet<MatchEventType> = new Set([
+const DANGEROUS_EVENTS: ReadonlySet<ZoneEventType> = new Set([
   "progress",
   "lateral",
   "shot",
@@ -13,7 +13,7 @@ const DANGEROUS_EVENTS: ReadonlySet<MatchEventType> = new Set([
  * negative. Covers `0..upTo` seconds in buckets of `bucketSeconds` (the last one may be partial).
  */
 export const momentumSeries = (
-  events: readonly MatchEvent[],
+  events: readonly ZoneEvent[],
   upTo: number,
   bucketSeconds: number,
 ): number[] => {

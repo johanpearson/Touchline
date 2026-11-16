@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from "react";
 import type { CommentaryLine } from "../../commentary";
-import type { ActionEvent, MatchEvent, MatchState, MatchStats, PerSide } from "../../engine";
+import type { ActionEvent, ActionMatchState, MatchStats, PerSide, ZoneEvent } from "../../engine";
 import { useI18n } from "../i18n-provider";
 import { ClassicPitch } from "./classic-pitch";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
@@ -10,7 +10,6 @@ import { MomentumChart } from "./momentum-chart";
 import { MomentumTerrain } from "./momentum-terrain";
 import { Scoreboard } from "./scoreboard";
 import { SpeedControls } from "./speed-controls";
-import { StatsPanel } from "./stats-panel";
 import type { TerrainRendererFactory } from "./terrain-renderer";
 import { useViewChoice } from "./use-view-choice";
 import "./match-screen.css";
@@ -18,13 +17,13 @@ import "./match-screen.css";
 export type MatchLayoutProps = {
   names: PerSide<string>;
   colours: PerSide<string>;
-  score: MatchState["score"];
-  period: MatchState["period"];
+  score: ActionMatchState["score"];
+  period: ActionMatchState["period"];
   matchTime: number;
   /** The whole log as zone events: the minute labels, the momentum chart and the feed read it. */
-  events: readonly MatchEvent[];
+  events: readonly ZoneEvent[];
   /** The part of it the terrain shows. */
-  terrainEvents: readonly MatchEvent[];
+  terrainEvents: readonly ZoneEvent[];
   stats: MatchStats;
   lines: readonly CommentaryLine[];
   playback: {
@@ -34,19 +33,19 @@ export type MatchLayoutProps = {
     setSpeed: (speed: number) => void;
   };
   createRenderer?: TerrainRendererFactory;
-  /** The action log and renderer of the 2D pitch; only action-engine matches have positions to draw. */
-  pitch?: { events: readonly ActionEvent[]; createRenderer?: PitchRendererFactory };
+  /** The action log and renderer of the 2D pitch. */
+  pitch: { events: readonly ActionEvent[]; createRenderer?: PitchRendererFactory };
   halfTimeEditor?: HalfTimeEditor;
   onResume: (plan?: AppliedHalfTimePlan) => void;
-  /** Replaces the zone stats panel (the action engine shows its own). */
-  statsPanel?: ReactNode;
-  /** Shown at full time, above the "Continue" button (the action engine's player ratings). */
+  /** The in-match stats panel, hidden at half-time (the half-time panel has its own). */
+  statsPanel: ReactNode;
+  /** Shown at full time, above the "Continue" button (the player ratings). */
   fullTimePanel?: ReactNode;
   /** When given, a "Continue" button appears at full time. */
   onContinue?: () => void;
 };
 
-/** The panels of the match screen, the same for both engines; the engine-specific screens feed it. */
+/** The panels of the match screen; `MatchScreen` feeds it. */
 export function MatchLayout({
   names,
   colours,
@@ -69,7 +68,7 @@ export function MatchLayout({
   const { t } = useI18n();
   const halfTime = period === "halfTime";
   const [chosenView, setView] = useViewChoice();
-  const view = pitch ? chosenView : "momentum";
+  const view = chosenView;
   const [showChain, setShowChain] = useState(true);
   return (
     <div className="match-screen" data-testid="match-screen">
@@ -164,7 +163,7 @@ export function MatchLayout({
         />
       </div>
       <aside className="match-side">
-        {!halfTime && (statsPanel ?? <StatsPanel stats={stats} />)}
+        {!halfTime && statsPanel}
         <MomentumChart
           events={events}
           matchTime={matchTime}

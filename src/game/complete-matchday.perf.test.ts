@@ -18,7 +18,7 @@ describe("completeMatchday performance", () => {
     // Budget: 13 background matches per matchday at about 50 ms each on a laptop (see
     // "Performance and the fast path" in docs/architecture.md); tripled for slow CI runners.
     const budgetMs = 26 * 13 * 50 * 3;
-    let career = aCareer(1, 2);
+    let career = aCareer();
     const start = performance.now();
 
     for (let i = 0; i < 26; i++) career = playMatchday(career);

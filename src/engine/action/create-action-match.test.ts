@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { aMatchInputV2 } from "./action-builders";
+import { aMatchInput } from "./action-builders";
 import type { ActionEvent } from "./action-event";
 import { createActionMatch } from "./create-action-match";
 import { inPitch, PITCH_LENGTH, PITCH_WIDTH } from "./pitch-metres";
@@ -8,7 +8,7 @@ import { inPitch, PITCH_LENGTH, PITCH_WIDTH } from "./pitch-metres";
 vi.setConfig({ testTimeout: 150_000 });
 
 const playFullMatch = (seed: number) => {
-  const match = createActionMatch(aMatchInputV2().build(), seed);
+  const match = createActionMatch(aMatchInput().build(), seed);
   match.advanceTo(10_000);
   match.resume();
   match.advanceTo(20_000);
@@ -20,7 +20,7 @@ const goals = (events: readonly ActionEvent[], side: "home" | "away") =>
 
 describe("createActionMatch", () => {
   it("opens with a kickoff for the side that starts the match", () => {
-    const match = createActionMatch(aMatchInputV2().build(), 1);
+    const match = createActionMatch(aMatchInput().build(), 1);
 
     const [first] = match.events;
     expect(first).toMatchObject({ type: "setPiece", variant: "kickoff", time: 0 });
@@ -29,14 +29,14 @@ describe("createActionMatch", () => {
   });
 
   it("rejects a time that is not finite", () => {
-    const match = createActionMatch(aMatchInputV2().build(), 1);
+    const match = createActionMatch(aMatchInput().build(), 1);
 
     expect(() => match.advanceTo(Number.NaN)).toThrow(RangeError);
     expect(() => match.advanceTo(Number.POSITIVE_INFINITY)).toThrow(RangeError);
   });
 
   it("stops at half-time and stays there however far it is advanced", () => {
-    const match = createActionMatch(aMatchInputV2().build(), 3);
+    const match = createActionMatch(aMatchInput().build(), 3);
 
     match.advanceTo(99_999);
     const length = match.events.length;
@@ -57,7 +57,7 @@ describe("createActionMatch", () => {
   });
 
   it("ignores going back in time", () => {
-    const match = createActionMatch(aMatchInputV2().build(), 5);
+    const match = createActionMatch(aMatchInput().build(), 5);
     match.advanceTo(600);
     const { time } = match.state;
     const length = match.events.length;
@@ -69,9 +69,9 @@ describe("createActionMatch", () => {
   });
 
   it("gives the same log however time is split across advanceTo calls", () => {
-    const whole = createActionMatch(aMatchInputV2().build(), 6);
+    const whole = createActionMatch(aMatchInput().build(), 6);
     whole.advanceTo(2700);
-    const split = createActionMatch(aMatchInputV2().build(), 6);
+    const split = createActionMatch(aMatchInput().build(), 6);
     for (let t = 7; t <= 2700; t += 7) split.advanceTo(t);
     split.advanceTo(2700);
 
@@ -89,7 +89,7 @@ describe("createActionMatch", () => {
 
   it("gives 1 to 4 minutes of added time in the first half and 2 to 6 in the second", () => {
     for (let seed = 1; seed <= 6; seed++) {
-      const match = createActionMatch(aMatchInputV2().build(), seed);
+      const match = createActionMatch(aMatchInput().build(), seed);
       match.advanceTo(10_000);
       const firstHalf = match.state.time - 2700;
       match.resume();
@@ -106,13 +106,13 @@ describe("createActionMatch", () => {
   });
 
   it("cannot resume outside half-time", () => {
-    const match = createActionMatch(aMatchInputV2().build(), 1);
+    const match = createActionMatch(aMatchInput().build(), 1);
 
     expect(() => match.resume()).toThrow("Cannot resume from firstHalf");
   });
 
   it("starts the second half with a kickoff for the team that did not start the match", () => {
-    const match = createActionMatch(aMatchInputV2().build(), 9);
+    const match = createActionMatch(aMatchInput().build(), 9);
     const starter = match.state.possession;
     match.advanceTo(10_000);
     match.resume();
@@ -178,7 +178,7 @@ describe("createActionMatch", () => {
   });
 
   it("applies no change after full time and records earlier ones", () => {
-    const match = createActionMatch(aMatchInputV2().build(), 11);
+    const match = createActionMatch(aMatchInput().build(), 11);
     const change = { side: "home" as const };
     match.applyChange(change);
     match.advanceTo(10_000);

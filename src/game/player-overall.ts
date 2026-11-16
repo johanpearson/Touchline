@@ -1,4 +1,4 @@
-import type { AttributeName, Player } from "./player";
+import type { AttributeName, Player, PlayerAttributes } from "./player";
 import type { PlayerPosition } from "./squad-player";
 
 /** The attributes that decide how good a player is in his or her position. */
@@ -9,8 +9,11 @@ const KEY_ATTRIBUTES: Record<PlayerPosition, readonly AttributeName[]> = {
   FWD: ["finishing", "pace", "dribbling"],
 };
 
-/** A player's overall, 1..20: the mean of the key attributes of his or her position. */
-export const playerOverall = (player: Player): number => {
-  const keys = KEY_ATTRIBUTES[player.position];
-  return keys.reduce((sum, key) => sum + player[key], 0) / keys.length;
+/** The overall, 1..20, of attributes in a position: the mean of that position's key attributes. */
+export const overallIn = (position: PlayerPosition, attributes: PlayerAttributes): number => {
+  const keys = KEY_ATTRIBUTES[position];
+  return keys.reduce((sum, key) => sum + attributes[key], 0) / keys.length;
 };
+
+/** A player's overall, 1..20: the mean of the key attributes of his or her position. */
+export const playerOverall = (player: Player): number => overallIn(player.position, player);

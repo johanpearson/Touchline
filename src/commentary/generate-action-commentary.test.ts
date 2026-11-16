@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { type ActionEvent, createMatch, type MatchInput } from "../engine";
-import { aMatchInputV2, aTeamSheet } from "../engine/action/action-builders";
+import { type ActionEvent, createActionMatch, type MatchInput } from "../engine";
+import { aMatchInput, aTeamSheet } from "../engine/action/action-builders";
 import { foul, pass, periodChange, setPiece, shot } from "../engine/action/action-event-builders";
 import {
   type ActionCommentaryContext,
@@ -8,7 +8,7 @@ import {
 } from "./generate-action-commentary";
 
 const input = (): MatchInput =>
-  aMatchInputV2()
+  aMatchInput()
     .withHome(aTeamSheet("Kvarnby", "h").build())
     .withAway(aTeamSheet("Västerås", "a").build())
     .build();
@@ -29,7 +29,7 @@ const context = (locale: "en" | "sv" = "en"): ActionCommentaryContext => ({
 
 const cache = new Map<number, ActionEvent[]>();
 const play = (seed: number): ActionEvent[] => {
-  const match = createMatch(input(), seed);
+  const match = createActionMatch(input(), seed);
   match.advanceTo(10000);
   match.resume();
   match.advanceTo(20000);
@@ -62,8 +62,8 @@ describe("generateActionCommentary", { timeout: 30000 }, () => {
   });
 
   it("does not influence the simulation", () => {
-    const a = createMatch(input(), 11);
-    const b = createMatch(input(), 11);
+    const a = createActionMatch(input(), 11);
+    const b = createActionMatch(input(), 11);
     a.advanceTo(2700);
     generateActionCommentary(a.events as ActionEvent[], context(), 99);
     a.advanceTo(2700);

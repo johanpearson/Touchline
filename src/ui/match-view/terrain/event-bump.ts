@@ -1,9 +1,9 @@
-import type { MatchEvent } from "../../../engine";
+import type { ZoneEvent } from "../../../engine";
 import { attackProgress } from "./attack-progress";
 import type { Bump } from "./terrain-field";
 
 /** Pressure bumps an event adds to the terrain. Tuning values come from the prototype. */
-export const bumpsForEvent = (event: MatchEvent): Bump[] => {
+export const bumpsForEvent = (event: ZoneEvent): Bump[] => {
   const { team, position } = event;
   const { x, y } = position;
   const progress = attackProgress(team, x);

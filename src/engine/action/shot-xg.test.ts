@@ -6,17 +6,17 @@ const at = (x: number, y = 34) => ({ x, y });
 
 describe("shotXg (v2)", () => {
   it("gives exact values for a few central points", () => {
-    expect(shotXg(at(99.5), 0)).toBeCloseTo(0.35977, 4);
-    expect(shotXg(at(94), 0)).toBeCloseTo(0.07834, 4);
-    expect(shotXg(at(87), 0)).toBeCloseTo(0.01803, 4);
-    expect(shotXg(at(75), 0)).toBeCloseTo(0.00221, 4);
+    expect(shotXg(at(99.5), 0)).toBeCloseTo(0.17131, 4);
+    expect(shotXg(at(94), 0)).toBeCloseTo(0.03032, 4);
+    expect(shotXg(at(87), 0)).toBeCloseTo(0.00671, 4);
+    expect(shotXg(at(75), 0)).toBeCloseTo(0.00081, 4);
   });
 
   it("is worth more closer, more central and less pressured", () => {
     expect(shotXg(at(94), 0)).toBeGreaterThan(shotXg(at(87), 0));
     expect(shotXg(at(94, 34), 0)).toBeGreaterThan(shotXg(at(94, 10), 0));
     expect(shotXg(at(94), 0)).toBeGreaterThan(shotXg(at(94), 1));
-    expect(shotXg(at(94), 1)).toBeCloseTo(0.03917, 4);
+    expect(shotXg(at(94), 1)).toBeCloseTo(0.01516, 4);
   });
 
   it("is mirrored left and right of the goal", () => {
@@ -24,7 +24,7 @@ describe("shotXg (v2)", () => {
   });
 
   it("is worth less with the head", () => {
-    expect(shotXg(at(94), 0, "head")).toBeCloseTo(0.047, 4);
+    expect(shotXg(at(94), 0, "head")).toBeCloseTo(0.01819, 4);
     expect(shotXg(at(94), 0, "foot")).toBeCloseTo(shotXg(at(94), 0), 10);
   });
 

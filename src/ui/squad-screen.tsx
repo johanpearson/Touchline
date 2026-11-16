@@ -1,12 +1,12 @@
 import { useState } from "react";
 import {
   type Career,
-  deriveLineupProfile,
+  deriveLineRatings,
   FORMATION_SHAPE,
   FORMATIONS,
   type Formation,
+  LINE_RATINGS,
   type LineupError,
-  PHASE_RATINGS,
   type Player,
   type PlayerPosition,
 } from "../game";
@@ -79,21 +79,15 @@ function PlayerSelect(props: {
 
 function Ratings({ career, players }: PlanProps) {
   const { t, formatNumber } = useI18n();
-  const club = career.league.clubs.find((c) => c.id === career.userClubId);
-  const profile = deriveLineupProfile(
-    club?.name ?? "",
-    players,
-    career.squadPlan,
-    career.condition,
-  );
+  const ratings = deriveLineRatings(players, career.squadPlan, career.condition);
   return (
     <section>
       <h3>{t("squad.ratings")}</h3>
       <dl className="club-ratings" data-testid="plan-ratings">
-        {PHASE_RATINGS.map((phase) => (
-          <div key={phase}>
-            <dt>{t(`rating.${phase}`)}</dt>
-            <dd data-testid={`plan-rating-${phase}`}>{formatNumber(profile[phase] * 100, 0)}</dd>
+        {LINE_RATINGS.map((line) => (
+          <div key={line}>
+            <dt>{t(`rating.${line}`)}</dt>
+            <dd data-testid={`plan-rating-${line}`}>{formatNumber(ratings[line], 0)}</dd>
           </div>
         ))}
       </dl>

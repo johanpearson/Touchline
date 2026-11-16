@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { createRng } from "../rng";
-import { aMatchInputV2, aTeamSheet } from "./action-builders";
+import { aMatchInput, aTeamSheet } from "./action-builders";
 import type { ActionEvent } from "./action-event";
 import { createActionMatch } from "./create-action-match";
-import type { MatchInputV2 } from "./match-input-v2";
+import type { MatchInput } from "./match-input";
 import { kickoffPlay, playAction } from "./play-action";
 
 vi.setConfig({ testTimeout: 300_000 });
@@ -13,14 +13,14 @@ const withoutSnapshot = (event: ActionEvent) => {
   return rest;
 };
 
-const inputs: Record<string, MatchInputV2> = {
-  neutral: aMatchInputV2().build(),
-  threeFiveTwo: aMatchInputV2()
+const inputs: Record<string, MatchInput> = {
+  neutral: aMatchInput().build(),
+  threeFiveTwo: aMatchInput()
     .withHome(
       aTeamSheet("Home", "h").withFormation({ defenders: 3, midfielders: 5, forwards: 2 }).build(),
     )
     .build(),
-  attackingAway: aMatchInputV2()
+  attackingAway: aMatchInput()
     .withAway({
       ...aTeamSheet("Away", "a").build(),
       tactics: { mentality: "attacking", pressing: "high", width: "wide", tempo: "fast" },
@@ -28,7 +28,7 @@ const inputs: Record<string, MatchInputV2> = {
     .build(),
 };
 
-const play = (input: MatchInputV2, seed: number, detail: "fast" | "full", fullMatch: boolean) => {
+const play = (input: MatchInput, seed: number, detail: "fast" | "full", fullMatch: boolean) => {
   const match = createActionMatch(input, seed, { detail });
   match.advanceTo(10_000);
   if (fullMatch) {
@@ -40,15 +40,15 @@ const play = (input: MatchInputV2, seed: number, detail: "fast" | "full", fullMa
 
 describe("createActionMatch with detail", () => {
   it("builds snapshots by default and with detail full", () => {
-    const byDefault = createActionMatch(inputs.neutral as MatchInputV2, 1);
-    const full = createActionMatch(inputs.neutral as MatchInputV2, 1, { detail: "full" });
+    const byDefault = createActionMatch(inputs.neutral as MatchInput, 1);
+    const full = createActionMatch(inputs.neutral as MatchInput, 1, { detail: "full" });
 
     expect(byDefault.events.every((e) => e.snapshot?.players.length === 22)).toBe(true);
     expect(full.events).toEqual(byDefault.events);
   });
 
   it("builds no snapshots with detail fast", () => {
-    const match = play(inputs.neutral as MatchInputV2, 1, "fast", true);
+    const match = play(inputs.neutral as MatchInput, 1, "fast", true);
 
     expect(match.events.length).toBeGreaterThan(1000);
     expect(match.events.some((e) => e.snapshot !== undefined)).toBe(false);
@@ -57,7 +57,7 @@ describe("createActionMatch with detail", () => {
   it("gives the same first half as full detail for 200 seeds", () => {
     const list = Object.values(inputs);
     for (let seed = 1; seed <= 200; seed++) {
-      const input = list[seed % list.length] as MatchInputV2;
+      const input = list[seed % list.length] as MatchInput;
       const fast = play(input, seed, "fast", false);
       const full = play(input, seed, "full", false);
 
@@ -67,7 +67,7 @@ describe("createActionMatch with detail", () => {
   });
 
   it.each(Object.keys(inputs))("gives the same whole match as full detail for %s", (name) => {
-    const input = inputs[name] as MatchInputV2;
+    const input = inputs[name] as MatchInput;
     const fast = play(input, 77, "fast", true);
     const full = play(input, 77, "full", true);
 
@@ -76,7 +76,7 @@ describe("createActionMatch with detail", () => {
   });
 
   it("does not let the presentation stream affect decisions", () => {
-    const input = inputs.neutral as MatchInputV2;
+    const input = inputs.neutral as MatchInput;
     const run = (presentationSeed: number) => {
       const sim = createRng(5).fork("action-sim");
       const presentation = createRng(presentationSeed);

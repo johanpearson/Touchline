@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { aMatchInputV2, aTeamSheet } from "./action-builders";
+import { aMatchInput, aTeamSheet } from "./action-builders";
 import type { ActionMatch, ActionMatchChange } from "./action-match";
 import { createActionMatch } from "./create-action-match";
 import type { EnginePlayer } from "./engine-player";
 
 vi.setConfig({ testTimeout: 150_000 });
 
-const input = aMatchInputV2().build();
+const input = aMatchInput().build();
 const HALF_TIME_AT = 1_000_000;
 const attacking = {
   mentality: "attacking",

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createActionMatch } from "../engine";
 import { aCareer } from "./career-builders";
-import { matchInputV2For, matchSeed } from "./match-input-for";
+import { matchInputFor, matchSeed } from "./match-input-for";
 import { simulateFixture } from "./simulate-fixture";
 
 describe("simulateFixture", () => {
@@ -40,19 +40,16 @@ describe("simulateFixture", () => {
   });
 
   it("stamps the engine version the match was played on", () => {
-    const fixtureOf = (c: ReturnType<typeof aCareer>) =>
-      c.season.fixtures[0] as (typeof c.season.fixtures)[number];
-    const v1 = aCareer(1, 1);
-    const v2 = aCareer(1, 2);
+    const career = aCareer();
+    const fixture = career.season.fixtures[0] as (typeof career.season.fixtures)[number];
 
-    expect(simulateFixture(v1, fixtureOf(v1)).engineVersion).toBe(1);
-    expect(simulateFixture(v2, fixtureOf(v2)).engineVersion).toBe(2);
+    expect(simulateFixture(career, fixture).engineVersion).toBe(2);
   });
 
-  it("plays engine 2 careers on the action engine, deterministically", () => {
-    const career = aCareer(1, 2);
+  it("plays the action engine, deterministically", () => {
+    const career = aCareer();
     const fixture = career.season.fixtures[2] as (typeof career.season.fixtures)[number];
-    const input = matchInputV2For(career, fixture);
+    const input = matchInputFor(career, fixture);
     const match = createActionMatch(input, matchSeed(career, fixture));
     match.advanceTo(1_000_000);
     match.resume();
@@ -62,6 +59,6 @@ describe("simulateFixture", () => {
 
     expect(result.homeGoals).toBe(match.state.score.home);
     expect(result.awayGoals).toBe(match.state.score.away);
-    expect(simulateFixture(aCareer(1, 2), fixture)).toEqual(result);
+    expect(simulateFixture(aCareer(), fixture)).toEqual(result);
   });
 });

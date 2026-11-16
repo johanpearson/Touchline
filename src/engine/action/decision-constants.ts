@@ -37,7 +37,7 @@ export const LONG_PASS_MIN = 35;
 export const THROUGH_PASS_MIN_PROGRESS = 15;
 export const THROUGH_PASS_MIN_DISTANCE = 15;
 export const CROSS_WIDE_CHANNEL = 14;
-export const CROSS_MIN_DEPTH = 70;
+export const CROSS_MIN_DEPTH = 60;
 export const WIDE_TARGET_CHANNEL = 14;
 
 // Tactics
@@ -54,7 +54,7 @@ export const MENTALITY_RISK: Record<Mentality, number> = {
   attacking: 1.2,
 };
 /** Multiplies the weight of passes to wide targets and of crosses. */
-export const WIDTH_WIDE_BONUS: Record<Width, number> = { narrow: 0.8, normal: 1, wide: 1.5 };
+export const WIDTH_WIDE_BONUS: Record<Width, number> = { narrow: 0.8, normal: 1, wide: 2.5 };
 /** Base directness weight on forward progress before tactics are added. */
 export const BASE_DIRECTNESS = 0.5;
 /** Share of the carry weight added per unit of directness. */
@@ -79,7 +79,7 @@ export const RISKY_VARIANTS: readonly PassVariant[] = ["long", "through", "cross
 /** Added to the pass completion chance of the team's own passes. */
 export const TEMPO_PASS_SUCCESS: Record<Tempo, number> = { slow: 0.04, normal: 0, fast: -0.05 };
 /** Multiplies the weight of a shot taken from the central channel. */
-export const WIDTH_CENTRAL_SHOT: Record<Width, number> = { narrow: 1.1, normal: 1, wide: 0.9 };
+export const WIDTH_CENTRAL_SHOT: Record<Width, number> = { narrow: 1.05, normal: 1, wide: 0.9 };
 /** A shot is central when it is at most this many metres from the middle line. */
 export const CENTRAL_SHOT_CHANNEL = 11;
 /** Multiplies the radius within which the team's opponents feel its pressure (press trigger distance). */
@@ -91,7 +91,7 @@ export const PRESSING_TURNOVER_BONUS: Record<Pressing, number> = {
   high: 0.03,
 };
 /** Multiplies the weight of through passes and carries of an opponent that has just won the ball (space behind the press). */
-export const PRESSING_SPACE_BEHIND: Record<Pressing, number> = { low: 0.8, medium: 1, high: 2.2 };
+export const PRESSING_SPACE_BEHIND: Record<Pressing, number> = { low: 0.8, medium: 1, high: 3 };
 
 /**
  * Home advantage: added to the success chance of the home side's passes, carries, interceptions and
@@ -106,22 +106,22 @@ export const PASS_BASE_COMPLETE: Record<PassVariant, number> = {
   through: 0.66,
   cross: 0.7,
 };
-export const PASS_SKILL_GAIN = 0.3;
-export const PASS_RECEIVER_GAIN = 0.1;
+export const PASS_SKILL_GAIN = 0.15;
+export const PASS_RECEIVER_GAIN = 0.05;
 export const PASS_PRESSURE_PENALTY = 0.3;
 export const PASS_COMPLETE_MIN = 0.15;
 export const PASS_COMPLETE_MAX = 0.97;
 /** Share of failed passes that go out of play (the rest stay in play and are lost). */
 export const PASS_OUT_SHARE: Record<PassVariant, number> = {
-  short: 0.25,
+  short: 0.3,
   long: 0.4,
   through: 0.3,
   cross: 0.5,
 };
 /** Share of crosses that go behind the opponent's goal line and are deflected (corner) instead of reaching the goal kick. */
-export const CROSS_DEFLECTED_CORNER_SHARE = 0.9;
+export const CROSS_DEFLECTED_CORNER_SHARE = 0.2;
 /** Share of intercepted crosses that the defender puts behind the goal line (a corner) instead of keeping the ball. */
-export const CROSS_INTERCEPTED_CORNER_SHARE = 0.7;
+export const CROSS_INTERCEPTED_CORNER_SHARE = 0.6;
 /** Distance in metres from the pass lane within which an opponent can reach the ball. */
 export const LANE_RADIUS = 3;
 
@@ -134,7 +134,7 @@ export const INTERCEPT_MAX = 0.65;
 
 // Carry outcome
 export const CARRY_KEPT_BASE = 0.88;
-export const CARRY_SKILL_GAIN = 0.25;
+export const CARRY_SKILL_GAIN = 0.12;
 export const CARRY_DEFENDER_PENALTY = 0.35;
 export const CARRY_PRESSURE_PENALTY = 0.3;
 export const CARRY_KEPT_MIN = 0.3;
@@ -155,7 +155,7 @@ export const TACKLE_WIN_PRESSURE_GAIN = 0.1;
 export const TACKLE_WIN_MIN = 0.1;
 export const TACKLE_WIN_MAX = 0.8;
 /** Multiplies the foul chance of a defender challenging inside their own penalty area (defenders stay on their feet there). */
-export const PENALTY_AREA_FOUL_FACTOR = 0.4;
+export const PENALTY_AREA_FOUL_FACTOR = 0.3;
 export const PENALTY_AREA_DEPTH = 16.5;
 export const PENALTY_AREA_HALF_WIDTH = 20.16;
 
@@ -181,7 +181,7 @@ export const TEMPO_DRAW_EXPONENT: Record<Tempo, number> = { slow: 0.7, normal: 1
 /** Goal centre and width (metres). Posts are `GOAL_WIDTH / 2` either side of the centre line. */
 export const GOAL_WIDTH = 7.32;
 /** Logistic xG model: `logit = XG_INTERCEPT + XG_DISTANCE_GAIN * distance + XG_ANGLE_GAIN * angle` (angle in radians subtended by the posts). */
-export const XG_INTERCEPT = -2.1;
+export const XG_INTERCEPT = -3.1;
 export const XG_DISTANCE_GAIN = -0.15;
 export const XG_ANGLE_GAIN = 2;
 /** Share of xG lost at full pressure (0..1). */
@@ -197,9 +197,9 @@ export const PENALTY_XG = 0.76;
 /** Below this xG a shot is never chosen (weight 0). */
 export const SHOT_MIN_XG = 0.01;
 /** Option weight per unit of xG, before finishing and mentality. */
-export const SHOT_WEIGHT_GAIN = 12;
+export const SHOT_WEIGHT_GAIN = 20;
 /** Share of the shot weight that depends on finishing (an average 10 keeps 1). */
-export const SHOT_FINISHING_GAIN = 0.5;
+export const SHOT_FINISHING_GAIN = 0.25;
 export const MENTALITY_SHOT: Record<Mentality, number> = {
   defensive: 0.95,
   balanced: 1,
@@ -208,8 +208,8 @@ export const MENTALITY_SHOT: Record<Mentality, number> = {
 
 // Shot resolution
 /** Goal chance = xG x finishing factor x keeper factor, clamped. */
-export const FINISHING_GOAL_GAIN = 0.6;
-export const KEEPER_GOAL_GAIN = 0.6;
+export const FINISHING_GOAL_GAIN = 0.4;
+export const KEEPER_GOAL_GAIN = 0.4;
 export const GOAL_CHANCE_MAX = 0.95;
 /** Weights that split the non-goal remainder between woodwork, blocked, saved and missed. */
 export const WOODWORK_WEIGHT = 0.03;

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createActionMatch, createMatch, type MatchChange, NEUTRAL_TACTICS } from "../engine";
+import { createActionMatch, NEUTRAL_TACTICS } from "../engine";
 import type { Career } from "./career";
 import { aCareer, deepFreeze } from "./career-builders";
 import { completeMatchday } from "./complete-matchday";
 import type { Fixture } from "./generate-fixtures";
-import { matchInputV1For, matchInputV2For, matchSeed } from "./match-input-for";
+import { matchInputFor, matchSeed } from "./match-input-for";
 import { planHalfTime } from "./plan-half-time";
 import type { Player } from "./player";
 import { ATTRIBUTE_NAMES } from "./player";
@@ -47,10 +47,10 @@ const plan = (career: Career, changes: Parameters<typeof planHalfTime>[2]) =>
   planHalfTime(career, userFixtureOf(career), changes);
 
 describe("planHalfTime", () => {
-  it("gives the unchanged profile and tactics and 90 minutes to all starters without changes", () => {
+  it("gives the unchanged lineup and tactics and 90 minutes to all starters without changes", () => {
     const career = deepFreeze(aCareer());
     const fixture = userFixtureOf(career);
-    const input = matchInputV1For(career, fixture);
+    const input = matchInputFor(career, fixture);
     const side = sideOf(career, fixture);
 
     const result = planHalfTime(career, fixture, { substitutions: [] });
@@ -58,8 +58,8 @@ describe("planHalfTime", () => {
     if (!result.ok) throw new Error(result.error);
     expect(result.change).toEqual({
       side,
-      profile: input[side],
-      tactics: side === "home" ? input.homeTactics : input.awayTactics,
+      lineup: input[side].starters,
+      tactics: input[side].tactics,
     });
     for (const id of career.squadPlan.starters) expect(result.report.minutes[id]).toBe(90);
     for (const id of career.squadPlan.bench) expect(result.report.minutes[id]).toBe(0);
@@ -191,7 +191,7 @@ describe("planHalfTime", () => {
     expect(plan(career, { substitutions: [{ off, on }] }).ok).toBe(true);
   });
 
-  it("raises the second-half rating when a fresh substitute replaces a tired player of equal quality", () => {
+  it("brings a fresh substitute on with better effective attributes than a tired player of equal quality", () => {
     const base = aCareer();
     const { off, on } = pair(base, "MID");
     const offPlayer = base.league.players.find((p) => p.id === off) as Player;
@@ -211,14 +211,11 @@ describe("planHalfTime", () => {
     const kept = plan(career, { substitutions: [] });
     const swapped = plan(career, { substitutions: [{ off, on }] });
 
-    if (!kept.ok || !swapped.ok || kept.engineVersion !== 1 || swapped.engineVersion !== 1) {
-      throw new Error("plan failed");
-    }
-    const before = kept.change.profile as NonNullable<MatchChange["profile"]>;
-    const after = swapped.change.profile as NonNullable<MatchChange["profile"]>;
-    expect(after.progression + after.buildUp + after.chanceCreation).toBeGreaterThan(
-      before.progression + before.buildUp + before.chanceCreation,
-    );
+    if (!kept.ok || !swapped.ok) throw new Error("plan failed");
+    const slot = career.squadPlan.starters.indexOf(off);
+    const passingAt = (lineup: typeof kept.change.lineup) =>
+      lineup?.[slot]?.attributes.passing as number;
+    expect(passingAt(swapped.change.lineup)).toBeGreaterThan(passingAt(kept.change.lineup));
   });
 
   it("feeds completeMatchday: a substituted-off player loses half the fitness of a full-match starter", () => {
@@ -233,7 +230,7 @@ describe("planHalfTime", () => {
       awayClubId: fixture.awayClubId,
       homeGoals: 1,
       awayGoals: 1,
-      engineVersion: 1 as const,
+      engineVersion: 2 as const,
     };
 
     const done = completeMatchday(career, draw, result.report);
@@ -246,41 +243,20 @@ describe("planHalfTime", () => {
     expect(lost(on)).toBeCloseTo(lost(starter) / 2);
   });
 
-  it("gives the same match twice for the same seed and plan", () => {
-    const career = aCareer();
-    const fixture = userFixtureOf(career);
-    const { off, on } = pair(career, "FWD");
-    const attacking = { ...NEUTRAL_TACTICS, mentality: "attacking" as const };
-    const result = plan(career, { substitutions: [{ off, on }], tactics: attacking });
-    if (!result.ok) throw new Error(result.error);
-
-    const play = () => {
-      const match = createMatch(matchInputV1For(career, fixture), matchSeed(career, fixture));
-      match.advanceTo(1_000_000);
-      match.applyChange(result.change);
-      match.resume();
-      match.advanceTo(1_000_000);
-      return { events: match.events, score: match.state.score, changes: match.changes };
-    };
-
-    expect(play()).toEqual(play());
-    expect(play().changes).toHaveLength(1);
-  });
-
-  describe("on engine v2", () => {
-    const v2 = () => aCareer(1, 2);
+  describe("engine change", () => {
+    const v2 = () => aCareer();
 
     it("puts the substitute in the starter's slot of the lineup change, with tactics", () => {
       const career = v2();
       const fixture = userFixtureOf(career);
-      const input = matchInputV2For(career, fixture);
+      const input = matchInputFor(career, fixture);
       const side = sideOf(career, fixture);
       const { off, on } = pair(career, "MID");
       const attacking = { ...NEUTRAL_TACTICS, mentality: "attacking" as const };
 
       const result = plan(career, { substitutions: [{ off, on }], tactics: attacking });
 
-      if (!result.ok || result.engineVersion !== 2) throw new Error("plan failed");
+      if (!result.ok) throw new Error("plan failed");
       const before = input[side].starters.map((p) => p.id);
       const lineup = (result.change.lineup ?? []).map((p) => p.id);
       expect(lineup).toEqual(before.map((id) => (id === off ? on : id)));
@@ -300,12 +276,12 @@ describe("planHalfTime", () => {
       if (!result.ok) throw new Error(result.error);
       expect(result.change).toEqual({
         side,
-        lineup: matchInputV2For(career, fixture)[side].starters,
+        lineup: matchInputFor(career, fixture)[side].starters,
         tactics: career.squadPlan.tactics,
       });
     });
 
-    it("returns the same validation errors as engine v1", () => {
+    it("returns the validation errors", () => {
       const career = v2();
       const { off } = pair(career, "MID");
       const fwdOn = pair(career, "FWD").on;
@@ -326,11 +302,11 @@ describe("planHalfTime", () => {
       const fixture = userFixtureOf(career);
       const { off, on } = pair(career, "FWD");
       const result = plan(career, { substitutions: [{ off, on }] });
-      if (!result.ok || result.engineVersion !== 2) throw new Error("plan failed");
+      if (!result.ok) throw new Error("plan failed");
 
       const play = () => {
         const match = createActionMatch(
-          matchInputV2For(career, fixture),
+          matchInputFor(career, fixture),
           matchSeed(career, fixture),
           { detail: "fast" },
         );

@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { MatchEvent, MatchEventType } from "./match-event";
+import type { ZoneEvent, ZoneEventType } from "./zone-event";
 
 const at = { x: 0.5, y: 0.5 };
 const base = { time: 60, team: "home", position: at, intensity: 0.5 } as const;
 
-describe("MatchEvent", () => {
+describe("ZoneEvent", () => {
   it("covers every event type listed in the domain model", () => {
-    const events: MatchEvent[] = [
+    const events: ZoneEvent[] = [
       { ...base, type: "kickoff" },
       { ...base, type: "progress" },
       { ...base, type: "lateral" },
@@ -18,7 +18,7 @@ describe("MatchEvent", () => {
       { ...base, type: "periodChange", period: "halfTime" },
     ];
 
-    const types: MatchEventType[] = events.map((event) => event.type);
+    const types: ZoneEventType[] = events.map((event) => event.type);
 
     expect(new Set(types).size).toBe(9);
   });

@@ -1,10 +1,10 @@
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { MatchEvent } from "../../engine";
+import type { ZoneEvent } from "../../engine";
 import { MomentumTerrain } from "./momentum-terrain";
 import type { TerrainRenderer, TerrainRendererFactory } from "./terrain-renderer";
 
-const goal: MatchEvent = {
+const goal: ZoneEvent = {
   type: "goal",
   time: 1,
   team: "home",

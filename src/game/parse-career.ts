@@ -41,7 +41,7 @@ const parseUnchecked = (raw: unknown): CareerParseResult => {
   if (!squadPlan) return fail("invalid-squad-plan");
   const condition = parseCondition(raw.condition, league.players);
   if (!condition) return fail("invalid-condition");
-  if (raw.engineVersion !== 1 && raw.engineVersion !== 2) return fail("invalid-engine-version");
+  if (raw.engineVersion !== 2) return fail("invalid-engine-version");
   return {
     ok: true,
     career: {
@@ -52,7 +52,7 @@ const parseUnchecked = (raw: unknown): CareerParseResult => {
       history,
       squadPlan,
       condition,
-      engineVersion: raw.engineVersion,
+      engineVersion: 2,
     },
   };
 };

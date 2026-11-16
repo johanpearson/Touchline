@@ -15,6 +15,12 @@ export const DEFENCE_DEPTH = 30;
 export const MIDFIELD_DEPTH = 52;
 export const ATTACK_DEPTH = 72;
 
+/**
+ * Metres between neighbouring forwards, centred on the middle line. Strikers stay in the central
+ * channel whatever their number, so a pair is as close to goal as a lone striker or a trio.
+ */
+export const FORWARD_LANE_SPACING = 12;
+
 /** How much of the block shift the goalkeeper follows (0 stays on the line, 1 moves with the block). */
 export const GOALKEEPER_FOLLOW = 0.25;
 
@@ -49,7 +55,7 @@ export const MENTALITY_COMPACTNESS: Record<Mentality, number> = {
 };
 
 /** Multiplies the lateral spread. */
-export const WIDTH_SCALE: Record<Width, number> = { narrow: 0.9, normal: 1, wide: 1.15 };
+export const WIDTH_SCALE: Record<Width, number> = { narrow: 0.95, normal: 1, wide: 1.35 };
 
 /** The block shifts towards the ball: metres per metre of ball offset, capped. */
 export const BALL_PULL_DEPTH = 0.15;

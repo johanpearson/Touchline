@@ -8,7 +8,7 @@ import { PENALTY_XG } from "./decision-constants";
 import { homeEdge } from "./home-advantage";
 import { CHALLENGE_PRESSURE_GAIN, NO_RECENT_TURNOVER, PENALTY_SPOT_DEPTH } from "./loop-constants";
 import { markKeyPasses } from "./mark-key-passes";
-import type { MatchInputV2 } from "./match-input-v2";
+import type { MatchInput } from "./match-input";
 import type { Challenger, Resolution } from "./open-play-types";
 import { PITCH_LENGTH, PITCH_WIDTH, type Point } from "./pitch-metres";
 import type { PendingRestart, PlayState } from "./play-state";
@@ -41,7 +41,7 @@ const snapshotOf = (shapes: Shapes, ball: Point, presentation: Rng | undefined) 
   presentation === undefined ? undefined : buildSnapshot(shapes, ball, presentation);
 
 export type ActionContext = {
-  input: MatchInputV2;
+  input: MatchInput;
   play: PlayState;
   time: number;
   period: Period;
@@ -83,11 +83,11 @@ export const kickoffPlay = (
   fouls,
 });
 
-const sheetOf = (input: MatchInputV2, side: Side): TeamSheet =>
+const sheetOf = (input: MatchInput, side: Side): TeamSheet =>
   side === "home" ? input.home : input.away;
 
 /** Both shapes for the current ball and phase of play. */
-export const shapesFor = (input: MatchInputV2, play: PlayState, ball: Point): Shapes => {
+export const shapesFor = (input: MatchInput, play: PlayState, ball: Point): Shapes => {
   const last = { type: play.lastType, actionsSinceTurnover: play.actionsSinceTurnover };
   const shapeOf = (side: Side): Point[] => {
     const sheet = sheetOf(input, side);

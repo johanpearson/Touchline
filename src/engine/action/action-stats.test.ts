@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aMatchInputV2 } from "./action-builders";
+import { aMatchInput } from "./action-builders";
 import {
   carry,
   clearance,
@@ -15,7 +15,7 @@ import { computeActionStats } from "./action-stats";
 import { createActionMatch } from "./create-action-match";
 
 const playedMatch = (seed: number) => {
-  const match = createActionMatch(aMatchInputV2().build(), seed);
+  const match = createActionMatch(aMatchInput().build(), seed);
   match.advanceTo(6000);
   match.resume();
   match.advanceTo(12000);

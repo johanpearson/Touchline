@@ -2,7 +2,7 @@ import type { Side } from "../match-state";
 import type { PerSide } from "../match-stats";
 import { type MatchMetrics, matchMetrics } from "./action-balance-metrics";
 import { createActionMatch } from "./create-action-match";
-import type { MatchInputV2 } from "./match-input-v2";
+import type { MatchInput } from "./match-input";
 
 /** Per-match averages for one side. */
 export type ActionSideAverages = {
@@ -91,7 +91,7 @@ const emptyTotals = (): Totals => ({
   actions: 0,
 });
 
-const playFastMatch = (input: MatchInputV2, seed: number) => {
+const playFastMatch = (input: MatchInput, seed: number) => {
   const match = createActionMatch(input, seed, { detail: "fast" });
   match.advanceTo(PLAY_ON);
   match.resume();
@@ -124,7 +124,7 @@ const averaged = (totals: Totals, matches: number): ActionSideAverages => ({
  * ... and summarises them. Deterministic: the same arguments always give the same summary.
  */
 export const simulateActionBalance = (
-  input: MatchInputV2,
+  input: MatchInput,
   matches: number,
   baseSeed: number,
 ): ActionBalanceSummary => {

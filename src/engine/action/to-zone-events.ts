@@ -1,6 +1,6 @@
-import type { MatchEvent, ShotOutcome } from "../match-event";
 import type { Side } from "../match-state";
 import { clamp, progressOf } from "../pitch";
+import type { ShotOutcome, ZoneEvent } from "../zone-event";
 import type { ActionEvent, ShotEvent } from "./action-event";
 import { holderAfter } from "./action-stats";
 import { type Point, toNormalised } from "./pitch-metres";
@@ -26,9 +26,9 @@ const movedForward = (event: ActionEvent): boolean => {
 
 type Placed = { time: number; team: Side };
 
-const shotEvents = (event: ShotEvent, at: Placed, position: Point): MatchEvent[] => {
+const shotEvents = (event: ShotEvent, at: Placed, position: Point): ZoneEvent[] => {
   const base = { ...at, position: toNormalised(position) };
-  const shot: MatchEvent = {
+  const shot: ZoneEvent = {
     ...base,
     type: "shot",
     xg: event.xg,
@@ -40,7 +40,7 @@ const shotEvents = (event: ShotEvent, at: Placed, position: Point): MatchEvent[]
 };
 
 /** What the ball does once `event` is over, when the event is not one the zone engine names itself. */
-const flowEvent = (event: ActionEvent, team: Side, changedHands: boolean): MatchEvent => {
+const flowEvent = (event: ActionEvent, team: Side, changedHands: boolean): ZoneEvent => {
   const position = toNormalised(event.to);
   const base = { time: event.time, team, position };
   if (changedHands) return { ...base, type: "turnover", intensity: INTENSITY.turnover };
@@ -54,7 +54,7 @@ const flowEvent = (event: ActionEvent, team: Side, changedHands: boolean): Match
   return { ...base, type: "lateral", intensity: INTENSITY.lateral };
 };
 
-const convert = (event: ActionEvent, previousHolder: Side | undefined): MatchEvent[] => {
+const convert = (event: ActionEvent, previousHolder: Side | undefined): ZoneEvent[] => {
   const team = holderAfter(event);
   const at = { time: event.time, team: event.team };
   const position = toNormalised(event.to);
@@ -80,7 +80,7 @@ const convert = (event: ActionEvent, previousHolder: Side | undefined): MatchEve
 
 export type ZoneEventAdapter = {
   /** Adapts the next chunk of the log and returns only the zone events it produced. */
-  push: (events: readonly ActionEvent[]) => MatchEvent[];
+  push: (events: readonly ActionEvent[]) => ZoneEvent[];
 };
 
 /**
@@ -92,7 +92,7 @@ export const createZoneEventAdapter = (): ZoneEventAdapter => {
   let holder: Side | undefined;
   return {
     push: (events) => {
-      const zone: MatchEvent[] = [];
+      const zone: ZoneEvent[] = [];
       for (const event of events) {
         zone.push(...convert(event, holder));
         holder = holderAfter(event);
@@ -115,5 +115,5 @@ export const createZoneEventAdapter = (): ZoneEventAdapter => {
  * - `team` is the side that has the ball afterwards, the position is where the ball ends up
  *   (metres to 0..1), and the intensity uses the zone engine's formulas.
  */
-export const toZoneEvents = (events: readonly ActionEvent[]): MatchEvent[] =>
+export const toZoneEvents = (events: readonly ActionEvent[]): ZoneEvent[] =>
   createZoneEventAdapter().push(events);

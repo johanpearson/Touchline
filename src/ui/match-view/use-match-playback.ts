@@ -1,26 +1,21 @@
 import { useEffect, useRef, useState } from "react";
-import type { ActionMatch, ActionMatchChange, Match, MatchChange, Period } from "../../engine";
+import type { ActionMatch, ActionMatchChange, Period } from "../../engine";
 import { advanceClock, SPEEDS } from "./playback";
 
 const DEFAULT_TICK_MS = 100;
 
-/** The zone engine's match or the action engine's: both are driven the same way. */
-export type PlayableMatch = Match | ActionMatch;
-
-type ChangeOf<M extends PlayableMatch> = M extends Match ? MatchChange : ActionMatchChange;
-
-export type MatchPlayback<M extends PlayableMatch> = {
+export type MatchPlayback = {
   matchTime: number;
-  state: M["state"];
+  state: ActionMatch["state"];
   /** The whole log so far. The array is appended to in place: use `eventCount` to see that it grew. */
-  events: readonly M["events"][number][];
+  events: readonly ActionMatch["events"][number][];
   eventCount: number;
   paused: boolean;
   speed: number;
   setPaused: (paused: boolean) => void;
   setSpeed: (speed: number) => void;
   /** Starts the second half, applying the user's change first; only valid at half-time. */
-  resume: (change?: ChangeOf<M>) => void;
+  resume: (change?: ActionMatchChange) => void;
 };
 
 const isPlaying = (period: Period): boolean => period === "firstHalf" || period === "secondHalf";
@@ -30,14 +25,14 @@ const isPlaying = (period: Period): boolean => period === "firstHalf" || period 
  * at half-time and full time, where the engine holds the match until it is resumed. The hook keeps
  * the full event list and only appends the events of each tick, so a tick costs what is new.
  */
-export const useMatchPlayback = <M extends PlayableMatch>(
-  match: M,
+export const useMatchPlayback = (
+  match: ActionMatch,
   tickMs: number = DEFAULT_TICK_MS,
-): MatchPlayback<M> => {
+): MatchPlayback => {
   const [paused, setPaused] = useState(false);
   const [speed, setSpeed] = useState<number>(SPEEDS[1]);
   const [matchTime, setMatchTime] = useState(0);
-  const eventsRef = useRef<M["events"][number][]>([...match.events]);
+  const eventsRef = useRef<ActionMatch["events"][number][]>([...match.events]);
   const [snapshot, setSnapshot] = useState(() => ({
     state: match.state,
     eventCount: eventsRef.current.length,
@@ -66,9 +61,9 @@ export const useMatchPlayback = <M extends PlayableMatch>(
     return () => clearInterval(id);
   }, [match, speed, paused, tickMs]);
 
-  const resume = (change?: ChangeOf<M>) => {
+  const resume = (change?: ActionMatchChange) => {
     if (match.state.period !== "halfTime") return;
-    if (change) (match.applyChange as (change: ChangeOf<M>) => unknown)(change);
+    if (change) match.applyChange(change);
     match.resume();
     publish();
   };

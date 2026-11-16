@@ -4,14 +4,14 @@ import {
   formatBalanceTable,
   simulateActionBalance,
 } from "./action-balance";
-import { aMatchInputV2 } from "./action-builders";
+import { aMatchInput } from "./action-builders";
 import { BASE_SEED, between, MATCHES } from "./balance-test-support";
 
 describe("action engine balance: two average teams", () => {
   let s: ActionBalanceSummary;
 
   beforeAll(() => {
-    s = simulateActionBalance(aMatchInputV2().build(), MATCHES, BASE_SEED);
+    s = simulateActionBalance(aMatchInput().build(), MATCHES, BASE_SEED);
     console.info(`\n${formatBalanceTable("v2: average vs average", s)}\n`);
   }, 300_000);
 

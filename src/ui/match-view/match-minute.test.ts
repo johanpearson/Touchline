@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { MatchEvent } from "../../engine";
+import type { ZoneEvent } from "../../engine";
 import { formatMatchMinute } from "./match-minute";
 
-const halfTime = (time: number): MatchEvent => ({
+const halfTime = (time: number): ZoneEvent => ({
   type: "periodChange",
   period: "halfTime",
   time,

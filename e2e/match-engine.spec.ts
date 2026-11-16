@@ -3,9 +3,8 @@ import { expect, type Page, test } from "@playwright/test";
 
 const CLUBS = 14;
 
-const startV2Career = async (page: Page) => {
+const startCareer = async (page: Page) => {
   await page.goto("./");
-  await page.getByTestId("engine-version").selectOption("2");
   await page.getByTestId("club-name").first().click();
   await page.getByTestId("start-career").click();
   await expect(page.getByTestId("career-hub")).toBeVisible();
@@ -19,9 +18,9 @@ const tableRows = async (page: Page): Promise<string[]> => {
   return rows;
 };
 
-test.describe("action engine (v2)", () => {
+test.describe("match engine", () => {
   test("quick-sims a matchday and updates the table @smoke", async ({ page }) => {
-    await startV2Career(page);
+    await startCareer(page);
     const before = await tableRows(page);
     await page.getByTestId("quick-sim").click();
     await expect(page.getByTestId("matchday-results")).toBeVisible();
@@ -39,7 +38,7 @@ test.describe("action engine (v2)", () => {
     page,
   }) => {
     test.setTimeout(120_000);
-    await startV2Career(page);
+    await startCareer(page);
 
     await page.getByTestId("play-match").click();
     await page.getByTestId("speed-4").click();

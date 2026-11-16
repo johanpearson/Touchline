@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createRng } from "../engine";
-import { deriveTeamProfile } from "./derive-team-profile";
 import { generateSquad, SQUAD_SHAPE } from "./generate-squad";
+import { deriveClubLineRatings } from "./line-ratings";
 import { ATTRIBUTE_NAMES, type Player } from "./player";
 import type { PlayerPosition } from "./squad-player";
 
@@ -19,9 +19,7 @@ const averageRating = (players: Player[], clubId: string): number => {
     colours: { primary: "#112233", secondary: "#ffffff" },
     playerIds: players.map((p) => p.id),
   };
-  const { name: _name, ...ratings } = deriveTeamProfile(club, players);
-  const values = Object.values(ratings);
-  return values.reduce((s, v) => s + v, 0) / values.length;
+  return deriveClubLineRatings(club, players).overall / 100;
 };
 
 const overall = (p: Player): number => ATTRIBUTE_NAMES.reduce((s, a) => s + p[a], 0);
@@ -99,12 +97,13 @@ describe("generateSquad", () => {
     expect(rating(0.5)).toBeLessThan(rating(0.8));
   });
 
-  it("rates a strength 0.5 squad about 0.5 on average", () => {
+  it("rates a strength 0.5 squad a little above 0.5 because players are strongest in their position's key attributes", () => {
     const ratings = Array.from({ length: 30 }, (_, i) =>
       averageRating(squadOf(0.5, i + 1), "kvarnby"),
     );
     const mean = ratings.reduce((s, r) => s + r, 0) / ratings.length;
-    expect(Math.abs(mean - 0.5)).toBeLessThan(0.05);
+    expect(mean).toBeGreaterThan(0.5);
+    expect(mean).toBeLessThan(0.7);
   });
 
   it("keeps strengths strictly ordered for every seed", () => {
