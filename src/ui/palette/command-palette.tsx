@@ -118,7 +118,7 @@ function SearchField({
         value={search.query}
         onChange={(event) => search.setQuery(event.target.value)}
         onKeyDown={search.onKeyDown}
-        className="min-h-14 min-w-0 flex-1 bg-transparent text-base text-text outline-none placeholder:text-muted"
+        className="min-h-14 min-w-0 flex-1 border-0 bg-transparent text-base text-text outline-none placeholder:text-muted"
       />
       <RadixDialog.Close asChild>
         <IconButton label={t("palette.close")} icon={<X className="size-5" />} />
