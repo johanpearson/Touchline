@@ -8,7 +8,9 @@ const startCareer = async (page: Page) => {
 };
 
 test.describe("command palette", () => {
-  test("opens with Control+K, moves through the results and closes with Escape", async ({ page }) => {
+  test("opens with Control+K, moves through the results and closes with Escape", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await startCareer(page);
 
