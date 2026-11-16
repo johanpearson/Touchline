@@ -38,14 +38,19 @@ function compareValues(a: SortValue, b: SortValue, collator: Intl.Collator): num
   return collator.compare(String(a), String(b));
 }
 
+export type SortOptions<Row> = {
+  direction: SortDirection;
+  locale?: string;
+  tieBreak?: (row: Row) => SortValue;
+};
+
 /** Stable sort by one column. The tie-break key always sorts ascending. */
 export function sortRows<Row>(
   rows: readonly Row[],
   column: Column<Row>,
-  direction: SortDirection,
-  locale: string | undefined,
-  tieBreak?: (row: Row) => SortValue,
+  options: SortOptions<Row>,
 ): Row[] {
+  const { direction, locale, tieBreak } = options;
   const { sortValue } = column;
   if (!sortValue) return [...rows];
   const collator = new Intl.Collator(locale);
@@ -79,4 +84,45 @@ export function groupRows<Row>(
     else groups.set(key, [row]);
   }
   return [...groups].map(([key, groupRowsList]) => ({ key, rows: groupRowsList }));
+}
+
+/** The `aria-sort` value of a header: only the sorted column has one. */
+export function ariaSortValue(
+  sort: SortState | null,
+  id: string,
+): "ascending" | "descending" | undefined {
+  if (sort?.id !== id) return undefined;
+  return sort.direction === "asc" ? "ascending" : "descending";
+}
+
+export type SortOption = { value: string; label: string };
+
+/** One option per sortable column and direction, for the select shown in card mode. */
+export function sortOptions<Row>(
+  columns: readonly Column<Row>[],
+  words: { ascending: string; descending: string },
+): SortOption[] {
+  return columns
+    .filter((column) => column.sortValue)
+    .flatMap((column) => [
+      { value: `${column.id}:asc`, label: `${column.header} (${words.ascending})` },
+      { value: `${column.id}:desc`, label: `${column.header} (${words.descending})` },
+    ]);
+}
+
+export const sortKey = (sort: SortState | null): string | undefined =>
+  sort ? `${sort.id}:${sort.direction}` : undefined;
+
+/** Reads a value made by `sortOptions`. */
+export function parseSortKey(value: string): SortState | null {
+  const [id, direction] = value.split(":");
+  if (!id) return null;
+  return direction === "asc" || direction === "desc" ? { id, direction } : null;
+}
+
+/** Card header columns (the primary ones, else the first) and the label/value columns. */
+export function splitCardColumns<Row>(columns: readonly Column<Row>[]) {
+  const primary = columns.filter((column) => column.primary);
+  const heading = primary.length > 0 ? primary : columns.slice(0, 1);
+  return { heading, rest: columns.filter((column) => !heading.includes(column)) };
 }

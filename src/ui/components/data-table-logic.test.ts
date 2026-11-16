@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  ariaSortValue,
   type Column,
   columnsForWidth,
   groupRows,
   nextSort,
+  parseSortKey,
+  sortKey,
+  sortOptions,
   sortRows,
+  splitCardColumns,
   WIDTH_ALL_COLUMNS,
   WIDTH_MEDIUM_COLUMNS,
 } from "./data-table-logic";
@@ -50,31 +55,45 @@ describe("sortRows", () => {
   const byPts = col("pts", 1, { sortValue: (r) => r.pts });
 
   it("sorts numbers ascending and descending", () => {
-    expect(sortRows(rows, byPts, "asc", "en").map((r) => r.id)).toEqual(["d", "a", "c", "b"]);
-    expect(sortRows(rows, byPts, "desc", "en").map((r) => r.id)).toEqual(["b", "a", "c", "d"]);
+    expect(sortRows(rows, byPts, { direction: "asc", locale: "en" }).map((r) => r.id)).toEqual([
+      "d",
+      "a",
+      "c",
+      "b",
+    ]);
+    expect(sortRows(rows, byPts, { direction: "desc", locale: "en" }).map((r) => r.id)).toEqual([
+      "b",
+      "a",
+      "c",
+      "d",
+    ]);
   });
 
   it("is stable for equal values", () => {
-    const asc = sortRows(rows, byPts, "asc", "en").map((r) => r.id);
+    const asc = sortRows(rows, byPts, { direction: "asc", locale: "en" }).map((r) => r.id);
     expect(asc.indexOf("a")).toBeLessThan(asc.indexOf("c"));
-    const desc = sortRows(rows, byPts, "desc", "en").map((r) => r.id);
+    const desc = sortRows(rows, byPts, { direction: "desc", locale: "en" }).map((r) => r.id);
     expect(desc.indexOf("a")).toBeLessThan(desc.indexOf("c"));
   });
 
   it("breaks ties with the given key, ascending regardless of direction", () => {
     const tie = (r: Row) => r.name;
-    expect(sortRows(rows, byPts, "asc", "en", tie).map((r) => r.id)).toEqual(["d", "c", "a", "b"]);
-    expect(sortRows(rows, byPts, "desc", "en", tie).map((r) => r.id)).toEqual(["b", "c", "a", "d"]);
+    expect(
+      sortRows(rows, byPts, { direction: "asc", locale: "en", tieBreak: tie }).map((r) => r.id),
+    ).toEqual(["d", "c", "a", "b"]);
+    expect(
+      sortRows(rows, byPts, { direction: "desc", locale: "en", tieBreak: tie }).map((r) => r.id),
+    ).toEqual(["b", "c", "a", "d"]);
   });
 
   it("uses the locale's collation for text", () => {
-    expect(sortRows(rows, byName, "asc", "sv").map((r) => r.name)).toEqual([
+    expect(sortRows(rows, byName, { direction: "asc", locale: "sv" }).map((r) => r.name)).toEqual([
       "Alba",
       "Zeta",
       "Åre",
       "Örebro",
     ]);
-    expect(sortRows(rows, byName, "asc", "en").map((r) => r.name)).toEqual([
+    expect(sortRows(rows, byName, { direction: "asc", locale: "en" }).map((r) => r.name)).toEqual([
       "Alba",
       "Åre",
       "Örebro",
@@ -83,12 +102,12 @@ describe("sortRows", () => {
   });
 
   it("returns the rows unchanged for a column without a sort value", () => {
-    expect(sortRows(rows, col("x", 1), "asc", "en")).toEqual(rows);
+    expect(sortRows(rows, col("x", 1), { direction: "asc", locale: "en" })).toEqual(rows);
   });
 
   it("does not mutate its input", () => {
     const copy = [...rows];
-    sortRows(rows, byPts, "asc", "en");
+    sortRows(rows, byPts, { direction: "asc", locale: "en" });
     expect(rows).toEqual(copy);
   });
 });
@@ -120,5 +139,40 @@ describe("groupRows", () => {
     expect(groups.map((g) => g.key)).toEqual(["G", "D"]);
     expect(groups[0]?.rows.map((r) => r.id)).toEqual(["a", "c"]);
     expect(groups[1]?.rows.map((r) => r.id)).toEqual(["b", "d"]);
+  });
+});
+
+describe("sort helpers", () => {
+  const columns = [col("name", 1, { sortValue: (r) => r.name, header: "Club" }), col("pos", 2)];
+
+  it("gives aria-sort only to the sorted column", () => {
+    expect(ariaSortValue({ id: "name", direction: "asc" }, "name")).toBe("ascending");
+    expect(ariaSortValue({ id: "name", direction: "desc" }, "name")).toBe("descending");
+    expect(ariaSortValue({ id: "name", direction: "asc" }, "pos")).toBeUndefined();
+    expect(ariaSortValue(null, "name")).toBeUndefined();
+  });
+
+  it("offers both directions for sortable columns only", () => {
+    expect(sortOptions(columns, { ascending: "up", descending: "down" })).toEqual([
+      { value: "name:asc", label: "Club (up)" },
+      { value: "name:desc", label: "Club (down)" },
+    ]);
+  });
+
+  it("round-trips a sort through its key and rejects a bad key", () => {
+    expect(parseSortKey(sortKey({ id: "name", direction: "desc" }) ?? "")).toEqual({
+      id: "name",
+      direction: "desc",
+    });
+    expect(sortKey(null)).toBeUndefined();
+    expect(parseSortKey("name:sideways")).toBeNull();
+    expect(parseSortKey("")).toBeNull();
+  });
+
+  it("splits card columns into the primary ones and the rest", () => {
+    const withPrimary = [col("a", 1), col("b", 1, { primary: true }), col("c", 2)];
+    expect(splitCardColumns(withPrimary).heading.map((c) => c.id)).toEqual(["b"]);
+    expect(splitCardColumns(withPrimary).rest.map((c) => c.id)).toEqual(["a", "c"]);
+    expect(splitCardColumns([col("a", 1), col("b", 2)]).heading.map((c) => c.id)).toEqual(["a"]);
   });
 });

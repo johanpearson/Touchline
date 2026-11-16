@@ -3,14 +3,19 @@ import { type CSSProperties, Fragment, type ReactNode, useMemo, useRef, useState
 import type { Density } from "../theme/density";
 import { cn } from "./cn";
 import {
+  ariaSortValue,
   type Column,
   columnsForWidth,
   groupRows,
   nextSort,
+  parseSortKey,
   type RowGroup,
   type SortState,
   type SortValue,
+  sortKey,
+  sortOptions,
   sortRows,
+  splitCardColumns,
 } from "./data-table-logic";
 import { ScrollArea } from "./scroll-area";
 import { Select } from "./select";
@@ -74,7 +79,11 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
         ? group
         : {
             ...group,
-            rows: sortRows(group.rows, column, sort.direction, props.locale, props.tieBreak),
+            rows: sortRows(group.rows, column, {
+              direction: sort.direction,
+              locale: props.locale,
+              tieBreak: props.tieBreak,
+            }),
           },
     );
   }, [rows, columns, sort, props.groupBy, props.locale, props.tieBreak]);
@@ -107,25 +116,41 @@ type ViewProps<Row> = DataTableProps<Row> & {
   onSort: (sort: SortState) => void;
 };
 
+/** Data attribute and accent variable for the user's row; a plain row gets neither. */
+function markingFor<Row>(
+  row: Row,
+  highlight?: (row: Row) => boolean,
+  accent?: (row: Row) => string | undefined,
+) {
+  const marked = highlight?.(row) === true;
+  return {
+    marked,
+    attributes: {
+      "data-highlighted": marked ? ("true" as const) : undefined,
+      style: marked ? ({ "--row-accent": accent?.(row) } as CSSProperties) : undefined,
+    },
+  };
+}
+
+// Written out in full so Tailwind finds the classes.
+const EDGE = "shadow-[inset_4px_0_0_var(--row-accent,var(--accent))]";
+const FIRST_CELL_EDGE = "[&>:first-child]:shadow-[inset_4px_0_0_var(--row-accent,var(--accent))]";
+const GROUP_TEXT = "text-xs font-semibold tracking-wide text-soft uppercase";
+
 const cellPadding = (density: Density) =>
   density === "comfortable" ? "px-3 py-3.5 min-h-11" : "px-3 py-2";
 
-function ariaSort(sort: SortState | null, id: string) {
-  if (sort?.id !== id) return undefined;
-  return sort.direction === "asc" ? "ascending" : "descending";
-}
+const groupText = (key: string, groupLabel?: (key: string) => string) =>
+  groupLabel ? groupLabel(key) : key;
 
 function TableView<Row>({
   label,
   columns,
   groups,
-  rowKey,
   density = "compact",
-  groupLabel,
-  highlight,
-  accent,
   sort,
   onSort,
+  ...rest
 }: ViewProps<Row>) {
   return (
     <ScrollArea label={label} className="rounded-lg border border-line bg-surface">
@@ -134,23 +159,14 @@ function TableView<Row>({
         <thead>
           <tr>
             {columns.map((column, index) => (
-              <th
+              <HeadCell
                 key={column.id}
-                scope="col"
-                aria-sort={ariaSort(sort, column.id)}
-                className={cn(
-                  "sticky top-0 border-b border-line bg-surface px-3 py-2 text-xs font-semibold tracking-wide whitespace-nowrap text-muted uppercase",
-                  alignClass[column.align ?? "start"],
-                  index === 0 && "left-0 z-10",
-                )}
-              >
-                <HeaderContent
-                  column={column}
-                  sort={sort}
-                  density={density}
-                  onSort={() => onSort(nextSort(sort, column.id))}
-                />
-              </th>
+                column={column}
+                first={index === 0}
+                sort={sort}
+                density={density}
+                onSort={onSort}
+              />
             ))}
           </tr>
         </thead>
@@ -162,50 +178,90 @@ function TableView<Row>({
                   <th
                     scope="rowgroup"
                     colSpan={columns.length}
-                    className="bg-raised px-3 py-1.5 text-left text-xs font-semibold tracking-wide text-soft uppercase"
+                    className={cn("bg-raised px-3 py-1.5 text-left", GROUP_TEXT)}
                   >
-                    {groupLabel ? groupLabel(group.key) : group.key}
+                    {groupText(group.key, rest.groupLabel)}
                   </th>
                 </tr>
               ) : null}
-              {group.rows.map((row) => {
-                const marked = highlight?.(row) === true;
-                return (
-                  <tr
-                    key={rowKey(row)}
-                    data-highlighted={marked ? "true" : undefined}
-                    style={
-                      marked ? ({ "--row-accent": accent?.(row) } as CSSProperties) : undefined
-                    }
-                    className={cn(
-                      "border-b border-line last:border-b-0",
-                      marked &&
-                        "bg-glow [&>:first-child]:shadow-[inset_4px_0_0_var(--row-accent,var(--accent))]",
-                    )}
-                  >
-                    {columns.map((column, index) => (
-                      <td
-                        key={column.id}
-                        className={cn(
-                          cellPadding(density),
-                          "text-text",
-                          alignClass[column.align ?? "start"],
-                          index === 0 &&
-                            "sticky left-0 z-[1] bg-inherit font-medium whitespace-nowrap",
-                          index === 0 && !marked && "bg-surface",
-                        )}
-                      >
-                        {column.cell(row)}
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })}
+              {group.rows.map((row) => (
+                <BodyRow
+                  key={rest.rowKey(row)}
+                  row={row}
+                  columns={columns}
+                  density={density}
+                  {...rest}
+                />
+              ))}
             </Fragment>
           ))}
         </tbody>
       </table>
     </ScrollArea>
+  );
+}
+
+type HeadCellProps<Row> = {
+  column: Column<Row>;
+  first: boolean;
+  sort: SortState | null;
+  density: Density;
+  onSort: (sort: SortState) => void;
+};
+
+function HeadCell<Row>({ column, first, sort, density, onSort }: HeadCellProps<Row>) {
+  return (
+    <th
+      scope="col"
+      aria-sort={ariaSortValue(sort, column.id)}
+      className={cn(
+        "sticky top-0 border-b border-line bg-surface px-3 py-2 text-xs font-semibold tracking-wide whitespace-nowrap text-muted uppercase",
+        alignClass[column.align ?? "start"],
+        first && "left-0 z-10",
+      )}
+    >
+      <HeaderContent
+        column={column}
+        sort={sort}
+        density={density}
+        onSort={() => onSort(nextSort(sort, column.id))}
+      />
+    </th>
+  );
+}
+
+type BodyRowProps<Row> = Pick<DataTableProps<Row>, "highlight" | "accent"> & {
+  row: Row;
+  columns: readonly Column<Row>[];
+  density: Density;
+};
+
+function BodyRow<Row>({ row, columns, density, highlight, accent }: BodyRowProps<Row>) {
+  const { marked, attributes } = markingFor(row, highlight, accent);
+  return (
+    <tr
+      {...attributes}
+      className={cn(
+        "border-b border-line last:border-b-0",
+        marked && "bg-glow",
+        marked && FIRST_CELL_EDGE,
+      )}
+    >
+      {columns.map((column, index) => (
+        <td
+          key={column.id}
+          className={cn(
+            cellPadding(density),
+            "text-text",
+            alignClass[column.align ?? "start"],
+            index === 0 && "sticky left-0 z-[1] bg-inherit font-medium whitespace-nowrap",
+            index === 0 && !marked && "bg-surface",
+          )}
+        >
+          {column.cell(row)}
+        </td>
+      ))}
+    </tr>
   );
 }
 
@@ -222,7 +278,6 @@ function HeaderContent<Row>({
 }) {
   if (!column.sortValue) return <>{column.header}</>;
   const active = sort?.id === column.id;
-  const Icon = !active ? ChevronsUpDown : sort.direction === "asc" ? ArrowUp : ArrowDown;
   return (
     <button
       type="button"
@@ -235,42 +290,29 @@ function HeaderContent<Row>({
       )}
     >
       {column.header}
-      <Icon aria-hidden="true" className="size-3.5" />
+      <SortIcon sort={active ? sort : null} />
     </button>
   );
 }
 
-function CardList<Row>({
-  label,
-  labels,
-  columns,
-  groups,
-  rowKey,
-  groupLabel,
-  highlight,
-  accent,
-  sort,
-  onSort,
-}: ViewProps<Row>) {
-  const sortable = columns.filter((c) => c.sortValue);
-  const options = sortable.flatMap((c) => [
-    { value: `${c.id}:asc`, label: `${c.header} (${labels.ascending})` },
-    { value: `${c.id}:desc`, label: `${c.header} (${labels.descending})` },
-  ]);
-  const primary = columns.filter((c) => c.primary);
-  const heading = primary.length > 0 ? primary : columns.slice(0, 1);
-  const rest = columns.filter((c) => !heading.includes(c));
+function SortIcon({ sort }: { sort: SortState | null }) {
+  const Icon = !sort ? ChevronsUpDown : sort.direction === "asc" ? ArrowUp : ArrowDown;
+  return <Icon aria-hidden="true" className="size-3.5" />;
+}
 
+function CardList<Row>({ label, labels, columns, groups, sort, onSort, ...rest }: ViewProps<Row>) {
+  const options = sortOptions(columns, labels);
+  const { heading, rest: details } = splitCardColumns(columns);
   return (
     <div className="flex flex-col gap-3">
       {options.length > 0 ? (
         <Select
           label={labels.sortBy}
           options={options}
-          value={sort ? `${sort.id}:${sort.direction}` : undefined}
+          value={sortKey(sort)}
           onValueChange={(value) => {
-            const [id, direction] = value.split(":");
-            if (id && (direction === "asc" || direction === "desc")) onSort({ id, direction });
+            const next = parseSortKey(value);
+            if (next) onSort(next);
           }}
         />
       ) : null}
@@ -278,46 +320,51 @@ function CardList<Row>({
         {groups.map((group) => (
           <Fragment key={group.key ?? "all"}>
             {group.key !== null ? (
-              <li className="px-1 pt-2 text-xs font-semibold tracking-wide text-soft uppercase">
-                {groupLabel ? groupLabel(group.key) : group.key}
+              <li className={cn("px-1 pt-2", GROUP_TEXT)}>
+                {groupText(group.key, rest.groupLabel)}
               </li>
             ) : null}
-            {group.rows.map((row) => {
-              const marked = highlight?.(row) === true;
-              return (
-                <li key={rowKey(row)}>
-                  <article
-                    data-highlighted={marked ? "true" : undefined}
-                    style={
-                      marked ? ({ "--row-accent": accent?.(row) } as CSSProperties) : undefined
-                    }
-                    className={cn(
-                      "min-h-11 rounded-lg border border-line p-3",
-                      marked
-                        ? "bg-glow shadow-[inset_4px_0_0_var(--row-accent,var(--accent))]"
-                        : "bg-surface",
-                    )}
-                  >
-                    <h3 className="m-0 flex flex-wrap gap-x-2 text-base font-semibold text-text">
-                      {heading.map((column) => (
-                        <span key={column.id}>{column.cell(row)}</span>
-                      ))}
-                    </h3>
-                    <dl className="m-0 mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-                      {rest.map((column) => (
-                        <Fragment key={column.id}>
-                          <dt className="text-muted">{column.header}</dt>
-                          <dd className="m-0 text-right text-text">{column.cell(row)}</dd>
-                        </Fragment>
-                      ))}
-                    </dl>
-                  </article>
-                </li>
-              );
-            })}
+            {group.rows.map((row) => (
+              <li key={rest.rowKey(row)}>
+                <CardItem row={row} heading={heading} details={details} {...rest} />
+              </li>
+            ))}
           </Fragment>
         ))}
       </ul>
     </div>
+  );
+}
+
+type CardItemProps<Row> = Pick<DataTableProps<Row>, "highlight" | "accent"> & {
+  row: Row;
+  heading: readonly Column<Row>[];
+  details: readonly Column<Row>[];
+};
+
+function CardItem<Row>({ row, heading, details, highlight, accent }: CardItemProps<Row>) {
+  const { marked, attributes } = markingFor(row, highlight, accent);
+  return (
+    <article
+      {...attributes}
+      className={cn(
+        "min-h-11 rounded-lg border border-line p-3",
+        marked ? cn("bg-glow", EDGE) : "bg-surface",
+      )}
+    >
+      <h3 className="m-0 flex flex-wrap gap-x-2 text-base font-semibold text-text">
+        {heading.map((column) => (
+          <span key={column.id}>{column.cell(row)}</span>
+        ))}
+      </h3>
+      <dl className="m-0 mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+        {details.map((column) => (
+          <Fragment key={column.id}>
+            <dt className="text-muted">{column.header}</dt>
+            <dd className="m-0 text-right text-text">{column.cell(row)}</dd>
+          </Fragment>
+        ))}
+      </dl>
+    </article>
   );
 }
