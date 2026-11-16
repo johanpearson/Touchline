@@ -15,6 +15,8 @@ export type MatchAppearance = {
   minutes: number;
   /** Result of the player's team. */
   outcome: MatchOutcome;
+  /** Extra fitness lost beyond the minutes played, for example from touchline shouts. */
+  extraFatigue?: number;
 };
 
 export const FITNESS_MIN = 0;
@@ -58,7 +60,8 @@ export const applyMatchToCondition = (
   appearance: MatchAppearance,
 ): PlayerCondition => {
   const minutes = clamp(appearance.minutes, 0, FITNESS_MATCH_MINUTES);
-  const drain = (FITNESS_DRAIN_PER_MATCH * minutes) / FITNESS_MATCH_MINUTES;
+  const drain =
+    (FITNESS_DRAIN_PER_MATCH * minutes) / FITNESS_MATCH_MINUTES + (appearance.extraFatigue ?? 0);
   return {
     fitness: clamp(condition.fitness - drain, FITNESS_MIN, FITNESS_MAX),
     form: clamp(condition.form + formChange(appearance), FORM_MIN, FORM_MAX),

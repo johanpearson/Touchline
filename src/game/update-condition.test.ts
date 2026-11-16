@@ -89,6 +89,19 @@ describe("updateConditionAfterMatchday", () => {
     expect(condition[missing]?.fitness).toBe(100);
   });
 
+  it("adds the report's fatigue to the user's players only", () => {
+    const { career, round } = careerAndResults();
+    const results = round.map((f) => resultFor(f, 1, 1));
+    const [first] = career.squadPlan.starters as [string];
+
+    const condition = updateConditionAfterMatchday(career, results, {
+      minutes: { [first]: 90 },
+      fatigue: { [first]: 2 },
+    });
+
+    expect(condition[first]?.fitness).toBe(100 - 12 + 12 * 0.25);
+  });
+
   it("treats AI starters as having played 90 minutes", () => {
     const { career, round } = careerAndResults();
     const results = round.map((f) => resultFor(f, 1, 1));

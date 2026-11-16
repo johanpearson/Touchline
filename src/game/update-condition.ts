@@ -12,7 +12,11 @@ import {
 import { clubSquad } from "./squad-plan";
 
 /** What happened in the user's match: minutes played per player id (absent means 0). */
-export type MatchReport = { minutes: Record<string, number> };
+export type MatchReport = {
+  minutes: Record<string, number>;
+  /** Extra fitness lost per player id beyond the minutes (touchline shouts); absent means none. */
+  fatigue?: Record<string, number>;
+};
 
 const outcomeOf = (result: Result | undefined, clubId: string): MatchOutcome => {
   if (!result || result.homeGoals === result.awayGoals) return "draw";
@@ -55,7 +59,12 @@ export const updateConditionAfterMatchday = (
     const minutes = minutesOf(career, club.id, report);
     for (const id of club.playerIds) {
       const before = career.condition[id] ?? initialCondition();
-      const played = applyMatchToCondition(before, { minutes: minutes[id] ?? 0, outcome });
+      const extraFatigue = club.id === career.userClubId ? report?.fatigue?.[id] : undefined;
+      const played = applyMatchToCondition(before, {
+        minutes: minutes[id] ?? 0,
+        outcome,
+        extraFatigue,
+      });
       next[id] = recoverCondition(played);
     }
   }

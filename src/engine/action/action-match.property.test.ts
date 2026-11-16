@@ -2,6 +2,7 @@ import * as fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import type { Side } from "../match-state";
 import { type ActionEvent, SNAPSHOT_PLAYER_COUNT } from "./action-event";
+import type { ActionMatchChange } from "./action-match";
 import { arbMatchInputV2, arbSeed, propertyRuns } from "./arbitraries";
 import { createActionMatch } from "./create-action-match";
 import type { MatchInput } from "./match-input";
@@ -41,6 +42,19 @@ const playMatch = ([input, seed]: Run, detail: "full" | "fast" = "fast", wholeMa
   }
   cache.set(key, match);
   return match;
+};
+
+/** A change of the home side: the first bench player of a line takes a starter's place, and attacking tactics. */
+const substitutionAndShout = (input: MatchInput): ActionMatchChange => {
+  const { starters, bench } = input.home;
+  const on = bench.find((b) => starters.some((s) => s.position === b.position));
+  const off = starters.find((s) => s.position === on?.position);
+  const lineup = starters.map((s) => (s === off && on ? on : s));
+  return {
+    side: "home",
+    lineup,
+    tactics: { ...input.home.tactics, mentality: "attacking", pressing: "high" },
+  };
 };
 
 const arbRun: fc.Arbitrary<Run> = fc.tuple(arbMatchInputV2, arbSeed);
@@ -158,6 +172,43 @@ describe("action engine properties", () => {
         return true;
       },
       10,
+    );
+  });
+
+  it("gives the same log for a timed change however time is split around it", () => {
+    const arbSplits = fc.array(fc.integer({ min: 1, max: 900 }), { maxLength: 8 });
+    forAll(
+      fc.tuple(arbRun, fc.integer({ min: 60, max: 2400 }), arbSplits),
+      ([run, changeAt, splits]) => {
+        const [input, seed] = run;
+        const change = substitutionAndShout(input);
+        const play = (steps: readonly number[]) => {
+          const match = createActionMatch(input, seed, { detail: "fast" });
+          let at = 0;
+          for (const step of steps) {
+            at += step;
+            if (at < changeAt) match.advanceTo(at);
+          }
+          match.advanceTo(changeAt);
+          expect(match.applyChange(change)).toEqual({ ok: true });
+          at = changeAt;
+          for (const step of steps) {
+            at += step;
+            match.advanceTo(at);
+          }
+          match.advanceTo(FIRST_HALF_LIMIT);
+          match.resume();
+          match.advanceTo(MATCH_LIMIT);
+          return match;
+        };
+        const whole = play([]);
+        const split = play(splits);
+        expect(split.events).toEqual(whole.events);
+        expect(split.state).toEqual(whole.state);
+        expect(split.changes).toEqual(whole.changes);
+        return true;
+      },
+      WHOLE_MATCH_RUNS,
     );
   });
 
