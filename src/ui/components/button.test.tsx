@@ -5,22 +5,18 @@ import { Button } from "./button";
 afterEach(cleanup);
 
 describe("Button", () => {
-  it("fires onClick when enabled", () => {
-    const onClick = vi.fn();
-    render(<Button onClick={onClick}>Play</Button>);
-    fireEvent.click(screen.getByRole("button", { name: "Play" }));
-    expect(onClick).toHaveBeenCalledTimes(1);
-  });
-
-  it("does not fire onClick when disabled", () => {
+  it.each([
+    ["enabled", {}, 1],
+    ["disabled", { disabled: true }, 0],
+  ] as const)("click when %s fires onClick %i times", (_state, props, calls) => {
     const onClick = vi.fn();
     render(
-      <Button disabled onClick={onClick}>
+      <Button {...props} onClick={onClick}>
         Play
       </Button>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
-    expect(onClick).not.toHaveBeenCalled();
+    expect(onClick).toHaveBeenCalledTimes(calls);
   });
 
   it("does not fire onClick while loading and announces the loading label", () => {
@@ -55,17 +51,13 @@ describe("Button", () => {
     expect(cls).toContain("text-on-accent");
   });
 
-  it("is at least 44 px tall at md and lg, and on touch at sm", () => {
-    render(
-      <>
-        <Button size="sm">S</Button>
-        <Button size="md">M</Button>
-        <Button size="lg">L</Button>
-      </>,
-    );
-    expect(screen.getByText("S").className).toContain("pointer-coarse:min-h-11");
-    expect(screen.getByText("M").className).toContain("min-h-11");
-    expect(screen.getByText("L").className).toContain("min-h-12");
+  it.each([
+    ["sm", "pointer-coarse:min-h-11"],
+    ["md", "min-h-11"],
+    ["lg", "min-h-12"],
+  ] as const)("is at least 44 px tall at size %s (touch for sm)", (size, expected) => {
+    render(<Button size={size}>Go</Button>);
+    expect(screen.getByRole("button").className).toContain(expected);
   });
 
   it("has a visible focus ring from the focus token", () => {

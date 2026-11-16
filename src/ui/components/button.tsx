@@ -16,6 +16,21 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
     children?: ReactNode;
   };
 
+const preventClick = (e: { preventDefault: () => void }) => e.preventDefault();
+
+function LoadingContent({ label }: { label: string | undefined }) {
+  return (
+    <>
+      <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+      {label ? (
+        <span role="status" className="sr-only">
+          {label}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
 export function Button({
   variant,
   size,
@@ -29,31 +44,24 @@ export function Button({
   onClick,
   ...rest
 }: ButtonProps) {
-  const Comp = asChild ? Slot : "button";
-  const blocked = disabled || loading;
+  const blocked = Boolean(disabled || loading);
+  const shared = {
+    ...rest,
+    "aria-busy": loading || undefined,
+    onClick: blocked ? preventClick : onClick,
+    className: cn(buttonStyles({ variant, size }), className),
+  };
+  if (asChild) {
+    return (
+      <Slot {...shared} aria-disabled={blocked || undefined}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <Comp
-      {...rest}
-      type={asChild ? undefined : type}
-      disabled={asChild ? undefined : blocked}
-      aria-disabled={asChild && blocked ? true : undefined}
-      aria-busy={loading || undefined}
-      onClick={blocked ? (e: { preventDefault: () => void }) => e.preventDefault() : onClick}
-      className={cn(buttonStyles({ variant, size }), className)}
-    >
-      {asChild ? (
-        children
-      ) : (
-        <>
-          {loading ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : null}
-          {children}
-          {loading && loadingLabel ? (
-            <span role="status" className="sr-only">
-              {loadingLabel}
-            </span>
-          ) : null}
-        </>
-      )}
-    </Comp>
+    <button {...shared} type={type} disabled={blocked}>
+      {children}
+      {loading ? <LoadingContent label={loadingLabel} /> : null}
+    </button>
   );
 }
