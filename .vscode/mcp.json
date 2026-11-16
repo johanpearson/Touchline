@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "codescene": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@codescene/codehealth-mcp"],
+      "env": {
+        "CS_ACCESS_TOKEN": "${env:CS_ACCESS_TOKEN}",
+        "CS_ONPREM_URL": "${env:CS_ONPREM_URL}",
+        "CS_DEFAULT_PROJECT_ID": "51"
+      }
+    }
+  }
+}
