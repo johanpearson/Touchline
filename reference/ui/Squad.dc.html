@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Squad</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&amp;family=Barlow:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{opacity:0.9}
+.tl-scroll{scrollbar-width:none}.tl-scroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="min-height: 860px; background: {{p.bg}}; color: {{p.text}}; font-family: Barlow, system-ui, sans-serif; font-size: 15px">
+  <main style="max-width: 1240px; margin: 0 auto; box-sizing: border-box; padding: 26px 32px 36px; display: flex; flex-direction: column; gap: 18px">
+    <header style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 13px; color: {{p.muted}}">Kvarnby FF, 24 players, average age 25.1</span>
+        <h1 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 34px; line-height: 1.05">Squad</h1>
+      </div>
+      <div role="tablist" aria-label="Position filter" style="margin-left: auto; display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: {{p.surface}}; border: 1px solid {{p.line}}">
+        <sc-for list="{{filters}}" as="f" hint-placeholder-count="5">
+          <button role="tab" aria-selected="{{f.selected}}" onClick="{{f.pick}}" style="{{f.style}}">{{f.label}}</button>
+        </sc-for>
+      </div>
+      <label style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 12px; background: {{p.surface}}; border: 1px solid {{p.line}}; color: {{p.muted}}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search players</span>
+        <input type="search" placeholder="Search players" style="width: 160px; border: 0; background: transparent; color: {{p.text}}; font: inherit; outline: none">
+      </label>
+    </header>
+
+    <div class="tl-scroll" style="overflow-x: auto; border-radius: 18px; background: {{p.surface}}; border: 1px solid {{p.line}}">
+      <table style="width: 100%; min-width: 960px; border-collapse: collapse; font-variant-numeric: tabular-nums">
+        <thead>
+          <tr style="text-align: left; font-size: 12px; color: {{p.muted}}">
+            <th scope="col" style="position: sticky; left: 0; background: {{p.surface}}; padding: 12px 16px; font-weight: 500">Player</th>
+            <th scope="col" style="padding: 12px 10px; font-weight: 500">Pos</th>
+            <th scope="col" style="padding: 12px 10px; font-weight: 500">Age</th>
+            <th scope="col" style="padding: 12px 10px; font-weight: 500">Ability</th>
+            <th scope="col" style="padding: 12px 10px; font-weight: 500">Fitness</th>
+            <th scope="col" style="padding: 12px 10px; font-weight: 500">Morale</th>
+            <th scope="col" style="padding: 12px 10px; font-weight: 500">Form, last 5</th>
+            <th scope="col" style="padding: 12px 10px; font-weight: 500; text-align: right">Value</th>
+            <th scope="col" style="padding: 12px 16px; font-weight: 500; text-align: right">Contract</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{rows}}" as="p" hint-placeholder-count="12">
+            <tr style="border-top: 1px solid {{p.line}}; font-size: 14px">
+              <th scope="row" style="position: sticky; left: 0; background: {{p.surface}}; text-align: left; padding: {{pad}} 16px; font-weight: 500">
+                <div style="display: flex; align-items: center; gap: 12px">
+                  <span style="width: 28px; height: 28px; border-radius: 9px; background: {{p.raise}}; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; color: {{p.soft}}">{{p.no}}</span>
+                  <span style="display: flex; flex-direction: column">
+                    <a href="#" style="font-weight: 600">{{p.name}}</a>
+                    <sc-if value="{{p.flag}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; color: {{p.flagColor}}">{{p.flag}}</span></sc-if>
+                  </span>
+                </div>
+              </th>
+              <td style="padding: {{pad}} 10px"><span style="{{p.posStyle}}">{{p.pos}}</span></td>
+              <td style="padding: {{pad}} 10px; color: {{p.soft}}">{{p.age}}</td>
+              <td style="padding: {{pad}} 10px">
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <strong style="width: 22px; font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 600">{{p.ab}}</strong>
+                  <span style="width: 70px; height: 6px; border-radius: 3px; background: {{p.raise}}; overflow: hidden"><span style="display: block; height: 100%; width: {{p.abW}}; background: {{club}}"></span></span>
+                </div>
+              </td>
+              <td style="padding: {{pad}} 10px; color: {{p.fitColor}}">{{p.fit}}</td>
+              <td style="padding: {{pad}} 10px; color: {{p.morColor}}">{{p.mor}}</td>
+              <td style="padding: {{pad}} 10px">
+                <div style="display: flex; align-items: flex-end; gap: 3px; height: 22px" aria-label="{{p.formLabel}}" role="img">
+                  <sc-for list="{{p.form}}" as="b" hint-placeholder-count="5"><span style="width: 7px; border-radius: 2px; height: {{b.h}}; background: {{b.c}}"></span></sc-for>
+                </div>
+              </td>
+              <td style="padding: {{pad}} 10px; text-align: right">{{p.val}}</td>
+              <td style="padding: {{pad}} 16px; text-align: right; color: {{p.soft}}">{{p.con}}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"club":{"editor":"color","default":"#FF4B5C","options":["#FF4B5C","#F5C518","#22C47A","#A46BFF"]},"density":{"editor":"enum","options":["compact","comfortable"],"default":"compact"},"scheme":{"editor":"enum","options":["Midnight","Graphite","Light"],"default":"Midnight"},"accent":{"editor":"color","default":"#FFB547","options":["#FFB547","#4ADE80","#38BDF8","#FF5C7A"]},"$preview":{"width":1280,"height":860}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { filter: 'All' }; }
+  renderVals() {
+    const SCHEMES = {
+      'Midnight': { bg: '#0A0E17', side: '#0D1220', surface: '#121826', raise: '#1A2232', sunk: 'rgba(0,0,0,0.25)', text: '#E8EDF7', soft: '#C3CBDB', muted: '#96A0B5', line: 'rgba(200,215,255,0.12)', glow: '#1D3159', stage: '#121826', stageGlow: '#1D3159', good: '#6EE7A8', bad: '#FF8FA0', info: '#7FBFFF', warn: '#F5C518', onAccent: '#0A0E17' },
+      'Graphite': { bg: '#0E0F11', side: '#121316', surface: '#17191C', raise: '#1F2226', sunk: 'rgba(0,0,0,0.25)', text: '#EDEEF0', soft: '#C7CAD0', muted: '#9A9EA6', line: 'rgba(255,255,255,0.1)', glow: '#30343B', stage: '#17191C', stageGlow: '#30343B', good: '#6EE7A8', bad: '#FF8FA0', info: '#7FBFFF', warn: '#F5C518', onAccent: '#0A0E17' },
+      'Light': { bg: '#F3F5F9', side: '#FFFFFF', surface: '#FFFFFF', raise: '#EEF1F6', sunk: 'rgba(15,20,32,0.05)', text: '#0F1420', soft: '#36405A', muted: '#5A6478', line: 'rgba(15,20,32,0.12)', glow: '#E4ECFB', stage: '#141B2B', stageGlow: '#22365E', good: '#0E8A4F', bad: '#C2283D', info: '#1F6FD1', warn: '#9A6B00', onAccent: '#0A0E17' }
+    };
+    const p = SCHEMES[this.props.scheme ?? 'Midnight'] || SCHEMES['Midnight'];
+    const accent = this.props.accent ?? '#FFB547';
+
+    const club = this.props.club ?? '#FF4B5C';
+    const density = this.props.density ?? 'compact';
+    const pad = density === 'compact' ? '8px' : '14px';
+    const posCol = { GK: p.warn, DEF: p.info, MID: p.good, ATT: p.bad };
+    const data = [
+      [1, 'Ek', 'GK', 29, 71, 98, 'Good', [6.8, 7.1, 6.5, 7.4, 7.0], '0.9 m', '2029', ''],
+      [2, 'Strand', 'DEF', 24, 66, 94, 'Good', [6.9, 6.6, 7.0, 6.4, 7.2], '0.7 m', '2028', ''],
+      [4, 'Lindqvist', 'DEF', 27, 74, 40, 'Okay', [7.3, 7.0, 0, 0, 0], '1.3 m', '2028', 'Injured, 2 weeks'],
+      [5, 'Nyberg', 'DEF', 31, 69, 91, 'Good', [6.7, 7.0, 6.9, 6.8, 7.1], '0.5 m', '2027', ''],
+      [3, 'Duarte', 'DEF', 22, 64, 96, 'Superb', [7.0, 7.5, 7.2, 6.9, 7.8], '0.8 m', '2030', ''],
+      [8, 'Haddad', 'MID', 26, 76, 92, 'Okay', [7.4, 7.9, 6.2, 0, 0], '1.8 m', '2029', 'Suspended, 1 match'],
+      [6, 'Sjöö', 'MID', 28, 72, 89, 'Good', [6.9, 7.1, 7.0, 7.3, 6.8], '1.4 m', '2027', 'Offer from Hallbro FK'],
+      [7, 'Mäkelä', 'MID', 23, 70, 95, 'Good', [7.1, 6.8, 7.6, 7.2, 7.0], '1.2 m', '2029', ''],
+      [11, 'Okafor', 'MID', 20, 63, 99, 'Poor', [6.4, 0, 6.8, 0, 0], '0.6 m', '2030', 'Wants more minutes'],
+      [9, 'Berg', 'ATT', 25, 75, 93, 'Superb', [8.1, 7.4, 7.9, 6.6, 8.4], '2.1 m', '2028', ''],
+      [10, 'Holm', 'ATT', 30, 71, 88, 'Good', [6.8, 7.2, 6.5, 7.0, 6.9], '0.9 m', '2027', ''],
+      [17, 'Aho', 'ATT', 19, 58, 97, 'Good', [0, 6.9, 0, 7.1, 6.6], '0.4 m', '2031', '']
+    ];
+    const moraleCol = { Superb: p.good, Good: p.soft, Okay: p.warn, Poor: p.bad };
+    const rows = data.filter(d => this.state.filter === 'All' || d[2] === this.state.filter).map(d => ({
+      no: d[0], name: d[1], pos: d[2], age: d[3], ab: d[4], abW: Math.round((d[4] - 40) / 50 * 100) + '%',
+      fit: d[5] + '%', fitColor: d[5] < 70 ? p.bad : p.text,
+      mor: d[6], morColor: moraleCol[d[6]],
+      form: d[7].map(r => ({ h: r ? Math.round((r - 5.5) / 3 * 22) + 'px' : '3px', c: r === 0 ? p.line : r >= 7.5 ? p.good : r >= 6.8 ? p.soft : p.bad })),
+      formLabel: 'Ratings ' + d[7].map(r => r || 'did not play').join(', '),
+      val: d[8], con: d[9], flag: d[10] || false,
+      flagColor: d[10].startsWith('Injured') ? p.bad : d[10].startsWith('Suspended') ? p.warn : p.info,
+      posStyle: 'display: inline-block; min-width: 34px; text-align: center; padding: 2px 6px; border-radius: 6px; font-size: 12px; font-weight: 600; background: ' + p.raise + '; color: ' + posCol[d[2]]
+    }));
+    const filters = ['All', 'GK', 'DEF', 'MID', 'ATT'].map(label => ({
+      label, selected: this.state.filter === label ? 'true' : 'false',
+      pick: () => this.setState({ filter: label }),
+      style: 'min-height: 36px; min-width: 52px; padding: 0 12px; border: 0; border-radius: 9px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; ' + (this.state.filter === label ? 'background: ' + p.text + '; color: ' + p.bg : 'background: transparent; color: ' + p.soft)
+    }));
+    return { p, accent, club, pad, rows, filters };
+  }
+}
+</script>
+</body>
+</html>

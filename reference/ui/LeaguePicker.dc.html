@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pick a league</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&amp;family=Barlow:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{opacity:0.92}
+</style>
+</helmet>
+<div style="min-height: 800px; background: radial-gradient(80% 60% at 70% 20%, {{p.glow}} 0%, {{p.bg}} 60%); color: {{p.text}}; font-family: Barlow, system-ui, sans-serif; font-size: 15px; display: flex; flex-direction: column">
+  <header style="display: flex; align-items: center; gap: 14px; padding: 22px 40px">
+    <a href="Welcome.dc.html" aria-label="Back to start" style="width: 40px; height: 40px; border-radius: 10px; border: 1px solid {{p.line}}; display: flex; align-items: center; justify-content: center">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <div style="display: flex; flex-direction: column">
+      <span style="font-size: 13px; color: {{p.muted}}">New career, step 1 of 2</span>
+      <h1 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 30px; font-weight: 600; line-height: 1.05">Pick a league</h1>
+    </div>
+  </header>
+
+  <main style="flex: 1; width: 100%; max-width: 1200px; box-sizing: border-box; margin: 0 auto; padding: 8px 40px 28px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+    <div role="radiogroup" aria-label="Leagues" style="flex: 999 1 560px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px">
+      <sc-for list="{{leagues}}" as="l" hint-placeholder-count="4">
+        <button role="radio" aria-checked="{{l.checked}}" aria-disabled="{{l.disabled}}" onClick="{{l.pick}}" style="{{l.style}}">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><path d="M22 3 L39 10 V24 C39 33 31 39 22 42 C13 39 5 33 5 24 V10 Z" fill="{{l.color}}"></path><path d="M14 22 L20 28 L31 16" fill="none" stroke="{{p.bg}}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity="{{l.tick}}"></path></svg>
+            <div style="display: flex; flex-direction: column; align-items: flex-start">
+              <strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 600; line-height: 1.1">{{l.name}}</strong>
+              <span style="font-size: 13px; color: {{p.muted}}">{{l.region}}</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 18px; font-size: 13px; color: {{p.muted}}">
+            <span><strong style="color: {{p.text}}; font-weight: 600">{{l.clubs}}</strong> clubs</span>
+            <span>{{l.tier}}</span>
+            <span>{{l.level}}</span>
+          </div>
+          <sc-if value="{{l.locked}}" hint-placeholder-val="{{false}}">
+            <span style="align-self: flex-start; padding: 3px 10px; border-radius: 999px; border: 1px solid {{p.line}}; font-size: 12px; font-weight: 600; color: {{p.muted}}">Coming later</span>
+          </sc-if>
+        </button>
+      </sc-for>
+    </div>
+
+    <aside aria-label="League preview" style="flex: 1 1 320px; max-width: 380px; border-radius: 20px; background: {{p.surface}}; border: 1px solid {{p.line}}; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 12px; color: {{p.muted}}">Selected</span>
+        <strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 600; line-height: 1.1">First Division</strong>
+        <span style="font-size: 13px; color: {{p.muted}}">30 rounds, home and away. Top two win promotion when lower tiers exist, bottom two go down.</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 12px; color: {{p.muted}}; margin-bottom: 4px">Strongest clubs</span>
+        <sc-for list="{{top}}" as="t" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 10px; min-height: 36px; font-size: 14px">
+            <span style="width: 18px; height: 18px; border-radius: 50%; flex: none; background: {{t.kit}}; box-shadow: 0 0 0 1px rgba(255,255,255,0.2)"></span>
+            <span style="flex: 1">{{t.name}}</span>
+            <strong style="font-variant-numeric: tabular-nums">{{t.rating}}</strong>
+          </div>
+        </sc-for>
+        <span style="font-size: 13px; color: {{p.muted}}; margin-top: 4px">and 9 more, ratings 39 to 62</span>
+      </div>
+      <a href="ClubPicker.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; border-radius: 14px; background: {{accent}}; color: {{p.onAccent}}; font-weight: 700; font-size: 16px">
+        Choose your club
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+      </a>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"scheme":{"editor":"enum","options":["Midnight","Graphite","Light"],"default":"Midnight"},"accent":{"editor":"color","default":"#FFB547","options":["#FFB547","#4ADE80","#38BDF8","#FF5C7A"]},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sel: 0 }; }
+  renderVals() {
+    const schemes = {
+      'Midnight': { bg: '#0A0E17', surface: '#121826', text: '#E8EDF7', muted: '#96A0B5', line: 'rgba(200,215,255,0.12)', glow: '#16264A' },
+      'Graphite': { bg: '#0E0F11', surface: '#17191C', text: '#EDEEF0', muted: '#9A9EA6', line: 'rgba(255,255,255,0.1)', glow: '#26292E' },
+      'Light': { bg: '#F3F5F9', surface: '#FFFFFF', text: '#0F1420', muted: '#5A6478', line: 'rgba(15,20,32,0.12)', glow: '#DCE6FA' }
+    };
+    const p = Object.assign({}, schemes[this.props.scheme ?? 'Midnight'] || schemes['Midnight'], { onAccent: '#0A0E17' });
+    const accent = this.props.accent ?? '#FFB547';
+    const data = [
+      ['First Division', 'Fictional league, Sweden-style', 14, 'Tier 1', 'Ratings 39 to 79', '#FFB547', false],
+      ['Second Division', 'Same country, below the First Division', 16, 'Tier 2', 'Ratings 30 to 60', '#7A8599', true],
+      ['Coastal League', 'Another fictional country', 18, 'Tier 1', 'Ratings 45 to 85', '#7A8599', true],
+      ['Northern Cup', 'Cup competition for all tiers', 32, 'Knockout', 'Runs alongside the league', '#7A8599', true]
+    ];
+    const leagues = data.map(([name, region, clubs, tier, level, color, locked], j) => {
+      const on = this.state.sel === j && !locked;
+      return {
+        name, region, clubs, tier, level, color: on ? accent : color, locked,
+        tick: on ? '1' : '0', checked: on ? 'true' : 'false', disabled: locked ? 'true' : 'false',
+        pick: () => { if (!locked) this.setState({ sel: j }); },
+        style: 'display: flex; flex-direction: column; gap: 14px; text-align: left; padding: 18px; border-radius: 18px; font: inherit; color: ' + p.text + '; background: ' + p.surface + '; ' +
+          (on ? 'border: 2px solid ' + accent + '; cursor: pointer' : locked ? 'border: 1px solid ' + p.line + '; opacity: 0.6; cursor: not-allowed' : 'border: 1px solid ' + p.line + '; cursor: pointer')
+      };
+    });
+    const top = [['Isbro Town', '#9B2335', '#F2F2F2', 79], ['Stenvik Park', '#3BB5A0', '#111111', 75], ['Rävsta Rovers', '#A3256E', '#F2F2F2', 72], ['Yxbo United', '#808A2E', '#111111', 71], ['Ormberg City', '#8E6E2A', '#F2F2F2', 67]]
+      .map(([name, a, b, rating]) => ({ name, rating, kit: 'linear-gradient(90deg, ' + a + ' 0 50%, ' + b + ' 50% 100%)' }));
+    return { p, accent, leagues, top };
+  }
+}
+</script>
+</body>
+</html>

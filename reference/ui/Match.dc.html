@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Match screen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&amp;family=Barlow:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{opacity:0.9}
+.tl-scroll{scrollbar-width:none}.tl-scroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="min-height: 860px; background: {{p.bg}}; color: {{p.text}}; font-family: Barlow, system-ui, sans-serif; font-size: 15px; box-sizing: border-box; padding: 18px 24px 24px; display: flex; flex-direction: column; gap: 16px">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 18px; border-radius: 16px; background: {{p.surface}}; border: 1px solid {{p.line}}">
+    <a href="#" aria-label="Back to home" style="width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: {{p.raise}}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <div style="display: flex; align-items: center; gap: 14px; margin: 0 auto">
+      <span style="font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 600">Kvarnby FF</span>
+      <span style="width: 12px; height: 28px; border-radius: 4px; background: {{club}}"></span>
+      <strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 40px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1">2 – 1</strong>
+      <span style="width: 12px; height: 28px; border-radius: 4px; background: #2F9BFF"></span>
+      <span style="font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 600">Norrvik IF</span>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: flex-end">
+      <strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1">67’</strong>
+      <span style="font-size: 12px; color: {{p.muted}}">Second half</span>
+    </div>
+  </header>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+    <section aria-label="Pitch" style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+      <div style="position: relative; border-radius: 18px; overflow: hidden; background: radial-gradient(110% 90% at 50% 40%, {{p.stageGlow}} 0%, {{p.stage}} 70%); padding: 22px">
+        <svg viewBox="0 0 1050 680" style="display: block; width: 100%; height: auto" role="img" aria-label="Pitch, Kvarnby attacking from the left, pressure in Norrvik's half">
+          <defs>
+            <linearGradient id="terr" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stop-color="{{club}}" stop-opacity="0.55"></stop>
+              <stop offset="0.66" stop-color="{{club}}" stop-opacity="0.45"></stop>
+              <stop offset="0.74" stop-color="#2F9BFF" stop-opacity="0.45"></stop>
+              <stop offset="1" stop-color="#2F9BFF" stop-opacity="0.55"></stop>
+            </linearGradient>
+            <radialGradient id="heat" cx="0.78" cy="0.36" r="0.22">
+              <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"></stop>
+              <stop offset="1" stop-color="#ffffff" stop-opacity="0"></stop>
+            </radialGradient>
+          </defs>
+          <rect x="0" y="0" width="1050" height="680" rx="10" fill="url(#terr)"></rect>
+          <rect x="0" y="0" width="1050" height="680" rx="10" fill="url(#heat)"></rect>
+          <g fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="3">
+            <rect x="10" y="10" width="1030" height="660"></rect>
+            <line x1="525" y1="10" x2="525" y2="670"></line>
+            <circle cx="525" cy="340" r="91"></circle>
+            <rect x="10" y="138" width="165" height="404"></rect>
+            <rect x="875" y="138" width="165" height="404"></rect>
+            <rect x="10" y="248" width="55" height="184"></rect>
+            <rect x="985" y="248" width="55" height="184"></rect>
+          </g>
+          <circle cx="830" cy="232" r="10" fill="#ffffff"></circle>
+          <path d="M700 300 L830 232" stroke="#ffffff" stroke-width="3" stroke-dasharray="8 8" stroke-opacity="0.7" fill="none"></path>
+        </svg>
+        <div style="position: absolute; left: 50%; top: 30px; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: rgba(13,7,15,0.82); font-size: 13px; font-weight: 600">Kvarnby pressing high</div>
+      </div>
+      <div style="border-radius: 14px; background: {{p.surface}}; padding: 10px 16px; display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 12px; color: {{p.muted}}">Momentum</span>
+        <svg viewBox="0 0 600 50" preserveAspectRatio="none" style="width: 100%; height: 46px" aria-hidden="true">
+          <line x1="0" y1="25" x2="600" y2="25" stroke="currentColor" stroke-opacity="0.2"></line>
+          <path d="M0 25 L20 20 L40 24 L60 14 L80 22 L100 26 L120 33 L140 38 L160 30 L180 26 L200 18 L220 12 L240 20 L260 25 L280 31 L300 27 L320 16 L340 10 L360 19 L380 24 L400 22 L420 15 L440 21 L447 25" fill="none" stroke="{{club}}" stroke-width="2"></path>
+          <line x1="447" y1="2" x2="447" y2="48" stroke="currentColor" stroke-opacity="0.6"></line>
+        </svg>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+        <button style="min-height: 44px; padding: 0 20px; border-radius: 12px; border: 0; background: {{p.text}}; color: {{p.bg}}; font: inherit; font-weight: 700; cursor: pointer">Pause</button>
+        <button style="min-height: 44px; padding: 0 20px; border-radius: 12px; border: 0; background: {{accent}}; color: {{p.onAccent}}; font: inherit; font-weight: 700; cursor: pointer">Make changes</button>
+        <div role="group" aria-label="Touchline shouts" style="display: flex; gap: 6px; flex-wrap: wrap">
+          <button style="min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid {{p.line}}; background: transparent; color: {{p.text}}; font: inherit; font-size: 14px; cursor: pointer">Push up</button>
+          <button style="min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid {{p.line}}; background: transparent; color: {{p.text}}; font: inherit; font-size: 14px; cursor: pointer">Calm it down</button>
+        </div>
+        <div role="group" aria-label="View" style="margin-left: auto; display: flex; padding: 3px; border-radius: 12px; border: 1px solid {{p.line}}">
+          <button aria-pressed="true" style="min-height: 38px; padding: 0 14px; border: 0; border-radius: 9px; background: {{p.text}}; color: {{p.bg}}; font: inherit; font-size: 14px; font-weight: 600">Terrain</button>
+          <button aria-pressed="false" style="min-height: 38px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; color: {{p.soft}}; font: inherit; font-size: 14px; font-weight: 600">2D</button>
+        </div>
+        <div role="group" aria-label="Speed" style="display: flex; padding: 3px; border-radius: 12px; border: 1px solid {{p.line}}">
+          <button aria-pressed="false" style="min-height: 38px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: {{p.soft}}; font: inherit; font-size: 14px">1×</button>
+          <button aria-pressed="true" style="min-height: 38px; padding: 0 12px; border: 0; border-radius: 9px; background: {{p.text}}; color: {{p.bg}}; font: inherit; font-size: 14px; font-weight: 600">3×</button>
+          <button aria-pressed="false" style="min-height: 38px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: {{p.soft}}; font: inherit; font-size: 14px">8×</button>
+        </div>
+      </div>
+    </section>
+
+    <aside aria-label="Match details" style="flex: 1 1 320px; max-width: 380px; border-radius: 18px; background: {{p.surface}}; border: 1px solid {{p.line}}; display: flex; flex-direction: column; overflow: hidden">
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 0">
+        <h2 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 600">Stats</h2>
+        <a href="#" style="font-size: 13px; color: {{p.muted}}">Lineups and ratings</a>
+      </div>
+      <sc-if value="{{showStats}}" hint-placeholder-val="{{true}}">
+        <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 14px">
+          <sc-for list="{{stats}}" as="s" hint-placeholder-count="7">
+            <div style="display: flex; flex-direction: column; gap: 5px; font-variant-numeric: tabular-nums">
+              <div style="display: flex; justify-content: space-between; font-size: 14px">
+                <strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 600">{{s.a}}</strong>
+                <span style="color: {{p.muted}}">{{s.label}}</span>
+                <strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 600">{{s.b}}</strong>
+              </div>
+              <div style="display: flex; gap: 3px; height: 5px">
+                <span style="width: {{s.wa}}; border-radius: 3px; background: {{club}}"></span>
+                <span style="flex: 1; border-radius: 3px; background: #2F9BFF"></span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{showFeed}}" hint-placeholder-val="{{false}}">
+        <h2 style="margin: 0; padding: 4px 18px 0; border-top: 1px solid {{p.line}}; padding-top: 14px; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 600">Commentary</h2>
+        <ol style="list-style: none; margin: 0; padding: 0 18px 16px">
+          <sc-for list="{{feed}}" as="f" hint-placeholder-count="6">
+            <li style="display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid {{p.line}}; font-size: 14px">
+              <span style="width: 32px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; color: {{p.muted}}">{{f.t}}</span>
+              <span style="width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; flex: none; background: {{f.c}}"></span>
+              <span style="{{f.style}}">{{f.text}}</span>
+            </li>
+          </sc-for>
+        </ol>
+      </sc-if>
+      <sc-if value="{{showLineups}}" hint-placeholder-val="{{false}}">
+        <div style="padding: 10px 18px 16px; display: flex; flex-direction: column">
+          <sc-for list="{{lineup}}" as="l" hint-placeholder-count="11">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid {{p.line}}; font-size: 14px">
+              <span style="width: 22px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; color: {{p.muted}}">{{l.no}}</span>
+              <span style="flex: 1">{{l.name}}</span>
+              <span style="font-size: 12px; color: {{p.muted}}">{{l.pos}}</span>
+              <strong style="width: 30px; text-align: right; font-family: 'Barlow Condensed', sans-serif; font-size: 16px; color: {{l.rc}}">{{l.rating}}</strong>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"club":{"editor":"color","default":"#FF4B5C","options":["#FF4B5C","#F5C518","#22C47A","#A46BFF"]},"scheme":{"editor":"enum","options":["Midnight","Graphite","Light"],"default":"Midnight"},"accent":{"editor":"color","default":"#FFB547","options":["#FFB547","#4ADE80","#38BDF8","#FF5C7A"]},"$preview":{"width":1280,"height":860}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tab: 'Stats' }; }
+  renderVals() {
+    const SCHEMES = {
+      'Midnight': { bg: '#0A0E17', side: '#0D1220', surface: '#121826', raise: '#1A2232', sunk: 'rgba(0,0,0,0.25)', text: '#E8EDF7', soft: '#C3CBDB', muted: '#96A0B5', line: 'rgba(200,215,255,0.12)', glow: '#1D3159', stage: '#121826', stageGlow: '#1D3159', good: '#6EE7A8', bad: '#FF8FA0', info: '#7FBFFF', warn: '#F5C518', onAccent: '#0A0E17' },
+      'Graphite': { bg: '#0E0F11', side: '#121316', surface: '#17191C', raise: '#1F2226', sunk: 'rgba(0,0,0,0.25)', text: '#EDEEF0', soft: '#C7CAD0', muted: '#9A9EA6', line: 'rgba(255,255,255,0.1)', glow: '#30343B', stage: '#17191C', stageGlow: '#30343B', good: '#6EE7A8', bad: '#FF8FA0', info: '#7FBFFF', warn: '#F5C518', onAccent: '#0A0E17' },
+      'Light': { bg: '#F3F5F9', side: '#FFFFFF', surface: '#FFFFFF', raise: '#EEF1F6', sunk: 'rgba(15,20,32,0.05)', text: '#0F1420', soft: '#36405A', muted: '#5A6478', line: 'rgba(15,20,32,0.12)', glow: '#E4ECFB', stage: '#141B2B', stageGlow: '#22365E', good: '#0E8A4F', bad: '#C2283D', info: '#1F6FD1', warn: '#9A6B00', onAccent: '#0A0E17' }
+    };
+    const p = SCHEMES[this.props.scheme ?? 'Midnight'] || SCHEMES['Midnight'];
+    const accent = this.props.accent ?? '#FFB547';
+
+    const club = this.props.club ?? '#FF4B5C';
+    const tab = this.state.tab;
+    const tabs = ['Stats', 'Feed', 'Lineups'].map(label => ({
+      label, selected: tab === label ? 'true' : 'false', pick: () => this.setState({ tab: label }),
+      style: 'flex: 1; min-height: 48px; border: 0; background: transparent; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; ' + (tab === label ? 'color: ' + p.text + '; box-shadow: inset 0 -2px 0 ' + club : 'color: ' + p.muted)
+    }));
+    const raw = [['Possession', 54, 46, '%'], ['Field tilt', 63, 37, '%'], ['Shots', 11, 7, ''], ['On target', 5, 3, ''], ['xG', 1.64, 0.91, ''], ['Pass accuracy', 84, 78, '%'], ['Corners', 6, 2, '']];
+    const stats = raw.map(([label, a, b, u]) => ({ label, a: a + u, b: b + u, wa: Math.round(a / (a + b) * 100) + '%' }));
+    const ev = [['67’', 'Kvarnby win it high, Berg shoots wide', club, false], ['61’', 'Goal! Mäkelä finishes a quick break, 2–1', club, true], ['55’', 'Norrvik corner, cleared by Nyberg', '#2F9BFF', false], ['48’', 'Goal for Norrvik, Lund heads it in, 1–1', '#2F9BFF', true], ['Half time', '1–0 at the break', p.muted, false], ['23’', 'Goal! Berg from the edge of the box, 1–0', club, true]];
+    const feed = ev.map(([t, text, c, big]) => ({ t, text, c, style: big ? 'font-weight: 600' : 'color: ' + p.soft }));
+    const lu = [[1, 'Ek', 'GK', 7.0], [2, 'Strand', 'RB', 6.8], [5, 'Nyberg', 'CB', 7.2], [3, 'Duarte', 'CB', 7.1], [14, 'Falk', 'LB', 6.5], [7, 'Mäkelä', 'RM', 8.1], [6, 'Sjöö', 'CM', 7.0], [11, 'Okafor', 'CM', 6.6], [16, 'Nordin', 'LM', 6.9], [9, 'Berg', 'ST', 7.8], [10, 'Holm', 'ST', 6.7]];
+    const lineup = lu.map(([no, name, pos, r]) => ({ no, name, pos, rating: r.toFixed(1), rc: r >= 7.5 ? p.good : r < 6.7 ? p.bad : p.text }));
+    return { p, accent, club, tabs, stats, feed, lineup, showStats: true, showFeed: true, showLineups: false };
+  }
+}
+</script>
+</body>
+</html>
