@@ -36,19 +36,22 @@ describe("positionPenalty", () => {
     expect(GOALKEEPER_SWAP_PENALTY).toBeGreaterThan(OUTFIELD_TWO_LINES_PENALTY);
   });
 
-  it("is symmetric and never smaller further away (outfield lines)", () => {
-    for (const a of POSITIONS) {
-      for (const b of POSITIONS) expect(positionPenalty(a, b)).toBe(positionPenalty(b, a));
-    }
+  it("is symmetric", () => {
+    const pairs = POSITIONS.flatMap((a) => POSITIONS.map((b) => [a, b] as const));
+
+    for (const [a, b] of pairs) expect(positionPenalty(a, b)).toBe(positionPenalty(b, a));
+  });
+
+  it("is never smaller further away (outfield lines)", () => {
     const outfield = ["DEF", "MID", "FWD"] as const;
-    for (const from of outfield) {
-      for (const near of outfield) {
-        for (const far of outfield) {
-          if (Math.abs(LINE[far] - LINE[from]) >= Math.abs(LINE[near] - LINE[from])) {
-            expect(positionPenalty(from, far)).toBeGreaterThanOrEqual(positionPenalty(from, near));
-          }
-        }
-      }
+    const triples = outfield.flatMap((from) =>
+      outfield.flatMap((near) => outfield.map((far) => ({ from, near, far }))),
+    );
+    const distance = (a: PlayerPosition, b: PlayerPosition) => Math.abs(LINE[a] - LINE[b]);
+    const furtherAway = triples.filter((t) => distance(t.from, t.far) >= distance(t.from, t.near));
+
+    for (const { from, near, far } of furtherAway) {
+      expect(positionPenalty(from, far)).toBeGreaterThanOrEqual(positionPenalty(from, near));
     }
   });
 });
