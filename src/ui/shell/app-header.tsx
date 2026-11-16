@@ -1,6 +1,7 @@
 import type { Career } from "../../game";
 import { Button, cn } from "../components";
 import { useI18n } from "../i18n-provider";
+import { PaletteButton } from "../palette/palette-button";
 import { hrefFor } from "../routes";
 import { SaveStatus } from "../save-status";
 import { useCareer } from "../use-career";
@@ -63,6 +64,7 @@ export function AppHeader({ showBrand }: { showBrand: boolean }) {
       {showBrand ? <Brand hidden /> : null}
       <ClubIdentity career={career} />
       <div className="flex shrink-0 items-center gap-3">
+        <PaletteButton />
         <SaveStatus />
         <HeaderAction career={career} />
       </div>
