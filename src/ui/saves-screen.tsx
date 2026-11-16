@@ -3,19 +3,10 @@ import { useI18n } from "./i18n-provider";
 import { ImportControls } from "./import-controls";
 import { hrefFor } from "./routes";
 import { isManualSlot, type SlotActionResult, type SlotEntry, type SlotError } from "./save-slots";
+import { SLOT_ERROR_KEYS } from "./start/slot-error-keys";
 import { useCareer } from "./use-career";
 
 type Pending = { id: string; action: "overwrite" | "delete" };
-
-const ERROR_KEYS: Record<SlotError, string> = {
-  store: "saves.error.store",
-  corrupt: "saves.error.corrupt",
-  "newer-version": "saves.error.newerVersion",
-  "unknown-slot": "saves.error.other",
-  "not-manual": "saves.error.other",
-  "no-career": "saves.error.other",
-  empty: "saves.error.other",
-};
 
 const formatTime = (iso: string, locale: string): string => {
   const date = new Date(iso);
@@ -341,7 +332,7 @@ function SlotRow(props: RowProps) {
       ) : null}
       {error ? (
         <p className="slot-error" role="alert" data-testid={`slot-error-${entry.id}`}>
-          {t(ERROR_KEYS[error] as "saves.error.other")}
+          {t(SLOT_ERROR_KEYS[error] as "saves.error.other")}
         </p>
       ) : null}
     </li>

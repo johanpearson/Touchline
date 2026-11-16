@@ -1,12 +1,84 @@
+import type { Page } from "@playwright/test";
 import { visualScreen } from "./visual-screen";
 
+const APP = "http://localhost:4174/Touchline/";
+
 // Key states of screens. Each screen issue adds its own states here (#253 registers the first one).
-visualScreen({ name: "new-career", route: "#/" });
+
+// The club list of the new-career flow; the next start-flow issues replace it.
+visualScreen({ name: "new-career", route: "#/new" });
+
+// The start screen (#256): nothing saved, a continue card with saved careers, and a damaged autosave.
+visualScreen({
+  name: "start-empty",
+  route: "#/",
+  state: async (page) => {
+    await page.getByTestId("saved-empty").waitFor();
+  },
+});
+
+const startCareerAndSave = async (page: Page) => {
+  await page.goto(`${APP}#/new`);
+  await page.getByTestId("club-name").first().click();
+  await page.getByTestId("start-career").click();
+  await page.getByTestId("quick-sim").click();
+  await page.getByTestId("results-continue").click();
+  // By hash: the Saves link sits in the More sheet on a phone.
+  await page.evaluate(() => {
+    window.location.hash = "#/saves";
+  });
+  await page.getByTestId("save-slot-1").click();
+  // Language-neutral: a filled slot offers Load.
+  await page.getByTestId("load-slot-1").waitFor();
+};
+
+visualScreen({
+  name: "start-continue-and-saved",
+  route: "#/",
+  state: async (page) => {
+    await startCareerAndSave(page);
+    await page.goto(`${APP}#/`);
+    await page.reload();
+    await page.getByTestId("continue-career").waitFor();
+    await page.getByTestId("load-toggle").click();
+    await page.getByTestId("saved-slot-1").waitFor();
+  },
+});
+
+visualScreen({
+  name: "start-corrupt-autosave",
+  route: "#/",
+  state: async (page) => {
+    await page.getByTestId("saved-empty").waitFor();
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          const open = indexedDB.open("touchline", 1);
+          open.onupgradeneeded = () => open.result.createObjectStore("saves");
+          open.onerror = () => reject(open.error);
+          open.onsuccess = () => {
+            const tx = open.result.transaction("saves", "readwrite");
+            tx.objectStore("saves").put(
+              { schemaVersion: 2, createdAt: "x", savedAt: "x", game: { broken: true } },
+              "autosave",
+            );
+            tx.oncomplete = () => {
+              open.result.close();
+              resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+          };
+        }),
+    );
+    await page.reload();
+    await page.getByTestId("load-error").waitFor();
+  },
+});
 
 // The app shell around the career hub (#254): sidebar, icon rail and bottom tabs by width.
 visualScreen({
   name: "app-shell-hub",
-  route: "#/",
+  route: "#/new",
   state: async (page) => {
     await page.getByTestId("club-name").first().click();
     await page.getByTestId("start-career").click();

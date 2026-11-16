@@ -95,7 +95,11 @@ describe("findContinueCandidate", () => {
     await store.save("autosave", envelope({ broken: true }));
     await store.save("slot-1", envelope(aCareerValue()));
 
-    expect(await findContinueCandidate(store)).toEqual({ kind: "error", error: "invalid-career" });
+    expect(await findContinueCandidate(store)).toEqual({
+      kind: "error",
+      error: "invalid-career",
+      slotId: "autosave",
+    });
   });
 
   it("reports an autosave that is not an envelope", async () => {
@@ -105,6 +109,7 @@ describe("findContinueCandidate", () => {
     expect(await findContinueCandidate(store)).toEqual({
       kind: "error",
       error: "invalid-envelope",
+      slotId: "autosave",
     });
   });
 
@@ -112,14 +117,22 @@ describe("findContinueCandidate", () => {
     const store = createMemorySaveStore();
     await store.save("autosave", envelope(aCareerValue(), "2026-01-01", 99));
 
-    expect(await findContinueCandidate(store)).toEqual({ kind: "error", error: "newer-version" });
+    expect(await findContinueCandidate(store)).toEqual({
+      kind: "error",
+      error: "newer-version",
+      slotId: "autosave",
+    });
   });
 
   it("reports only unusable saves when the autosave is missing", async () => {
     const store = createMemorySaveStore();
     await store.save("slot-1", envelope({ broken: true }));
 
-    expect(await findContinueCandidate(store)).toEqual({ kind: "error", error: "invalid-career" });
+    expect(await findContinueCandidate(store)).toEqual({
+      kind: "error",
+      error: "invalid-career",
+      slotId: "slot-1",
+    });
   });
 
   it("reports a store that fails to read", async () => {

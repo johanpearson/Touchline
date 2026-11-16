@@ -6,7 +6,7 @@ const CLUBS = 14;
 type Snapshot = { club: string; matchday: string; table: string[] };
 
 const startCareer = async (page: Page): Promise<string> => {
-  await page.goto("./");
+  await page.goto("./#/new");
   const first = page.getByTestId("club-name").first();
   const club = (await first.textContent()) ?? "";
   await first.click();
@@ -129,5 +129,46 @@ test.describe("persistence", () => {
     await expect(page.getByTestId("import-picker")).toHaveCount(0);
     await expect(page.getByTestId("slot-info-slot-1")).toContainText(/empty/i);
     await expect(page.getByTestId("slot-info-slot-2")).toContainText(/empty/i);
+  });
+
+  test("imports a save file from the start screen and continues on the saves screen", async ({
+    page,
+    browser,
+  }) => {
+    await startCareer(page);
+    await quickSimMatchdays(page, 1);
+    await openSaves(page);
+    await page.getByTestId("save-slot-1").click();
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByTestId("export-slot-1").click();
+    const path = await (await downloadPromise).path();
+
+    const fresh = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+    const start = await fresh.newPage();
+    await start.goto("./");
+    await expect(start.getByTestId("saved-empty")).toBeVisible();
+
+    const chooserPromise = start.waitForEvent("filechooser");
+    await start.getByTestId("import-file").click();
+    await (await chooserPromise).setFiles(path);
+
+    await expect(start.getByTestId("import-picker")).toBeVisible();
+    await fresh.close();
+  });
+
+  test("rejects a garbage file on the start screen with a visible message", async ({ page }) => {
+    await page.goto("./");
+    await expect(page.getByTestId("saved-careers")).toBeVisible();
+
+    const chooserPromise = page.waitForEvent("filechooser");
+    await page.getByTestId("import-file").click();
+    await (await chooserPromise).setFiles({
+      name: "garbage.json",
+      mimeType: "application/json",
+      buffer: Buffer.from("this is not a save"),
+    });
+
+    await expect(page.getByTestId("import-error")).toBeVisible();
+    await expect(page.getByTestId("import-picker")).toHaveCount(0);
   });
 });

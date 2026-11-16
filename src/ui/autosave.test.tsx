@@ -71,6 +71,7 @@ const firstClub = () => {
 
 const startCareer = () => {
   const club = firstClub();
+  goTo("#/new");
   fireEvent.click(screen.getByTestId(`club-option-${club.id}`));
   fireEvent.click(screen.getByTestId("start-career"));
   return club;
@@ -161,8 +162,7 @@ describe("autosave and continue", () => {
     mountApp({ store });
     const button = await screen.findByTestId("continue-career");
     expect(button.textContent).toContain(club.name);
-    expect(button.textContent).toMatch(/season 1/i);
-    expect(button.textContent).toMatch(/matchday 2/i);
+    expect(button.textContent).toMatch(/season 1, round 2, \d+(st|nd|rd|th), saved just now/i);
     fireEvent.click(button);
 
     expect(screen.getByTestId("career-hub")).toBeTruthy();
@@ -180,7 +180,7 @@ describe("autosave and continue", () => {
     mountApp({ store });
     await screen.findByTestId("continue-career");
 
-    expect(screen.getByTestId("new-career")).toBeTruthy();
+    expect(screen.getByTestId("start-screen")).toBeTruthy();
     expect(screen.queryByTestId("career-hub")).toBeNull();
   });
 
