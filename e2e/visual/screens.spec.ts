@@ -86,6 +86,28 @@ visualScreen({
   },
 });
 
+// The home dashboard (#259): first matchday (empty table) and after four quick-simmed matchdays.
+const startCareerAtHub = async (page: Page) => {
+  await page.getByTestId("club-name").first().click();
+  await page.getByTestId("start-career").click();
+  await page.getByTestId("career-hub").waitFor();
+};
+
+visualScreen({ name: "hub-first-matchday", route: "#/new", state: startCareerAtHub });
+
+visualScreen({
+  name: "hub-mid-season",
+  route: "#/new",
+  state: async (page) => {
+    await startCareerAtHub(page);
+    for (let i = 0; i < 4; i++) {
+      await page.getByTestId("quick-sim").click();
+      await page.getByTestId("results-continue").click();
+      await page.getByTestId("career-hub").waitFor();
+    }
+  },
+});
+
 // The command palette (#255) open over the hub, with a query that matches clubs and players.
 visualScreen({
   name: "command-palette",

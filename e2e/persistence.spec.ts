@@ -48,8 +48,9 @@ test.describe("persistence", () => {
 
     await page.reload();
     await expect(page.getByTestId("continue-career")).toContainText(club);
+    // The hub shows "Round 3 of 26": the Continue card carries the first number.
     await expect(page.getByTestId("continue-career")).toContainText(
-      before.matchday.replace(/\D+/g, ""),
+      /\d+/.exec(before.matchday)?.[0] ?? "",
     );
     await page.getByTestId("continue-career").click();
 
