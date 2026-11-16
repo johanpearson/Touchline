@@ -5,7 +5,7 @@ const TABLET = { width: 1024, height: 768 };
 const PHONE = { width: 390, height: 844 };
 
 const startCareer = async (page: Page) => {
-  await page.goto("./");
+  await page.goto("./#/new");
   await page.getByTestId("club-name").first().click();
   await page.getByTestId("start-career").click();
   await expect(page.getByTestId("career-hub")).toBeVisible();

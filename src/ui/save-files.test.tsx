@@ -50,6 +50,7 @@ const firstClub = () => {
 };
 
 const startCareer = () => {
+  goTo("#/new");
   fireEvent.click(screen.getByTestId(`club-option-${firstClub().id}`));
   fireEvent.click(screen.getByTestId("start-career"));
 };
@@ -275,14 +276,14 @@ describe("exporting and importing saves", () => {
     expect(texts.size).toBe(failures.length);
   });
 
-  it("imports from the new-career screen and lands on the saves screen with the slot highlighted", async () => {
+  it("imports from the start screen and lands on the saves screen with the slot highlighted", async () => {
     const first = mountApp();
     const file = await exportedSave(first.store, first.files);
     cleanup();
     goTo("#/");
 
     const second = mountApp();
-    await screen.findByTestId("new-career");
+    await screen.findByTestId("import-file");
     await importFile(second.files, file.text);
     await screen.findByTestId("import-picker");
     expect(window.location.hash).toBe("#/saves");
@@ -295,9 +296,9 @@ describe("exporting and importing saves", () => {
     expect(await second.store.load("slot-1")).not.toBeNull();
   });
 
-  it("shows import errors on the new-career screen", async () => {
+  it("shows import errors on the start screen", async () => {
     const { files } = mountApp();
-    await screen.findByTestId("new-career");
+    await screen.findByTestId("import-file");
 
     await importFile(files, "{nope");
 
