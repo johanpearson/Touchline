@@ -268,3 +268,22 @@ describe("DataTable card mode", () => {
     expect(screen.getByRole("combobox", { name: "Sort by" }).className).toContain("min-h-11");
   });
 });
+
+describe("DataTable squad needs", () => {
+  it("tells the caller when the sort changes", () => {
+    const onSortChange = vi.fn();
+    renderTable({ onSortChange });
+    fireEvent.click(screen.getByRole("button", { name: /Points/ }));
+    expect(onSortChange).toHaveBeenCalledWith({ id: "pts", direction: "asc" });
+  });
+
+  it("puts the row attributes on table rows and on cards", () => {
+    const rowAttributes = (r: Row) => ({ "data-testid": `row-${r.id}`, "data-pos": r.pos });
+    const { unmount } = renderTable({ rowAttributes });
+    expect(screen.getByTestId("row-2").getAttribute("data-pos")).toBe("GK");
+    expect(screen.getByTestId("row-2").tagName).toBe("TR");
+    unmount();
+    renderTable({ rowAttributes, cards: true });
+    expect(screen.getByTestId("row-2").tagName).toBe("ARTICLE");
+  });
+});

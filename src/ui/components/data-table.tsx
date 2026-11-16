@@ -50,10 +50,16 @@ export type DataTableProps<Row> = {
   accent?: (row: Row) => string | undefined;
   /** Rendered instead of the table when there are no rows, usually an EmptyState. */
   empty?: ReactNode;
+  /** Called when a header (or the card sort select) changes the sort, so a caller can remember it. */
+  onSortChange?: (sort: SortState) => void;
+  /** Extra attributes (test ids, data attributes) for a row's `tr` or card. */
+  rowAttributes?: (row: Row) => RowAttributes;
   /** Forces card mode on or off. By default cards are used below 640 px viewport width. */
   cards?: boolean;
   className?: string;
 };
+
+export type RowAttributes = { [name: `data-${string}`]: string | undefined };
 
 const PHONE_QUERY = "(max-width: 639px)";
 
@@ -69,7 +75,12 @@ export function DataTable<Row>(props: DataTableProps<Row>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const width = useContainerWidth(containerRef);
   const isPhone = useMediaQuery(PHONE_QUERY);
-  const [sort, setSort] = useState<SortState | null>(props.defaultSort ?? null);
+  const [sort, setSortState] = useState<SortState | null>(props.defaultSort ?? null);
+  const { onSortChange } = props;
+  const setSort = (next: SortState) => {
+    setSortState(next);
+    onSortChange?.(next);
+  };
 
   // Groups keep their order (squad by position); rows are sorted inside each group.
   const groups = useMemo(() => {
@@ -230,16 +241,24 @@ function HeadCell<Row>({ column, first, sort, density, onSort }: HeadCellProps<R
   );
 }
 
-type BodyRowProps<Row> = Pick<DataTableProps<Row>, "highlight" | "accent"> & {
+type BodyRowProps<Row> = Pick<DataTableProps<Row>, "highlight" | "accent" | "rowAttributes"> & {
   row: Row;
   columns: readonly Column<Row>[];
   density: Density;
 };
 
-function BodyRow<Row>({ row, columns, density, highlight, accent }: BodyRowProps<Row>) {
+function BodyRow<Row>({
+  row,
+  columns,
+  density,
+  highlight,
+  accent,
+  rowAttributes,
+}: BodyRowProps<Row>) {
   const { marked, attributes } = markingFor(row, highlight, accent);
   return (
     <tr
+      {...rowAttributes?.(row)}
       {...attributes}
       className={cn(
         "border-b border-line last:border-b-0",
@@ -283,7 +302,7 @@ function HeaderContent<Row>({
       type="button"
       onClick={onSort}
       className={cn(
-        "inline-flex cursor-pointer items-center gap-1 rounded-sm uppercase hover:text-text",
+        "inline-flex cursor-pointer items-center gap-1 rounded-sm border-0 bg-transparent p-0 text-muted uppercase [font:inherit] [letter-spacing:inherit] hover:text-text",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
         density === "comfortable" && "min-h-11",
         active && "text-text",
@@ -336,16 +355,24 @@ function CardList<Row>({ label, labels, columns, groups, sort, onSort, ...rest }
   );
 }
 
-type CardItemProps<Row> = Pick<DataTableProps<Row>, "highlight" | "accent"> & {
+type CardItemProps<Row> = Pick<DataTableProps<Row>, "highlight" | "accent" | "rowAttributes"> & {
   row: Row;
   heading: readonly Column<Row>[];
   details: readonly Column<Row>[];
 };
 
-function CardItem<Row>({ row, heading, details, highlight, accent }: CardItemProps<Row>) {
+function CardItem<Row>({
+  row,
+  heading,
+  details,
+  highlight,
+  accent,
+  rowAttributes,
+}: CardItemProps<Row>) {
   const { marked, attributes } = markingFor(row, highlight, accent);
   return (
     <article
+      {...rowAttributes?.(row)}
       {...attributes}
       className={cn(
         "min-h-11 rounded-lg border border-line p-3",

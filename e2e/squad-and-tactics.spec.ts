@@ -13,6 +13,9 @@ const startCareer = async (page: Page) => {
 const openSquad = async (page: Page) => {
   await page.getByTestId("nav-squad").click();
   await expect(page.getByTestId("squad-screen")).toBeVisible();
+  // The lineup and tactics editors sit behind a toggle until they get their own screen.
+  await page.getByTestId("edit-lineup").click();
+  await expect(page.getByTestId("lineup-editor")).toBeVisible();
 };
 
 const ratings = async (page: Page): Promise<string> =>

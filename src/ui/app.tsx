@@ -1,6 +1,6 @@
 import type { Career } from "../game";
-import { createMemoryThemeStore } from "../platform";
-import type { FileTransfer, LocaleStore, SaveStore, ThemeStore } from "../shared";
+import { createMemoryDensityStore, createMemoryThemeStore } from "../platform";
+import type { DensityStore, FileTransfer, LocaleStore, SaveStore, ThemeStore } from "../shared";
 import { CareerHubScreen } from "./career-hub-screen";
 import { ClubView } from "./club-screen";
 import { I18nProvider } from "./i18n-provider";
@@ -18,6 +18,7 @@ import { AppShell } from "./shell/app-shell";
 import { BareShell } from "./shell/bare-shell";
 import { SquadScreen } from "./squad-screen";
 import { StartScreen } from "./start/start-screen";
+import { DensityProvider } from "./theme/density-provider";
 import { ThemeProvider } from "./theme/theme-provider";
 import { CareerProvider, useCareer } from "./use-career";
 import { useRoute } from "./use-route";
@@ -90,6 +91,8 @@ export type AppProps = {
   localeStore: LocaleStore;
   /** Remembers the chosen theme. Defaults to an in-memory store (no persistence). */
   themeStore?: ThemeStore;
+  /** Remembers the table density. Defaults to an in-memory store (no persistence). */
+  densityStore?: DensityStore;
   /** Where autosaves are written. The composition root passes IndexedDB, or memory as a fallback. */
   saveStore: SaveStore;
   /** Downloads and file picking for save export and import. */
@@ -103,10 +106,12 @@ export type AppProps = {
 } & RendererProp;
 
 const fallbackThemeStore = createMemoryThemeStore();
+const fallbackDensityStore = createMemoryDensityStore();
 
 export function App({
   localeStore,
   themeStore,
+  densityStore,
   saveStore,
   fileTransfer,
   now,
@@ -118,15 +123,17 @@ export function App({
   return (
     <I18nProvider store={localeStore}>
       <ThemeProvider store={themeStore ?? fallbackThemeStore}>
-        <CareerProvider saveStore={saveStore} now={now} fileTransfer={fileTransfer}>
-          <Shell
-            createRenderer={createRenderer}
-            tickMs={tickMs}
-            initialSeed={initialSeed}
-            storageAvailable={storageAvailable}
-            now={now}
-          />
-        </CareerProvider>
+        <DensityProvider store={densityStore ?? fallbackDensityStore}>
+          <CareerProvider saveStore={saveStore} now={now} fileTransfer={fileTransfer}>
+            <Shell
+              createRenderer={createRenderer}
+              tickMs={tickMs}
+              initialSeed={initialSeed}
+              storageAvailable={storageAvailable}
+              now={now}
+            />
+          </CareerProvider>
+        </DensityProvider>
       </ThemeProvider>
     </I18nProvider>
   );
