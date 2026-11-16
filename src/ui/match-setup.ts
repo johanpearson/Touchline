@@ -1,9 +1,20 @@
 import type { MatchInput, PerSide } from "../engine";
-import { type Career, type Club, type Fixture, matchInputFor, matchSeed } from "../game";
+import {
+  type Career,
+  type Club,
+  chooseKits,
+  type Fixture,
+  type Kit,
+  matchInputFor,
+  matchSeed,
+} from "../game";
 
 /** Everything the match screen needs to play one fixture of the career. */
 export type MatchSetup = {
   seed: number;
+  /** The kits actually worn: the away side changes on a colour clash. */
+  kits: PerSide<Kit>;
+  /** Body colour of each worn kit. */
   colours: PerSide<string>;
   input: MatchInput;
   /** Display name of every player who can appear in the log, by player id. */
@@ -16,13 +27,6 @@ const clubOf = (career: Career, clubId: string): Club => {
   return club;
 };
 
-/** Home plays in its primary colour; the away side switches to its secondary on a clash. */
-const coloursOf = (home: Club, away: Club): PerSide<string> => ({
-  home: home.colours.primary,
-  away:
-    away.colours.primary === home.colours.primary ? away.colours.secondary : away.colours.primary,
-});
-
 const namesOf = (career: Career, clubs: readonly Club[]): Record<string, string> => {
   const ids = new Set(clubs.flatMap((club) => club.playerIds));
   return Object.fromEntries(
@@ -34,9 +38,11 @@ const namesOf = (career: Career, clubs: readonly Club[]): Record<string, string>
 export const matchSetupFor = (career: Career, fixture: Fixture): MatchSetup => {
   const home = clubOf(career, fixture.homeClubId);
   const away = clubOf(career, fixture.awayClubId);
+  const kits = chooseKits(home, away);
   return {
     seed: matchSeed(career, fixture),
-    colours: coloursOf(home, away),
+    kits,
+    colours: { home: kits.home.body, away: kits.away.body },
     input: matchInputFor(career, fixture),
     players: namesOf(career, [home, away]),
   };

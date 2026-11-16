@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NEUTRAL_TACTICS } from "../../engine";
 import { createMemoryLocaleStore } from "../../platform";
 import { I18nProvider } from "../i18n-provider";
+import { matchSetupFor } from "../match-setup";
 import { anActionMatchSetup } from "./action-match-fixture";
 import { MatchScreen, type MatchScreenProps } from "./match-screen";
 import type { TerrainRenderer } from "./terrain-renderer";
@@ -303,5 +304,45 @@ describe("MatchScreen", () => {
   it("shows the Swedish labels in Swedish", () => {
     mountAction({}, "sv");
     expect(screen.getByTestId("period").textContent).toBe("Första halvlek");
+  });
+
+  describe("kits worn", () => {
+    const clashingSetup = () => {
+      const { career, fixture } = anActionMatchSetup();
+      const clubs = career.league.clubs.map((c) =>
+        c.id === fixture.homeClubId
+          ? { ...c, colours: { primary: "#d62828", secondary: "#ffffff" } }
+          : c.id === fixture.awayClubId
+            ? { ...c, colours: { primary: "#c02020", secondary: "#111111" } }
+            : c,
+      );
+      return matchSetupFor({ ...career, league: { ...career.league, clubs } }, fixture);
+    };
+
+    it("shows the clashing away side in its away kit on the scoreboard, terrain and pitch", () => {
+      const setup = clashingSetup();
+      const terrain = vi.fn((_host: unknown, _opts: unknown) => fakeRenderer());
+      const pitch = vi.fn((_host: unknown, _opts: unknown) => ({
+        resize: vi.fn(),
+        render: vi.fn(),
+        dispose: vi.fn(),
+      }));
+      window.sessionStorage.clear();
+      render(
+        <I18nProvider store={createMemoryLocaleStore("en")}>
+          <MatchScreen
+            {...setup}
+            createRenderer={terrain}
+            createPitchRenderer={pitch}
+            tickMs={1000}
+          />
+        </I18nProvider>,
+      );
+      expect(screen.getByTestId("away-name").style.borderColor).toBe("rgb(17, 17, 17)");
+      expect(screen.getByTestId("home-name").style.borderColor).toBe("rgb(214, 40, 40)");
+      expect(terrain.mock.calls[0]?.[1]).toMatchObject({ awayColour: "#111111" });
+      fireEvent.click(screen.getByTestId("view-pitch"));
+      expect(pitch.mock.calls[0]?.[1]).toMatchObject({ awayColour: "#111111" });
+    });
   });
 });

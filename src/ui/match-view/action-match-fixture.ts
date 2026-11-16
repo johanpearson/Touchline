@@ -12,6 +12,10 @@ export const anActionMatchSetup = (seed = 5) => {
   const fixture = getNextFixture(career.season, career.userClubId);
   if (!fixture) throw new Error("fixture");
   const colours: PerSide<string> = { home: "#ff4b5c", away: "#2f9bff" };
+  const kits = {
+    home: { body: colours.home, trim: "#ffffff" },
+    away: { body: colours.away, trim: "#ffffff" },
+  };
   const setup = matchSetupFor(career, fixture);
-  return { career, fixture, setup: { ...setup, colours } };
+  return { career, fixture, setup: { ...setup, colours, kits } };
 };
