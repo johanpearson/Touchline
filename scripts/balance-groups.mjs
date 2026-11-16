@@ -29,7 +29,7 @@ export const BALANCE_GROUPS = {
  */
 export const FAST_GROUPS = {
   "fast-formation": [`${GAME}/formation.balance.test.ts`],
-  "fast-league": [`${GAME}/league.balance.test.ts`, `${GAME}/season.balance.test.ts`],
+  "fast-league": [`${GAME}/shout.balance.test.ts`, `${GAME}/league.balance.test.ts`, `${GAME}/season.balance.test.ts`],
   "fast-engine": [`${ENGINE}/action.balance.test.ts`, `${ENGINE}/action-strength.balance.test.ts`, `${ENGINE}/action-tactics.balance.test.ts`],
 };
 
