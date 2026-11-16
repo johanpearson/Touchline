@@ -1,5 +1,4 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { computeMatchStats } from "../match-stats";
 import type { ZoneEvent } from "../zone-event";
 import { aMatchInput } from "./action-builders";
 import type { ActionEvent } from "./action-event";
@@ -14,7 +13,6 @@ import {
   shot,
   tackle,
 } from "./action-event-builders";
-import { computeActionStats } from "./action-stats";
 import { createActionMatch } from "./create-action-match";
 import { createZoneEventAdapter, toZoneEvents } from "./to-zone-events";
 
@@ -248,18 +246,6 @@ describe("toZoneEvents over played matches", () => {
       expect(event.position.y).toBeLessThanOrEqual(1);
       expect(event.intensity).toBeGreaterThanOrEqual(0);
       expect(event.intensity).toBeLessThanOrEqual(1);
-    }
-  });
-
-  it("gives zone stats that agree with the action stats on shots and possession", () => {
-    for (const seed of seeds) {
-      const source = playedMatch(seed);
-      const zone = computeMatchStats(toZoneEvents(source), 12000);
-      const action = computeActionStats(source, 12000).teams;
-      expect(zone.shots).toEqual(action.shots);
-      expect(zone.shotsOnTarget).toEqual(action.shotsOnTarget);
-      expect(zone.corners).toEqual(action.corners);
-      expect(Math.abs(zone.possession.home - action.possession.home)).toBeLessThan(0.03);
     }
   });
 });

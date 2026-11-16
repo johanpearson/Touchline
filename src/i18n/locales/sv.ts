@@ -15,7 +15,6 @@ export const sv = {
   "scoreboard.label": "Resultattavla",
   "stats.title": "Matchstatistik",
   "stats.label.possession": "Bollinnehav",
-  "stats.label.fieldTilt": "Planövertag",
   "stats.label.shots": "Skott",
   "stats.label.shotsOnTarget": "Skott på mål",
   "stats.label.xg": "xG",

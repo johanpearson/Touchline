@@ -1,5 +1,5 @@
 import type { Side } from "../match-state";
-import type { PerSide } from "../match-stats";
+import type { PerSide } from "../per-side";
 import { type MatchMetrics, matchMetrics } from "./action-balance-metrics";
 import { createActionMatch } from "./create-action-match";
 import type { MatchInput } from "./match-input";

@@ -3,7 +3,6 @@ import { generateActionCommentary } from "../../commentary";
 import type { ActionMatchState, EngineVersion, MatchInput, PerSide, Side } from "../../engine";
 import {
   computeActionStats,
-  computeMatchStats,
   createActionMatch,
   createZoneEventAdapter,
   playerRatings,
@@ -99,7 +98,6 @@ export function MatchScreen({
     // A cheap copy of references, so memoised children see a new array when the log grew.
     return kept.zone.slice();
   }, [eventCount]);
-  const stats = useMemo(() => computeMatchStats(zoneEvents, matchTime), [zoneEvents, matchTime]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   const actionStats = useMemo(() => computeActionStats(events, matchTime), [eventCount, matchTime]);
   const fullTime = state.period === "fullTime";
@@ -139,7 +137,8 @@ export function MatchScreen({
       matchTime={matchTime}
       events={zoneEvents}
       terrainEvents={shown}
-      stats={stats}
+      stats={actionStats}
+      playerIds={played}
       lines={lines}
       playback={playback}
       createRenderer={createRenderer}

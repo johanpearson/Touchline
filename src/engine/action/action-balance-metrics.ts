@@ -1,5 +1,5 @@
 import type { Side } from "../match-state";
-import type { PerSide } from "../match-stats";
+import type { PerSide } from "../per-side";
 import type { ActionEvent } from "./action-event";
 import { computeActionStats } from "./action-stats";
 import { CENTRAL_SHOT_CHANNEL } from "./decision-constants";

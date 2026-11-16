@@ -103,9 +103,8 @@ export type {
 } from "./action/validate-match-input";
 export { validateLineup, validateMatchInput } from "./action/validate-match-input";
 export type { Period, PitchPosition, Side } from "./match-state";
-export type { MatchStats, PerSide } from "./match-stats";
-export { computeMatchStats } from "./match-stats";
 export { momentumSeries } from "./momentum-series";
+export type { PerSide } from "./per-side";
 export type { Rng } from "./rng";
 export { createRng } from "./rng";
 export type { Mentality, Pressing, TeamTactics, Tempo, Width } from "./tactics";

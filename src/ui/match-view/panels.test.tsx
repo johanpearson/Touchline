@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { CommentaryLine } from "../../commentary";
-import type { MatchStats, ZoneEvent } from "../../engine";
+import type { ZoneEvent } from "../../engine";
 import { createMemoryLocaleStore } from "../../platform";
 import { I18nProvider } from "../i18n-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
@@ -13,7 +13,6 @@ import { MomentumChart } from "./momentum-chart";
 import { PlayerRatings } from "./player-ratings";
 import { Scoreboard } from "./scoreboard";
 import { SpeedControls } from "./speed-controls";
-import { StatsPanel } from "./stats-panel";
 
 const inLocale = (ui: ReactNode, locale = "en") =>
   render(<I18nProvider store={createMemoryLocaleStore(locale)}>{ui}</I18nProvider>);
@@ -60,38 +59,6 @@ describe("Scoreboard", () => {
   it("names the period in Swedish", () => {
     inLocale(<Scoreboard {...props} period="halfTime" />, "sv");
     expect(screen.getByTestId("period").textContent).toBe("Halvtid");
-  });
-});
-
-describe("StatsPanel", () => {
-  afterEach(cleanup);
-  const stats: MatchStats = {
-    possession: { home: 0.6, away: 0.4 },
-    fieldTilt: { home: 0.55, away: 0.45 },
-    shots: { home: 7, away: 3 },
-    shotsOnTarget: { home: 4, away: 1 },
-    xg: { home: 1.234, away: 0.5 },
-    corners: { home: 5, away: 2 },
-  };
-  const valuesOf = (id: string) =>
-    within(screen.getByTestId(`stat-${id}`))
-      .getAllByRole("definition")
-      .map((node) => node.textContent);
-
-  it("shows possession, tilt, shots, shots on target, xG and corners for both teams", () => {
-    inLocale(<StatsPanel stats={stats} />);
-    expect(valuesOf("possession")).toEqual(["60%", "40%"]);
-    expect(valuesOf("fieldTilt")).toEqual(["55%", "45%"]);
-    expect(valuesOf("shots")).toEqual(["7", "3"]);
-    expect(valuesOf("shotsOnTarget")).toEqual(["4", "1"]);
-    expect(valuesOf("xg")).toEqual(["1.23", "0.50"]);
-    expect(valuesOf("corners")).toEqual(["5", "2"]);
-  });
-
-  it("labels the rows in the active language", () => {
-    inLocale(<StatsPanel stats={stats} />, "sv");
-    expect(screen.getByText("Bollinnehav")).toBeTruthy();
-    expect(screen.getByText("Hörnor")).toBeTruthy();
   });
 });
 

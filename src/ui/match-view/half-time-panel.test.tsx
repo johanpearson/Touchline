@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { MatchStats } from "../../engine";
+import type { ActionStats } from "../../engine";
 import {
   type Career,
   createCareer,
@@ -13,14 +13,39 @@ import { createMemoryLocaleStore } from "../../platform";
 import { I18nProvider } from "../i18n-provider";
 import { type HalfTimeEditor, HalfTimePanel } from "./half-time-panel";
 
-const stats: MatchStats = {
-  possession: { home: 0.6, away: 0.4 },
-  fieldTilt: { home: 0.55, away: 0.45 },
-  shots: { home: 5, away: 3 },
-  shotsOnTarget: { home: 2, away: 1 },
-  xg: { home: 0.8, away: 0.4 },
-  corners: { home: 2, away: 1 },
+const line = (keyPasses: number) => ({
+  passes: 0,
+  completedPasses: 0,
+  passCompletion: 0,
+  keyPasses,
+  shots: 0,
+  shotsOnTarget: 0,
+  xg: 0,
+  goals: 0,
+  tacklesWon: 0,
+  interceptions: 0,
+  clearances: 0,
+  foulsCommitted: 0,
+});
+
+const stats: ActionStats = {
+  teams: {
+    possession: { home: 0.6, away: 0.4 },
+    fieldTilt: { home: 0.55, away: 0.45 },
+    shots: { home: 5, away: 3 },
+    shotsOnTarget: { home: 2, away: 1 },
+    xg: { home: 0.8, away: 0.4 },
+    corners: { home: 2, away: 1 },
+    fouls: { home: 4, away: 6 },
+    throwIns: { home: 0, away: 0 },
+    goalKicks: { home: 0, away: 0 },
+    passes: { home: 210, away: 150 },
+    completedPasses: { home: 180, away: 105 },
+    passCompletion: { home: 0.86, away: 0.7 },
+  },
+  players: { h1: line(2), a1: line(1) },
 };
+const playerIds = { home: ["h1"], away: ["a1"] };
 
 const aCareer = (): Career => {
   const league = generateLeague({ seed: 5 });
@@ -52,6 +77,7 @@ const mount = (onResume = vi.fn(), locale = "en", editor?: HalfTimeEditor) =>
         awayName="Västerås Park"
         score={{ home: 1, away: 0 }}
         stats={stats}
+        playerIds={playerIds}
         onResume={onResume}
         editor={editor}
       />
@@ -66,7 +92,15 @@ describe("HalfTimePanel", () => {
     expect(screen.getByTestId("half-time-score").textContent).toContain(
       "Kvarnby 1 – 0 Västerås Park",
     );
-    expect(screen.getByTestId("stat-shots").textContent).toContain("5");
+    expect(screen.getByTestId("stat-shots").textContent).toBe("5Shots3");
+  });
+
+  it("shows the action stats rows, including passes, pass completion and key passes", () => {
+    mount();
+    expect(screen.getByTestId("stat-passes").textContent).toBe("210Passes150");
+    expect(screen.getByTestId("stat-passCompletion").textContent).toBe("86%Pass completion70%");
+    expect(screen.getByTestId("stat-keyPasses").textContent).toBe("2Key passes1");
+    expect(screen.queryByTestId("stat-fieldTilt")).toBeNull();
   });
 
   it("calls onResume when the start second half button is clicked", () => {
