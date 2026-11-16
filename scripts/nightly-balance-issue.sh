@@ -22,7 +22,11 @@ fi
 failures=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -E '^ *(FAIL |AssertionError|Error:)' | sort -u | head -60 || true)
 [ -n "$failures" ] || failures="No assertion lines found in the log; see the run."
 
-body=$(printf '## Goal\n\nThe nightly full balance suite (`npm run test:balance`) failed. Find the cause and fix the engine or, if the range is wrong, change it deliberately in its own PR.\n\n## Failing assertions\n\n```\n%s\n```\n\n## Run\n\n%s\n\n## Acceptance criteria\n\n- [ ] `npm run test:balance` passes on main without weakening any assertion, range or match count.\n' "$failures" "${RUN_URL:-unknown run}")
+# The nightly run plays the suite as parallel groups; FAILED_GROUPS names the ones that did not succeed.
+groups="${FAILED_GROUPS:-}"
+[ -n "$groups" ] || groups="not reported"
+
+body=$(printf '## Goal\n\nThe nightly full balance suite (`npm run test:balance`) failed. Find the cause and fix the engine or, if the range is wrong, change it deliberately in its own PR.\n\n## Failed shards\n\n%s (run one with `npm run test:balance:group -- <name>`)\n\n## Failing assertions\n\n```\n%s\n```\n\n## Run\n\n%s\n\n## Acceptance criteria\n\n- [ ] `npm run test:balance` passes on main without weakening any assertion, range or match count.\n' "$groups" "$failures" "${RUN_URL:-unknown run}")
 
 if [ "${DRY_RUN:-}" = "1" ]; then
   printf '%s\n\n%s\n' "$title" "$body"
