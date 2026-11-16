@@ -24,11 +24,18 @@
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test --grep @smoke",
     "test:mutation": "stryker run",
-    "test:mutation:action": "stryker run stryker.action.config.json"
+    "test:mutation:action": "stryker run stryker.action.config.json",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.5.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.73.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "tailwind-merge": "^3.7.0",
     "three": "^0.187.0"
   },
   "devDependencies": {
@@ -36,6 +43,7 @@
     "@fontsource/barlow": "^5.3.0",
     "@fontsource/barlow-condensed": "^5.3.0",
     "@playwright/test": "^1.65.0",
+    "@storybook/react-vite": "^10.6.7",
     "@stryker-mutator/core": "^10.1.1",
     "@stryker-mutator/vitest-runner": "^10.1.1",
     "@swc/core": "^1.16.22",
@@ -51,6 +59,7 @@
     "fake-indexeddb": "^6.2.8",
     "fast-check": "^4.10.2",
     "jsdom": "^31.0.1",
+    "storybook": "^10.6.7",
     "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",

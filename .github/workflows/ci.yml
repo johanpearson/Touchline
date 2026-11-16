@@ -37,6 +37,8 @@ jobs:
       - name: Performance budget (runs alone, not in parallel with other tests)
         run: npm run test:perf
       - run: npm run build
+      - name: Storybook compiles
+        run: npm run build-storybook
 
   # Balance runs as separate jobs (#219). `balance-scope` decides whether the full suite is needed; the fast subset is one job, the
   # full suite a matrix of groups from scripts/balance-groups.mjs (explicit groups of similar run time, a test checks that every
