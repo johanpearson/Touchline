@@ -82,16 +82,33 @@ jobs:
           path: result-balance.json
 
   # The mutation run is split into parallel shards (#209): the whole nightly run has to finish in two hours at most, aiming for
-  # one. `scripts/mutation-shards.mjs` spreads the mutated files over the shards by size, so a new engine file joins a shard by
-  # itself. Keep the shard list below, `--shards` in the merge job and `shards` in scripts/nightly-workflow.test.ts the same.
+  # one. `scripts/mutation-shards.mjs --plan` spreads the mutated files over the shards by estimated minutes
+  # (scripts/mutation-weights.json), cutting the heavy files into line ranges, so a new engine file joins a shard by itself and
+  # the number of shards follows the work.
+  mutation-plan:
+    name: Mutation plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Plan the shards
+        id: plan
+        run: node scripts/mutation-shards.mjs --plan --table >> "$GITHUB_OUTPUT"
+
   mutation-shard:
     name: Mutation shard ${{ matrix.shard }}
+    needs: mutation-plan
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+      matrix: ${{ fromJSON(needs.mutation-plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -100,15 +117,16 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Stryker
+        env:
+          FILES: ${{ matrix.files }}
         run: |
           set -o pipefail
           start=$SECONDS
-          files=$(node scripts/mutation-shards.mjs --shard ${{ matrix.shard }} --of ${{ strategy.job-total }})
-          echo "Mutating: $files"
+          echo "Mutating: $FILES"
           status=0
-          FORCE_COLOR=0 npx stryker run stryker.shard.config.json --mutate "$files" 2>&1 | tee mutation.log || status=$?
+          FORCE_COLOR=0 npx stryker run stryker.shard.config.json --mutate "$FILES" 2>&1 | tee mutation.log || status=$?
           mkdir -p reports/mutation
-          echo "{\"seconds\": $((SECONDS - start))}" > reports/mutation/meta.json
+          printf '{"seconds": %s, "files": "%s"}\n' "$((SECONDS - start))" "$FILES" > reports/mutation/meta.json
           exit $status
       - uses: actions/upload-artifact@v7
         if: always()
@@ -119,7 +137,7 @@ jobs:
 
   mutation:
     name: Mutation testing (engine)
-    needs: mutation-shard
+    needs: [mutation-plan, mutation-shard]
     # Runs even when a shard failed or timed out: the merge names the shard without a report and the badge goes red.
     if: always()
     runs-on: ubuntu-latest
@@ -135,9 +153,11 @@ jobs:
           pattern: mutation-shard-*
           path: shards
       - name: Merge the shard reports
+        env:
+          SHARDS: ${{ needs.mutation-plan.outputs.count }}
         run: |
           mkdir -p shards
-          node scripts/merge-mutation-reports.mjs --in shards --shards 8 --out mutation.log
+          node scripts/merge-mutation-reports.mjs --in shards --shards "${SHARDS:-0}" --out mutation.log
       - uses: actions/upload-artifact@v7
         if: always()
         with:
