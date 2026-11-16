@@ -79,7 +79,7 @@ describe("the balance workflows", () => {
 
   it("keep a final job named Balance that waits for the shards and the fast run", () => {
     expect(ci).toMatch(/\n {2}balance:\n {4}name: Balance\n/);
-    expect(ci).toMatch(/needs: \[balance-scope, balance-fast, balance-shard\]/);
+    expect(ci).toMatch(/needs: \[scope, balance-fast, balance-shard\]/);
   });
 
   it("run the same groups in the nightly workflow and keep the job key the status job waits for", () => {
