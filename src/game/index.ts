@@ -85,6 +85,14 @@ export {
 } from "./player-condition";
 export { FIRST_NAMES, LAST_NAMES } from "./player-names";
 export { playerOverall } from "./player-overall";
+export {
+  attributesAtPosition,
+  GOALKEEPER_SWAP_PENALTY,
+  OUTFIELD_ONE_LINE_PENALTY,
+  OUTFIELD_TWO_LINES_PENALTY,
+  positionPenalty,
+  positionRating,
+} from "./position-rating";
 export type { SeasonError, SeasonSummary, SummaryResult, TopScorer } from "./season-summary";
 export { simulateFixture } from "./simulate-fixture";
 export type { SquadPlan } from "./squad-plan";
@@ -94,6 +102,7 @@ export type { NextSeasonResult } from "./start-next-season";
 export { startNextSeason } from "./start-next-season";
 export type { SummaryOptions } from "./summarise-season";
 export { summariseSeason } from "./summarise-season";
+export type { PlayedPositions } from "./to-engine-players";
 export { toEngineBench, toEnginePlayers } from "./to-engine-players";
 export { toSquadPlayer } from "./to-squad-player";
 export type { MatchReport } from "./update-condition";
