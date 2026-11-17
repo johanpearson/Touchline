@@ -135,6 +135,14 @@ export {
 } from "./position-rating";
 export type { RenewError, RenewResult } from "./renew-contract";
 export { askingWage, renewContract } from "./renew-contract";
+export {
+  RETIREMENT_CERTAIN_AGE,
+  RETIREMENT_CHANCE_STEP,
+  RETIREMENT_START_AGE,
+  RETIREMENT_START_CHANCE,
+  retirementChance,
+  retirePlayers,
+} from "./retire-players";
 export type { SeasonError, SeasonSummary, SummaryResult, TopScorer } from "./season-summary";
 export { extendTrail, type SeasonTrail } from "./season-trail";
 export {
@@ -173,3 +181,8 @@ export { toSquadPlayer } from "./to-squad-player";
 export type { MatchReport } from "./update-condition";
 export { useActionEngine } from "./use-action-engine";
 export { WAGE_BUDGET_SHARE, wageBill, wageBudget } from "./wage-budget";
+export {
+  generateYouthIntake,
+  YOUTH_CONTRACT_SEASONS,
+  YOUTH_PER_CLUB,
+} from "./youth-intake";

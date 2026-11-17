@@ -27,7 +27,7 @@ const qualityFor = (strength: number, rank: number, count: number, rng: Rng): nu
   return Math.min(1, Math.max(0, strength + CENTRE + GRADIENT * spread + jitter));
 };
 
-const uniqueName = (taken: ReadonlySet<string>, name: string, rng: Rng): string => {
+export const uniqueName = (taken: ReadonlySet<string>, name: string, rng: Rng): string => {
   let candidate = name;
   while (taken.has(candidate)) candidate = generateName(rng);
   return candidate;
