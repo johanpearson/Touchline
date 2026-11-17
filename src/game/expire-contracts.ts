@@ -1,6 +1,5 @@
-import { autoPickLineup } from "./auto-pick-lineup";
 import type { Career } from "./career";
-import { clubSquad } from "./squad-plan";
+import { repairSquadPlan } from "./repair-squad-plan";
 
 /**
  * Lets every player whose contract ends with the finished season (`expiresSeason` up to the
@@ -24,15 +23,5 @@ export const expireContracts = (career: Career): Career => {
     league: { ...career.league, clubs },
     freeAgentIds: [...career.freeAgentIds, ...leaving],
   };
-  return { ...next, squadPlan: repairedPlan(next, new Set(leaving)) };
-};
-
-const repairedPlan = (career: Career, leaving: ReadonlySet<string>): Career["squadPlan"] => {
-  const plan = career.squadPlan;
-  if (![...plan.starters, ...plan.bench].some((id) => leaving.has(id))) return plan;
-  const club = career.league.clubs.find((c) => c.id === career.userClubId);
-  if (!club) return plan;
-  const squad = clubSquad(club, career.league.players);
-  const lineup = autoPickLineup(squad, plan.formation, career.condition);
-  return { ...plan, starters: lineup.starters, bench: lineup.bench };
+  return { ...next, squadPlan: repairSquadPlan(next) };
 };
