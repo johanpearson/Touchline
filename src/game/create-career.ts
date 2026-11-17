@@ -1,6 +1,7 @@
 import type { CareerResult } from "./career";
 import { createSeason } from "./create-season";
 import { generateLeague } from "./generate-league";
+import { initialContracts, initialFinances, initialMinutes } from "./initial-economy";
 import { clubSquad, initialConditions, initialSquadPlan } from "./squad-plan";
 
 export type CareerSpec = {
@@ -23,6 +24,7 @@ export const createCareer = (spec: CareerSpec): CareerResult => {
     1,
     league.clubs.map((club) => club.id),
   );
+  const contracts = initialContracts(league.players, spec.seed, season.number);
   return {
     ok: true,
     career: {
@@ -34,6 +36,10 @@ export const createCareer = (spec: CareerSpec): CareerResult => {
       squadPlan: initialSquadPlan(clubSquad(userClub, league.players)),
       condition: initialConditions(league.players),
       engineVersion: 2,
+      contracts,
+      finances: initialFinances(league.clubs, league.players, contracts, season.number),
+      freeAgentIds: [],
+      minutes: initialMinutes(league.players),
     },
   };
 };

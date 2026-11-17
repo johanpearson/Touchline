@@ -10,6 +10,7 @@ type PlayerBuilder = {
   withName: (value: string) => PlayerBuilder;
   withAge: (value: number) => PlayerBuilder;
   withPosition: (value: PlayerPosition) => PlayerBuilder;
+  withPotential: (value: number) => PlayerBuilder;
   withPassing: (value: number) => PlayerBuilder;
   withBallControl: (value: number) => PlayerBuilder;
   withDribbling: (value: number) => PlayerBuilder;
@@ -32,6 +33,7 @@ const defaultPlayer = (): Player => ({
   name: "Player",
   age: 25,
   position: "MID",
+  potential: 20,
   passing: 10,
   ballControl: 10,
   dribbling: 10,
@@ -54,6 +56,7 @@ const playerBuilder = (player: Player): PlayerBuilder => {
     withName: (name) => with_({ name }),
     withAge: (age) => with_({ age }),
     withPosition: (position) => with_({ position }),
+    withPotential: (potential) => with_({ potential }),
     withPassing: (passing) => with_({ passing }),
     withBallControl: (ballControl) => with_({ ballControl }),
     withDribbling: (dribbling) => with_({ dribbling }),

@@ -11,6 +11,7 @@ import {
 import type { League } from "./league";
 import type { Player, PlayerAttributes } from "./player";
 import { ATTRIBUTE_NAMES, MAX_ATTRIBUTE, MIN_ATTRIBUTE } from "./player";
+import { overallIn } from "./player-overall";
 import type { PlayerPosition } from "./squad-player";
 
 const POSITIONS: readonly string[] = ["GK", "DEF", "MID", "FWD"];
@@ -25,18 +26,29 @@ const parseAttributes = (raw: Record<string, unknown>): PlayerAttributes | undef
   return attributes as PlayerAttributes;
 };
 
-const parsePlayer = (raw: unknown): Player | undefined => {
+/** Parsing options: `legacy` accepts players saved before schema v7 and gives them their overall as potential. */
+export type ParseLeagueOptions = { legacy?: boolean };
+
+const parsePlayer = (raw: unknown, legacy: boolean): Player | undefined => {
   if (!isRecord(raw)) return undefined;
   const attributes = parseAttributes(raw);
   if (!attributes) return undefined;
   if (!isString(raw.id) || !isString(raw.name) || !isInt(raw.age) || raw.age < 1) return undefined;
   if (!isString(raw.position) || !POSITIONS.includes(raw.position)) return undefined;
+  const position = raw.position as PlayerPosition;
+  const potential =
+    legacy && raw.potential === undefined
+      ? Math.ceil(overallIn(position, attributes))
+      : raw.potential;
+  if (!isIntInRange(potential, MIN_ATTRIBUTE, MAX_ATTRIBUTE)) return undefined;
+  if (potential < overallIn(position, attributes)) return undefined;
   return {
     ...attributes,
+    potential,
     id: raw.id,
     name: raw.name,
     age: raw.age,
-    position: raw.position as PlayerPosition,
+    position,
   };
 };
 
@@ -57,10 +69,10 @@ const parseClub = (raw: unknown): Club | undefined => {
 };
 
 /** Validates a league and returns a fresh copy, or `undefined` when it is not usable. */
-export const parseLeague = (raw: unknown): League | undefined => {
+export const parseLeague = (raw: unknown, options: ParseLeagueOptions = {}): League | undefined => {
   if (!isRecord(raw) || !isString(raw.id) || !isString(raw.name)) return undefined;
   const clubs = parseList(raw.clubs, parseClub);
-  const players = parseList(raw.players, parsePlayer);
+  const players = parseList(raw.players, (p) => parsePlayer(p, options.legacy === true));
   if (!clubs || !players || clubs.length < 2 || clubs.length % 2 !== 0) return undefined;
   if (!hasUniqueValues(clubs.map((c) => c.id)) || !hasUniqueValues(players.map((p) => p.id))) {
     return undefined;

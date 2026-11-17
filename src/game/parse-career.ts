@@ -1,6 +1,7 @@
 import type { Career } from "./career";
 import type { Club } from "./club";
 import { isInt, isRecord, isString } from "./json-guards";
+import { parseContracts, parseFinances, parseFreeAgentIds, parseMinutes } from "./parse-economy";
 import { parseHistory } from "./parse-history";
 import { parseLeague } from "./parse-league";
 import { parseSeason } from "./parse-season";
@@ -18,7 +19,11 @@ export type CareerParseError =
   | "invalid-history"
   | "invalid-squad-plan"
   | "invalid-condition"
-  | "invalid-engine-version";
+  | "invalid-engine-version"
+  | "invalid-contracts"
+  | "invalid-finances"
+  | "invalid-free-agents"
+  | "invalid-minutes";
 
 export type CareerParseResult =
   | { ok: true; career: Career }
@@ -44,6 +49,14 @@ const parseUnchecked = (raw: unknown): CareerParseResult => {
   const condition = parseCondition(raw.condition, league.players);
   if (!condition) return fail("invalid-condition");
   if (raw.engineVersion !== 2) return fail("invalid-engine-version");
+  const contracts = parseContracts(raw.contracts, league.players, league.clubs);
+  if (!contracts) return fail("invalid-contracts");
+  const finances = parseFinances(raw.finances, league.clubs);
+  if (!finances) return fail("invalid-finances");
+  const freeAgentIds = parseFreeAgentIds(raw.freeAgentIds, league.players, league.clubs);
+  if (!freeAgentIds) return fail("invalid-free-agents");
+  const minutes = parseMinutes(raw.minutes, league.players);
+  if (!minutes) return fail("invalid-minutes");
   return {
     ok: true,
     career: {
@@ -55,6 +68,10 @@ const parseUnchecked = (raw: unknown): CareerParseResult => {
       squadPlan,
       condition,
       engineVersion: 2,
+      contracts,
+      finances,
+      freeAgentIds,
+      minutes,
     },
   };
 };

@@ -29,4 +29,6 @@ export type Player = PlayerAttributes & {
   name: string;
   age: number;
   position: PlayerPosition;
+  /** The highest `playerOverall` the player can reach, an integer 1 to 20, never below the overall (schema v7). */
+  potential: number;
 };

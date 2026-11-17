@@ -9,6 +9,7 @@ import careerV3 from "./fixtures/career-v3.json";
 import careerV4 from "./fixtures/career-v4.json";
 import careerV5 from "./fixtures/career-v5.json";
 import careerV6 from "./fixtures/career-v6.json";
+import careerV7 from "./fixtures/career-v7.json";
 import type { Migration } from "./migrations";
 import { CURRENT_SCHEMA_VERSION, MIGRATIONS } from "./schema";
 
@@ -219,10 +220,7 @@ describe("frozen schema v4 fixture", () => {
 describe("frozen schema v5 fixture", () => {
   it("migrates to the current version and parses as an engine 2 career", () => {
     const result = readEnvelope(careerV5);
-    expect(result).toEqual({
-      ok: true,
-      save: { ...careerV5, schemaVersion: CURRENT_SCHEMA_VERSION },
-    });
+    expect(result.ok && result.save.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     if (!result.ok) return;
     const parsed = parseCareer(result.save.game);
     expect(parsed.ok && parsed.career.engineVersion).toBe(2);
@@ -242,9 +240,9 @@ describe("frozen schema v5 fixture", () => {
 
 /** `career-v6.json` is a frozen schema version 6 save (results record their scorers): a career after two matchdays. Never regenerate it. */
 describe("frozen schema v6 fixture", () => {
-  it("loads unchanged and parses with a scorer for every goal", () => {
+  it("migrates to the current version and parses with a scorer for every goal", () => {
     const result = readEnvelope(careerV6);
-    expect(result).toEqual({ ok: true, save: careerV6 });
+    expect(result.ok && result.save.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     if (!result.ok) return;
     const parsed = parseCareer(result.save.game);
     if (!parsed.ok) throw new Error(parsed.error);
@@ -256,7 +254,6 @@ describe("frozen schema v6 fixture", () => {
   it("is what a v5 save becomes: results from before v6 keep no scorers", () => {
     const result = readEnvelope(careerV5);
     if (!result.ok) throw new Error(result.error);
-    expect(result.save.schemaVersion).toBe(6);
     const parsed = parseCareer(result.save.game);
     if (!parsed.ok) throw new Error(parsed.error);
     expect(parsed.career.season.results.every((r) => r.scorers === undefined)).toBe(true);
@@ -271,5 +268,48 @@ describe("frozen schema v6 fixture", () => {
     if (!fixture) throw new Error("no fixture");
     const played = simulateFixture(parsed.career, fixture);
     expect(played.scorers).toHaveLength(played.homeGoals + played.awayGoals);
+  });
+});
+
+/** `career-v7.json` is a frozen schema version 7 save (potential, contracts, finances, free agents, minutes): a career after two matchdays. Never regenerate it. */
+describe("frozen schema v7 fixture", () => {
+  it("loads unchanged and parses with its new fields", () => {
+    const result = readEnvelope(careerV7);
+    expect(result).toEqual({ ok: true, save: careerV7 });
+    if (!result.ok) return;
+    const parsed = parseCareer(result.save.game);
+    if (!parsed.ok) throw new Error(parsed.error);
+    expect(Object.keys(parsed.career.contracts)).toHaveLength(parsed.career.league.players.length);
+    expect(Object.keys(parsed.career.finances)).toHaveLength(parsed.career.league.clubs.length);
+    expect(parsed.career.freeAgentIds).toEqual([]);
+  });
+});
+
+describe("frozen schema v6 fixture migrated to v7", () => {
+  it("gives every player a potential, a contract and zero minutes, and every club a finance", () => {
+    const result = readEnvelope(careerV6);
+    if (!result.ok) throw new Error(result.error);
+    const parsed = parseCareer(result.save.game);
+    if (!parsed.ok) throw new Error(parsed.error);
+    const { league, contracts, finances, minutes, freeAgentIds } = parsed.career;
+    expect(league.players.every((p) => p.potential >= 1 && p.potential <= 20)).toBe(true);
+    expect(league.players.every((p) => contracts[p.id] !== undefined)).toBe(true);
+    expect(league.clubs.every((c) => (finances[c.id]?.baseIncome ?? 0) > 0)).toBe(true);
+    expect(Object.values(minutes).every((m) => m === 0)).toBe(true);
+    expect(freeAgentIds).toEqual([]);
+  });
+
+  it("migrates the same way every time", () => {
+    expect(readEnvelope(careerV6)).toEqual(readEnvelope(structuredClone(careerV6)));
+  });
+
+  it("keeps everything that was in the save", () => {
+    const result = readEnvelope(careerV6);
+    if (!result.ok) throw new Error(result.error);
+    const game = result.save.game as typeof careerV6.game;
+    expect(game.season).toEqual(careerV6.game.season);
+    expect(game.history).toEqual(careerV6.game.history);
+    expect(game.squadPlan).toEqual(careerV6.game.squadPlan);
+    expect(game.condition).toEqual(careerV6.game.condition);
   });
 });

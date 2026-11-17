@@ -1,4 +1,5 @@
 import type { Result } from "./compute-table";
+import type { ClubFinance, Contract } from "./contract";
 import type { Fixture } from "./generate-fixtures";
 import type { League } from "./league";
 import type { PlayerCondition } from "./player-condition";
@@ -30,6 +31,14 @@ export type Career = {
   condition: Record<string, PlayerCondition>;
   /** The engine used for new matches. Always 2, the action engine (schema v5; the zone engine was removed). */
   engineVersion: 2;
+  /** Every player's contract, by player id (schema v7). Free agents may have none. */
+  contracts: Record<string, Contract>;
+  /** Every club's money, by club id (schema v7). */
+  finances: Record<string, ClubFinance>;
+  /** Players without a club (schema v7). Empty at creation. */
+  freeAgentIds: string[];
+  /** Minutes played this season, by player id (schema v7). Zero at creation. */
+  minutes: Record<string, number>;
 };
 
 export type CareerError = "unknown-club";

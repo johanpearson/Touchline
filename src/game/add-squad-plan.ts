@@ -11,7 +11,7 @@ import { clubSquad, initialConditions, initialSquadPlan } from "./squad-plan";
 export const addSquadPlanAndCondition = (raw: unknown): unknown => {
   try {
     if (!isRecord(raw) || !isString(raw.userClubId)) return raw;
-    const league = parseLeague(raw.league);
+    const league = parseLeague(raw.league, { legacy: true });
     const club = league?.clubs.find((c) => c.id === raw.userClubId);
     if (!league || !club) return raw;
     return {

@@ -15,6 +15,12 @@ export const isIntInRange = (value: unknown, min: number, max: number): value is
 export const isNonNegativeInt = (value: unknown): value is number =>
   isInt(value) && (value as number) >= 0;
 
+export const isPositiveInt = (value: unknown): value is number =>
+  isInt(value) && (value as number) >= 1;
+
+export const isNonNegativeNumber = (value: unknown): value is number =>
+  Number.isFinite(value) && (value as number) >= 0;
+
 export const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every(isString);
 

@@ -54,4 +54,18 @@ describe("createCareer", () => {
   it("plays on the action engine", () => {
     expect(aCareer(5).engineVersion).toBe(2);
   });
+
+  it("starts with contracts, finances, no free agents and zero minutes", () => {
+    const career = aCareer(5);
+    expect(Object.keys(career.contracts)).toHaveLength(career.league.players.length);
+    expect(Object.keys(career.finances)).toHaveLength(career.league.clubs.length);
+    expect(career.freeAgentIds).toEqual([]);
+    expect(Object.values(career.minutes).every((m) => m === 0)).toBe(true);
+  });
+
+  it("creates identical economy data twice from the same spec", () => {
+    const a = createCareer({ seed: 5, userClubId: aCareer(5).userClubId });
+    const b = createCareer({ seed: 5, userClubId: aCareer(5).userClubId });
+    expect(a).toEqual(b);
+  });
 });
