@@ -10,7 +10,10 @@ export type TabsListProps = ComponentProps<typeof RadixTabs.List>;
 /** `aria-label` is required: a tab list needs a name. */
 export function TabsList({ className, ...rest }: TabsListProps & { "aria-label": string }) {
   return (
-    <RadixTabs.List {...rest} className={cn("inline-flex max-w-full gap-1 overflow-x-auto border-b border-line", className)} />
+    <RadixTabs.List
+      {...rest}
+      className={cn("inline-flex max-w-full gap-1 overflow-x-auto border-b border-line", className)}
+    />
   );
 }
 
