@@ -23,8 +23,11 @@ const isExpiring = (career: Career, id: string): boolean =>
 
 type Renewals = { renewed: Record<string, Contract>; released: string[] };
 
+const isWanted = (player: Player, best: ReadonlySet<string>): boolean =>
+  best.has(player.id) || player.age <= AI_RENEW_MAX_AGE;
+
 const decideRenewals = (career: Career, club: Club): Renewals => {
-  const finance = career.finances[club.id];
+  const budget = wageBudget(career.finances[club.id] ?? { baseIncome: 0 });
   const squad = clubSquad(club, career.league.players).sort(byOverallThenId);
   const best = new Set(squad.slice(0, AI_RENEW_BEST_COUNT).map((p) => p.id));
   const expiring = squad.filter((p) => isExpiring(career, p.id));
@@ -32,10 +35,9 @@ const decideRenewals = (career: Career, club: Club): Renewals => {
   for (const p of expiring) bill -= career.contracts[p.id]?.wage ?? 0;
   const renewed: Record<string, Contract> = {};
   const rng = createRng(career.seed).fork(`ai-renew-${career.season.number}`);
-  for (const player of expiring) {
+  for (const player of expiring.filter((p) => isWanted(p, best))) {
     const wage = askingWage(career, player.id) ?? 0;
-    const wanted = best.has(player.id) || player.age <= AI_RENEW_MAX_AGE;
-    if (!wanted || !finance || bill + wage > wageBudget(finance)) continue;
+    if (bill + wage > budget) continue;
     const seasons = rng.fork(player.id).int(MIN_CONTRACT_SEASONS, MAX_CONTRACT_SEASONS);
     renewed[player.id] = { wage, expiresSeason: career.season.number + seasons };
     bill += wage;

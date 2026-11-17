@@ -63,6 +63,23 @@ const candidatesFor = (career: Career, player: Player, clubs: readonly Club[]): 
   });
 };
 
+const isTaken = (offers: readonly TransferOffer[], offer: TransferOffer): boolean =>
+  offers.some((o) => o.fromClubId === offer.fromClubId || o.playerId === offer.playerId);
+
+/** Takes offers in order, skipping a club or player already used and any sale that would break the user's minimums. */
+const pickOffers = (career: Career, ordered: readonly TransferOffer[]): TransferOffer[] => {
+  const offers: TransferOffer[] = [];
+  let remaining = career;
+  for (const offer of ordered) {
+    if (offers.length === MAX_OFFERS) break;
+    if (isTaken(offers, offer)) continue;
+    if (!staysWithinMinimums(remaining, career.userClubId, offer.playerId)) continue;
+    offers.push(offer);
+    remaining = reassign(remaining, offer.playerId);
+  }
+  return offers;
+};
+
 /**
  * Makes the offers AI clubs put in when the window opens: up to 5 in total, at most one per club
  * and one per player. A club offers for a player of the user's who would walk into its best eleven,
@@ -82,16 +99,11 @@ export const generateOffers = (career: Career): Career => {
   const candidates = mine
     .flatMap((player) => candidatesFor(career, player, clubs))
     .sort((a, b) => a.priority - b.priority || (a.offer.id < b.offer.id ? -1 : 1));
-  const offers: TransferOffer[] = [];
-  let remaining = career;
-  for (const { offer } of candidates) {
-    const taken = offers.some(
-      (o) => o.fromClubId === offer.fromClubId || o.playerId === offer.playerId,
-    );
-    if (taken || !staysWithinMinimums(remaining, career.userClubId, offer.playerId)) continue;
-    offers.push(offer);
-    remaining = reassign(remaining, offer.playerId);
-    if (offers.length === MAX_OFFERS) break;
-  }
-  return { ...career, offers };
+  return {
+    ...career,
+    offers: pickOffers(
+      career,
+      candidates.map((c) => c.offer),
+    ),
+  };
 };
