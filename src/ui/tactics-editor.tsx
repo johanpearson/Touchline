@@ -2,15 +2,15 @@ import type { Mentality, Pressing, TeamTactics, Tempo, Width } from "../engine";
 import type { MessageKey } from "../i18n";
 import { useI18n } from "./i18n-provider";
 
-const TACTIC_LEVELS = {
+export const TACTIC_LEVELS = {
   mentality: ["defensive", "balanced", "attacking"],
   pressing: ["low", "medium", "high"],
   width: ["narrow", "normal", "wide"],
   tempo: ["slow", "normal", "fast"],
 } as const satisfies { [K in keyof TeamTactics]: readonly TeamTactics[K][] };
 
-type TacticName = keyof TeamTactics;
-const TACTIC_NAMES = Object.keys(TACTIC_LEVELS) as TacticName[];
+export type TacticName = keyof TeamTactics;
+export const TACTIC_NAMES = Object.keys(TACTIC_LEVELS) as TacticName[];
 
 export type TacticsEditorProps = {
   tactics: TeamTactics;

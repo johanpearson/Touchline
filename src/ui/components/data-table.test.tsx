@@ -110,6 +110,26 @@ describe("DataTable semantics", () => {
   });
 });
 
+describe("DataTable full header names", () => {
+  const abbreviated: Column<Row>[] = [
+    COLUMNS[0] as Column<Row>,
+    { id: "pts", header: "Pts", fullHeader: "Points", cell: (r) => r.pts, priority: 1 },
+  ];
+
+  it("names an abbreviated column header by its full name for assistive technology", () => {
+    renderTable({ columns: abbreviated });
+    const header = screen.getByRole("columnheader", { name: "Points" });
+    expect(header.textContent).toBe("Pts");
+  });
+
+  it("uses the full name as the label in cards", () => {
+    mockMatchMedia(true);
+    renderTable({ columns: abbreviated });
+    expect(screen.getAllByText("Points").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Pts")).toBeNull();
+  });
+});
+
 describe("DataTable column priorities", () => {
   const headers = () => screen.getAllByRole("columnheader").map((h) => h.textContent);
 

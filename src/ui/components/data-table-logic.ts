@@ -9,6 +9,8 @@ export type Column<Row> = {
   id: string;
   /** Already translated by the caller. */
   header: string;
+  /** The spelled-out name of an abbreviated header: its accessible name, and the label in cards. */
+  fullHeader?: string;
   cell: (row: Row) => ReactNode;
   /** Makes the column sortable. Strings use the locale's collation, numbers compare numerically. */
   sortValue?: (row: Row) => SortValue;

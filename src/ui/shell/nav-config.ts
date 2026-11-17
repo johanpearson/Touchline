@@ -5,6 +5,7 @@ import {
   Save,
   Settings,
   Shield,
+  SlidersHorizontal,
   Trophy,
   Users,
 } from "lucide-react";
@@ -14,7 +15,15 @@ import type { Route } from "../routes";
 /** A route a link can point to (everything but the not-found placeholder). */
 export type LinkRoute = Exclude<Route, { name: "not-found" }>;
 
-export type NavId = "hub" | "squad" | "match" | "league" | "club" | "saves" | "settings";
+export type NavId =
+  | "hub"
+  | "squad"
+  | "tactics"
+  | "match"
+  | "league"
+  | "club"
+  | "saves"
+  | "settings";
 
 export type NavItem = {
   id: NavId;
@@ -38,6 +47,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: Users,
     route: () => ({ name: "squad" }),
     phone: "tab",
+  },
+  {
+    id: "tactics",
+    labelKey: "nav.tactics",
+    icon: SlidersHorizontal,
+    route: () => ({ name: "tactics" }),
+    phone: "more",
   },
   {
     id: "match",

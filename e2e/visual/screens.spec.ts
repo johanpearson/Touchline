@@ -218,6 +218,97 @@ visualScreen({
   },
 });
 
+// The tactics and lineup screen (#262): 4-4-2 on the pitch, 3-5-2, and the player picker open.
+// The pitch is shown on every width (phones default to the list), so the stage is in the snapshot.
+const openTacticsPitch = async (page: Page) => {
+  await startCareerAtHub(page);
+  // By hash: the Tactics link sits in the rail, the sidebar or the More sheet depending on width.
+  await page.evaluate(() => {
+    window.location.hash = "#/tactics";
+  });
+  await page.getByTestId("tactics-screen").waitFor();
+  await page.getByTestId("lineup-view").getByRole("radio").first().click();
+  await page.getByTestId("lineup-pitch").waitFor();
+};
+
+visualScreen({ name: "tactics-442", full: true, route: "#/new", state: openTacticsPitch });
+
+visualScreen({
+  name: "tactics-352",
+  full: true,
+  route: "#/new",
+  state: async (page) => {
+    await openTacticsPitch(page);
+    await page.getByTestId("formation").getByRole("radio", { name: "3-5-2", exact: true }).click();
+    await page.getByTestId("pitch-slot-10").waitFor();
+  },
+});
+
+visualScreen({
+  name: "tactics-picker",
+  full: true,
+  route: "#/new",
+  state: async (page) => {
+    await openTacticsPitch(page);
+    await page.getByTestId("pitch-slot-1").click();
+    await page.getByTestId("player-picker").waitFor();
+  },
+});
+
+// The league screen (#263): table at the start of the season, mid season and after 25 matchdays
+// (the last round is the current one), and the fixtures of those rounds.
+const playMatchdays = async (page: Page, count: number) => {
+  for (let i = 0; i < count; i++) {
+    await page.getByTestId("quick-sim").click();
+    await page.getByTestId("results-continue").click();
+    await page.getByTestId("career-hub").waitFor();
+  }
+};
+
+const openLeague = async (page: Page, tab: "table" | "fixtures") => {
+  await page.evaluate(() => {
+    window.location.hash = "#/league";
+  });
+  await page.getByTestId("screen-league").waitFor();
+  await page.getByTestId(`tab-${tab}`).click();
+  await page.getByTestId(tab === "table" ? "league-table" : "fixtures-view").waitFor();
+};
+
+const leagueAfter = (matchdays: number, tab: "table" | "fixtures") => async (page: Page) => {
+  await startCareerAtHub(page);
+  await playMatchdays(page, matchdays);
+  await openLeague(page, tab);
+};
+
+visualScreen({
+  name: "league-start-of-season",
+  full: true,
+  route: "#/new",
+  state: leagueAfter(0, "table"),
+});
+visualScreen({
+  name: "league-mid-season",
+  full: true,
+  route: "#/new",
+  state: leagueAfter(12, "table"),
+});
+visualScreen({
+  name: "league-last-round",
+  full: true,
+  route: "#/new",
+  state: leagueAfter(25, "table"),
+});
+visualScreen({
+  name: "league-fixtures-start",
+  route: "#/new",
+  state: leagueAfter(0, "fixtures"),
+});
+visualScreen({
+  name: "league-fixtures-last-round",
+  route: "#/new",
+  state: leagueAfter(25, "fixtures"),
+});
+
 // The saves screen (#270): autosave, two used manual slots and one damaged slot.
 visualScreen({
   name: "saves-slots-and-corrupt",

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Career } from "../game";
 import { createMemoryDensityStore, createMemoryThemeStore } from "../platform";
 import type { DensityStore, FileTransfer, LocaleStore, SaveStore, ThemeStore } from "../shared";
@@ -19,6 +20,7 @@ import { AppShell } from "./shell/app-shell";
 import { BareShell } from "./shell/bare-shell";
 import { SquadScreen } from "./squad-screen";
 import { StartScreen } from "./start/start-screen";
+import { TacticsScreen } from "./tactics/tactics-screen";
 import { DensityProvider } from "./theme/density-provider";
 import { ThemeProvider } from "./theme/theme-provider";
 import { Toasts } from "./toasts";
@@ -35,26 +37,27 @@ const BARE_ROUTES: readonly Route["name"][] = ["new", "new-club", "saves", "sett
 type ScreenProps = RendererProp & { initialSeed: number };
 type CareerScreenProps = RendererProp & { career: Career; route: Route };
 
-function CareerScreen({ career, route, createRenderer, tickMs }: CareerScreenProps) {
-  switch (route.name) {
-    case "league":
-      return <LeagueScreen />;
-    case "club":
-      return <ClubView career={career} clubId={route.clubId} />;
-    case "match":
-      return <MatchFlowScreen createRenderer={createRenderer} tickMs={tickMs} />;
-    case "squad":
-      return <SquadScreen career={career} />;
-    case "results":
-      return <MatchdayResultsScreen />;
-    case "season-end":
-      return <SeasonEndScreen />;
-    case "new":
-    case "new-club":
-      return <Redirect to={{ name: "home" }} />;
-    default:
-      return <CareerHubScreen />;
-  }
+type ScreenBuilder = (props: CareerScreenProps) => ReactNode;
+
+/** The screen of each career route; routes not listed (home) show the hub. */
+const CAREER_SCREENS: Partial<Record<Route["name"], ScreenBuilder>> = {
+  league: () => <LeagueScreen />,
+  club: ({ career, route }) =>
+    route.name === "club" ? <ClubView career={career} clubId={route.clubId} /> : null,
+  match: ({ createRenderer, tickMs }) => (
+    <MatchFlowScreen createRenderer={createRenderer} tickMs={tickMs} />
+  ),
+  squad: ({ career }) => <SquadScreen career={career} />,
+  tactics: ({ career }) => <TacticsScreen career={career} />,
+  results: () => <MatchdayResultsScreen />,
+  "season-end": () => <SeasonEndScreen />,
+  new: () => <Redirect to={{ name: "home" }} />,
+  "new-club": () => <Redirect to={{ name: "home" }} />,
+};
+
+function CareerScreen(props: CareerScreenProps) {
+  const build = CAREER_SCREENS[props.route.name];
+  return build ? build(props) : <CareerHubScreen />;
 }
 
 function Screen({ createRenderer, tickMs, initialSeed }: ScreenProps) {
