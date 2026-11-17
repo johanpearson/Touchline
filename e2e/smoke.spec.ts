@@ -93,7 +93,7 @@ test.describe("match screen", () => {
     await startMatch(page);
 
     await page.getByTestId("speed-4").click();
-    await expect(page.getByTestId("speed-4")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("speed-4")).toHaveAttribute("aria-checked", "true");
     await page.getByTestId("pause-toggle").click();
     const frozen = await page.getByTestId("clock").textContent();
     await page.waitForTimeout(500);

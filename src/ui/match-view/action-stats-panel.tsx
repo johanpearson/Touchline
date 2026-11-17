@@ -16,49 +16,69 @@ export type ActionStatsPanelProps = {
   stats: ActionStats;
   /** Ids of the players of each side, to total their key passes. */
   playerIds: PerSide<readonly string[]>;
+  /** The kit colours worn, for the bars. Without them the bars use the text colour. */
+  colours?: PerSide<string>;
 };
 
 const keyPassesOf = (stats: ActionStats, ids: readonly string[]): number =>
   ids.reduce((sum, id) => sum + (stats.players[id]?.keyPasses ?? 0), 0);
 
+/** The share of the row that belongs to the home side, for the bars. */
+const homeShare = (values: PerSide<number>): number => {
+  const total = values.home + values.away;
+  return total > 0 ? values.home / total : 0.5;
+};
+
 /** The action engine's stats: possession, shots, on target, xG, corners, fouls, passes, completion, key passes. */
-export function ActionStatsPanel({ stats, playerIds }: ActionStatsPanelProps) {
+export function ActionStatsPanel({ stats, playerIds, colours }: ActionStatsPanelProps) {
   const { t, formatPercent, formatNumber } = useI18n();
   const { teams } = stats;
-  const pair = (values: PerSide<number>, format: (n: number) => string): PerSide<string> => ({
-    home: format(values.home),
-    away: format(values.away),
-  });
   const count = (n: number) => String(n);
-  const rows: { id: RowId; values: PerSide<string> }[] = [
-    { id: "possession", values: pair(teams.possession, formatPercent) },
-    { id: "shots", values: pair(teams.shots, count) },
-    { id: "shotsOnTarget", values: pair(teams.shotsOnTarget, count) },
-    { id: "xg", values: pair(teams.xg, (n) => formatNumber(n, 2)) },
-    { id: "corners", values: pair(teams.corners, count) },
-    { id: "fouls", values: pair(teams.fouls, count) },
-    { id: "passes", values: pair(teams.passes, count) },
-    { id: "passCompletion", values: pair(teams.passCompletion, formatPercent) },
-    {
-      id: "keyPasses",
-      values: pair(
-        {
-          home: keyPassesOf(stats, playerIds.home),
-          away: keyPassesOf(stats, playerIds.away),
-        },
-        count,
-      ),
-    },
+  const keyPasses = {
+    home: keyPassesOf(stats, playerIds.home),
+    away: keyPassesOf(stats, playerIds.away),
+  };
+  const rows: { id: RowId; raw: PerSide<number>; format: (n: number) => string }[] = [
+    { id: "possession", raw: teams.possession, format: formatPercent },
+    { id: "shots", raw: teams.shots, format: count },
+    { id: "shotsOnTarget", raw: teams.shotsOnTarget, format: count },
+    { id: "xg", raw: teams.xg, format: (n) => formatNumber(n, 2) },
+    { id: "corners", raw: teams.corners, format: count },
+    { id: "fouls", raw: teams.fouls, format: count },
+    { id: "passes", raw: teams.passes, format: count },
+    { id: "passCompletion", raw: teams.passCompletion, format: formatPercent },
+    { id: "keyPasses", raw: keyPasses, format: count },
   ];
   return (
-    <section className="panel" aria-labelledby="stats-title" data-testid="stats-panel">
-      <h2 id="stats-title">{t("stats.title")}</h2>
-      <dl className="stats">
-        {rows.map((row) => (
-          <div key={row.id} className="stats-row" data-testid={`stat-${row.id}`}>
-            <dd data-side="home">{row.values.home}</dd>
-            <dt>{t(`stats.label.${row.id}`)}</dt>
-            <dd data-side="away">{row.values.away}</dd>
+    <section aria-labelledby="stats-title" data-testid="stats-panel">
+      <h2 id="stats-title" className="m-0 mb-3 font-heading text-lg font-semibold">
+        {t("stats.title")}
+      </h2>
+      <dl className="m-0 flex flex-col gap-3">
+        {rows.map(({ id, raw, format }) => (
+          <div key={id} data-testid={`stat-${id}`} className="min-w-0">
+            <div className="grid grid-cols-[3.5rem_minmax(0,1fr)_3.5rem] items-baseline gap-2 text-[13px] tabular-nums">
+              <dd data-side="home" className="m-0 text-left text-base font-semibold text-text">
+                {format(raw.home)}
+              </dd>
+              <dt className="text-center text-muted">{t(`stats.label.${id}`)}</dt>
+              <dd data-side="away" className="m-0 text-right text-base font-semibold text-text">
+                {format(raw.away)}
+              </dd>
+            </div>
+            <div
+              aria-hidden="true"
+              className="mt-1 flex h-1.5 overflow-hidden rounded-full bg-track"
+            >
+              <span
+                className="h-full bg-soft"
+                style={{
+                  width: `${homeShare(raw) * 100}%`,
+                  background: colours?.home,
+                }}
+              />
+              <span className="h-full flex-1 bg-muted" style={{ background: colours?.away }} />
+            </div>
           </div>
         ))}
       </dl>

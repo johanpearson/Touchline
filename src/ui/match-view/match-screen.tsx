@@ -1,6 +1,13 @@
 import { useMemo, useRef, useState } from "react";
 import { generateActionCommentary } from "../../commentary";
-import type { ActionMatchState, EngineVersion, MatchInput, PerSide, Side } from "../../engine";
+import type {
+  ActionEvent,
+  ActionMatchState,
+  EngineVersion,
+  MatchInput,
+  PerSide,
+  Side,
+} from "../../engine";
 import {
   computeActionStats,
   createActionMatch,
@@ -14,6 +21,7 @@ import { useSuspendPaletteShortcut } from "../palette/palette-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import type { AppliedHalfTimePlan, HalfTimeEditor } from "./half-time-panel";
+import { LineupsPanel } from "./lineups-panel";
 import { MatchLayout } from "./match-layout";
 import { PlayerRatings } from "./player-ratings";
 import { buildRatingRows } from "./ratings-table";
@@ -50,6 +58,8 @@ export type MatchScreenProps = {
    * engine version and, if the user made changes at half-time, the report of minutes played.
    */
   onContinue?: (finished: FinishedMatch, report?: MatchReport) => void;
+  /** When given, the scoreboard has a back link to the hub that asks first and then calls this. */
+  onLeave?: () => void;
 };
 
 /**
@@ -68,6 +78,7 @@ export function MatchScreen({
   tickMs,
   halfTimeEditor,
   onContinue,
+  onLeave,
 }: MatchScreenProps) {
   const { locale } = useI18n();
   const [match] = useState(() => createActionMatch(input, seed));
@@ -111,23 +122,7 @@ export function MatchScreen({
   // Starters plus everyone brought on by an applied change; read once the match is over.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `match.changes` is mutated in place
   const played = useMemo(() => playedIds(input, match.changes), [input, state.period]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  const ratingRows = useMemo(
-    () =>
-      fullTime
-        ? buildRatingRows({
-            players: computeActionStats(events, Number.POSITIVE_INFINITY).players,
-            ratings: playerRatings(
-              events,
-              [...played.home, ...played.away].map((id) => ({ id })),
-            ),
-            played,
-            names: players,
-            userSide,
-          })
-        : [],
-    [fullTime, played, players, userSide],
-  );
+  const ratingRows = useFinalRatings({ events, fullTime, played, players, userSide });
   const shown = useMemo(() => terrainEvents(zoneEvents, state.period), [zoneEvents, state.period]);
   const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
@@ -151,7 +146,20 @@ export function MatchScreen({
       createRenderer={createRenderer}
       pitch={{ events, createRenderer: createPitchRenderer }}
       halfTimeEditor={halfTimeEditor}
-      statsPanel={<ActionStatsPanel stats={actionStats} playerIds={played} />}
+      statsPanel={<ActionStatsPanel stats={actionStats} playerIds={played} colours={colours} />}
+      lineupsPanel={
+        <LineupsPanel
+          events={events}
+          eventCount={eventCount}
+          matchTime={matchTime}
+          played={played}
+          names={players}
+          teamNames={names}
+          colours={colours}
+          userSide={userSide}
+        />
+      }
+      onLeave={onLeave}
       fullTimePanel={
         <PlayerRatings
           rows={ratingRows}
@@ -189,3 +197,31 @@ const playedIds = (
   }
   return { home: [...played.home], away: [...played.away] };
 };
+
+type FinalRatingsInput = {
+  events: readonly ActionEvent[];
+  fullTime: boolean;
+  played: PerSide<string[]>;
+  players: Readonly<Record<string, string>>;
+  userSide: Side;
+};
+
+/** The full-time rating rows; empty until the match is over. */
+const useFinalRatings = ({ events, fullTime, played, players, userSide }: FinalRatingsInput) =>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place and only read at full time
+  useMemo(
+    () =>
+      fullTime
+        ? buildRatingRows({
+            players: computeActionStats(events, Number.POSITIVE_INFINITY).players,
+            ratings: playerRatings(
+              events,
+              [...played.home, ...played.away].map((id) => ({ id })),
+            ),
+            played,
+            names: players,
+            userSide,
+          })
+        : [],
+    [fullTime, played, players, userSide],
+  );

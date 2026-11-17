@@ -1,18 +1,16 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CommentaryLine } from "../../commentary";
 import type { ZoneEvent } from "../../engine";
 import { createMemoryLocaleStore } from "../../platform";
 import { I18nProvider } from "../i18n-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
+import { MatchControls, type MatchControlsProps } from "./match-controls";
 import { MatchFeed } from "./match-feed";
 import { MomentumChart } from "./momentum-chart";
 import { PlayerRatings } from "./player-ratings";
 import { Scoreboard } from "./scoreboard";
-import { SpeedControls } from "./speed-controls";
 
 const inLocale = (ui: ReactNode, locale = "en") =>
   render(<I18nProvider store={createMemoryLocaleStore(locale)}>{ui}</I18nProvider>);
@@ -50,10 +48,17 @@ describe("Scoreboard", () => {
     expect(screen.getByTestId("clock").textContent).toBe("47’");
   });
 
-  it("colours each team name with its team colour", () => {
+  it("shows the worn kit colour of each team as its side bar", () => {
     inLocale(<Scoreboard {...props} />);
-    expect(screen.getByTestId("home-name").style.borderColor).toBe("rgb(255, 0, 0)");
-    expect(screen.getByTestId("away-name").style.borderColor).toBe("rgb(0, 0, 255)");
+    expect(screen.getByTestId("home-bar").style.background).toBe("rgb(255, 0, 0)");
+    expect(screen.getByTestId("away-bar").style.background).toBe("rgb(0, 0, 255)");
+  });
+
+  it("gives club names a title for when they are truncated, and never the score", () => {
+    inLocale(<Scoreboard {...props} />);
+    expect(screen.getByTestId("home-name").getAttribute("title")).toBe("Kvarnby");
+    expect(screen.getByTestId("score").getAttribute("title")).toBeNull();
+    expect(screen.getByTestId("score").className).toContain("whitespace-nowrap");
   });
 
   it("names the period in Swedish", () => {
@@ -127,7 +132,7 @@ describe("MatchFeed", () => {
     inLocale(<MatchFeed lines={lines} events={[]} matchTime={600} {...colours} />);
     const dots = screen
       .getAllByTestId("feed-line")
-      .map((li) => (li.querySelector(".dot") as HTMLElement).style.background);
+      .map((li) => (li.querySelector("span[aria-hidden]") as HTMLElement).style.background);
     expect(dots).toEqual(["currentcolor", "rgb(0, 0, 255)", "rgb(255, 0, 0)"]);
   });
 
@@ -138,8 +143,8 @@ describe("MatchFeed", () => {
     ];
     inLocale(<MatchFeed lines={lines} events={[]} matchTime={600} {...colours} />);
     const [big, plain] = screen.getAllByTestId("feed-line");
-    expect((big as HTMLElement).style.borderLeft).toContain("rgb(0, 0, 255)");
-    expect((plain as HTMLElement).style.borderLeft).toBe("");
+    expect((big as HTMLElement).style.borderLeftColor).toBe("rgb(0, 0, 255)");
+    expect((plain as HTMLElement).style.borderLeftColor).toBe("");
   });
 
   it("shows new lines when the line list grows", () => {
@@ -155,11 +160,25 @@ describe("MatchFeed", () => {
   });
 
   it("animates new lines in only when the user has not asked for reduced motion", () => {
-    const css = readFileSync(join(process.cwd(), "src/ui/match-view/match-screen.css"), "utf8");
-    const block = css.match(/@media \(prefers-reduced-motion: no-preference\) \{([\s\S]*?)\n\}/);
-    expect(block?.[1]).toContain("@keyframes feed-in");
-    expect(block?.[1]).toContain(".feed li");
-    expect(css.replace(block?.[0] ?? "", "")).not.toContain("animation");
+    inLocale(<MatchFeed lines={[line(60, "x")]} events={[]} matchTime={600} {...colours} />);
+    const classes = screen.getByTestId("feed-line").className.split(" ");
+    expect(classes.filter((c) => c.includes("animate"))).toEqual(
+      classes.filter((c) => c.startsWith("motion-safe:animate")),
+    );
+    expect(classes.some((c) => c.startsWith("motion-safe:animate"))).toBe(true);
+  });
+
+  it("announces only the newest goal or chance in a polite live region, not the whole feed", () => {
+    const lines = [
+      line(60, "a corner", { kind: "corner" }),
+      line(120, "a big chance", { kind: "chance" }),
+      line(180, "a throw-in", { kind: "turnover" }),
+    ];
+    inLocale(<MatchFeed lines={lines} events={[]} matchTime={600} {...colours} />);
+    const live = screen.getByTestId("feed-live");
+    expect(live.getAttribute("aria-live")).toBe("polite");
+    expect(live.textContent).toBe("a big chance");
+    expect(screen.getByTestId("feed").getAttribute("aria-live")).toBeNull();
   });
 
   it("prefixes each line with its minute", () => {
@@ -168,45 +187,77 @@ describe("MatchFeed", () => {
   });
 });
 
-describe("SpeedControls", () => {
+describe("MatchControls", () => {
   afterEach(cleanup);
+  const controls = (over: Partial<MatchControlsProps> = {}, locale = "en") =>
+    inLocale(
+      <MatchControls
+        paused={false}
+        speed={60}
+        view="momentum"
+        showChain
+        canMakeChanges={false}
+        onPausedChange={() => {}}
+        onSpeedChange={() => {}}
+        onViewChange={() => {}}
+        onChainChange={() => {}}
+        onMakeChanges={() => {}}
+        {...over}
+      />,
+      locale,
+    );
 
   it("toggles pause and play", () => {
     const calls: boolean[] = [];
-    inLocale(
-      <SpeedControls
-        paused={false}
-        speed={60}
-        onPausedChange={(p) => calls.push(p)}
-        onSpeedChange={() => {}}
-      />,
-    );
+    controls({ onPausedChange: (p) => calls.push(p) });
     expect(screen.getByTestId("pause-toggle").textContent).toBe("Pause");
     fireEvent.click(screen.getByTestId("pause-toggle"));
     expect(calls).toEqual([true]);
   });
 
   it("offers play while paused", () => {
-    inLocale(
-      <SpeedControls paused speed={60} onPausedChange={() => {}} onSpeedChange={() => {}} />,
-      "sv",
-    );
+    controls({ paused: true }, "sv");
     expect(screen.getByTestId("pause-toggle").textContent).toBe("Spela");
   });
 
   it("marks the current speed and reports a chosen one", () => {
     const speeds: number[] = [];
-    inLocale(
-      <SpeedControls
-        paused={false}
-        speed={60}
-        onPausedChange={() => {}}
-        onSpeedChange={(s) => speeds.push(s)}
-      />,
-    );
-    expect(screen.getByTestId("speed-2").getAttribute("aria-pressed")).toBe("true");
+    controls({ onSpeedChange: (s) => speeds.push(s) });
+    expect(screen.getByTestId("speed-2").getAttribute("aria-checked")).toBe("true");
     fireEvent.click(screen.getByTestId("speed-4"));
     expect(speeds).toEqual([240]);
+  });
+
+  it("switches the view and shows the passing chain toggle only on the 2D pitch", () => {
+    const views: string[] = [];
+    controls({ onViewChange: (v) => views.push(v) });
+    expect(screen.getByTestId("view-momentum").getAttribute("aria-checked")).toBe("true");
+    expect(screen.queryByTestId("chain-toggle")).toBeNull();
+    fireEvent.click(screen.getByTestId("view-pitch"));
+    expect(views).toEqual(["pitch"]);
+    cleanup();
+    controls({ view: "pitch" });
+    expect(screen.getByTestId("chain-toggle").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("explains why Make changes is unavailable and does nothing when it is clicked", () => {
+    const onMakeChanges = vi.fn();
+    controls({ onMakeChanges });
+    const button = screen.getByTestId("make-changes");
+    expect(button.getAttribute("aria-disabled")).toBe("true");
+    const hint = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+    expect(hint?.textContent).toBe("Changes are possible at half-time.");
+    fireEvent.click(button);
+    expect(onMakeChanges).not.toHaveBeenCalled();
+  });
+
+  it("makes Make changes available at half-time", () => {
+    const onMakeChanges = vi.fn();
+    controls({ canMakeChanges: true, onMakeChanges });
+    const button = screen.getByTestId("make-changes");
+    expect(button.getAttribute("aria-disabled")).toBeNull();
+    fireEvent.click(button);
+    expect(onMakeChanges).toHaveBeenCalledTimes(1);
   });
 });
 

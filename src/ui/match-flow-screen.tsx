@@ -62,6 +62,9 @@ export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
       tickMs={tickMs}
       halfTimeEditor={editor}
       onContinue={finish}
+      onLeave={() => {
+        window.location.hash = hrefFor({ name: "home" });
+      }}
     />
   );
 }

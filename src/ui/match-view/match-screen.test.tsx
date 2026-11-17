@@ -157,7 +157,8 @@ describe("MatchScreen", () => {
 
     it("labels the toggle in Swedish", () => {
       mountAction({}, "sv");
-      expect(screen.getByTestId("view-pitch").textContent).toBe("Plan");
+      expect(screen.getByTestId("view-pitch").textContent).toBe("2D");
+      expect(screen.getByTestId("view-momentum").textContent).toBe("Terräng");
     });
 
     it("offers a passing chain toggle in the pitch view only, in both languages", () => {
@@ -338,8 +339,13 @@ describe("MatchScreen", () => {
           />
         </I18nProvider>,
       );
-      expect(screen.getByTestId("away-name").style.borderColor).toBe("rgb(17, 17, 17)");
-      expect(screen.getByTestId("home-name").style.borderColor).toBe("rgb(214, 40, 40)");
+      expect(screen.getByTestId("away-bar").style.background).toBe("rgb(17, 17, 17)");
+      expect(screen.getByTestId("home-bar").style.background).toBe("rgb(214, 40, 40)");
+      const [homeBar, awayBar] = Array.from(
+        screen.getByTestId("stat-shots").querySelectorAll<HTMLElement>("span[style]"),
+      );
+      expect(homeBar?.style.background).toBe("rgb(214, 40, 40)");
+      expect(awayBar?.style.background).toBe("rgb(17, 17, 17)");
       expect(terrain.mock.calls[0]?.[1]).toMatchObject({ awayColour: "#111111" });
       fireEvent.click(screen.getByTestId("view-pitch"));
       expect(pitch.mock.calls[0]?.[1]).toMatchObject({ awayColour: "#111111" });

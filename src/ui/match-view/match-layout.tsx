@@ -1,16 +1,20 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useCallback, useRef, useState } from "react";
 import type { CommentaryLine } from "../../commentary";
 import type { ActionEvent, ActionMatchState, ActionStats, PerSide, ZoneEvent } from "../../engine";
+import { Button } from "../components/button";
 import { useI18n } from "../i18n-provider";
-import { ClassicPitch } from "./classic-pitch";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import { type AppliedHalfTimePlan, type HalfTimeEditor, HalfTimePanel } from "./half-time-panel";
+import { LeaveMatchButton } from "./leave-match-button";
+import { MatchControls } from "./match-controls";
 import { MatchFeed } from "./match-feed";
+import { MatchSidePanel } from "./match-side-panel";
+import { MatchStage } from "./match-stage";
 import { MomentumChart } from "./momentum-chart";
-import { MomentumTerrain } from "./momentum-terrain";
 import { Scoreboard } from "./scoreboard";
-import { SpeedControls } from "./speed-controls";
+import { attackingSide, describeStage } from "./stage-summary";
 import type { TerrainRendererFactory } from "./terrain-renderer";
+import { usePauseShortcut } from "./use-pause-shortcut";
 import { useViewChoice } from "./use-view-choice";
 import "./match-screen.css";
 
@@ -42,10 +46,14 @@ export type MatchLayoutProps = {
   onResume: (plan?: AppliedHalfTimePlan) => void;
   /** The in-match stats panel, hidden at half-time (the half-time panel has its own). */
   statsPanel: ReactNode;
+  /** Both elevens with live ratings, in a dialog or tab. */
+  lineupsPanel: ReactNode;
   /** Shown at full time, above the "Continue" button (the player ratings). */
   fullTimePanel?: ReactNode;
   /** When given, a "Continue" button appears at full time. */
   onContinue?: () => void;
+  /** When given, a back link to the hub appears; it asks before calling this. */
+  onLeave?: () => void;
 };
 
 /** The panels of the match screen; `MatchScreen` feeds it. */
@@ -66,83 +74,75 @@ export function MatchLayout({
   halfTimeEditor,
   onResume,
   onContinue,
+  onLeave,
   statsPanel,
+  lineupsPanel,
   fullTimePanel,
 }: MatchLayoutProps) {
   const { t } = useI18n();
   const halfTime = period === "halfTime";
-  const [chosenView, setView] = useViewChoice();
-  const view = chosenView;
+  const [view, setView] = useViewChoice();
   const [showChain, setShowChain] = useState(true);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const { paused, setPaused } = playback;
+  const playing = period === "firstHalf" || period === "secondHalf";
+  usePauseShortcut(
+    playing,
+    useCallback(() => setPaused(!paused), [paused, setPaused]),
+  );
+  const makeChanges = () => {
+    const panel = mainRef.current?.querySelector<HTMLElement>('[data-testid="half-time"]');
+    panel?.scrollIntoView?.({ block: "nearest" });
+    panel?.querySelector<HTMLElement>("button, select")?.focus();
+  };
+  const stageLabel = `${view === "pitch" ? t("match.pitch") : t("match.terrain")}. ${describeStage({
+    t,
+    names,
+    score,
+    attacking: attackingSide(events, matchTime),
+  })}`;
   return (
-    <div className="match-screen" data-testid="match-screen">
-      <Scoreboard
-        homeName={names.home}
-        awayName={names.away}
-        homeColour={colours.home}
-        awayColour={colours.away}
-        score={score}
-        period={period}
-        matchTime={matchTime}
-        events={events}
-      />
-      <div className="match-main">
-        {pitch && (
-          <fieldset className="view-toggle" data-testid="view-toggle">
-            <legend>{t("match.view.label")}</legend>
-            {(["momentum", "pitch"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                data-testid={`view-${option}`}
-                aria-pressed={view === option}
-                onClick={() => setView(option)}
-              >
-                {t(option === "pitch" ? "match.view.pitch" : "match.view.momentum")}
-              </button>
-            ))}
-          </fieldset>
-        )}
-        {pitch && view === "pitch" && (
-          <button
-            type="button"
-            className="chain-toggle"
-            data-testid="chain-toggle"
-            aria-pressed={showChain}
-            onClick={() => setShowChain(!showChain)}
-          >
-            {t("match.chain.toggle")}
-          </button>
-        )}
-        {pitch && view === "pitch" ? (
-          <ClassicPitch
-            events={pitch.events}
-            matchTime={matchTime}
-            score={score}
-            homeColour={colours.home}
-            awayColour={colours.away}
-            showChain={showChain}
-            setPieceLabels={{
-              kickoff: t("match.setPiece.kickoff"),
-              throwIn: t("match.setPiece.throwIn"),
-              goalKick: t("match.setPiece.goalKick"),
-              corner: t("match.setPiece.corner"),
-              freeKick: t("match.setPiece.freeKick"),
-              penalty: t("match.setPiece.penalty"),
-            }}
-            createRenderer={pitch.createRenderer}
-            label={t("match.pitch")}
-          />
-        ) : (
-          <MomentumTerrain
-            events={terrainEvents}
-            matchTime={matchTime}
-            homeColour={colours.home}
-            awayColour={colours.away}
-            createRenderer={createRenderer}
-            label={t("match.terrain")}
-          />
-        )}
+    <div
+      className="match-screen mx-auto grid max-w-[1400px] min-w-0 gap-4 min-[1100px]:grid-cols-[minmax(0,1fr)_minmax(320px,380px)]"
+      data-testid="match-screen"
+    >
+      <div className="flex min-w-0 flex-col gap-2 min-[1100px]:col-span-full">
+        {onLeave && <LeaveMatchButton onLeave={onLeave} />}
+        <Scoreboard
+          homeName={names.home}
+          awayName={names.away}
+          homeColour={colours.home}
+          awayColour={colours.away}
+          score={score}
+          period={period}
+          matchTime={matchTime}
+          events={events}
+        />
+      </div>
+      <div className="match-main flex min-w-0 flex-col gap-3" ref={mainRef}>
+        <MatchStage
+          view={view}
+          label={stageLabel}
+          colours={colours}
+          score={score}
+          matchTime={matchTime}
+          terrainEvents={terrainEvents}
+          createRenderer={createRenderer}
+          pitch={pitch}
+          showChain={showChain}
+        />
+        <MatchControls
+          paused={paused}
+          speed={playback.speed}
+          view={view}
+          showChain={showChain}
+          canMakeChanges={halfTime && Boolean(halfTimeEditor)}
+          onPausedChange={setPaused}
+          onSpeedChange={playback.setSpeed}
+          onViewChange={setView}
+          onChainChange={setShowChain}
+          onMakeChanges={makeChanges}
+        />
         {halfTime && (
           <HalfTimePanel
             homeName={names.home}
@@ -156,33 +156,37 @@ export function MatchLayout({
         )}
         {period === "fullTime" && fullTimePanel}
         {period === "fullTime" && onContinue && (
-          <button type="button" data-testid="continue" onClick={onContinue}>
+          <Button
+            variant="primary"
+            size="lg"
+            className="self-start"
+            data-testid="continue"
+            onClick={onContinue}
+          >
             {t("match.continue")}
-          </button>
+          </Button>
         )}
-        <SpeedControls
-          paused={playback.paused}
-          speed={playback.speed}
-          onPausedChange={playback.setPaused}
-          onSpeedChange={playback.setSpeed}
-        />
-      </div>
-      <aside className="match-side">
-        {!halfTime && statsPanel}
         <MomentumChart
           events={events}
           matchTime={matchTime}
           homeColour={colours.home}
           awayColour={colours.away}
+          names={names}
         />
-        <MatchFeed
-          lines={lines}
-          events={events}
-          matchTime={matchTime}
-          homeColour={colours.home}
-          awayColour={colours.away}
-        />
-      </aside>
+      </div>
+      <MatchSidePanel
+        stats={halfTime ? null : statsPanel}
+        feed={
+          <MatchFeed
+            lines={lines}
+            events={events}
+            matchTime={matchTime}
+            homeColour={colours.home}
+            awayColour={colours.away}
+          />
+        }
+        lineups={lineupsPanel}
+      />
     </div>
   );
 }
