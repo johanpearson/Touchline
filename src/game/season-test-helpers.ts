@@ -1,6 +1,8 @@
 import { inject } from "vitest";
 import type { Career } from "./career";
 import { aCareer } from "./career-builders";
+import { finishSeason } from "./finish-season";
+import { passiveUserOffSeason } from "./passive-user-test-helpers";
 import { extendTrail, type SeasonTrail } from "./season-trail";
 import { startNextSeason } from "./start-next-season";
 
@@ -59,9 +61,16 @@ export const playSeasons = (start: Career, seasons: number, extraMatchdays = MAT
 const playSeasonsUnmemoised = (start: Career, seasons: number, extraMatchdays: number): Career => {
   let career = start;
   for (let s = 1; s < seasons; s++) {
-    const next = startNextSeason(playMatchdays(career, MATCHDAYS));
-    if (!next.ok) throw new Error(next.error);
-    career = next.career;
+    career = rolledOver(playMatchdays(career, MATCHDAYS));
   }
   return playMatchdays(career, extraMatchdays);
+};
+
+/** Finishes a completed season and starts the next one, the user passive (no market use). Test helper. */
+export const rolledOver = (career: Career): Career => {
+  const finished = finishSeason(career);
+  if (!finished.ok) throw new Error(finished.error);
+  const next = startNextSeason(passiveUserOffSeason(finished.career));
+  if (!next.ok) throw new Error(next.error);
+  return next.career;
 };

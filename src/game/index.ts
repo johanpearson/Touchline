@@ -46,6 +46,8 @@ export {
 export type { SetLineupResult } from "./edit-squad-plan";
 export { autoPickUserLineup, setLineup, setTactics } from "./edit-squad-plan";
 export { expireContracts } from "./expire-contracts";
+export type { FinishSeasonError, FinishSeasonResult } from "./finish-season";
+export { finishSeason, isSeasonFinished } from "./finish-season";
 export type { Formation } from "./formation";
 export { FORMATION_SHAPE, FORMATIONS } from "./formation";
 export { formationShape } from "./formation-shape";
@@ -179,7 +181,7 @@ export { MAX_SQUAD_SIZE, MIN_PER_POSITION, MIN_SQUAD_SIZE, squadLimits } from ".
 export type { SquadPlan } from "./squad-plan";
 export { initialConditions, initialSquadPlan } from "./squad-plan";
 export type { PlayerPosition, SquadPlayer } from "./squad-player";
-export type { NextSeasonResult } from "./start-next-season";
+export type { NextSeasonError, NextSeasonResult } from "./start-next-season";
 export { startNextSeason } from "./start-next-season";
 export type { SummaryOptions } from "./summarise-season";
 export { summariseSeason } from "./summarise-season";
