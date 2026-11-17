@@ -23,7 +23,7 @@ function RowBody({ editor, id, mark }: { editor: HalfTimeEditor; id: string; mar
         <span className="font-semibold">{player?.name}</span>{" "}
         <span className="text-soft">{player ? t(`position.short.${player.position}`) : ""}</span>
         {mark ? (
-          <span className="ml-2 text-sm font-semibold text-accent">
+          <span className="ml-2 rounded-pill border border-accent px-2 text-sm font-semibold text-text">
             {t(mark === "off" ? "halfTime.mark.off" : "halfTime.mark.on")}
           </span>
         ) : null}
@@ -60,7 +60,7 @@ export function SquadSection({ editor, title, ids, marks, pickable, onPick }: Sq
     const body = <RowBody editor={editor} id={id} mark={marks[id] ?? null} />;
     if (!pickable(id)) {
       return (
-        <div className={cn(ROW, marks[id] && "opacity-70")} data-testid={`half-time-row-${id}`}>
+        <div className={ROW} data-testid={`half-time-row-${id}`}>
           {body}
         </div>
       );

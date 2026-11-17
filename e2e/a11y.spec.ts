@@ -34,8 +34,18 @@ for (const state of SCREEN_STATES) {
           await state.state?.(page);
 
           // Let route and state transitions end: axe measures contrast on a half-faded element otherwise.
-          await page.evaluate(() => document.fonts.ready);
-          await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+          // Only finite animations: a looping one (a spinner) never finishes. A navigation that lands while this
+          // runs aborts the evaluate, and the page is settled by then anyway.
+          await page
+            .evaluate(() =>
+              Promise.all(
+                document
+                  .getAnimations()
+                  .filter((a) => a.effect?.getComputedTiming().endTime !== Number.POSITIVE_INFINITY)
+                  .map((a) => a.finished),
+              ),
+            )
+            .catch(() => undefined);
           const violations: string[] = [];
           const incomplete: string[] = [];
           for (const theme of THEMES) {
