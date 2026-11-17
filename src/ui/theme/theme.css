@@ -148,3 +148,15 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Used through `motion-safe:animate-[toast-in_...]`; transform and opacity only. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

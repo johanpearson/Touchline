@@ -69,6 +69,7 @@ export function useSlotActions(refresh: () => Promise<void>) {
     },
     load: (entry: SlotEntry) =>
       run(entry.id, () => career.loadSlot(entry.id), {
+        success: t("saves.toast.loaded", { slot: slotLabel(entry.id, t) }),
         onDone: () => {
           window.location.hash = hrefFor({ name: "home" });
         },
