@@ -1,12 +1,20 @@
 import type { Club } from "./club";
 import type { ClubFinance, Contract } from "./contract";
-import { hasUniqueValues, isInt, isNonNegativeInt, isRecord, isStringArray } from "./json-guards";
+import {
+  hasUniqueValues,
+  isInt,
+  isNonNegativeInt,
+  isNonNegativeNumber,
+  isPositiveInt,
+  isRecord,
+  isStringArray,
+} from "./json-guards";
 import type { Player } from "./player";
 
 const parseContract = (raw: unknown): Contract | undefined => {
   if (!isRecord(raw)) return undefined;
   const { wage, expiresSeason } = raw;
-  if (!isNonNegativeInt(wage) || !isInt(expiresSeason) || expiresSeason < 1) return undefined;
+  if (!isNonNegativeInt(wage) || !isPositiveInt(expiresSeason)) return undefined;
   return { wage, expiresSeason };
 };
 
@@ -74,7 +82,7 @@ export const parseMinutes = (
   const known = new Set(players.map((p) => p.id));
   const minutes: Record<string, number> = {};
   for (const [id, value] of Object.entries(raw)) {
-    if (!known.has(id) || typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    if (!known.has(id) || !isNonNegativeNumber(value)) {
       return undefined;
     }
     minutes[id] = value;
