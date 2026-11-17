@@ -2,6 +2,7 @@ import type { Career } from "./career";
 import type { Club } from "./club";
 import { isInt, isRecord, isString } from "./json-guards";
 import { parseContracts, parseFinances, parseFreeAgentIds, parseMinutes } from "./parse-economy";
+import { parseDevelopment } from "./parse-development";
 import { parseHistory } from "./parse-history";
 import { parseLeague } from "./parse-league";
 import { parseSeason } from "./parse-season";
@@ -26,7 +27,8 @@ export type CareerParseError =
   | "invalid-free-agents"
   | "invalid-minutes"
   | "invalid-window"
-  | "invalid-offers";
+  | "invalid-offers"
+  | "invalid-development";
 
 export type CareerParseResult =
   | { ok: true; career: Career }
@@ -65,6 +67,11 @@ const parseUnchecked = (raw: unknown): CareerParseResult => {
   if (!window) return fail("invalid-window");
   const offers = parseOffers(raw.offers, league.clubs, raw.userClubId);
   if (!offers) return fail("invalid-offers");
+  const lastDevelopment =
+    raw.lastDevelopment === undefined
+      ? undefined
+      : parseDevelopment(raw.lastDevelopment, league.players);
+  if (raw.lastDevelopment !== undefined && !lastDevelopment) return fail("invalid-development");
   return {
     ok: true,
     career: {
@@ -82,6 +89,7 @@ const parseUnchecked = (raw: unknown): CareerParseResult => {
       minutes,
       window,
       offers,
+      ...(lastDevelopment ? { lastDevelopment } : {}),
     },
   };
 };

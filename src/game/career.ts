@@ -1,5 +1,6 @@
 import type { Result } from "./compute-table";
 import type { ClubFinance, Contract } from "./contract";
+import type { AttributeChange } from "./develop-player";
 import type { Fixture } from "./generate-fixtures";
 import type { League } from "./league";
 import type { PlayerCondition } from "./player-condition";
@@ -44,6 +45,8 @@ export type Career = {
   window: TransferWindow;
   /** Offers from AI clubs for the user's players, valid while the window is open. Empty at creation. */
   offers: TransferOffer[];
+  /** The attribute changes of the last yearly development, for the squad screen. Optional and absent until a rollover has developed the players (still schema v7). */
+  lastDevelopment?: AttributeChange[];
 };
 
 export type CareerError = "unknown-club";
