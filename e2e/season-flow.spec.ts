@@ -6,7 +6,8 @@ const MATCHDAYS = 26;
 test.describe("season flow", () => {
   test("plays a match, quick-sims the season and starts season 2", async ({ page }) => {
     test.setTimeout(180_000);
-    await page.goto("./");
+    await page.goto("./#/new");
+    await page.getByTestId("choose-club").click();
     await page.getByTestId("club-name").first().click();
     await page.getByTestId("start-career").click();
 

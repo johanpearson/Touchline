@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateLeague, parseCareer } from "../game";
 import {
@@ -50,6 +50,9 @@ const firstClub = () => {
 };
 
 const startCareer = () => {
+  goTo("#/new");
+  fireEvent.click(screen.getByTestId("choose-club"));
+  goTo("#/new/club");
   fireEvent.click(screen.getByTestId(`club-option-${firstClub().id}`));
   fireEvent.click(screen.getByTestId("start-career"));
 };
@@ -204,8 +207,8 @@ describe("exporting and importing saves", () => {
     await waitFor(() => expect(info("slot-2")).toMatch(/matchday 2/));
 
     await importFile(files, file.text, "slot-2");
-    expect(screen.getByTestId("confirm-import-overwrite")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("import-confirm-no"));
+    const dialog = screen.getByRole("dialog", { name: "Overwrite Slot 2?" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
     expect((await store.load("slot-2"))?.game).not.toEqual((await store.load("slot-1"))?.game);
 
     fireEvent.click(screen.getByTestId("import-into-slot-2"));
@@ -275,14 +278,14 @@ describe("exporting and importing saves", () => {
     expect(texts.size).toBe(failures.length);
   });
 
-  it("imports from the new-career screen and lands on the saves screen with the slot highlighted", async () => {
+  it("imports from the start screen and lands on the saves screen with the slot highlighted", async () => {
     const first = mountApp();
     const file = await exportedSave(first.store, first.files);
     cleanup();
     goTo("#/");
 
     const second = mountApp();
-    await screen.findByTestId("new-career");
+    await screen.findByTestId("import-file");
     await importFile(second.files, file.text);
     await screen.findByTestId("import-picker");
     expect(window.location.hash).toBe("#/saves");
@@ -295,9 +298,9 @@ describe("exporting and importing saves", () => {
     expect(await second.store.load("slot-1")).not.toBeNull();
   });
 
-  it("shows import errors on the new-career screen", async () => {
+  it("shows import errors on the start screen", async () => {
     const { files } = mountApp();
-    await screen.findByTestId("new-career");
+    await screen.findByTestId("import-file");
 
     await importFile(files, "{nope");
 

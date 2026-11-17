@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    # labeled/unlabeled re-run the checks so the `full-balance` label takes effect.
+    # labeled/unlabeled re-run the checks so the `full-balance` and `full-ci` labels take effect.
     types: [opened, synchronize, reopened, labeled, unlabeled]
   push:
     branches: [main]
@@ -16,8 +16,46 @@ permissions:
   pull-requests: read
 
 jobs:
+  # Risk-based scoping: which jobs can this pull request change the result of? scripts/ci-scope.mjs decides from the changed
+  # files (rules and tests: scripts/ci-scope.test.ts). A push to main, the label `full-ci`, an empty file list or any error runs
+  # everything, and every gated job below also runs when this job did not succeed, so a failure here makes CI slower, never weaker.
+  # A job skipped by `if` counts as passing for a required check.
+  scope:
+    name: CI scope
+    runs-on: ubuntu-latest
+    outputs:
+      verify: ${{ steps.scope.outputs.verify }}
+      perf: ${{ steps.scope.outputs.perf }}
+      storybook: ${{ steps.scope.outputs.storybook }}
+      balance: ${{ steps.scope.outputs.balance }}
+      e2eSmoke: ${{ steps.scope.outputs.e2eSmoke }}
+      e2eStories: ${{ steps.scope.outputs.e2eStories }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Decide which jobs this change needs
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            git diff --name-only "origin/$BASE_REF...HEAD" > changed-files.txt || : > changed-files.txt
+          else
+            : > changed-files.txt
+          fi
+          echo "Changed files:"; cat changed-files.txt
+          node scripts/ci-scope.mjs < changed-files.txt | tee -a "$GITHUB_OUTPUT"
+
   verify:
     name: Verify
+    needs: scope
+    if: ${{ !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.verify == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -34,47 +72,44 @@ jobs:
       - name: Unit tests with coverage
         run: |
           if [ "$(npm pkg get scripts.test:coverage)" != "{}" ]; then npm run test:coverage; else npm test; fi
+      # Reuses the coverage from the step above (no second test run). Not allowed to fail the job: a CodeScene outage must not block
+      # merges. Skipped on fork PRs (no secrets). Coverage is for the merge commit CI checks out.
+      - name: Upload coverage to CodeScene
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        run: |
+          curl https://downloads.codescene.io/enterprise/cli/install-cs-coverage-tool.sh | bash -s -- -y
+          # Drop a trailing slash so the CLI never builds a double-slash API path.
+          export CS_ONPREM_URL="${CS_ONPREM_URL%/}"
+          cs-coverage upload coverage/lcov.info
+        env:
+          CS_ACCESS_TOKEN: ${{ secrets.CS_ACCESS_TOKEN }}
+          # Only needed for a CodeScene on-prem installation; the secret is the instance base URL.
+          CS_ONPREM_URL: ${{ secrets.CS_ONPREM_URL }}
       - name: Performance budget (runs alone, not in parallel with other tests)
+        if: ${{ needs.scope.result != 'success' || needs.scope.outputs.perf == 'true' }}
         run: npm run test:perf
       - run: npm run build
+      - name: Storybook compiles
+        if: ${{ needs.scope.result != 'success' || needs.scope.outputs.storybook == 'true' }}
+        run: npm run build-storybook
 
-  # Balance runs as separate jobs (#219). `balance-scope` decides whether the full suite is needed; the fast subset is one job, the
-  # full suite a matrix of groups from scripts/balance-groups.mjs (explicit groups of similar run time, a test checks that every
-  # balance file is in one). The final `Balance` job keeps the required check name and fails if any part failed.
-  balance-scope:
-    name: Balance scope
-    runs-on: ubuntu-latest
-    outputs:
-      full: ${{ steps.scope.outputs.full }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: Choose the balance suite
-        id: scope
-        env:
-          EVENT: ${{ github.event_name }}
-          BASE_REF: ${{ github.base_ref }}
-          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        run: |
-          # Fast subset by default. The full suite (all 81 tactic combinations) runs when the
-          # PR has the `full-balance` label or changes the engine, a balance test, the balance groups script or this workflow.
-          # The full suite also runs every night (nightly.yml).
-          full=false
-          if [ "$EVENT" = "pull_request" ]; then
-            case ",$LABELS," in *,full-balance,*) full=true; echo "Label full-balance set." ;; esac
-            if git diff --name-only "origin/$BASE_REF...HEAD" | grep -E '^src/engine/|\.balance\.test\.ts$|^vitest\.balance\.config\.ts$|^scripts/balance-groups\.mjs$|^\.github/workflows/ci\.yml$'; then
-              full=true
-            fi
-          fi
-          echo "full=$full" >> "$GITHUB_OUTPUT"
-          echo "Full balance suite: $full"
+  # Balance runs as separate jobs (#219). The `scope` job chooses `none` (nothing that can change balance was touched), the fast
+  # subset (one job per group) or the full suite (a matrix of groups from scripts/balance-groups.mjs: explicit groups of similar
+  # run time, a test checks that every balance file is in one). The full suite runs for a change to the engine, a balance test,
+  # the balance groups script or this workflow, or with the label `full-balance`, and every night (nightly.yml). The final
+  # `Balance` job keeps the required check name and fails if any part failed.
 
+  # The fast subset as parallel jobs (FAST_GROUPS in scripts/balance-groups.mjs, balance-groups.test.ts checks the list), #292.
   balance-fast:
-    name: Balance (fast)
-    needs: balance-scope
-    if: needs.balance-scope.outputs.full != 'true'
+    name: Balance ${{ matrix.group }}
+    needs: scope
+    if: ${{ !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.balance == 'fast') }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [fast-formation, fast-league, fast-engine]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -82,13 +117,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run test:balance:fast
+      - run: npm run test:balance:group -- ${{ matrix.group }}
 
   # Keep the group list in step with BALANCE_GROUPS in scripts/balance-groups.mjs (balance-groups.test.ts checks it).
   balance-shard:
     name: Balance ${{ matrix.group }}
-    needs: balance-scope
-    if: needs.balance-scope.outputs.full == 'true'
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.result == 'success' && needs.scope.outputs.balance == 'full' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -105,22 +140,26 @@ jobs:
 
   balance:
     name: Balance
-    needs: [balance-scope, balance-fast, balance-shard]
+    needs: [scope, balance-fast, balance-shard]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Require every balance job to pass or be skipped
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
+          MODE: ${{ needs.scope.outputs.balance }}
         run: |
-          echo "Results: $RESULTS"
+          echo "Balance mode: $MODE; results: $RESULTS"
           for result in $RESULTS; do
             case "$result" in success|skipped) ;; *) echo "::error::A balance job ended with: $result"; exit 1 ;; esac
           done
+          if [ "$MODE" = "none" ]; then echo "No change that can affect balance."; exit 0; fi
           case "$RESULTS" in *success*) ;; *) echo "::error::No balance job ran"; exit 1 ;; esac
 
   e2e:
     name: E2E smoke
+    needs: scope
+    if: ${{ !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.e2eSmoke == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -137,6 +176,111 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # Component behaviour that jsdom cannot show (real scrollbars, focus scrolling) on a Storybook story in all three engines (#250).
+  # Not a required check; it adds browsers, so it stays a separate job from the single-browser app smoke test.
+  e2e-stories:
+    name: E2E stories
+    needs: scope
+    if: ${{ !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.e2eStories == 'true') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e:stories
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-stories-report
+          path: playwright-report/
+          retention-days: 7
+
+  # Visual regression (#253): screenshots of every story and registered screen state compared with the baselines in
+  # e2e/visual/__screenshots__. On a pull request this is a REPORT, not a gate: the job never fails the PR, it
+  # uploads a report with the diffs and prints a warning. Baselines are regenerated after merge by the workflow
+  # `Visual baselines`, so nobody commits snapshots by hand. Path-filtered to UI, Storybook and CSS changes.
+  visual-scope:
+    name: Visual scope
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.scope.outputs.run }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Check whether visuals can have changed
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          run=false
+          if [ "$EVENT" = "pull_request" ]; then
+            if git diff --name-only "origin/$BASE_REF...HEAD" | grep -E '^src/ui/|^e2e/visual/|^\.storybook/|^playwright\.visual\.config\.ts$|^scripts/serve-static\.mjs$|\.css$|^package-lock\.json$|^index\.html$|^\.github/workflows/(ci|visual-baselines)\.yml$'; then
+              run=true
+            fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "Visual report: $run"
+
+  # Keep the shard list and the --shard total in step.
+  visual-shard:
+    name: Visual shard ${{ matrix.shard }}
+    needs: visual-scope
+    if: needs.visual-scope.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx storybook build --quiet
+      - run: npx vite build
+      - name: Compare with the baselines (report only)
+        id: compare
+        continue-on-error: true
+        run: npx playwright test -c playwright.visual.config.ts --shard=${{ matrix.shard }}/4
+      - name: Say that screens differ
+        if: steps.compare.outcome == 'failure'
+        run: |
+          echo "::warning::Visual shard ${{ matrix.shard }}: screens differ from the baselines (not blocking). Open the visual-report-${{ matrix.shard }} artifact for the diffs. If the changes are intended, merge: the Visual baselines workflow updates the baselines on main."
+          echo "Shard ${{ matrix.shard }}: screens differ from the baselines. Not blocking; see the visual-report-${{ matrix.shard }} artifact." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: steps.compare.outcome == 'failure'
+        with:
+          name: visual-report-${{ matrix.shard }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  visual:
+    name: Visual
+    needs: [visual-scope, visual-shard]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Never fail the pull request
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          case "$RESULTS" in
+            *failure*) echo "::warning::A visual job could not run (build or set-up error). Check the Visual shard logs." ;;
+          esac
 
   pr-title:
     name: PR title

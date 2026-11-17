@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateLeague } from "../game";
 import {
+  createMemoryDensityStore,
   createMemoryFileTransfer,
   createMemoryLocaleStore,
   createMemorySaveStore,
@@ -36,7 +37,16 @@ const leagueFor = (seed: number) => {
   return result.league;
 };
 
+const toClubStep = () => {
+  goTo("#/new");
+  fireEvent.click(screen.getByTestId("choose-club"));
+  goTo("#/new/club");
+};
+
 const startCareer = (clubId: string) => {
+  goTo("#/new");
+  fireEvent.click(screen.getByTestId("choose-club"));
+  goTo("#/new/club");
   fireEvent.click(screen.getByTestId(`club-option-${clubId}`));
   fireEvent.click(screen.getByTestId("start-career"));
 };
@@ -89,6 +99,25 @@ describe("App", () => {
     expect(screen.getByTestId("locale-switch")).toBeTruthy();
   });
 
+  it("gives the squad table the density from the density store", () => {
+    const league = leagueFor(11);
+    render(
+      <App
+        createRenderer={createRenderer}
+        localeStore={createMemoryLocaleStore("en")}
+        densityStore={createMemoryDensityStore("comfortable")}
+        saveStore={createMemorySaveStore()}
+        fileTransfer={createMemoryFileTransfer()}
+        now={fixedNow}
+        initialSeed={11}
+      />,
+    );
+    startCareer(league.clubs[0]?.id ?? "");
+    goTo("#/squad");
+    const row = screen.getAllByTestId(/^plan-row-/)[0] as HTMLElement;
+    expect(within(row).getAllByRole("cell")[1]?.className).toContain("py-3.5");
+  });
+
   it("does not show the demo match on the root route", () => {
     renderApp();
     expect(screen.queryByTestId("match-screen")).toBeNull();
@@ -97,7 +126,7 @@ describe("App", () => {
   it("asks to start a career on #/match without one", () => {
     renderApp();
     goTo("#/match");
-    expect(screen.getByTestId("new-career")).toBeTruthy();
+    expect(screen.getByTestId("start-screen")).toBeTruthy();
     expect(screen.queryByTestId("match-screen")).toBeNull();
   });
 
@@ -115,78 +144,86 @@ describe("App", () => {
     expect(screen.getByTestId("not-found")).toBeTruthy();
     goTo("#/");
     expect(screen.queryByTestId("not-found")).toBeNull();
-    expect(screen.getByTestId("new-career")).toBeTruthy();
+    expect(screen.getByTestId("start-screen")).toBeTruthy();
   });
 });
 
-describe("new career screen", () => {
+describe("new career, club step", () => {
   beforeEach(() => goTo("#/"));
   afterEach(cleanup);
 
-  it("lists the 14 clubs sorted by rating, highest first", () => {
+  it("lists the 14 clubs sorted by rating, highest first, in the club strip", () => {
     renderApp();
+    toClubStep();
     const league = leagueFor(11);
-    const options = screen.getAllByTestId(/^club-option-/);
+    const options = screen.getAllByTestId(/^club-option-(?!name)/);
     expect(options).toHaveLength(14);
     const expected = league.clubs
       .map((club) => ({ club, rating: clubRating(club, league.players) }))
       .sort((a, b) => b.rating - a.rating || a.club.name.localeCompare(b.club.name))
       .map(({ club }) => club.name);
-    const shown = options.map((o) => within(o).getByTestId("club-name").textContent);
+    const shown = options.map((o) => within(o).getByTestId("club-option-name").textContent);
     expect(shown).toEqual(expected);
   });
 
-  it("shows each club's rating", () => {
+  it("shows the selected club's rating on the card", () => {
     renderApp();
+    toClubStep();
     const league = leagueFor(11);
     const club = league.clubs[0];
     if (!club) throw new Error("no club");
-    const option = screen.getByTestId(`club-option-${club.id}`);
-    expect(within(option).getByTestId("club-rating").textContent).toBe(
+    fireEvent.click(screen.getByTestId(`club-option-${club.id}`));
+    expect(screen.getByTestId("club-rating").textContent).toBe(
       String(clubRating(club, league.players)),
     );
   });
 
   it("starts with the seed given by the composition root", () => {
     renderApp(undefined, 42);
+    toClubStep();
     expect((screen.getByTestId("seed-input") as HTMLInputElement).value).toBe("42");
   });
 
   it("regenerates the league when the seed changes", () => {
     renderApp();
-    const before = screen.getAllByTestId("club-name").map((n) => n.textContent);
+    toClubStep();
+    const before = screen.getAllByTestId("club-option-name").map((n) => n.textContent);
     fireEvent.change(screen.getByTestId("seed-input"), { target: { value: "99" } });
-    const after = screen.getAllByTestId("club-name").map((n) => n.textContent);
+    const after = screen.getAllByTestId("club-option-name").map((n) => n.textContent);
     expect(after).not.toEqual(before);
     fireEvent.change(screen.getByTestId("seed-input"), { target: { value: "11" } });
-    expect(screen.getAllByTestId("club-name").map((n) => n.textContent)).toEqual(before);
+    expect(screen.getAllByTestId("club-option-name").map((n) => n.textContent)).toEqual(before);
   });
 
   it("ignores a seed that is not a whole number", () => {
     renderApp();
-    const before = screen.getAllByTestId("club-name").map((n) => n.textContent);
+    toClubStep();
+    const before = screen.getAllByTestId("club-option-name").map((n) => n.textContent);
     fireEvent.change(screen.getByTestId("seed-input"), { target: { value: "1.5" } });
-    expect(screen.getAllByTestId("club-name").map((n) => n.textContent)).toEqual(before);
+    expect(screen.getAllByTestId("club-option-name").map((n) => n.textContent)).toEqual(before);
   });
 
-  it("cannot start before a club is chosen", () => {
+  it("can start at once: the card shows the first club and the button names it", () => {
     renderApp();
-    expect((screen.getByTestId("start-career") as HTMLButtonElement).disabled).toBe(true);
+    toClubStep();
+    const button = screen.getByTestId("start-career") as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    expect(button.textContent).toBe(`Manage ${screen.getByTestId("club-name").textContent}`);
   });
 
-  it("clears the chosen club when it is not in the regenerated league", () => {
+  it("keeps the selection by position when the seed regenerates the league", () => {
     renderApp();
-    const first = leagueFor(11).clubs[0];
-    if (!first) throw new Error("no club");
-    fireEvent.click(screen.getByTestId(`club-option-${first.id}`));
+    toClubStep();
+    fireEvent.click(screen.getAllByTestId(/^club-option-(?!name)/)[4] as HTMLElement);
     fireEvent.change(screen.getByTestId("seed-input"), { target: { value: "99" } });
-    expect((screen.getByTestId("start-career") as HTMLButtonElement).disabled).toBe(
-      !leagueFor(99).clubs.some((c) => c.id === first.id),
-    );
+    const options = screen.getAllByTestId(/^club-option-(?!name)/);
+    expect(options[4]?.getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("club-position").textContent).toBe("5 of 14, sorted by rating");
   });
 
   it("starts the career and shows the hub for the chosen club", () => {
     renderApp();
+    toClubStep();
     const club = leagueFor(11).clubs[3];
     if (!club) throw new Error("no club");
     startCareer(club.id);
@@ -197,11 +234,13 @@ describe("new career screen", () => {
 
   it("does not offer a choice of match engine", () => {
     renderApp();
+    toClubStep();
     expect(screen.queryByTestId("engine-version")).toBeNull();
   });
 
   it("starts a career that plays on the action engine and quick-sims its matchday", () => {
     renderApp();
+    toClubStep();
     startCareer(leagueFor(11).clubs[0]?.id ?? "");
     expect(screen.getByTestId("play-match")).toBeTruthy();
 
@@ -212,6 +251,7 @@ describe("new career screen", () => {
 
   it("plays the career's match in the match view", () => {
     renderApp();
+    toClubStep();
     startCareer(leagueFor(11).clubs[0]?.id ?? "");
     goTo("#/match");
     expect(screen.getByTestId("match-screen")).toBeTruthy();
@@ -235,6 +275,12 @@ describe("career navigation", () => {
     expect(screen.queryByTestId("nav-hub")).toBeNull();
   });
 
+  it("wraps the screens in the app shell once a career exists", () => {
+    startedClub();
+    expect(screen.getByTestId("app-shell")).toBeTruthy();
+    expect(within(screen.getByRole("main")).getByTestId("career-hub")).toBeTruthy();
+  });
+
   it("shows the club name and season progress", () => {
     const club = startedClub();
     expect(screen.getByTestId("nav-club-name").textContent).toBe(club.name);
@@ -255,10 +301,26 @@ describe("career navigation", () => {
     expect(screen.getByTestId("nav-squad").getAttribute("href")).toBe("#/squad");
   });
 
-  it("shows the new-career screen on the squad route without a career", () => {
+  it("shows a player profile on the player route and not-found for an unknown player", () => {
+    const club = startedClub();
+    const playerId = club.playerIds[0] ?? "";
+    goTo(`#/player/${encodeURIComponent(playerId)}`);
+    expect(screen.getByTestId("player-screen")).toBeTruthy();
+    goTo("#/player/nope");
+    expect(screen.getByTestId("not-found")).toBeTruthy();
+  });
+
+  it("links to the tactics screen and opens it", () => {
+    startedClub();
+    expect(screen.getByTestId("nav-tactics").getAttribute("href")).toBe("#/tactics");
+    goTo("#/tactics");
+    expect(screen.getByTestId("tactics-screen")).toBeTruthy();
+  });
+
+  it("shows the start screen on the squad route without a career", () => {
     renderApp();
     goTo("#/squad");
-    expect(screen.getByTestId("start-career")).toBeTruthy();
+    expect(screen.getByTestId("start-screen")).toBeTruthy();
     expect(screen.queryByTestId("squad-screen")).toBeNull();
   });
 
@@ -288,9 +350,23 @@ describe("career navigation", () => {
     expect(screen.getByTestId("career-hub")).toBeTruthy();
   });
 
+  it("shows the settings screen on the settings route without a career", () => {
+    renderApp();
+    goTo("#/settings");
+    expect(screen.getByTestId("settings-screen")).toBeTruthy();
+    expect(screen.queryByTestId("start-screen")).toBeNull();
+  });
+
+  it("shows the settings screen inside the app shell with a career", () => {
+    startedClub();
+    goTo("#/settings");
+    expect(screen.getByTestId("settings-screen")).toBeTruthy();
+    expect(screen.getByTestId("app-shell")).toBeTruthy();
+  });
+
   it("asks to start a career when a career route is opened without one", () => {
     renderApp();
     goTo("#/league");
-    expect(screen.getByTestId("new-career")).toBeTruthy();
+    expect(screen.getByTestId("start-screen")).toBeTruthy();
   });
 });

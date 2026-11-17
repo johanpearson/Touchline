@@ -19,6 +19,11 @@
       "!.github"
     ]
   },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -39,7 +44,7 @@
   },
   "overrides": [
     {
-      "includes": ["*.config.ts"],
+      "includes": ["*.config.ts", "**/*.stories.tsx", ".storybook/**"],
       "linter": {
         "rules": {
           "style": {

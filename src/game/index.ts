@@ -10,6 +10,7 @@ export type {
   Season,
 } from "./career";
 export type { Club } from "./club";
+export { clubStarPlayer } from "./club-star-player";
 export { completeMatchday } from "./complete-matchday";
 export type { Outcome, Result, TableError, TableResult, TableRow } from "./compute-table";
 export { computeForm, computeTable } from "./compute-table";
@@ -44,6 +45,8 @@ export { generateSquad, SQUAD_SHAPE } from "./generate-squad";
 export { getNextFixture } from "./get-next-fixture";
 export { goalScorersOf } from "./goal-scorers";
 export { isSeasonComplete } from "./is-season-complete";
+export type { ClubKits, Kit } from "./kits";
+export { chooseKits, colourDistance, KIT_CLASH_THRESHOLD, kitsOf } from "./kits";
 export type { League } from "./league";
 export type { LineRating, LineRatings } from "./line-ratings";
 export {
@@ -53,18 +56,34 @@ export {
 } from "./line-ratings";
 export type { Lineup, LineupError, LineupResult } from "./lineup";
 export { BENCH_SIZE, validateLineup } from "./lineup";
+export type { SubstitutionRecord } from "./live-squad";
 export { matchInputFor, matchSeed } from "./match-input-for";
 export type { CareerParseError, CareerParseResult } from "./parse-career";
 export { parseCareer } from "./parse-career";
 export { pickBestEleven } from "./pick-best-eleven";
 export { pickGoalScorers } from "./pick-goal-scorers";
 export type {
+  MatchChange,
+  MatchChanges,
+  PlanChangeError,
+  PlanChangeOptions,
+  PlanChangeResult,
+  PlannedChange,
+} from "./plan-change";
+export {
+  EMPTY_MATCH_CHANGES,
+  HALF_TIME_MINUTE,
+  MAX_SUBSTITUTION_WINDOWS,
+  MAX_SUBSTITUTIONS,
+  planChange,
+} from "./plan-change";
+export type {
   AppliedHalfTime,
   HalfTimeChanges,
   HalfTimeError,
   HalfTimePlan,
 } from "./plan-half-time";
-export { MAX_SUBSTITUTIONS, planHalfTime } from "./plan-half-time";
+export { planHalfTime } from "./plan-half-time";
 export type { AttributeName, Player, PlayerAttributes } from "./player";
 export { ATTRIBUTE_NAMES, MAX_ATTRIBUTE, MIN_ATTRIBUTE } from "./player";
 export type { MatchAppearance, MatchOutcome, PlayerCondition } from "./player-condition";
@@ -83,7 +102,30 @@ export {
 } from "./player-condition";
 export { FIRST_NAMES, LAST_NAMES } from "./player-names";
 export { playerOverall } from "./player-overall";
+export {
+  attributesAtPosition,
+  GOALKEEPER_SWAP_PENALTY,
+  OUTFIELD_ONE_LINE_PENALTY,
+  OUTFIELD_TWO_LINES_PENALTY,
+  positionPenalty,
+  positionRating,
+} from "./position-rating";
 export type { SeasonError, SeasonSummary, SummaryResult, TopScorer } from "./season-summary";
+export { extendTrail, type SeasonTrail } from "./season-trail";
+export type { ShoutError, ShoutKind, ShoutRecord } from "./shouts";
+export {
+  activeShout,
+  applyShout,
+  checkShout,
+  SHOUT_COOLDOWN_MINUTES,
+  SHOUT_DURATION_MINUTES,
+  SHOUT_FATIGUE_PER_LEVEL_MINUTE,
+  SHOUT_KINDS,
+  SHOUT_STEPS,
+  shoutFatigue,
+  shoutFatiguePerMinute,
+  tacticsAtMinute,
+} from "./shouts";
 export { simulateFixture } from "./simulate-fixture";
 export type { SquadPlan } from "./squad-plan";
 export { initialConditions, initialSquadPlan } from "./squad-plan";
@@ -92,6 +134,7 @@ export type { NextSeasonResult } from "./start-next-season";
 export { startNextSeason } from "./start-next-season";
 export type { SummaryOptions } from "./summarise-season";
 export { summariseSeason } from "./summarise-season";
+export type { PlayedPositions } from "./to-engine-players";
 export { toEngineBench, toEnginePlayers } from "./to-engine-players";
 export { toSquadPlayer } from "./to-squad-player";
 export type { MatchReport } from "./update-condition";

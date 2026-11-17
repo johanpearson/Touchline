@@ -101,6 +101,21 @@ describe("applyMatchToCondition", () => {
     expect(applyMatchToCondition(start, { minutes, outcome })).toEqual(expected);
   });
 
+  it("drains extra fitness on top of the minutes and never below zero", () => {
+    expect(
+      applyMatchToCondition(
+        { fitness: 80, form: 5 },
+        { minutes: 90, outcome: "draw", extraFatigue: 1.5 },
+      ),
+    ).toEqual({ fitness: 68.5, form: 5 });
+    expect(
+      applyMatchToCondition(
+        { fitness: 2, form: 5 },
+        { minutes: 0, outcome: "draw", extraFatigue: 5 },
+      ).fitness,
+    ).toBe(0);
+  });
+
   it("does not mutate its input", () => {
     const condition = aCondition().build();
     const copy = { ...condition };

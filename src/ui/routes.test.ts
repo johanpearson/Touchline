@@ -13,7 +13,18 @@ describe("parseRoute", () => {
     expect(parseRoute("#/season-end")).toEqual({ name: "season-end" });
     expect(parseRoute("#/results")).toEqual({ name: "results" });
     expect(parseRoute("#/saves")).toEqual({ name: "saves" });
+    expect(parseRoute("#/settings")).toEqual({ name: "settings" });
     expect(parseRoute("#/squad")).toEqual({ name: "squad" });
+    expect(parseRoute("#/tactics")).toEqual({ name: "tactics" });
+    expect(parseRoute("#/new")).toEqual({ name: "new" });
+  });
+
+  it("parses the club step of the new-career wizard", () => {
+    expect(parseRoute("#/new/club")).toEqual({ name: "new-club" });
+  });
+
+  it("returns not-found for unknown wizard steps", () => {
+    expect(parseRoute("#/new/league")).toEqual({ name: "not-found" });
   });
 
   it("parses a club route with its id", () => {
@@ -22,6 +33,17 @@ describe("parseRoute", () => {
 
   it("decodes the club id", () => {
     expect(parseRoute("#/club/a%20b")).toEqual({ name: "club", clubId: "a b" });
+  });
+
+  it("parses a player route with its id", () => {
+    expect(parseRoute("#/player/p-12")).toEqual({ name: "player", playerId: "p-12" });
+    expect(parseRoute("#/player/a%20b")).toEqual({ name: "player", playerId: "a b" });
+  });
+
+  it("returns not-found for a player route without a usable id", () => {
+    expect(parseRoute("#/player")).toEqual({ name: "not-found" });
+    expect(parseRoute("#/player/%E0%A4%A")).toEqual({ name: "not-found" });
+    expect(parseRoute("#/player/a/b")).toEqual({ name: "not-found" });
   });
 
   it("returns not-found for unknown routes", () => {
@@ -41,10 +63,15 @@ describe("hrefFor", () => {
       { name: "home" },
       { name: "league" },
       { name: "saves" },
+      { name: "settings" },
       { name: "squad" },
+      { name: "tactics" },
+      { name: "new" },
+      { name: "new-club" },
       { name: "match" },
       { name: "season-end" },
       { name: "club", clubId: "a b" },
+      { name: "player", playerId: "a b" },
     ] as const) {
       expect(parseRoute(hrefFor(route))).toEqual(route);
     }

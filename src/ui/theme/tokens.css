@@ -1,0 +1,89 @@
+/*
+ * Design tokens per theme (docs/design.md, "Themes"). Components use these through the Tailwind
+ * utilities mapped in theme.css and never write raw colours. A test (tokens.test.ts) checks that
+ * every theme defines every token and that the contrast stays at WCAG AA.
+ */
+
+:root {
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 26px;
+  --r-pill: 999px;
+}
+
+:root[data-theme="midnight"],
+[data-theme-preview="midnight"] {
+  color-scheme: dark;
+  --bg: #0a0e17;
+  --side: #0d1220;
+  --surface: #121826;
+  --raised: #1a2232;
+  --sunk: rgba(0, 0, 0, 0.25);
+  --track: #232c3f;
+  --text: #e8edf7;
+  --soft: #c3cbdb;
+  --muted: #96a0b5;
+  --line: rgba(200, 215, 255, 0.12);
+  --glow: #1d3159;
+  --stage: #121826;
+  --stage-glow: #1d3159;
+  --good: #6ee7a8;
+  --bad: #ff8fa0;
+  --info: #7fbfff;
+  --warn: #f5c518;
+  --accent: #ffb547;
+  --on-accent: #0a0e17;
+  --focus: #ffb547;
+}
+
+:root[data-theme="graphite"],
+[data-theme-preview="graphite"] {
+  color-scheme: dark;
+  --bg: #0e0f11;
+  --side: #121316;
+  --surface: #17191c;
+  --raised: #1f2226;
+  --sunk: rgba(0, 0, 0, 0.25);
+  --track: #2a2e33;
+  --text: #edeef0;
+  --soft: #c7cad0;
+  --muted: #9a9ea6;
+  --line: rgba(255, 255, 255, 0.1);
+  --glow: #30343b;
+  --stage: #17191c;
+  --stage-glow: #30343b;
+  --good: #6ee7a8;
+  --bad: #ff8fa0;
+  --info: #7fbfff;
+  --warn: #f5c518;
+  --accent: #ffb547;
+  --on-accent: #0a0e17;
+  --focus: #ffb547;
+}
+
+/* Light: status colours and focus are darker than the boards' values, which fail WCAG AA. */
+:root[data-theme="light"],
+[data-theme-preview="light"] {
+  color-scheme: light;
+  --bg: #f3f5f9;
+  --side: #ffffff;
+  --surface: #ffffff;
+  --raised: #eef1f6;
+  --sunk: rgba(15, 20, 32, 0.05);
+  --track: #e1e6ee;
+  --text: #0f1420;
+  --soft: #36405a;
+  --muted: #5a6478;
+  --line: rgba(15, 20, 32, 0.12);
+  --glow: #e4ecfb;
+  --stage: #141b2b;
+  --stage-glow: #22365e;
+  --good: #0b7a45;
+  --bad: #b8213a;
+  --info: #1a5fb8;
+  --warn: #7f5700;
+  --accent: #ffb547;
+  --on-accent: #0a0e17;
+  --focus: #0f1420;
+}

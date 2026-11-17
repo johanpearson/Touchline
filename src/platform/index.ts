@@ -1,6 +1,12 @@
+export {
+  createBrowserDensityStore,
+  createMemoryDensityStore,
+  DENSITY_STORAGE_KEY,
+} from "./density-store";
 export type { MemoryFileTransfer } from "./file-transfer";
 export { createBrowserFileTransfer, createMemoryFileTransfer } from "./file-transfer";
 export { createBrowserLocaleStore, createMemoryLocaleStore } from "./locale-store";
+export { isPreferenceStorageWritable } from "./preferences-storage";
 export type { ReadEnvelopeResult } from "./save/codec";
 export { createEnvelope, readEnvelope, updateEnvelope } from "./save/codec";
 export { createIndexedDbSaveStore, isIndexedDbAvailable } from "./save/indexeddb-save-store";
@@ -10,3 +16,4 @@ export { migrateSave } from "./save/migrations";
 export type { ParseSaveFileResult, SaveFileError } from "./save/save-file";
 export { MAX_SAVE_FILE_BYTES, parseSaveFile, saveFileName, serializeSave } from "./save/save-file";
 export { CURRENT_SCHEMA_VERSION } from "./save/schema";
+export { createBrowserThemeStore, createMemoryThemeStore, THEME_STORAGE_KEY } from "./theme-store";

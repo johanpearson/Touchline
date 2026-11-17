@@ -3,6 +3,7 @@ import { MAX_ENGINE_ATTRIBUTE, MIN_ENGINE_ATTRIBUTE } from "../engine";
 import { autoPickLineup } from "./auto-pick-lineup";
 import { aCareer } from "./career-builders";
 import { effectiveAttributes } from "./player-condition";
+import { OUTFIELD_ONE_LINE_PENALTY } from "./position-rating";
 import { clubSquad } from "./squad-plan";
 import { toEngineBench, toEnginePlayers } from "./to-engine-players";
 
@@ -84,6 +85,48 @@ describe("toEnginePlayers", () => {
 
     expect(keeper?.attributes.handling).toBeGreaterThan(keeper?.attributes.passing ?? 0);
     expect(keeper?.attributes.passing).toBeGreaterThanOrEqual(MIN_ENGINE_ATTRIBUTE);
+  });
+});
+
+describe("toEnginePlayers at a played position", () => {
+  it("is unchanged when nobody is out of position", () => {
+    const { career, squad, lineup } = setup();
+
+    expect(toEnginePlayers(lineup, squad, career.condition, {})).toEqual(
+      toEnginePlayers(lineup, squad, career.condition),
+    );
+  });
+
+  it("rates a player at the played position and puts him in that line", () => {
+    const { career, squad, lineup } = setup();
+    const forwardId = lineup.starters.find(
+      (id) => squad.find((p) => p.id === id)?.position === "FWD",
+    ) as string;
+    const forward = squad.find((p) => p.id === forwardId) as (typeof squad)[number];
+    const own = toEnginePlayers(lineup, squad, career.condition).find((p) => p.id === forwardId);
+
+    const moved = toEnginePlayers(lineup, squad, career.condition, { [forwardId]: "MID" });
+    const result = moved.find((p) => p.id === forwardId);
+
+    expect(result?.position).toBe("MID");
+    expect(result?.attributes.finishing).toBeCloseTo(
+      Math.max(1, (own?.attributes.finishing ?? 0) * (1 - OUTFIELD_ONE_LINE_PENALTY)),
+    );
+    expect(forward.position).toBe("FWD");
+  });
+
+  it("leaves every other player untouched", () => {
+    const { career, squad, lineup } = setup();
+    const forwardId = lineup.starters.find(
+      (id) => squad.find((p) => p.id === id)?.position === "FWD",
+    ) as string;
+    const before = toEnginePlayers(lineup, squad, career.condition);
+
+    const after = toEnginePlayers(lineup, squad, career.condition, { [forwardId]: "DEF" });
+
+    for (const player of before.filter((p) => p.id !== forwardId)) {
+      expect(after.find((p) => p.id === player.id)).toEqual(player);
+    }
   });
 });
 

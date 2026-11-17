@@ -128,7 +128,7 @@ All free and open source. New dependencies each get a justification in the PR th
 | Motion (`motion`) for transitions | Small, declarative, honours reduced motion with one hook. |
 | Storybook (`@storybook/react-vite`, dev) | A story per component and the base for visual regression. |
 | `@fontsource/barlow`, `@fontsource/barlow-condensed` | Self-hosted fonts instead of the boards' Google Fonts link (offline, Tauri, privacy). Deviation from the boards. |
-| `cmdk` (or an owned listbox) for the palette | Decided in #255. |
+| Owned listbox for the palette (no `cmdk`) | Decided in #255: a small combobox on Radix Dialog gives exact control over `aria-activedescendant`, grouping and the search function without a new runtime dependency. |
 | `@axe-core/playwright` (dev) | Automated WCAG checks in E2E. |
 
 Bundle size is a watch item: the build already warns that the three.js chunk is over 500 kB; the shell and components stay out of that chunk, and the terrain is loaded on the match screen only (already lazy).
@@ -204,7 +204,7 @@ Epic #246, milestone "M5c UI overhaul". One session and one PR each, in dependen
 | #271 | Motion and feedback pass | all screens, #251 |
 | #272 | Accessibility audit with axe | all screens, #253, #271 |
 
-Every screen issue names its board (if any) and has acceptance criteria for desktop, tablet and phone, all three themes, keyboard use, en and sv, and updated visual snapshots.
+Every screen issue names its board (if any) and has acceptance criteria for desktop, tablet and phone, all three themes, keyboard use, en and sv, and its key states registered in `e2e/visual/screens.spec.ts` (baselines update themselves after merge).
 
 ## Risks
 

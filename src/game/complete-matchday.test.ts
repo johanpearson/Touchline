@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { autoPickLineup } from "./auto-pick-lineup";
 import type { Career } from "./career";
 import { aCareer, deepFreeze } from "./career-builders";
 import { completeMatchday } from "./complete-matchday";
 import { computeTable, type Result } from "./compute-table";
 import { getNextFixture } from "./get-next-fixture";
 import { FITNESS_MAX, FITNESS_MIN, FORM_MAX, FORM_MIN } from "./player-condition";
+import { playMatchdays } from "./season-test-helpers";
 import { simulateFixture } from "./simulate-fixture";
-import { clubSquad } from "./squad-plan";
 import { startNextSeason } from "./start-next-season";
 
 const userResultOf = (career: Career): Result => {
@@ -22,11 +21,8 @@ const complete = (career: Career, userResult = userResultOf(career)): Career => 
   return outcome.career;
 };
 
-const playSeason = (start: Career): Career => {
-  let career = start;
-  for (let i = 0; i < 26; i++) career = complete(career);
-  return career;
-};
+// The user's result is simulated, as in a quick sim. Played once per career and shared (season-test-helpers.ts).
+const playSeason = (start: Career): Career => playMatchdays(start, 26);
 
 describe("completeMatchday", () => {
   it("appends the whole round and moves to the next matchday", () => {
@@ -159,20 +155,6 @@ describe("completeMatchday", () => {
     expect(JSON.parse(JSON.stringify(career))).toEqual(career);
   });
 
-  it.each([1, 42, 2024])("completes a season with a consistent table for seed %i", (seed) => {
-    const finished = playSeason(aCareer(seed));
-    const ids = finished.league.clubs.map((c) => c.id);
-
-    const table = computeTable(ids, finished.season.results);
-
-    expect(table.ok).toBe(true);
-    const rows = table.ok ? table.table : [];
-    expect(rows.reduce((n, r) => n + r.goalsFor, 0)).toBe(
-      rows.reduce((n, r) => n + r.goalsAgainst, 0),
-    );
-    expect(rows.every((r) => r.played === 26)).toBe(true);
-  });
-
   describe("condition", () => {
     it("drains the user's starters (90 minutes without a report) and keeps the bench fresh", () => {
       const career = aCareer();
@@ -197,29 +179,6 @@ describe("completeMatchday", () => {
       expect(outcome.career.condition[full]?.fitness).toBe(92.5);
       expect(outcome.career.condition[career.squadPlan.starters[2] as string]?.fitness).toBe(100);
     });
-
-    it("rotates at least one AI club's eleven because of fatigue, always with a valid lineup", () => {
-      for (const seed of [1, 2, 3]) {
-        let career = aCareer(seed);
-        const elevenOf = (c: Career, clubId: string) => {
-          const club = c.league.clubs.find((x) => x.id === clubId);
-          if (!club) throw new Error("club");
-          const squad = clubSquad(club, c.league.players);
-          return [...autoPickLineup(squad, "4-4-2", c.condition).starters].sort().join();
-        };
-        const aiIds = career.league.clubs.map((c) => c.id).filter((id) => id !== career.userClubId);
-        const first = new Map(aiIds.map((id) => [id, elevenOf(career, id)]));
-        let rotated = false;
-        for (let day = 0; day < 26; day++) {
-          career = complete(career);
-          for (const id of aiIds) {
-            if (elevenOf(career, id) !== first.get(id)) rotated = true;
-          }
-        }
-        expect(rotated).toBe(true);
-      }
-      // Three full seasons on the action engine: slow on a shared CI runner.
-    }, 240_000);
 
     it("keeps every condition within bounds over a season", () => {
       const finished = playSeason(aCareer());

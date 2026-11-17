@@ -1,5 +1,46 @@
 # Changelog
 
+## [1.6.0](https://github.com/johanpearson/Touchline/compare/v1.5.0...v1.6.0) (2026-11-16)
+
+
+### Features
+
+* **commentary:** player-level commentary from action events in en and sv ([#179](https://github.com/johanpearson/Touchline/issues/179)) ([a6b710e](https://github.com/johanpearson/Touchline/commit/a6b710e2a20a1bb0118d9324f92df241a16f6d7f)), closes [#160](https://github.com/johanpearson/Touchline/issues/160)
+* **engine:** action match loop with periods, goals and restarts ([#174](https://github.com/johanpearson/Touchline/issues/174)) ([219fbcd](https://github.com/johanpearson/Touchline/commit/219fbcd696ef8991b8eb48e18c8e905ba261aaca))
+* **engine:** action stats and player ratings ([#177](https://github.com/johanpearson/Touchline/issues/177)) ([6dee47c](https://github.com/johanpearson/Touchline/commit/6dee47c9be29652ceda54a62db01d4da076f643a)), closes [#157](https://github.com/johanpearson/Touchline/issues/157)
+* **engine:** add action event model, v2 input types and engineVersion dispatch ([#169](https://github.com/johanpearson/Touchline/issues/169)) ([36d1cad](https://github.com/johanpearson/Touchline/commit/36d1cad29169b05e93a6f88cffc3ba33c24f9ce8)), closes [#146](https://github.com/johanpearson/Touchline/issues/146)
+* **engine:** ball carrier decisions and outcomes for open-play actions ([#172](https://github.com/johanpearson/Touchline/issues/172)) ([a824b0e](https://github.com/johanpearson/Touchline/commit/a824b0ed5ab0de73f378b08fef61355e1d2aaeae)), closes [#148](https://github.com/johanpearson/Touchline/issues/148)
+* **engine:** changes and substitutions in the action engine ([#180](https://github.com/johanpearson/Touchline/issues/180)) ([f2f5215](https://github.com/johanpearson/Touchline/commit/f2f5215f2fb78e24e7321bd6da168faf9b380efc)), closes [#153](https://github.com/johanpearson/Touchline/issues/153)
+* **engine:** fast path without snapshots and a 50 ms performance budget ([#181](https://github.com/johanpearson/Touchline/issues/181)) ([2d7a870](https://github.com/johanpearson/Touchline/commit/2d7a870bed890776c558feb351dfd063e4258ba5)), closes [#154](https://github.com/johanpearson/Touchline/issues/154)
+* **engine:** make the action engine the default and remove the zone engine ([#218](https://github.com/johanpearson/Touchline/issues/218)) ([3ba75ad](https://github.com/johanpearson/Touchline/commit/3ba75ad76957fb558587695df363cf97791af9b5))
+* **engine:** set pieces with engine-owned set-up positions ([#176](https://github.com/johanpearson/Touchline/issues/176)) ([4935411](https://github.com/johanpearson/Touchline/commit/493541164a7623ff426adf361a6fe15890f94d40)), closes [#151](https://github.com/johanpearson/Touchline/issues/151)
+* **engine:** shots, xG and goalkeeper saves in the action engine ([#173](https://github.com/johanpearson/Touchline/issues/173)) ([bebae25](https://github.com/johanpearson/Touchline/commit/bebae25e6682a546dc3d9617d908f159af790c8b))
+* **engine:** tactics and home advantage in the action engine ([#178](https://github.com/johanpearson/Touchline/issues/178)) ([f38edfc](https://github.com/johanpearson/Touchline/commit/f38edfccf303d7eaee0baa1d5d3e4239676eebb3))
+* **engine:** team shape from formation, tactics, phase and ball position ([#171](https://github.com/johanpearson/Touchline/issues/171)) ([efef739](https://github.com/johanpearson/Touchline/commit/efef7396806a6cacd8d0c1d78e6b806dccd39015))
+* **engine:** v2 balance harness and calibration to the target ranges ([#201](https://github.com/johanpearson/Touchline/issues/201)) ([b7a59a7](https://github.com/johanpearson/Touchline/commit/b7a59a721ad93898718d734e96da99a37bf38fac))
+* **game:** half-time substitutions and tactics for the action engine ([#187](https://github.com/johanpearson/Touchline/issues/187)) ([3771da0](https://github.com/johanpearson/Touchline/commit/3771da0189b7b3d4c2ab46d404cff04bc4da6020)), closes [#159](https://github.com/johanpearson/Touchline/issues/159)
+* **game:** record the real goal scorers of a match in the result ([#221](https://github.com/johanpearson/Touchline/issues/221)) ([572ed99](https://github.com/johanpearson/Touchline/commit/572ed991418bd0f567bb65d03f9466f124793890))
+* **game:** v2 match input, engineVersion in results and save schema v4 ([#185](https://github.com/johanpearson/Touchline/issues/185)) ([e58a619](https://github.com/johanpearson/Touchline/commit/e58a619f1a4b82b004d35a5e6fbf656da75187d3))
+* **match-view:** classic 2D pitch view interpolating engine position snapshots ([#195](https://github.com/johanpearson/Touchline/issues/195)) ([c4cf876](https://github.com/johanpearson/Touchline/commit/c4cf87695d1aaf527806f6b0d5e843a0e88c82fa)), closes [#163](https://github.com/johanpearson/Touchline/issues/163)
+* **match-view:** feed the momentum terrain from action events through an adapter ([#191](https://github.com/johanpearson/Touchline/issues/191)) ([eaa1832](https://github.com/johanpearson/Touchline/commit/eaa18325f50676838c1eb5ff91bcb5e0f7750d8c))
+* **match-view:** passing chains and set-piece line-ups on the 2D pitch ([#196](https://github.com/johanpearson/Touchline/issues/196)) ([3ed44ad](https://github.com/johanpearson/Touchline/commit/3ed44ada3a4f7b8f1efed5c6f4c9856c561217dd)), closes [#164](https://github.com/johanpearson/Touchline/issues/164)
+* **ui:** action stats, key passes and player ratings in the match screen ([#192](https://github.com/johanpearson/Touchline/issues/192)) ([bdc7afe](https://github.com/johanpearson/Touchline/commit/bdc7afed6d4230260518704305b8846e9153c3d8)), closes [#162](https://github.com/johanpearson/Touchline/issues/162)
+
+
+### Bug Fixes
+
+* **ci:** keep the season time budget test out of npm test and Stryker ([#207](https://github.com/johanpearson/Touchline/issues/207)) ([d4c2953](https://github.com/johanpearson/Touchline/commit/d4c29532bd25a6db9a30b154a279def1f0a1b758))
+* **engine:** keep players of a set-piece set-up apart ([#184](https://github.com/johanpearson/Touchline/issues/184)) ([3d18942](https://github.com/johanpearson/Touchline/commit/3d18942eedd2395f38f88f87c36af0305fcf137e)), closes [#175](https://github.com/johanpearson/Touchline/issues/175)
+* **engine:** keep role players of a set-piece set-up apart ([#189](https://github.com/johanpearson/Touchline/issues/189)) ([ae71f01](https://github.com/johanpearson/Touchline/commit/ae71f01699fdd3db047ff6f840c5f5194bb06253)), closes [#183](https://github.com/johanpearson/Touchline/issues/183)
+* **engine:** keep the ball carrier on the ball under the snapshot speed cap ([#200](https://github.com/johanpearson/Touchline/issues/200)) ([f429657](https://github.com/johanpearson/Touchline/commit/f42965771c2be8df1c2c19412cfccf46cbc73fe0)), closes [#197](https://github.com/johanpearson/Touchline/issues/197)
+* **engine:** limit player speed between consecutive position snapshots ([#198](https://github.com/johanpearson/Touchline/issues/198)) ([203e5df](https://github.com/johanpearson/Touchline/commit/203e5df38bc9e95a85c4766d8be376a9663819f6)), closes [#194](https://github.com/johanpearson/Touchline/issues/194)
+* **engine:** run the performance budget test alone so CI load cannot fail it ([#188](https://github.com/johanpearson/Touchline/issues/188)) ([8fc2a3f](https://github.com/johanpearson/Touchline/commit/8fc2a3f9d824d1b21e83643f60fb4b9810910681)), closes [#186](https://github.com/johanpearson/Touchline/issues/186)
+
+
+### Performance Improvements
+
+* **match-view:** adapt only new action events per playback tick ([#193](https://github.com/johanpearson/Touchline/issues/193)) ([c87cbe1](https://github.com/johanpearson/Touchline/commit/c87cbe1bdb5abfa3657935267a8b5ab4504e3120))
+
 ## [1.5.0](https://github.com/johanpearson/Touchline/compare/v1.4.0...v1.5.0) (2026-11-14)
 
 
