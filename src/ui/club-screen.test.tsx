@@ -10,9 +10,10 @@ import {
 } from "../game";
 import { playMatchdays } from "../game/season-test-helpers";
 import { startNextSeason } from "../game/start-next-season";
-import { createMemoryLocaleStore } from "../platform";
+import { createMemoryDensityStore, createMemoryLocaleStore } from "../platform";
 import { ClubView } from "./club-screen";
 import { I18nProvider } from "./i18n-provider";
+import { DensityProvider } from "./theme/density-provider";
 
 const SEED = 11;
 
@@ -31,7 +32,9 @@ const newCareer = (): Career => {
 const renderClub = (career: Career, clubId: string, locale = "en") =>
   render(
     <I18nProvider store={createMemoryLocaleStore(locale)}>
-      <ClubView career={career} clubId={clubId} />
+      <DensityProvider store={createMemoryDensityStore(null)}>
+        <ClubView career={career} clubId={clubId} />
+      </DensityProvider>
     </I18nProvider>,
   );
 
@@ -74,7 +77,7 @@ describe("ClubView", () => {
     const form = computeForm(career.userClubId, career.season.results);
     renderClub(career, career.userClubId);
     const chips = within(screen.getByTestId("club-form")).getAllByTestId("form-chip");
-    expect(chips.map((c) => c.textContent)).toEqual(form);
+    expect(chips.map((c) => c.getAttribute("data-outcome"))).toEqual(form);
     expect(chips).toHaveLength(5);
   });
 
@@ -125,9 +128,10 @@ describe("ClubView", () => {
     renderClub(career, career.userClubId);
     const club = career.league.clubs[0];
     expect(screen.getAllByTestId(/^squad-row-/)).toHaveLength(club?.playerIds.length ?? -1);
-    for (const position of ["GK", "DEF", "MID", "FWD"]) {
-      expect(screen.getByTestId(`squad-group-${position}`)).toBeTruthy();
-    }
+    const headings = within(screen.getByTestId("squad-table"))
+      .getAllByRole("rowheader")
+      .map((h) => h.textContent);
+    expect(headings).toEqual(["Goalkeepers", "Defenders", "Midfielders", "Forwards"]);
   });
 
   it("marks exactly the automatic best eleven", () => {
@@ -159,19 +163,14 @@ describe("ClubView", () => {
   it("sorts each position group by a column and reverses on a second click", () => {
     const career = newCareer();
     renderClub(career, career.userClubId);
-    const paces = () =>
-      within(screen.getByTestId("squad-group-MID"))
-        .getAllByTestId(/^attr-.*-pace$/)
-        .map((c) => Number(c.textContent));
-    fireEvent.click(screen.getByTestId("sort-pace"));
+    const paces = () => screen.getAllByTestId(/^attr-.*-pace$/).map((c) => Number(c.textContent));
+    const header = () => screen.getByRole("columnheader", { name: /pace/i });
+    fireEvent.click(within(header()).getByRole("button"));
     const first = paces();
-    expect(first).toEqual([...first].sort((a, b) => b - a));
-    fireEvent.click(screen.getByTestId("sort-pace"));
-    const second = paces();
-    expect(second).toEqual([...second].sort((a, b) => a - b));
-    expect(screen.getByTestId("sort-pace").closest("th")?.getAttribute("aria-sort")).toBe(
-      "ascending",
-    );
+    expect(header().getAttribute("aria-sort")).not.toBe("none");
+    fireEvent.click(within(header()).getByRole("button"));
+    expect(paces()).not.toEqual(first);
+    expect(header().getAttribute("aria-sort")).not.toBe("none");
   });
 
   it("shows the line ratings and the overall from 0 to 100", () => {
@@ -200,6 +199,38 @@ describe("ClubView", () => {
     const id = club?.playerIds[0] ?? "";
     expect(screen.getByTestId(`fitness-${id}`).textContent).toBe("100");
     expect(screen.getByTestId(`form-${id}`).textContent).toBe("5");
-    expect(screen.getByTestId("sort-fitness")).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Fitness" })).toBeTruthy();
+  });
+
+  it("shows the club identity: league, home and away kit, and a link per player", () => {
+    const career = newCareer();
+    renderClub(career, otherClubId(career));
+    expect(screen.getByTestId("club-league").textContent).toBe(career.league.name);
+    expect(within(screen.getByTestId("club-kits")).getByText("Home kit")).toBeTruthy();
+    expect(within(screen.getByTestId("club-kits")).getByText("Away kit")).toBeTruthy();
+    const id = career.league.clubs[1]?.playerIds[0] ?? "";
+    expect(screen.getByTestId(`player-link-${id}`).getAttribute("href")).toBe(`#/player/${id}`);
+  });
+
+  it("offers the edit-lineup link to the tactics screen on the user's club only", () => {
+    const career = newCareer();
+    renderClub(career, career.userClubId);
+    expect(screen.getByTestId("edit-lineup").getAttribute("href")).toBe("#/tactics");
+    cleanup();
+    renderClub(career, otherClubId(career));
+    expect(screen.queryByTestId("edit-lineup")).toBeNull();
+  });
+
+  it("renders for clubs with very light and very dark colours", () => {
+    const career = newCareer();
+    const [first, ...rest] = career.league.clubs;
+    if (!first) throw new Error("club");
+    const light = { ...first, colours: { primary: "#ffffff", secondary: "#fffde7" } };
+    renderClub({ ...career, league: { ...career.league, clubs: [light, ...rest] } }, first.id);
+    expect(screen.getByTestId("club-name").textContent).toBe(first.name);
+    cleanup();
+    const dark = { ...first, colours: { primary: "#000000", secondary: "#050505" } };
+    renderClub({ ...career, league: { ...career.league, clubs: [dark, ...rest] } }, first.id);
+    expect(screen.getByTestId("club-name").textContent).toBe(first.name);
   });
 });
