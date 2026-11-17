@@ -24,7 +24,7 @@ describe("the nightly mutation workflow", () => {
 
   it("keeps the job key `mutation` for the merged result that the status job waits for, and merges even after a failed shard", () => {
     expect(workflow).toMatch(/\n {2}mutation:\n {4}name: Mutation testing \(engine\)\n {4}needs: \[mutation-plan, mutation-shard\]\n {4}# [^\n]*\n {4}if: always\(\)/);
-    expect(workflow).toMatch(/needs: \[balance-full, mutation, property-tests, e2e-full\]/);
+    expect(workflow).toMatch(/needs: \[balance-full, mutation, property-tests, e2e-full, visual\]/);
   });
 
   it("gives every shard at most two hours", () => {
