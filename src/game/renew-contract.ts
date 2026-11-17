@@ -1,4 +1,5 @@
 import type { Career } from "./career";
+import type { Contract } from "./contract";
 import { MAX_CONTRACT_SEASONS, MIN_CONTRACT_SEASONS } from "./initial-economy";
 import { playerValue, wageFor } from "./player-value";
 import { wageBill, wageBudget } from "./wage-budget";
@@ -23,6 +24,39 @@ export const askingWage = (career: Career, playerId: string): number | undefined
 const clubOf = (career: Career, playerId: string) =>
   career.league.clubs.find((c) => c.playerIds.includes(playerId));
 
+const isValidLength = (seasons: number): boolean =>
+  Number.isInteger(seasons) && seasons >= MIN_CONTRACT_SEASONS && seasons <= MAX_CONTRACT_SEASONS;
+
+const isWithinBudget = (
+  career: Career,
+  clubId: string,
+  current: Contract,
+  wage: number,
+): boolean => {
+  const finance = career.finances[clubId];
+  return (
+    finance !== undefined && wageBill(career, clubId) - current.wage + wage <= wageBudget(finance)
+  );
+};
+
+/** The first reason the renewal is refused, or undefined when it is allowed. */
+const renewError = (
+  career: Career,
+  playerId: string,
+  wage: number,
+  seasons: number,
+): RenewError | undefined => {
+  const club = clubOf(career, playerId);
+  const contract = career.contracts[playerId];
+  const ask = askingWage(career, playerId);
+  if (!club || !contract || ask === undefined) return "unknown-player";
+  if (contract.expiresSeason > career.season.number) return "not-expiring";
+  if (!isValidLength(seasons)) return "invalid-length";
+  if (!Number.isFinite(wage) || wage < ask) return "wage-too-low";
+  if (!isWithinBudget(career, club.id, contract, wage)) return "over-wage-budget";
+  return undefined;
+};
+
 /**
  * Renews the contract of a player whose contract ends with the current season, for `seasons`
  * (1 to 5) more seasons at `wage`. The player accepts any wage at or above his ask, and the club
@@ -34,21 +68,8 @@ export const renewContract = (
   wage: number,
   seasons: number,
 ): RenewResult => {
-  const club = clubOf(career, playerId);
-  const contract = career.contracts[playerId];
-  const ask = askingWage(career, playerId);
-  if (!club || !contract || ask === undefined) return { ok: false, error: "unknown-player" };
-  if (contract.expiresSeason > career.season.number) return { ok: false, error: "not-expiring" };
-  if (
-    !Number.isInteger(seasons) ||
-    seasons < MIN_CONTRACT_SEASONS ||
-    seasons > MAX_CONTRACT_SEASONS
-  )
-    return { ok: false, error: "invalid-length" };
-  if (!Number.isFinite(wage) || wage < ask) return { ok: false, error: "wage-too-low" };
-  const finance = career.finances[club.id];
-  if (!finance || wageBill(career, club.id) - contract.wage + wage > wageBudget(finance))
-    return { ok: false, error: "over-wage-budget" };
+  const error = renewError(career, playerId, wage, seasons);
+  if (error) return { ok: false, error };
   const renewed = { wage, expiresSeason: career.season.number + seasons };
   return {
     ok: true,
