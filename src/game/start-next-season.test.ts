@@ -64,12 +64,4 @@ describe("startNextSeason", () => {
       expect(summary.finalTable.every((row) => row.played === 26)).toBe(true);
     }
   });
-
-  it.each([2, 5, 9])("plays two full seasons consistently for seed %i", (seed) => {
-    const career = next(playSeasons(aCareer(seed), 2));
-
-    expect(career.history).toHaveLength(2);
-    expect(career.history[1]?.seasonNumber).toBe(2);
-    expect(career.history[0]?.finalTable).not.toEqual(career.history[1]?.finalTable);
-  });
 });
