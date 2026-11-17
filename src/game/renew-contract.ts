@@ -39,6 +39,27 @@ const isWithinBudget = (
   );
 };
 
+const isAcceptableWage = (wage: number, ask: number): boolean =>
+  Number.isFinite(wage) && wage >= ask;
+
+/** The club, contract and asking wage of a player, or undefined for an unknown player. */
+const lookUp = (career: Career, playerId: string) => {
+  const club = clubOf(career, playerId);
+  if (!club) return undefined;
+  const contract = career.contracts[playerId];
+  if (!contract) return undefined;
+  const ask = askingWage(career, playerId);
+  if (ask === undefined) return undefined;
+  return { club, contract, ask };
+};
+
+/** Refuses a length outside 1 to 5 seasons or a wage below the player's ask. */
+const offerError = (ask: number, wage: number, seasons: number): RenewError | undefined => {
+  if (!isValidLength(seasons)) return "invalid-length";
+  if (!isAcceptableWage(wage, ask)) return "wage-too-low";
+  return undefined;
+};
+
 /** The first reason the renewal is refused, or undefined when it is allowed. */
 const renewError = (
   career: Career,
@@ -46,15 +67,14 @@ const renewError = (
   wage: number,
   seasons: number,
 ): RenewError | undefined => {
-  const club = clubOf(career, playerId);
-  const contract = career.contracts[playerId];
-  const ask = askingWage(career, playerId);
-  if (!club || !contract || ask === undefined) return "unknown-player";
-  if (contract.expiresSeason > career.season.number) return "not-expiring";
-  if (!isValidLength(seasons)) return "invalid-length";
-  if (!Number.isFinite(wage) || wage < ask) return "wage-too-low";
-  if (!isWithinBudget(career, club.id, contract, wage)) return "over-wage-budget";
-  return undefined;
+  const found = lookUp(career, playerId);
+  if (!found) return "unknown-player";
+  if (found.contract.expiresSeason > career.season.number) return "not-expiring";
+  const refused = offerError(found.ask, wage, seasons);
+  if (refused) return refused;
+  return isWithinBudget(career, found.club.id, found.contract, wage)
+    ? undefined
+    : "over-wage-budget";
 };
 
 /**
