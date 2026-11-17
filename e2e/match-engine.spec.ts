@@ -58,8 +58,17 @@ test.describe("match engine", () => {
     await expect(page.getByTestId("classic-pitch")).toHaveCount(0);
 
     await expect(page.getByTestId("half-time")).toBeVisible({ timeout: 60_000 });
+    await page.getByTestId("make-changes").click();
     await page.getByTestId("sub-add").click();
-    await page.getByTestId("tactic-mentality").selectOption("attacking");
+    await page
+      .getByTestId(/^pick-/)
+      .first()
+      .click();
+    await page
+      .getByTestId(/^pick-/)
+      .first()
+      .click();
+    await page.getByTestId("tactic-mentality").getByRole("radio", { name: "Attacking" }).click();
     await page.getByTestId("start-second-half").click();
 
     await expect(page.getByTestId("period")).toHaveText("Full time", { timeout: 90_000 });

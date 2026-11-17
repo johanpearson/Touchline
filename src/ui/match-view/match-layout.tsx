@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useRef, useState } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import type { CommentaryLine } from "../../commentary";
 import type { ActionEvent, ActionMatchState, ActionStats, PerSide, ZoneEvent } from "../../engine";
 import { Button } from "../components/button";
@@ -83,18 +83,14 @@ export function MatchLayout({
   const halfTime = period === "halfTime";
   const [view, setView] = useViewChoice();
   const [showChain, setShowChain] = useState(true);
-  const mainRef = useRef<HTMLDivElement>(null);
   const { paused, setPaused } = playback;
   const playing = period === "firstHalf" || period === "secondHalf";
   usePauseShortcut(
     playing,
     useCallback(() => setPaused(!paused), [paused, setPaused]),
   );
-  const makeChanges = () => {
-    const panel = mainRef.current?.querySelector<HTMLElement>('[data-testid="half-time"]');
-    panel?.scrollIntoView?.({ block: "nearest" });
-    panel?.querySelector<HTMLElement>("button, select")?.focus();
-  };
+  const [changesOpen, setChangesOpen] = useState(false);
+  const makeChanges = () => setChangesOpen(true);
   const stageLabel = `${view === "pitch" ? t("match.pitch") : t("match.terrain")}. ${describeStage({
     t,
     names,
@@ -119,7 +115,7 @@ export function MatchLayout({
           events={events}
         />
       </div>
-      <div className="match-main flex min-w-0 flex-col gap-3" ref={mainRef}>
+      <div className="match-main flex min-w-0 flex-col gap-3">
         <MatchStage
           view={view}
           label={stageLabel}
@@ -152,6 +148,8 @@ export function MatchLayout({
             playerIds={playerIds}
             editor={halfTimeEditor}
             onResume={onResume}
+            changesOpen={changesOpen}
+            onChangesOpenChange={setChangesOpen}
           />
         )}
         {period === "fullTime" && fullTimePanel}

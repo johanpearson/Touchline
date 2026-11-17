@@ -201,12 +201,17 @@ describe("season flow", () => {
     startMatch();
     fireEvent.click(screen.getByTestId("speed-4"));
     act(() => vi.advanceTimersByTime(40_000));
-    fireEvent.click(screen.getByTestId("sub-add"));
-    const off = (screen.getByTestId("sub-off-0") as HTMLSelectElement).value;
-    const on = (screen.getByTestId("sub-on-0") as HTMLSelectElement).value;
+    fireEvent.click(screen.getByTestId("make-changes"));
     const ids = screen
       .getAllByTestId(/^half-time-fitness-/)
       .map((e) => e.dataset.testid?.slice("half-time-fitness-".length) ?? "");
+    fireEvent.click(screen.getByTestId("sub-add"));
+    const offButton = screen.getAllByTestId(/^pick-/)[0] as HTMLElement;
+    const off = offButton.dataset.testid?.slice("pick-".length) ?? "";
+    fireEvent.click(offButton);
+    const onButton = screen.getAllByTestId(/^pick-/)[0] as HTMLElement;
+    const on = onButton.dataset.testid?.slice("pick-".length) ?? "";
+    fireEvent.click(onButton);
     fireEvent.click(screen.getByTestId("start-second-half"));
     act(() => vi.advanceTimersByTime(40_000));
     click("continue");

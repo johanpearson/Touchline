@@ -18,6 +18,14 @@ export type DrawerProps = {
   /** Which edge the sheet uses at 640 px and wider. Below that it is always a bottom sheet. */
   side?: "left" | "right";
   className?: string;
+  /** Moves focus to the title when the sheet opens, instead of to its first control. */
+  focusTitle?: boolean;
+};
+
+const focusHeading = (event: Event) => {
+  event.preventDefault();
+  const content = event.currentTarget as HTMLElement | null;
+  content?.querySelector<HTMLElement>("[data-overlay-title]")?.focus();
 };
 
 const PHONE = "(max-width: 639.98px)";
@@ -38,7 +46,7 @@ export function Drawer(props: DrawerProps) {
       {props.trigger ? <RadixDialog.Trigger asChild>{props.trigger}</RadixDialog.Trigger> : null}
       <RadixDialog.Portal>
         <RadixDialog.Overlay className={scrimStyles} />
-        <RadixDialog.Content asChild>
+        <RadixDialog.Content asChild onOpenAutoFocus={props.focusTitle ? focusHeading : undefined}>
           <motion.div
             {...motionProps}
             data-side={side}

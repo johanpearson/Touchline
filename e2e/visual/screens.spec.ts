@@ -479,12 +479,41 @@ visualScreen({
     await openMatch(page);
     await page.getByTestId("speed-4").click();
     // Half-time stops the match; the second half starts from its panel.
-    // By DOM click: on a phone the bottom tab bar covers the half-time panel (#268 redesigns it).
+    // By DOM click: on a phone the bottom tab bar can cover the half-time panel.
     await page.getByTestId("start-second-half").waitFor({ timeout: 60_000 });
     await page
       .getByTestId("start-second-half")
       .evaluate((button) => (button as HTMLButtonElement).click());
     await page.getByTestId("player-ratings").waitFor({ timeout: 60_000 });
+  },
+});
+
+// Half-time (#268): the panel with its stats and the "Make changes" sheet open with two pending
+// substitutions (the empty and the error states are stories: half-time-sheet.stories.tsx).
+visualScreen({
+  name: "match-half-time-changes",
+  route: "#/new",
+  mask: TERRAIN,
+  state: async (page) => {
+    test.setTimeout(180_000);
+    await openMatch(page);
+    await page.getByTestId("speed-4").click();
+    await page.getByTestId("half-time").waitFor({ timeout: 60_000 });
+    await page
+      .getByTestId("make-changes")
+      .evaluate((button) => (button as HTMLButtonElement).click());
+    for (let swap = 0; swap < 2; swap++) {
+      await page.getByTestId("sub-add").click();
+      await page
+        .getByTestId(/^pick-/)
+        .first()
+        .click();
+      await page
+        .getByTestId(/^pick-/)
+        .first()
+        .click();
+    }
+    await page.getByTestId("sub-off-1").waitFor();
   },
 });
 
