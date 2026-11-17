@@ -301,6 +301,55 @@ describe("tactics screen", () => {
   });
 });
 
+describe("tactics screen profile links", () => {
+  const profileHref = (name: string) =>
+    screen.getByRole("link", { name: `Open profile of ${name}` }).getAttribute("href");
+
+  it("links each bench row to the player's profile without changing the lineup", () => {
+    mountApp();
+    startCareer();
+    const before = screen.getByTestId("pitch-slot-1").getAttribute("aria-label");
+    const name = nameInLabel("bench-slot-0");
+    const href = profileHref(name);
+    expect(href).toMatch(/^#\/player\//);
+    fireEvent.click(screen.getByRole("link", { name: `Open profile of ${name}` }));
+    expect(screen.getByTestId("pitch-slot-1").getAttribute("aria-label")).toBe(before);
+  });
+
+  it("links each picker option to the player's profile", () => {
+    mountApp();
+    startCareer();
+    fireEvent.click(screen.getByTestId("pitch-slot-1"));
+    for (const option of options()) {
+      const id = option.dataset.testid?.replace("picker-option-", "");
+      expect(
+        within(option.parentElement as HTMLElement)
+          .getByTestId(`profile-link-${id}`)
+          .getAttribute("href"),
+      ).toBe(`#/player/${id}`);
+    }
+  });
+
+  it("links each list row to the player's profile", () => {
+    mountApp();
+    startCareer();
+    showList();
+    const id = select("starter-1").value;
+    expect(screen.getByTestId(`profile-link-${id}`).getAttribute("href")).toBe(`#/player/${id}`);
+    const benchId = select("bench-0").value;
+    expect(screen.getByTestId(`profile-link-${benchId}`).getAttribute("href")).toBe(
+      `#/player/${benchId}`,
+    );
+  });
+
+  it("names the link in Swedish", () => {
+    mountApp(createMemorySaveStore(), "sv");
+    startCareer();
+    const link = screen.getAllByTestId(/^profile-link-/)[0];
+    expect(link?.getAttribute("aria-label")).toMatch(/^Öppna profilen för .+/);
+  });
+});
+
 describe("tactics screen list view", () => {
   it("offers one select per starter and bench slot without the pitch", () => {
     mountApp();

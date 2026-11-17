@@ -1,5 +1,6 @@
 import { useI18n } from "../i18n-provider";
 import { LOW_FITNESS } from "../plan-rows";
+import { ProfileLink } from "./profile-link";
 import type { BenchSlot } from "./slots";
 
 /** The bench as a list of buttons; each opens the same picker as a pitch slot. */
@@ -10,7 +11,7 @@ export function BenchList(props: { slots: readonly BenchSlot[]; onPick: (index: 
       <h3 className="m-0 font-heading text-lg text-text">{t("tactics.bench.label")}</h3>
       <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
         {props.slots.map((slot) => (
-          <li key={slot.player.id}>
+          <li key={slot.player.id} className="flex items-center gap-2">
             <button
               type="button"
               data-testid={`bench-slot-${slot.index}`}
@@ -23,7 +24,7 @@ export function BenchList(props: { slots: readonly BenchSlot[]; onPick: (index: 
                 fitness: slot.fitness,
               })}
               onClick={() => props.onPick(slot.index)}
-              className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-md border border-line bg-surface px-3 text-left text-text hover:bg-glow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center justify-between gap-3 rounded-md border border-line bg-surface px-3 text-left text-text hover:bg-glow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
               <span className="min-w-0 truncate font-semibold">
                 {slot.player.name}{" "}
@@ -36,6 +37,7 @@ export function BenchList(props: { slots: readonly BenchSlot[]; onPick: (index: 
                 {slot.fitness}
               </span>
             </button>
+            <ProfileLink playerId={slot.player.id} name={slot.player.name} />
           </li>
         ))}
       </ul>

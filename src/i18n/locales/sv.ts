@@ -572,6 +572,7 @@ export const sv = {
   "tactics.slot.label": "{role}, {player}, kondition {fitness}",
   "tactics.slot.fitness": "Kondition {fitness}",
   "tactics.bench.label": "Bänken",
+  "tactics.profile.open": "Öppna profilen för {player}",
   "tactics.bench.slot": "Bänkplats {slot}: {player}, {position}, kondition {fitness}",
   "tactics.picker.title": "Välj {role}",
   "tactics.picker.bench": "Välj bänkplats {slot}",
