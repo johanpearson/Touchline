@@ -30,7 +30,7 @@ type Scorer = { name: string; clubId: string };
 const recordedScorers = (
   scorers: readonly string[],
   playersById: ReadonlyMap<string, Scorer>,
-): Scorer[] => scorers.map((id) => playersById.get(id) as Scorer);
+): Scorer[] => scorers.flatMap((id) => playersById.get(id) ?? []);
 
 /** Results saved before schema v6 have no scorers: draw them from the clubs' best elevens. */
 const drawnScorers = (
@@ -85,10 +85,14 @@ const tallyScorers = (career: Career): TopScorer[] => {
  * Summarises a finished season: champion, final table, the user's finish and the top scorers.
  * Scorers come from the scorers recorded in each result (schema v6), or are drawn for results
  * saved without them, so they always add up to each club's goals.
+ * A scorer who has retired is no longer in the league data, so a summary already stored in
+ * `history` for this season is returned as it is (it was captured before the player left).
  * Returns a typed error for an unfinished season.
  */
 export const summariseSeason = (career: Career, options: SummaryOptions = {}): SummaryResult => {
   if (!isSeasonComplete(career.season)) return { ok: false, error: "season-incomplete" };
+  const stored = career.history.find((h) => h.seasonNumber === career.season.number);
+  if (stored) return { ok: true, summary: stored };
   const clubIds = career.league.clubs.map((c) => c.id);
   const computed = computeTable(clubIds, career.season.results);
   if (!computed.ok) throw new RangeError(`Cannot build the final table: ${computed.error}`);

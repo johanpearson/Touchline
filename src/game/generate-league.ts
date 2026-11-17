@@ -70,6 +70,13 @@ const slugify = (text: string): string =>
     .replace(/^-|-$/g, "");
 
 /**
+ * The initial squad strength (0..1) of every club of the league `generateLeague` makes for this
+ * seed, in club order. Clubs are never reordered, so this is also the strength a club started with.
+ */
+export const initialClubStrengths = (seed: number, clubCount: number): number[] =>
+  strengthsFor(clubCount, createRng(seed).fork("league").fork("strengths"));
+
+/**
  * Turns a seed into a complete league of fictional clubs with squads of varied strength.
  * Deterministic: the same seed and club count always give an identical league.
  */
@@ -80,7 +87,7 @@ export const generateLeague = (spec: LeagueSpec): LeagueResult => {
   const rng = createRng(spec.seed).fork("league");
   const identities = generateClubIdentities(clubCount, rng.fork("identities"));
   if (!identities.ok) return { ok: false, error: "invalid-club-count" };
-  const strengths = strengthsFor(clubCount, rng.fork("strengths"));
+  const strengths = initialClubStrengths(spec.seed, clubCount);
   const name = rng.fork("name").pick(LEAGUE_NAMES);
 
   const clubs: Club[] = [];
