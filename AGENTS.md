@@ -28,3 +28,8 @@ CodeScene's MCP server (`.mcp.json` at the root, `.vscode/mcp.json` for VS Code)
 1. Set `CS_ACCESS_TOKEN` (a CodeScene personal access token) and `CS_ONPREM_URL` (the base URL of our CodeScene instance) in your user environment, then restart your editor or terminal so they are picked up. Nothing secret is stored in the repo.
 2. Claude Code and other clients read `.mcp.json`; VS Code reads `.vscode/mcp.json`. Node.js is needed for `npx`.
 3. `.mcp.json` starts the server through `cmd /c npx`, which works on Windows only. On macOS or Linux change `command` to `npx` and `args` to `["-y", "@codescene/codehealth-mcp"]` in your local copy (do not commit that).
+
+## Line endings and versions
+
+- Files are LF. Scripts that edit files must not convert them (Python: `newline=""`). See "Line endings" in `CLAUDE.md`.
+- The PR title's Conventional Commit type sets the next version through release-please (`feat` minor, `fix`/`perf`/`revert` patch, `!` major, everything else none). Choose it deliberately and follow "Versioning and releases" in `CLAUDE.md`; never use `!` or touch the release PR or version files without the maintainer.
