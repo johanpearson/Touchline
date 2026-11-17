@@ -51,16 +51,30 @@ describe("playerProfile", () => {
     expect(playerProfile(careerAfter(0), "nope")).toBeNull();
   });
 
-  it("carries the stored player, club, overall and condition", () => {
+  it("carries the stored player and the club it plays for", () => {
     const career = careerAfter(2);
     const id = userPlayerId(career, "MID");
     const profile = playerProfile(career, id);
-    const player = career.league.players.find((p) => p.id === id);
-    expect(profile?.player).toBe(player);
+    expect(profile?.player).toBe(career.league.players.find((p) => p.id === id));
     expect(profile?.club.id).toBe(career.userClubId);
-    expect(profile?.overall).toBe(player ? playerOverall(player) : -1);
-    expect(profile?.fitness).toBe(career.condition[id]?.fitness ?? 100);
-    expect(profile?.form).toBe(career.condition[id]?.form ?? 5);
+  });
+
+  it("derives the overall from the stored player", () => {
+    const career = careerAfter(2);
+    const id = userPlayerId(career, "MID");
+    const player = career.league.players.find((p) => p.id === id);
+    if (!player) throw new Error("fixture");
+    expect(playerProfile(career, id)?.overall).toBe(playerOverall(player));
+  });
+
+  it("takes fitness and form from the career condition", () => {
+    const career = careerAfter(2);
+    const id = userPlayerId(career, "MID");
+    const condition = career.condition[id];
+    if (!condition) throw new Error("fixture");
+    const profile = playerProfile(career, id);
+    expect(profile?.fitness).toBe(condition.fitness);
+    expect(profile?.form).toBe(condition.form);
   });
 
   it("exposes effective attributes separately from the stored ones", () => {

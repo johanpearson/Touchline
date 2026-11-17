@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Career } from "../game";
 import { createMemoryDensityStore, createMemoryThemeStore } from "../platform";
 import type { DensityStore, FileTransfer, LocaleStore, SaveStore, ThemeStore } from "../shared";
@@ -34,14 +35,19 @@ const BARE_ROUTES: readonly Route["name"][] = ["new", "new-club", "saves", "not-
 type ScreenProps = RendererProp & { initialSeed: number };
 type CareerScreenProps = RendererProp & { career: Career; route: Route };
 
+/** The screens about one club or one player. */
+function detailScreen(career: Career, route: Route): ReactNode {
+  if (route.name === "club") return <ClubView career={career} clubId={route.clubId} />;
+  if (route.name === "player") return <PlayerView career={career} playerId={route.playerId} />;
+  return null;
+}
+
 function CareerScreen({ career, route, createRenderer, tickMs }: CareerScreenProps) {
+  const detail = detailScreen(career, route);
+  if (detail) return detail;
   switch (route.name) {
     case "league":
       return <LeagueScreen />;
-    case "club":
-      return <ClubView career={career} clubId={route.clubId} />;
-    case "player":
-      return <PlayerView career={career} playerId={route.playerId} />;
     case "match":
       return <MatchFlowScreen createRenderer={createRenderer} tickMs={tickMs} />;
     case "squad":

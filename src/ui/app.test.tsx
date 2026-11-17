@@ -301,6 +301,15 @@ describe("career navigation", () => {
     expect(screen.getByTestId("nav-squad").getAttribute("href")).toBe("#/squad");
   });
 
+  it("shows a player profile on the player route and not-found for an unknown player", () => {
+    const club = startedClub();
+    const playerId = club.playerIds[0] ?? "";
+    goTo(`#/player/${encodeURIComponent(playerId)}`);
+    expect(screen.getByTestId("player-screen")).toBeTruthy();
+    goTo("#/player/nope");
+    expect(screen.getByTestId("not-found")).toBeTruthy();
+  });
+
   it("shows the start screen on the squad route without a career", () => {
     renderApp();
     goTo("#/squad");
