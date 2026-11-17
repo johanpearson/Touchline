@@ -334,6 +334,20 @@ describe("career navigation", () => {
     expect(screen.getByTestId("career-hub")).toBeTruthy();
   });
 
+  it("shows the settings screen on the settings route without a career", () => {
+    renderApp();
+    goTo("#/settings");
+    expect(screen.getByTestId("settings-screen")).toBeTruthy();
+    expect(screen.queryByTestId("start-screen")).toBeNull();
+  });
+
+  it("shows the settings screen inside the app shell with a career", () => {
+    startedClub();
+    goTo("#/settings");
+    expect(screen.getByTestId("settings-screen")).toBeTruthy();
+    expect(screen.getByTestId("app-shell")).toBeTruthy();
+  });
+
   it("asks to start a career when a career route is opened without one", () => {
     renderApp();
     goTo("#/league");
