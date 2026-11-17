@@ -151,45 +151,36 @@ describe("generateYouthIntake", () => {
     expect(youthOf(twoKeepers, result, club).filter((p) => p.position === "GK")).toHaveLength(1);
   });
 
-  it("fills every line below its minimum when three players are enough", () => {
-    const club = base.league.clubs[2];
+  /** A career where club `index` has only `keep` defenders, midfielders and forwards. */
+  const thinClub = (index: number, keep: { DEF: number; MID: number; FWD: number }) => {
+    const club = base.league.clubs[index];
     const squad = base.league.players.filter((p) => club?.playerIds.includes(p.id));
     const drop = new Set<string>();
-    for (const [position, keep] of [
-      ["DEF", 4],
-      ["MID", 4],
-      ["FWD", 2],
-    ] as const) {
-      for (const p of squad.filter((x) => x.position === position).slice(keep)) drop.add(p.id);
+    for (const position of ["DEF", "MID", "FWD"] as const) {
+      for (const p of squad.filter((x) => x.position === position).slice(keep[position])) {
+        drop.add(p.id);
+      }
     }
-    const thin = withoutPlayers(base, club?.id as string, (p) =>
+    const career = withoutPlayers(base, club?.id as string, (p) =>
       drop.has((p as unknown as { id: string }).id),
     );
-    const result = generateYouthIntake(thin);
+    return { career, clubId: club?.id as string };
+  };
+
+  it("fills every line below its minimum when three players are enough", () => {
+    const { career, clubId } = thinClub(2, { DEF: 4, MID: 4, FWD: 2 });
+    const result = generateYouthIntake(career);
     expect(
-      youthOf(thin, result, club?.id as string)
+      youthOf(career, result, clubId)
         .map((p) => p.position)
         .sort(),
     ).toEqual(["DEF", "FWD", "MID"]);
-    expect(squadLimits(result, club?.id as string).missing).toEqual({});
+    expect(squadLimits(result, clubId).missing).toEqual({});
   });
 
   it("covers the biggest shortfalls first when three players are not enough", () => {
-    const club = base.league.clubs[3];
-    const squad = base.league.players.filter((p) => club?.playerIds.includes(p.id));
-    const drop = new Set<string>();
-    for (const [position, keep] of [
-      ["DEF", 3],
-      ["MID", 4],
-      ["FWD", 2],
-    ] as const) {
-      for (const p of squad.filter((x) => x.position === position).slice(keep)) drop.add(p.id);
-    }
-    const thin = withoutPlayers(base, club?.id as string, (p) =>
-      drop.has((p as unknown as { id: string }).id),
-    );
-    const result = generateYouthIntake(thin);
-    const missing = Object.values(squadLimits(result, club?.id as string).missing);
+    const { career, clubId } = thinClub(3, { DEF: 3, MID: 4, FWD: 2 });
+    const missing = Object.values(squadLimits(generateYouthIntake(career), clubId).missing);
     expect(missing.reduce((a, b) => a + b, 0)).toBe(1);
   });
 

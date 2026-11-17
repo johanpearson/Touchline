@@ -67,13 +67,16 @@ const youthPositions = (squad: readonly Player[], rng: Rng): PlayerPosition[] =>
   });
 };
 
-const youthFor = (
-  club: Club,
-  squad: readonly Player[],
-  strength: number,
-  season: number,
-  rng: Rng,
-) => {
+type YouthRequest = {
+  club: Club;
+  squad: readonly Player[];
+  /** The club's initial strength, 0..1. */
+  strength: number;
+  season: number;
+  rng: Rng;
+};
+
+const youthFor = ({ club, squad, strength, season, rng }: YouthRequest) => {
   const quality = youthQuality(strength, rng.fork("quality"));
   const taken = new Set(squad.map((p) => p.name));
   return youthPositions(squad, rng.fork("positions")).map((position, i): Player => {
@@ -108,7 +111,13 @@ export const generateYouthIntake = (career: Career): Career => {
   const strengths = initialClubStrengths(career.seed, career.league.clubs.length);
   const joined = career.league.clubs.map((club, index) => {
     const squad = career.league.players.filter((p) => club.playerIds.includes(p.id));
-    return youthFor(club, squad, strengths[index] as number, season, rng.fork(club.id));
+    return youthFor({
+      club,
+      squad,
+      strength: strengths[index] as number,
+      season,
+      rng: rng.fork(club.id),
+    });
   });
   const players = joined.flat();
   const contracts = Object.fromEntries(
