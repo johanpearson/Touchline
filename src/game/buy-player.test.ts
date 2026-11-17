@@ -86,26 +86,23 @@ describe("buyPlayer", () => {
     expect(buyPlayer(career, target, ask, seasons)).toEqual({ ok: false, error: "invalid-length" });
   });
 
-  it("refuses when the balance does not cover the fee", () => {
-    const poor = deepFreeze({
+  it.each([
+    [
+      "the balance does not cover the fee",
+      { balance: ask - 1, baseIncome: 1_000_000_000 },
+      "insufficient-funds",
+    ],
+    [
+      "the wage bill would pass the wage budget",
+      { balance: 1_000_000_000, baseIncome: 0 },
+      "over-wage-budget",
+    ],
+  ])("refuses when %s", (_name, finance, error) => {
+    const limited = deepFreeze({
       ...career,
-      finances: {
-        ...career.finances,
-        [career.userClubId]: { balance: ask - 1, baseIncome: 1_000_000_000 },
-      },
+      finances: { ...career.finances, [career.userClubId]: finance },
     });
-    expect(buyPlayer(poor, target, ask)).toEqual({ ok: false, error: "insufficient-funds" });
-  });
-
-  it("refuses when the wage bill would pass the wage budget", () => {
-    const tight = deepFreeze({
-      ...career,
-      finances: {
-        ...career.finances,
-        [career.userClubId]: { balance: 1_000_000_000, baseIncome: 0 },
-      },
-    });
-    expect(buyPlayer(tight, target, ask)).toEqual({ ok: false, error: "over-wage-budget" });
+    expect(buyPlayer(limited, target, ask)).toEqual({ ok: false, error });
   });
 
   it("refuses when the squad is full", () => {

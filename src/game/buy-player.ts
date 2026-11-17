@@ -15,6 +15,22 @@ import { isWindowOpen } from "./transfer-window";
 const sellerOf = (career: Career, playerId: string) =>
   career.league.clubs.find((c) => c.playerIds.includes(playerId));
 
+type Listing = { sellerId: string; ask: number; wage: number };
+
+const listingOf = (career: Career, playerId: string): Listing | undefined => {
+  const seller = sellerOf(career, playerId);
+  const ask = askingPrice(career, playerId);
+  const wage = signingWage(career, playerId);
+  if (!seller || ask === undefined || wage === undefined) return undefined;
+  return { sellerId: seller.id, ask, wage };
+};
+
+const priceError = (listing: Listing, fee: number, seasons: number): TransferError | undefined => {
+  if (!isValidSeasons(seasons)) return "invalid-length";
+  if (!Number.isInteger(fee)) return "invalid-fee";
+  return fee < listing.ask ? "fee-too-low" : undefined;
+};
+
 const buyError = (
   career: Career,
   playerId: string,
@@ -22,17 +38,16 @@ const buyError = (
   seasons: number,
 ): TransferError | undefined => {
   if (!isWindowOpen(career)) return "window-closed";
-  const seller = sellerOf(career, playerId);
-  const ask = askingPrice(career, playerId);
-  const wage = signingWage(career, playerId);
-  if (!seller || ask === undefined || wage === undefined) return "unknown-player";
-  if (seller.id === career.userClubId) return "own-player";
-  if (!isValidSeasons(seasons)) return "invalid-length";
-  if (!Number.isInteger(fee)) return "invalid-fee";
-  if (fee < ask) return "fee-too-low";
-  const refused = buyerError(career, career.userClubId, fee, wage);
+  const listing = listingOf(career, playerId);
+  if (!listing) return "unknown-player";
+  if (listing.sellerId === career.userClubId) return "own-player";
+  const refusedPrice = priceError(listing, fee, seasons);
+  if (refusedPrice) return refusedPrice;
+  const refused = buyerError(career, career.userClubId, fee, listing.wage);
   if (refused) return refused;
-  return staysWithinMinimums(career, seller.id, playerId) ? undefined : "seller-below-minimum";
+  return staysWithinMinimums(career, listing.sellerId, playerId)
+    ? undefined
+    : "seller-below-minimum";
 };
 
 /**
