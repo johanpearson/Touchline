@@ -8,3 +8,4 @@ test-results
 reports
 stryker-setup-*.js
 storybook-static
+visual-results.json
