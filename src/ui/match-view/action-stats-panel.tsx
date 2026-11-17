@@ -56,19 +56,30 @@ export function ActionStatsPanel({ stats, playerIds, colours }: ActionStatsPanel
       </h2>
       <dl className="m-0 flex flex-col gap-3">
         {rows.map(({ id, raw, format }) => (
-          <div key={id} data-testid={`stat-${id}`} className="min-w-0">
-            <div className="grid grid-cols-[3.5rem_minmax(0,1fr)_3.5rem] items-baseline gap-2 text-[13px] tabular-nums">
-              <dd data-side="home" className="m-0 text-left text-base font-semibold text-text">
-                {format(raw.home)}
-              </dd>
-              <dt className="text-center text-muted">{t(`stats.label.${id}`)}</dt>
-              <dd data-side="away" className="m-0 text-right text-base font-semibold text-text">
-                {format(raw.away)}
-              </dd>
-            </div>
-            <div
+          <div
+            key={id}
+            data-testid={`stat-${id}`}
+            className="grid min-w-0 grid-cols-[3.5rem_minmax(0,1fr)_3.5rem] items-baseline gap-x-2 gap-y-1 text-[13px] tabular-nums"
+          >
+            {/* A term comes first in a definition-list group; the grid places the cells side by side. */}
+            <dt className="col-start-2 row-start-1 text-center text-muted">
+              {t(`stats.label.${id}`)}
+            </dt>
+            <dd
+              data-side="home"
+              className="col-start-1 row-start-1 m-0 text-left text-base font-semibold text-text"
+            >
+              {format(raw.home)}
+            </dd>
+            <dd
+              data-side="away"
+              className="col-start-3 row-start-1 m-0 text-right text-base font-semibold text-text"
+            >
+              {format(raw.away)}
+            </dd>
+            <dd
               aria-hidden="true"
-              className="mt-1 flex h-1.5 overflow-hidden rounded-full bg-track"
+              className="col-span-3 row-start-2 m-0 flex h-1.5 overflow-hidden rounded-full bg-track"
             >
               <span
                 className="h-full bg-soft"
@@ -78,7 +89,7 @@ export function ActionStatsPanel({ stats, playerIds, colours }: ActionStatsPanel
                 }}
               />
               <span className="h-full flex-1 bg-muted" style={{ background: colours?.away }} />
-            </div>
+            </dd>
           </div>
         ))}
       </dl>

@@ -286,6 +286,15 @@ jobs:
             *failure*) echo "::error::The visual smoke run failed: a broken screen state (see its annotations) or a build error."; exit 1 ;;
           esac
 
+  pr-title:
+    name: PR title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # Accessibility (#272): axe over every registered screen state at 3 widths x 3 themes x 2 languages, from the same
   # registry as the visual tests. Not a required check for the first week; the maintainer then promotes it.
   # Keep the shard list and the --shard total in step.
@@ -318,12 +327,3 @@ jobs:
             test-results/
             a11y-results.json
           retention-days: 7
-
-  pr-title:
-    name: PR title
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: amannn/action-semantic-pull-request@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -33,6 +33,9 @@ for (const state of SCREEN_STATES) {
           await page.waitForFunction(() => document.documentElement.dataset.theme === "midnight");
           await state.state?.(page);
 
+          // Let route and state transitions end: axe measures contrast on a half-faded element otherwise.
+          await page.evaluate(() => document.fonts.ready);
+          await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
           const violations: string[] = [];
           const incomplete: string[] = [];
           for (const theme of THEMES) {
