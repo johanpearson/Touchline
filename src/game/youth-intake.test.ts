@@ -7,7 +7,12 @@ import { playerOverall } from "./player-overall";
 import { retirePlayers } from "./retire-players";
 import { MAX_SQUAD_SIZE, MIN_PER_POSITION, squadLimits } from "./squad-limits";
 import type { PlayerPosition } from "./squad-player";
-import { generateYouthIntake, YOUTH_CONTRACT_SEASONS, YOUTH_PER_CLUB } from "./youth-intake";
+import {
+  generateYouthIntake,
+  YOUTH_CONTRACT_SEASONS,
+  YOUTH_PER_CLUB,
+  YOUTH_QUALITY_OFFSET,
+} from "./youth-intake";
 
 const base = aCareer(8);
 const POSITIONS = Object.keys(MIN_PER_POSITION) as PlayerPosition[];
@@ -75,6 +80,38 @@ describe("generateYouthIntake", () => {
         expect(p.potential).toBeLessThanOrEqual(20);
       }
     }
+  });
+
+  it("does not depend on the order of the clubs in the league", () => {
+    const reversed: Career = {
+      ...base,
+      league: { ...base.league, clubs: [...base.league.clubs].reverse() },
+    };
+
+    const a = generateYouthIntake(base);
+    const b = generateYouthIntake(reversed);
+
+    const byId = (career: Career) =>
+      Object.fromEntries(career.league.players.map((p) => [p.id, p]));
+    expect(byId(b)).toEqual(byId(a));
+  });
+
+  it("still gives a club that was not generated with the league its youth, by its position", () => {
+    const [first, ...others] = base.league.clubs;
+    const renamed = { ...(first as (typeof base.league.clubs)[number]), id: "hand-built" };
+    const career: Career = { ...base, league: { ...base.league, clubs: [renamed, ...others] } };
+
+    const result = generateYouthIntake(career);
+
+    const club = result.league.clubs.find((c) => c.id === "hand-built");
+    expect(club?.playerIds.filter((id) => id.startsWith("hand-built-y"))).toHaveLength(
+      YOUTH_PER_CLUB,
+    );
+    expect(generateYouthIntake(career)).toEqual(result);
+  });
+
+  it("keeps the youth quality offset that the ten-season balance test was tuned with", () => {
+    expect(YOUTH_QUALITY_OFFSET).toBe(-0.35);
   });
 
   it("makes youth weaker than the first-team average on average", () => {

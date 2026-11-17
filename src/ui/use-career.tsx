@@ -21,9 +21,10 @@ import {
   type LineupError,
   type MatchdayError,
   type MatchReport,
+  type NextSeasonError,
   parseCareer,
   type Result,
-  startNextSeason,
+  rollOverSeason,
 } from "../game";
 import { createEnvelope, parseSaveFile, saveFileName, serializeSave } from "../platform";
 import type { FileTransfer, SaveEnvelope, SaveStore } from "../shared";
@@ -63,8 +64,12 @@ export type CareerStore = {
   setTactics: (tactics: TeamTactics) => void;
   /** Auto-picks starters and bench for a formation, keeping the tactics. */
   autoPickLineup: (formation: Formation) => void;
-  /** Rolls a finished season over to the next one. Returns an error while the season is running. */
-  startNextSeason: () => "season-incomplete" | null;
+  /**
+   * Rolls a finished season over to the next one with `rollOverSeason` (the off-season, the user's
+   * squad on autopilot until the off-season screen lets the user decide, then the new season).
+   * Returns an error while the season is running.
+   */
+  startNextSeason: () => NextSeasonError | null;
   /** State of the latest autosave. */
   saveStatus: SaveStatus;
   /** Time (from the injected clock) of the latest successful autosave, or null. */
@@ -220,9 +225,9 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       setCareer((current) => (current ? autoPickUserLineup(current, formation) : current)),
     [],
   );
-  const rollOver = useCallback((): "season-incomplete" | null => {
+  const rollOver = useCallback((): NextSeasonError | null => {
     if (!career) return "season-incomplete";
-    const outcome = startNextSeason(career);
+    const outcome = rollOverSeason(career);
     if (!outcome.ok) return outcome.error;
     setCareer(outcome.career);
     persist(outcome.career, "continue");
