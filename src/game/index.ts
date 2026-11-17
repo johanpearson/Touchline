@@ -153,6 +153,7 @@ export {
   retirementChance,
   retirePlayers,
 } from "./retire-players";
+export { rollOverSeason } from "./roll-over-season";
 export type { SeasonError, SeasonSummary, SummaryResult, TopScorer } from "./season-summary";
 export { extendTrail, type SeasonTrail } from "./season-trail";
 export {
