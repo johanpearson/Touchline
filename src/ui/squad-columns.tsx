@@ -21,7 +21,8 @@ export type SquadColumnContext = Pick<Translator, "t" | "formatNumber"> & {
 const TRACK = "h-1.5 w-16 overflow-hidden rounded-pill bg-track";
 const GAUGE_EDGE = "shadow-[inset_0_0_0_1px_var(--line)]";
 
-function Gauge({ value, colour }: { value: number; colour: string }) {
+/** A thin bar next to a number; decorative, the number carries the value. */
+export function Gauge({ value, colour }: { value: number; colour: string }) {
   return (
     <span aria-hidden="true" className={`${TRACK} ${GAUGE_EDGE} hidden sm:inline-block`}>
       <span

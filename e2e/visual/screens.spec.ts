@@ -376,3 +376,39 @@ visualScreen({
     await page.getByTestId("settings-screen").waitFor();
   },
 });
+
+// The club screen (#264): another club (from the league table) and the user's own (from a player's
+// profile). The light-coloured club is a story (club-screen.stories.tsx): generated clubs are not light.
+visualScreen({
+  name: "club-other",
+  full: true,
+  route: "#/new",
+  state: async (page) => {
+    await startCareerAtHub(page);
+    await page.evaluate(() => {
+      window.location.hash = "#/league";
+    });
+    await page.getByTestId("league-table").waitFor();
+    const links = page.locator('[data-testid="league-table"] a[href^="#/club/"]');
+    await links.last().evaluate((a) => (a as HTMLAnchorElement).click());
+    await page.getByTestId("club-screen").waitFor();
+    await page.getByTestId("squad-table").waitFor();
+  },
+});
+
+visualScreen({
+  name: "club-mine",
+  full: true,
+  route: "#/new",
+  state: async (page) => {
+    await startCareerAtHub(page);
+    await page.evaluate(() => {
+      window.location.hash = "#/squad";
+    });
+    await page.getByTestId("squad-table").waitFor();
+    await page.locator('[data-testid^="player-link-"]').first().click();
+    await page.getByTestId("player-club").click();
+    await page.getByTestId("club-screen").waitFor();
+    await page.getByTestId("your-club").waitFor();
+  },
+});
