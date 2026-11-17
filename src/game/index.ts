@@ -111,6 +111,7 @@ export {
   positionRating,
 } from "./position-rating";
 export type { SeasonError, SeasonSummary, SummaryResult, TopScorer } from "./season-summary";
+export { extendTrail, type SeasonTrail } from "./season-trail";
 export type { ShoutError, ShoutKind, ShoutRecord } from "./shouts";
 export {
   activeShout,

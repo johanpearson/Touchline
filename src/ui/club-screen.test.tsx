@@ -16,12 +16,16 @@ import { I18nProvider } from "./i18n-provider";
 
 const SEED = 11;
 
+// One career object for the whole file: careers are immutable, and the played matchdays are shared per object.
+let cachedCareer: Career | undefined;
 const newCareer = (): Career => {
+  if (cachedCareer) return cachedCareer;
   const generated = generateLeague({ seed: SEED });
   if (!generated.ok) throw new Error("league");
   const result = createCareer({ seed: SEED, userClubId: generated.league.clubs[0]?.id ?? "" });
   if (!result.ok) throw new Error("career");
-  return result.career;
+  cachedCareer = result.career;
+  return cachedCareer;
 };
 
 const renderClub = (career: Career, clubId: string, locale = "en") =>
