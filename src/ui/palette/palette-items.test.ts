@@ -51,7 +51,7 @@ describe("buildPaletteItems", () => {
     });
   });
 
-  it("lists every league player and opens the club screen of the player's club", () => {
+  it("lists every league player and opens the profile of the player", () => {
     const { career, items } = build();
     const players = ofGroup(items, "players");
     expect(players).toHaveLength(career.league.players.length);
@@ -61,7 +61,7 @@ describe("buildPaletteItems", () => {
     const entry = players.find((p) => p.id === `player-${playerId}`);
     expect(entry?.label).toBe(player?.name);
     expect(entry?.detail).toBe(`${player?.position}, ${club?.name}`);
-    expect(entry?.target).toEqual({ kind: "route", route: { name: "club", clubId: club?.id } });
+    expect(entry?.target).toEqual({ kind: "route", route: { name: "player", playerId } });
   });
 
   it("offers to play the next match while there is one", () => {

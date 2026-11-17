@@ -212,3 +212,26 @@ visualScreen({
     await openSquadTable(page);
   },
 });
+
+// The player profile (#261): an outfield player and a goalkeeper, opened from the squad table.
+const openPlayerFrom = (position: "FWD" | "GK") => async (page: Page) => {
+  await openSquadTable(page);
+  await page.getByTestId(`squad-filter-${position}`).click();
+  await page.getByTestId("squad-table").waitFor();
+  await page.locator('[data-testid^="player-link-"]').first().click();
+  await page.getByTestId("player-screen").waitFor();
+};
+
+visualScreen({
+  name: "player-outfield",
+  full: true,
+  route: "#/new",
+  state: openPlayerFrom("FWD"),
+});
+
+visualScreen({
+  name: "player-goalkeeper",
+  full: true,
+  route: "#/new",
+  state: openPlayerFrom("GK"),
+});

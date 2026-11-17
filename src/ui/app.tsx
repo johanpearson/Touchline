@@ -10,6 +10,7 @@ import type { MatchScreenProps } from "./match-view";
 import { MatchdayResultsScreen } from "./matchday-results-screen";
 import { NewCareerWizard } from "./new-career/new-career-wizard";
 import { NotFoundScreen } from "./not-found-screen";
+import { PlayerView } from "./player-screen";
 import { Redirect } from "./redirect";
 import type { Route } from "./routes";
 import { SavesScreen } from "./saves-screen";
@@ -39,6 +40,8 @@ function CareerScreen({ career, route, createRenderer, tickMs }: CareerScreenPro
       return <LeagueScreen />;
     case "club":
       return <ClubView career={career} clubId={route.clubId} />;
+    case "player":
+      return <PlayerView career={career} playerId={route.playerId} />;
     case "match":
       return <MatchFlowScreen createRenderer={createRenderer} tickMs={tickMs} />;
     case "squad":

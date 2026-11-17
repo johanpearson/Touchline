@@ -40,7 +40,7 @@ const clubItems = ({ career }: PaletteItemsInput): PaletteItem[] =>
     target: { kind: "route", route: { name: "club", clubId: club.id } },
   }));
 
-/** Players open their club's screen until the player profile exists. */
+/** Players open their profile. */
 const playerItems = ({ career, translator }: PaletteItemsInput): PaletteItem[] => {
   const clubOf = new Map<string, Career["league"]["clubs"][number]>();
   for (const club of career.league.clubs) {
@@ -58,7 +58,7 @@ const playerItems = ({ career, translator }: PaletteItemsInput): PaletteItem[] =
           position: translator.t(`position.short.${player.position}`),
           club: club.name,
         }),
-        target: { kind: "route", route: { name: "club", clubId: club.id } },
+        target: { kind: "route", route: { name: "player", playerId: player.id } },
       },
     ];
   });

@@ -13,6 +13,7 @@ import {
 } from "../game";
 import type { MessageKey } from "../i18n";
 import { useI18n } from "./i18n-provider";
+import { hrefFor } from "./routes";
 import { TacticsEditor } from "./tactics-editor";
 import { useCareer } from "./use-career";
 
@@ -48,23 +49,36 @@ function PlayerSelect(props: {
     (p) => props.position === undefined || p.position === props.position,
   );
   return (
-    <select
-      data-testid={props.testId}
-      data-position={props.position}
-      aria-label={props.label}
-      value={props.value}
-      onChange={(e) => props.onChange(e.target.value)}
-    >
-      {candidates.map((p) => (
-        <option
-          key={p.id}
-          value={p.id}
-          disabled={p.id !== props.value && (props.used.has(p.id) || (props.locked?.(p) ?? false))}
-        >
-          {`${p.name} (${t(`position.short.${p.position}`)})`}
-        </option>
-      ))}
-    </select>
+    <span className="inline-flex items-center gap-2">
+      <select
+        data-testid={props.testId}
+        data-position={props.position}
+        aria-label={props.label}
+        value={props.value}
+        onChange={(e) => props.onChange(e.target.value)}
+      >
+        {candidates.map((p) => (
+          <option
+            key={p.id}
+            value={p.id}
+            disabled={
+              p.id !== props.value && (props.used.has(p.id) || (props.locked?.(p) ?? false))
+            }
+          >
+            {`${p.name} (${t(`position.short.${p.position}`)})`}
+          </option>
+        ))}
+      </select>
+      <a
+        data-testid={`profile-link-${props.testId}`}
+        href={hrefFor({ name: "player", playerId: props.value })}
+        aria-label={t("player.open", {
+          name: props.players.find((p) => p.id === props.value)?.name ?? "",
+        })}
+      >
+        {t("player.openShort")}
+      </a>
+    </span>
   );
 }
 

@@ -4,6 +4,7 @@ import { ATTRIBUTE_NAMES, MAX_ATTRIBUTE } from "../game";
 import type { Translator } from "../i18n";
 import { Badge, type Column } from "./components";
 import { LOW_FITNESS, type PlanRow, type PlanStatus } from "./plan-rows";
+import { hrefFor } from "./routes";
 
 const POSITION_RANK = { GK: 0, DEF: 1, MID: 2, FWD: 3 } as const;
 const STATUS_RANK: Record<PlanStatus, number> = { starter: 0, bench: 1, out: 2 };
@@ -81,7 +82,14 @@ export function squadColumns(ctx: SquadColumnContext): Column<PlanRow>[] {
       priority: 1,
       primary: true,
       sortValue: (row) => row.player.name,
-      cell: (row) => row.player.name,
+      cell: (row) => (
+        <a
+          data-testid={`player-link-${row.player.id}`}
+          href={hrefFor({ name: "player", playerId: row.player.id })}
+        >
+          {row.player.name}
+        </a>
+      ),
     },
     {
       id: "position",
