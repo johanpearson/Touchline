@@ -13,7 +13,11 @@ export function OverlayHeader(props: {
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0">
-        <RadixDialog.Title className="font-heading text-2xl font-semibold text-text">
+        <RadixDialog.Title
+          tabIndex={-1}
+          data-overlay-title=""
+          className="font-heading text-2xl font-semibold text-text focus:outline-none"
+        >
           {props.title}
         </RadixDialog.Title>
         {props.description ? (

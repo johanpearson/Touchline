@@ -124,13 +124,64 @@ describe("HalfTimePanel", () => {
 describe("HalfTimePanel changes", () => {
   afterEach(cleanup);
   const career = aCareer();
-  const byId = new Map(career.league.players.map((p) => [p.id, p]));
-  const select = (id: string) => screen.getByTestId(id) as HTMLSelectElement;
-  const mountEditor = (onResume = vi.fn()) => {
-    mount(onResume, "en", editorFor(career));
+  const editor = editorFor(career);
+  const nameOf = (id: string) => career.league.players.find((p) => p.id === id)?.name;
+  const positionOf = (id: string) => career.league.players.find((p) => p.id === id)?.position;
+  /** A starter and a bench player of his position. */
+  const swap = (skip = 0) => {
+    const pairs = career.squadPlan.starters.flatMap((off) =>
+      career.squadPlan.bench
+        .filter((on) => positionOf(on) === positionOf(off))
+        .map((on) => ({ off, on })),
+    );
+    const pair = pairs[skip];
+    if (!pair) throw new Error("pair");
+    return pair;
+  };
+  /** Swaps that share neither the player going off nor the one coming on. */
+  const distinctSwaps = () => {
+    const used = new Set<string>();
+    const swaps: { off: string; on: string }[] = [];
+    for (const off of career.squadPlan.starters) {
+      const on = career.squadPlan.bench.find(
+        (id) => positionOf(id) === positionOf(off) && !used.has(id),
+      );
+      if (on) {
+        used.add(on);
+        swaps.push({ off, on });
+      }
+    }
+    return swaps;
+  };
+  const mountEditor = (onResume = vi.fn(), locale = "en", changes = editor) => {
+    mount(onResume, locale, changes);
+    fireEvent.click(screen.getByTestId("half-time-open-changes"));
     return onResume;
   };
-  const addSub = () => fireEvent.click(screen.getByTestId("sub-add"));
+  const makeSub = ({ off, on }: { off: string; on: string }) => {
+    fireEvent.click(screen.getByTestId("sub-add"));
+    fireEvent.click(screen.getByTestId(`pick-${off}`));
+    fireEvent.click(screen.getByTestId(`pick-${on}`));
+  };
+
+  it("opens the sheet with focus on its heading", () => {
+    mountEditor();
+    const dialog = screen.getByRole("dialog", { name: "Make changes" });
+    expect(document.activeElement).toBe(
+      within(dialog).getByRole("heading", { name: "Make changes" }),
+    );
+  });
+
+  it("reaches Start second half in at most four tab stops from the heading", () => {
+    mountEditor();
+    const dialog = screen.getByRole("dialog", { name: "Make changes" });
+    const stops = Array.from(
+      dialog.querySelectorAll<HTMLElement>("button, [href], input, select, [tabindex='0']"),
+    );
+    const start = stops.indexOf(screen.getByTestId("start-second-half"));
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(start + 1).toBeLessThanOrEqual(4);
+  });
 
   it("shows the eleven and the bench with fitness and form", () => {
     mountEditor();
@@ -146,80 +197,118 @@ describe("HalfTimePanel changes", () => {
     expect(onResume).toHaveBeenCalledWith(undefined);
   });
 
-  it("adds a substitution of a starter for a bench player of the same position", () => {
+  it("makes a substitution by picking who goes off and then who comes on", () => {
     const onResume = mountEditor();
-    addSub();
-    const off = byId.get(select("sub-off-0").value);
-    const on = byId.get(select("sub-on-0").value);
-    expect(career.squadPlan.starters).toContain(off?.id);
-    expect(career.squadPlan.bench).toContain(on?.id);
-    expect(on?.position).toBe(off?.position);
+    const { off, on } = swap();
+    makeSub({ off, on });
+    expect(screen.getByTestId("sub-off-0").textContent).toBe(nameOf(off));
+    expect(screen.getByTestId("sub-on-0").textContent).toBe(nameOf(on));
+    expect(screen.getByTestId("sub-count").textContent).toBe("1 of 5");
     fireEvent.click(screen.getByTestId("start-second-half"));
     const plan = onResume.mock.calls[0]?.[0];
-    expect(plan.report.minutes[off?.id ?? ""]).toBe(45);
-    expect(plan.report.minutes[on?.id ?? ""]).toBe(45);
-    expect(plan.lineupAfter.starters).toContain(on?.id);
+    expect(plan.report.minutes[off]).toBe(45);
+    expect(plan.report.minutes[on]).toBe(45);
+    expect(plan.lineupAfter.starters).toContain(on);
   });
 
-  it("only offers bench players of the same position as the player going off", () => {
+  it("only lets the user pick bench players of the position of the player going off", () => {
     mountEditor();
-    addSub();
-    const off = byId.get(select("sub-off-0").value);
-    for (const option of Array.from(select("sub-on-0").options)) {
-      expect(byId.get(option.value)?.position).toBe(off?.position);
-    }
+    const { off } = swap();
+    fireEvent.click(screen.getByTestId("sub-add"));
+    fireEvent.click(screen.getByTestId(`pick-${off}`));
+    const pickable = career.squadPlan.bench.filter((id) => screen.queryByTestId(`pick-${id}`));
+    expect(pickable.length).toBeGreaterThan(0);
+    for (const id of pickable) expect(positionOf(id)).toBe(positionOf(off));
   });
 
-  it("removes a substitution", () => {
+  it("asks for the player going off first and can cancel the pick", () => {
     mountEditor();
-    addSub();
-    expect(screen.getByTestId("sub-off-0")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("sub-add"));
+    expect(screen.getByTestId("sub-prompt").textContent).toBe("Pick the player going off.");
+    fireEvent.click(screen.getByTestId("sub-cancel"));
+    expect(screen.queryByTestId("sub-prompt")).toBeNull();
+    expect(screen.getByTestId("sub-add")).toBeTruthy();
+  });
+
+  it("undoes a substitution", () => {
+    mountEditor();
+    makeSub(swap());
     fireEvent.click(screen.getByTestId("sub-remove-0"));
     expect(screen.queryByTestId("sub-off-0")).toBeNull();
+    expect(screen.getByTestId("sub-count").textContent).toBe("0 of 5");
   });
 
   it("cannot add a sixth substitution and explains why", () => {
     mountEditor();
-    for (let i = 0; i < MAX_SUBSTITUTIONS; i++) addSub();
-    const add = screen.getByTestId("sub-add") as HTMLButtonElement;
-    expect(add.disabled).toBe(true);
+    for (const pair of distinctSwaps().slice(0, MAX_SUBSTITUTIONS)) makeSub(pair);
+    expect(distinctSwaps().length).toBeGreaterThanOrEqual(MAX_SUBSTITUTIONS);
+    expect((screen.queryByTestId("sub-add") as HTMLButtonElement | null)?.disabled ?? true).toBe(
+      true,
+    );
     expect(screen.getByTestId("sub-limit").textContent).toMatch(/5/);
   });
 
   it("passes changed tactics on with the plan and starts from the plan's tactics", () => {
     const onResume = mountEditor();
-    expect(select("tactic-pressing").value).toBe(career.squadPlan.tactics.pressing);
-    fireEvent.change(select("tactic-mentality"), { target: { value: "attacking" } });
+    expect(screen.getByTestId("tactic-pressing").getAttribute("data-value")).toBe(
+      career.squadPlan.tactics.pressing,
+    );
+    fireEvent.click(
+      within(screen.getByTestId("tactic-mentality")).getByRole("radio", { name: "Attacking" }),
+    );
     fireEvent.click(screen.getByTestId("start-second-half"));
-    const plan = onResume.mock.calls[0]?.[0];
-    expect(plan.change.tactics.mentality).toBe("attacking");
+    expect(onResume.mock.calls[0]?.[0].change.tactics.mentality).toBe("attacking");
   });
 
-  it("shows an error and does not resume when the plan is invalid", () => {
-    const onResume = mountEditor();
-    addSub();
-    // The same bench player cannot come on twice when the keeper pair collides.
-    addSub();
-    fireEvent.change(select("sub-off-1"), { target: { value: select("sub-off-0").value } });
+  it("shows the error with its cause, announced, and does not resume", () => {
+    const rejecting: HalfTimeEditor = {
+      ...editor,
+      plan: () => ({ ok: false, error: "position-mismatch" }),
+    };
+    const onResume = mountEditor(vi.fn(), "en", rejecting);
+    makeSub(swap());
     fireEvent.click(screen.getByTestId("start-second-half"));
-    expect(screen.getByTestId("half-time-error").textContent).toMatch(/\S/);
+    const alert = screen.getByRole("alert");
+    expect(alert.getAttribute("data-testid")).toBe("half-time-error");
+    expect(alert.textContent).toBe(
+      "A substitute must play the same position as the player going off.",
+    );
     expect(onResume).not.toHaveBeenCalled();
-  });
-
-  it("clears the error when the substitutions change", () => {
-    mountEditor();
-    addSub();
-    addSub();
-    fireEvent.change(select("sub-off-1"), { target: { value: select("sub-off-0").value } });
-    fireEvent.click(screen.getByTestId("start-second-half"));
-    fireEvent.click(screen.getByTestId("sub-remove-1"));
+    fireEvent.click(screen.getByTestId("sub-remove-0"));
     expect(screen.queryByTestId("half-time-error")).toBeNull();
   });
 
+  it("closes without asking when nothing is pending", () => {
+    mountEditor();
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Make changes" }), { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Make changes" })).toBeNull();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
+  it("asks before closing with pending changes and keeps them when the user keeps editing", () => {
+    mountEditor();
+    makeSub(swap());
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Make changes" }), { key: "Escape" });
+    expect(screen.getByText("Discard the changes?")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Keep editing" }));
+    expect(screen.getByTestId("sub-off-0")).toBeTruthy();
+  });
+
+  it("drops the pending changes when the user confirms the discard", () => {
+    const onResume = mountEditor();
+    makeSub(swap());
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Make changes" }), { key: "Escape" });
+    fireEvent.click(screen.getByTestId("half-time-discard"));
+    expect(screen.queryByTestId("sub-off-0")).toBeNull();
+    fireEvent.click(screen.getByTestId("half-time-open-changes"));
+    expect(screen.queryByTestId("sub-off-0")).toBeNull();
+    fireEvent.click(screen.getByTestId("start-second-half"));
+    expect(onResume).toHaveBeenCalledWith(undefined);
+  });
+
   it("has Swedish labels", () => {
-    mount(vi.fn(), "sv", editorFor(career));
-    expect(within(screen.getByTestId("half-time-changes")).getByTestId("sub-add").textContent).toBe(
-      "Lägg till byte",
-    );
+    mountEditor(vi.fn(), "sv");
+    expect(screen.getByTestId("sub-add").textContent).toBe("Lägg till byte");
+    expect(screen.getByTestId("sub-count").textContent).toBe("0 av 5");
   });
 });

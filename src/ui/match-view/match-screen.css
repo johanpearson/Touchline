@@ -1,6 +1,5 @@
 /*
- * What is left of the old match stylesheet: the half-time overlay and the ratings table, which the
- * half-time issue (#268) and the report issue (#269) restyle. The rest of the screen uses tokens
+ * What is left of the old match stylesheet: the ratings table, which the report issue (#269) restyles. The rest of the screen uses tokens
  * and Tailwind utilities.
  */
 .match-screen .match-main {
@@ -9,21 +8,6 @@
 .match-screen .panel h2 {
   font-size: 1rem;
   margin: 0 0 4px;
-}
-.match-screen .half-time {
-  position: absolute;
-  inset: 0 0 auto 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  background: rgb(0 0 0 / 0.78);
-  text-align: center;
-  z-index: 1;
-}
-.match-screen .half-time h2,
-.match-screen .half-time h3 {
-  margin: 0;
 }
 .match-screen .ratings {
   width: 100%;

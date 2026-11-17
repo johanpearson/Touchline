@@ -27,6 +27,14 @@ const choose = async (page: Page, testId: string, name: string) => {
   await page.getByTestId(testId).getByRole("radio", { name, exact: true }).click();
 };
 
+/** Clicks the first pickable player of the half-time sheet and returns the player id. */
+const pickFirst = async (page: Page): Promise<string> => {
+  const pick = page.getByTestId(/^pick-/).first();
+  const id = ((await pick.getAttribute("data-testid")) ?? "").slice("pick-".length);
+  await pick.click();
+  return id;
+};
+
 const ratings = async (page: Page): Promise<string> =>
   (await Promise.all(LINES.map((p) => page.getByTestId(`plan-rating-${p}`).textContent()))).join(
     ",",
@@ -104,10 +112,14 @@ test.describe("squad and tactics", () => {
     await page.getByTestId("kick-off").click();
     await page.getByTestId("speed-4").click();
     await expect(page.getByTestId("half-time")).toBeVisible({ timeout: 30_000 });
+    await page.getByTestId("make-changes").click();
     await page.getByTestId("sub-add").click();
-    const subOff = await page.getByTestId("sub-off-0").inputValue();
-    const subOn = await page.getByTestId("sub-on-0").inputValue();
-    await page.getByTestId("tactic-mentality").selectOption("attacking");
+    const subOff = await pickFirst(page);
+    const subOn = await pickFirst(page);
+    await page
+      .getByTestId("tactic-mentality")
+      .getByRole("radio", { name: "Attacking", exact: true })
+      .click();
     await page.getByTestId("start-second-half").click();
     await expect(page.getByTestId("period")).toHaveText("Full time", { timeout: 60_000 });
     const score = await page.getByTestId("score").textContent();

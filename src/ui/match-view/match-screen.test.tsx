@@ -230,6 +230,9 @@ describe("MatchScreen", () => {
     const onContinue = vi.fn();
     const { career, fixture } = anActionMatchSetup();
     const starter = career.squadPlan.starters[0] ?? "";
+    const positionOf = (id: string) => career.league.players.find((p) => p.id === id)?.position;
+    const replacementOf = (id: string) =>
+      career.squadPlan.bench.find((b) => positionOf(b) === positionOf(id));
     const editor = {
       players: career.league.players,
       starters: career.squadPlan.starters,
@@ -251,7 +254,11 @@ describe("MatchScreen", () => {
     expect(fixture).toBeTruthy();
     fireEvent.click(screen.getByTestId("speed-4"));
     play(20_000);
+    fireEvent.click(screen.getByTestId("make-changes"));
     fireEvent.click(screen.getByTestId("sub-add"));
+    const off = career.squadPlan.starters.find((id) => replacementOf(id));
+    fireEvent.click(screen.getByTestId(`pick-${off}`));
+    fireEvent.click(screen.getByTestId(`pick-${replacementOf(off ?? "")}`));
     fireEvent.click(screen.getByTestId("start-second-half"));
     play(40_000);
     fireEvent.click(screen.getByTestId("continue"));
