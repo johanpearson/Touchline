@@ -249,3 +249,57 @@ visualScreen({
     await page.getByTestId("player-picker").waitFor();
   },
 });
+
+// The league screen (#263): table at the start of the season, mid season and after 25 matchdays
+// (the last round is the current one), and the fixtures of those rounds.
+const playMatchdays = async (page: Page, count: number) => {
+  for (let i = 0; i < count; i++) {
+    await page.getByTestId("quick-sim").click();
+    await page.getByTestId("results-continue").click();
+    await page.getByTestId("career-hub").waitFor();
+  }
+};
+
+const openLeague = async (page: Page, tab: "table" | "fixtures") => {
+  await page.evaluate(() => {
+    window.location.hash = "#/league";
+  });
+  await page.getByTestId("screen-league").waitFor();
+  await page.getByTestId(`tab-${tab}`).click();
+  await page.getByTestId(tab === "table" ? "league-table" : "fixtures-view").waitFor();
+};
+
+const leagueAfter = (matchdays: number, tab: "table" | "fixtures") => async (page: Page) => {
+  await startCareerAtHub(page);
+  await playMatchdays(page, matchdays);
+  await openLeague(page, tab);
+};
+
+visualScreen({
+  name: "league-start-of-season",
+  full: true,
+  route: "#/new",
+  state: leagueAfter(0, "table"),
+});
+visualScreen({
+  name: "league-mid-season",
+  full: true,
+  route: "#/new",
+  state: leagueAfter(12, "table"),
+});
+visualScreen({
+  name: "league-last-round",
+  full: true,
+  route: "#/new",
+  state: leagueAfter(25, "table"),
+});
+visualScreen({
+  name: "league-fixtures-start",
+  route: "#/new",
+  state: leagueAfter(0, "fixtures"),
+});
+visualScreen({
+  name: "league-fixtures-last-round",
+  route: "#/new",
+  state: leagueAfter(25, "fixtures"),
+});
