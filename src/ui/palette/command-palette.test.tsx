@@ -244,6 +244,7 @@ describe("command palette", () => {
   it("does not open from the shortcut while a match is running, but does when paused", () => {
     startCareer();
     goTo("#/match");
+    fireEvent.click(screen.getByTestId("kick-off"));
     openWithShortcut();
     expect(palette()).toBeNull();
     fireEvent.click(screen.getByTestId("pause-toggle"));
@@ -254,6 +255,7 @@ describe("command palette", () => {
   it("lets the shortcut work again after leaving the match", () => {
     startCareer();
     goTo("#/match");
+    fireEvent.click(screen.getByTestId("kick-off"));
     openWithShortcut();
     expect(palette()).toBeNull();
     goTo("#/");

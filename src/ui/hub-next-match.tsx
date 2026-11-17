@@ -33,7 +33,7 @@ function TeamBlock({
   );
 }
 
-function useComparisonText() {
+export function useComparisonText() {
   const { t, formatNumber } = useI18n();
   return {
     position: (c: ClubComparison) => (c.position === null ? NONE : formatNumber(c.position, 0)),
@@ -52,7 +52,7 @@ function useComparisonText() {
 
 type RowProps = { id: string; label: string; us: string; them: string; ours: Club; theirs: Club };
 
-function CompareRow({ id, label, us, them, ours, theirs }: RowProps) {
+export function CompareRow({ id, label, us, them, ours, theirs }: RowProps) {
   return (
     <div className="flex items-baseline justify-between gap-3 py-2" data-testid={`compare-${id}`}>
       <dt className="min-w-0 text-[13px] text-muted">{label}</dt>

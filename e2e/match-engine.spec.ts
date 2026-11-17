@@ -42,6 +42,7 @@ test.describe("match engine", () => {
     await startCareer(page);
 
     await page.getByTestId("play-match").click();
+    await page.getByTestId("kick-off").click();
     await page.getByTestId("speed-4").click();
 
     await expect(page.getByTestId("view-toggle")).toBeVisible();
@@ -79,6 +80,7 @@ test.describe("match engine", () => {
     expect(await tableRows(page)).toEqual(table);
     // The next match is still on v2: the match screen offers the pitch view.
     await page.getByTestId("play-match").click();
+    await page.getByTestId("kick-off").click();
     await expect(page.getByTestId("view-toggle")).toBeVisible();
     await page.getByTestId("nav-saves").click();
 

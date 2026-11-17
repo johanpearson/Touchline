@@ -550,4 +550,10 @@ export const en = {
   "tactics.role.centreForward": "Centre forward",
   "tactics.role.rightForward": "Right forward",
   "tactics.role.striker": "Striker",
+  "prematch.title": "Match preview",
+  "prematch.teams": "The two clubs",
+  "prematch.kickOff": "Kick off",
+  "prematch.editLineup": "Edit lineup and tactics",
+  "prematch.kit.home": "Home kit",
+  "prematch.kit.away": "Away kit",
 } as const satisfies Record<string, Message>;
