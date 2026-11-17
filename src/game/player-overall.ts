@@ -2,7 +2,7 @@ import type { AttributeName, Player, PlayerAttributes } from "./player";
 import type { PlayerPosition } from "./squad-player";
 
 /** The attributes that decide how good a player is in his or her position. */
-const KEY_ATTRIBUTES: Record<PlayerPosition, readonly AttributeName[]> = {
+export const KEY_ATTRIBUTES: Record<PlayerPosition, readonly AttributeName[]> = {
   GK: ["handling", "reflexes"],
   DEF: ["tackling", "positioning", "strength"],
   MID: ["passing", "vision", "ballControl", "workRate"],
