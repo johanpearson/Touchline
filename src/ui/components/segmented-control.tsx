@@ -6,9 +6,13 @@ export type SegmentedOption<T extends string> = {
   value: T;
   label: string;
   disabled?: boolean;
+  /** `data-testid` of this option's button. */
+  testId?: string;
 };
 
 export type SegmentedControlProps<T extends string> = {
+  /** `data-testid` of the group. */
+  testId?: string;
   /** Names the group for assistive technology (for example "Speed"). */
   label: string;
   options: readonly SegmentedOption<T>[];
@@ -27,6 +31,7 @@ export function SegmentedControl<T extends string>({
   value,
   onValueChange,
   className,
+  testId,
 }: SegmentedControlProps<T>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const selected = options.findIndex((o) => o.value === value);
@@ -52,6 +57,7 @@ export function SegmentedControl<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
+      data-testid={testId}
       className={cn("inline-flex gap-1 rounded-md border border-line bg-sunk p-1", className)}
     >
       {options.map((option, index) => {
@@ -64,6 +70,7 @@ export function SegmentedControl<T extends string>({
               refs.current[index] = node;
             }}
             type="button"
+            data-testid={option.testId}
             role="radio"
             aria-checked={checked}
             disabled={option.disabled}

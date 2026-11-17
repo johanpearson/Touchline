@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { visualScreen } from "./visual-screen";
 
 const APP = "http://localhost:4174/Touchline/";
@@ -410,6 +410,79 @@ visualScreen({
     await page.getByTestId("player-club").click();
     await page.getByTestId("club-screen").waitFor();
     await page.getByTestId("your-club").waitFor();
+  },
+});
+
+// The match screen (#267), with the terrain (WebGL) masked: kick-off paused, a goal just scored,
+// and full time with the ratings. Playback runs on the real clock, so the first two pause as soon
+// as the state is reached; the clash-kit pairing is covered by unit tests (the generated league
+// has no clashing pair to pick).
+const TERRAIN = ["[data-testid='momentum-terrain']"];
+
+const openMatch = async (page: Page) => {
+  await startCareerAtHub(page);
+  await page.getByTestId("play-match").click();
+  await page.getByTestId("kick-off").click();
+  await page.getByTestId("match-screen").waitFor();
+};
+
+visualScreen({
+  name: "match-kickoff",
+  full: true,
+  route: "#/new",
+  mask: TERRAIN,
+  state: async (page) => {
+    await openMatch(page);
+    await page.getByTestId("pause-toggle").click();
+  },
+});
+
+visualScreen({
+  name: "match-goal",
+  route: "#/new",
+  mask: TERRAIN,
+  state: async (page) => {
+    await openMatch(page);
+    test.setTimeout(120_000);
+    await page.getByTestId("speed-4").click();
+    // A goal in the first half, or half-time when there was none: both are settled states.
+    await page.waitForFunction(
+      () =>
+        document.querySelector("[data-testid='scoreboard']")?.getAttribute("data-goal") ||
+        document.querySelector("[data-testid='half-time']"),
+      undefined,
+      { timeout: 60_000 },
+    );
+    await page.getByTestId("pause-toggle").click();
+  },
+});
+
+visualScreen({
+  name: "match-full-time",
+  route: "#/new",
+  mask: TERRAIN,
+  state: async (page) => {
+    test.setTimeout(180_000);
+    await openMatch(page);
+    await page.getByTestId("speed-4").click();
+    // Half-time stops the match; the second half starts from its panel.
+    // By DOM click: on a phone the bottom tab bar covers the half-time panel (#268 redesigns it).
+    await page.getByTestId("start-second-half").waitFor({ timeout: 60_000 });
+    await page
+      .getByTestId("start-second-half")
+      .evaluate((button) => (button as HTMLButtonElement).click());
+    await page.getByTestId("player-ratings").waitFor({ timeout: 60_000 });
+  },
+});
+
+visualScreen({
+  name: "match-2d-pitch",
+  route: "#/new",
+  mask: ["[data-testid='classic-pitch']"],
+  state: async (page) => {
+    await openMatch(page);
+    await page.getByTestId("view-pitch").click();
+    await page.getByTestId("pause-toggle").click();
   },
 });
 

@@ -56,6 +56,9 @@ function PlayMatch({ career, fixture, setup, createRenderer, tickMs }: PlayProps
       tickMs={tickMs}
       halfTimeEditor={editor}
       onContinue={finish}
+      onLeave={() => {
+        window.location.hash = hrefFor({ name: "home" });
+      }}
     />
   );
 }
