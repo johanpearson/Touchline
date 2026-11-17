@@ -61,6 +61,14 @@ export function screenCombinations(full: boolean): readonly Combination[] {
     : combinations(CORE_VIEWPORTS, ["en"], CORE_THEMES);
 }
 
+/** Tag of the smoke set that runs on every PR (`visualScreen({ smoke: true })`); the full run is nightly. */
+export const SMOKE_TAG = "@smoke";
+
+/** The smoke set shoots the desktop, midnight, English combination of a screen only. */
+export function isSmokeCombination(c: Combination): boolean {
+  return c.viewport.name === DESKTOP.name && c.theme === "midnight" && c.locale === "en";
+}
+
 /** Snapshot file name: stable, no platform part, unique per story or screen state and combination. */
 export function snapshotName(kind: "story" | "screen", id: string, c: Combination): string {
   const locale = c.locale === "en" ? "" : `-${c.locale}`;

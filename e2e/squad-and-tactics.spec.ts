@@ -157,6 +157,16 @@ test.describe("squad and tactics", () => {
     );
   });
 
+  test("opens a player profile from the tactics screen and goes back to it", async ({ page }) => {
+    await startCareer(page);
+    await openTactics(page, "pitch");
+    await page.locator('[data-testid^="profile-link-"]').first().focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("player-screen")).toBeVisible();
+    await page.getByTestId("player-back").click();
+    await expect(page).toHaveURL(/#\/tactics/);
+  });
+
   test("changes a starter through the pitch picker and keeps it after a reload", async ({
     page,
   }) => {

@@ -94,7 +94,7 @@ describe("buildStatus and buildFiles", () => {
 
   it("lists every nightly job in README order and names the failing ones", () => {
     const s = status.buildStatus(results, context);
-    expect(s.jobs.map((j: { job: string }) => j.job)).toEqual(["balance", "mutation", "property", "e2e"]);
+    expect(s.jobs.map((j: { job: string }) => j.job)).toEqual(["balance", "mutation", "property", "e2e", "visual"]);
     expect(s).toMatchObject({ ok: false, failing: ["mutation"], sha: "abc1234", updated: "2026-11-16" });
   });
 
@@ -109,7 +109,7 @@ describe("buildStatus and buildFiles", () => {
 
   it("writes status.json and one badge file per job", () => {
     const files = status.buildFiles(results, context);
-    expect(Object.keys(files)).toEqual(["status.json", "badge-balance.json", "badge-mutation.json", "badge-property.json", "badge-e2e.json"]);
+    expect(Object.keys(files)).toEqual(["status.json", "badge-balance.json", "badge-mutation.json", "badge-property.json", "badge-e2e.json", "badge-visual.json"]);
     expect(JSON.parse(files["badge-mutation.json"])).toEqual({ schemaVersion: 1, label: "mutation", message: "mutation failed", color: "red" });
   });
 });

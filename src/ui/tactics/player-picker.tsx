@@ -3,6 +3,7 @@ import { Drawer } from "../components";
 import { useI18n } from "../i18n-provider";
 import { LOW_FITNESS } from "../plan-rows";
 import type { Candidate } from "./lineup-model";
+import { ProfileLink } from "./profile-link";
 
 export type PickerState = {
   title: string;
@@ -31,14 +32,14 @@ function PickerOption({ state, candidate }: { state: PickerState; candidate: Can
       : t(`squad.status.${status}`);
   const locked = candidate.disabled && state.keeperLocked(candidate);
   return (
-    <li>
+    <li className="flex items-center gap-2">
       <button
         type="button"
         data-testid={`picker-option-${player.id}`}
         disabled={candidate.disabled}
         aria-current={current ? "true" : undefined}
         onClick={() => state.onChoose(player.id)}
-        className="flex min-h-11 w-full cursor-pointer flex-col items-start gap-0.5 rounded-md border border-line bg-surface px-3 py-2 text-left text-text hover:bg-glow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50 aria-[current=true]:border-accent"
+        className="flex min-h-11 min-w-0 flex-1 cursor-pointer flex-col items-start gap-0.5 rounded-md border border-line bg-surface px-3 py-2 text-left text-text hover:bg-glow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50 aria-[current=true]:border-accent"
       >
         <span className="font-semibold">
           {player.name}{" "}
@@ -55,6 +56,7 @@ function PickerOption({ state, candidate }: { state: PickerState; candidate: Can
           {locked ? t("tactics.option.keeperLocked") : null}
         </span>
       </button>
+      <ProfileLink playerId={player.id} name={player.name} />
     </li>
   );
 }

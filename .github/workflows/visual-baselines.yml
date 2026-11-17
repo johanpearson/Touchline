@@ -1,10 +1,14 @@
 name: Visual baselines
 
-# Keeps the visual regression baselines (e2e/visual/__screenshots__) current without anyone running anything.
-# After a push to main that can change visuals, this workflow regenerates the baselines on the CI Linux runner,
-# checks that a second run is identical, and opens (or updates) one pull request `bot/visual-baselines` with
-# auto-merge. Pull requests only get a report of visual differences (job `Visual`); they are never blocked by
-# them and never need baseline commits. Run it by hand from the Actions tab to rebuild all baselines.
+# The full visual run and the baselines (e2e/visual/__screenshots__), part of the nightly workflow (#351). It runs every
+# story and screen state on the CI Linux runner, rewrites only the baselines that no longer match within the tolerance,
+# checks that a second run is identical, and opens (or updates) one pull request `bot/visual-baselines` with auto-merge.
+# PRs only run a small smoke set against these baselines (job `Visual` in ci.yml), never need baseline commits, and a
+# merged baseline pull request starts nothing. A broken screen state, or baselines that are not stable between two runs,
+# fails this job: the nightly status badge goes red and one issue is opened.
+#
+# Run it by hand from the Actions tab for fresh baselines now; `rebuild_all` deletes every baseline first and renders
+# them all again (this also removes the baselines of deleted states).
 #
 # Needs the repository secrets APP_ID and APP_PRIVATE_KEY of a GitHub App with contents and pull requests write
 # access. A pull request opened with the default GITHUB_TOKEN does not start CI, so auto-merge would wait for
@@ -16,20 +20,16 @@ on:
         description: "Delete every baseline first and render them all again (also removes baselines of deleted states)"
         type: boolean
         default: false
-  push:
-    branches: [main]
-    paths:
-      - "src/ui/**"
-      - "e2e/visual/**"
-      # e2e/visual/** includes the screenshots on purpose: a merged baseline PR changes main, so another open
-      # baseline PR is stale and conflicts. Running again rebuilds it from the new main, or closes it.
-      - ".storybook/**"
-      - "playwright.visual.config.ts"
-      - "scripts/serve-static.mjs"
-      - "**/*.css"
-      - "package-lock.json"
-      - "index.html"
-      - ".github/workflows/visual-baselines.yml"
+  workflow_call:
+    inputs:
+      rebuild_all:
+        type: boolean
+        default: false
+    secrets:
+      APP_ID:
+        required: false
+      APP_PRIVATE_KEY:
+        required: false
 
 concurrency:
   group: visual-baselines
@@ -37,10 +37,11 @@ concurrency:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   baselines:
-    name: Update baselines
+    name: Visual (full)
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
@@ -85,15 +86,18 @@ jobs:
       - name: Regenerate the baselines
         if: steps.token.outputs.ready == 'true'
         run: |
+          set -o pipefail
           # Only a baseline that no longer matches within the tolerance is rewritten. Deleting them all first
           # would turn harmless antialiasing noise into a changed PNG on every run, and so into a new pull request.
           if [ "$REBUILD_ALL" = "true" ]; then
             rm -rf e2e/visual/__screenshots__
           fi
-          npx playwright test -c playwright.visual.config.ts --update-snapshots=changed
+          FORCE_COLOR=0 npx playwright test -c playwright.visual.config.ts --update-snapshots=changed 2>&1 | tee visual.log
       - name: Check that a second run has no diffs
         if: steps.token.outputs.ready == 'true'
-        run: npx playwright test -c playwright.visual.config.ts
+        run: |
+          set -o pipefail
+          FORCE_COLOR=0 npx playwright test -c playwright.visual.config.ts 2>&1 | tee -a visual.log
       - name: Open or update the baseline pull request
         if: steps.token.outputs.ready == 'true'
         env:
@@ -118,6 +122,22 @@ jobs:
               --body "Baselines regenerated on the CI runner after a change to the UI. Opened by the \`Visual baselines\` workflow; review the image diffs if you like, otherwise it merges itself."
           fi
           gh pr merge "$BRANCH" --auto --squash
+      - name: Open an issue for the failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/nightly-visual-issue.sh visual.log
+      - name: Write the result
+        if: always()
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/nightly-status.mjs result --job visual --outcome ${{ job.status }} --out result-visual.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: nightly-result-visual
+          path: result-visual.json
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

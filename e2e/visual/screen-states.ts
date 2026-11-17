@@ -12,7 +12,7 @@ const register = (state: VisualScreenState) => {
 };
 
 // The new-career wizard: step 1 (#257) and step 2, the club picker (#258).
-register({ name: "new-career-league", route: "#/new", full: true });
+register({ name: "new-career-league", route: "#/new", full: true, smoke: true });
 
 // Scoped to the club strip: the theme and language selects in the shell also expose `option` roles.
 const clubOptions = (page: Page) => page.getByTestId("club-strip").getByRole("option");
@@ -147,7 +147,12 @@ const startCareerAtHub = async (page: Page) => {
   await page.getByTestId("career-hub").waitFor();
 };
 
-register({ name: "hub-first-matchday", route: "#/new", state: startCareerAtHub });
+register({
+  name: "hub-first-matchday",
+  route: "#/new",
+  smoke: true,
+  state: startCareerAtHub,
+});
 
 register({
   name: "hub-mid-season",
@@ -191,7 +196,7 @@ const openSquadTable = async (page: Page) => {
   await page.getByTestId("squad-table").waitFor();
 };
 
-register({ name: "squad-default", route: "#/new", state: openSquadTable });
+register({ name: "squad-default", route: "#/new", smoke: true, state: openSquadTable });
 
 register({
   name: "squad-filtered",
@@ -260,7 +265,13 @@ const openTacticsPitch = async (page: Page) => {
   await page.getByTestId("lineup-pitch").waitFor();
 };
 
-register({ name: "tactics-442", full: true, route: "#/new", state: openTacticsPitch });
+register({
+  name: "tactics-442",
+  full: true,
+  smoke: true,
+  route: "#/new",
+  state: openTacticsPitch,
+});
 
 register({
   name: "tactics-352",

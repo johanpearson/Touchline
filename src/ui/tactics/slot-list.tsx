@@ -10,6 +10,7 @@ import {
   starterCandidates,
   starterEdit,
 } from "./lineup-model";
+import { ProfileLink } from "./profile-link";
 import type { BenchSlot, StarterSlot } from "./slots";
 
 function CandidateSelect(props: {
@@ -21,23 +22,27 @@ function CandidateSelect(props: {
   onChange: (id: string) => void;
 }) {
   const { t } = useI18n();
+  const current = props.candidates.find(({ player }) => player.id === props.value)?.player;
   return (
-    <label className="flex flex-col gap-1 text-sm text-soft">
-      {props.label}
-      <select
-        data-testid={props.testId}
-        data-position={props.position}
-        value={props.value}
-        onChange={(event) => props.onChange(event.target.value)}
-        className={cn(fieldControlStyles)}
-      >
-        {props.candidates.map(({ player, disabled }) => (
-          <option key={player.id} value={player.id} disabled={disabled}>
-            {`${player.name} (${t(`position.short.${player.position}`)})`}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="flex items-end gap-2">
+      <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm text-soft">
+        {props.label}
+        <select
+          data-testid={props.testId}
+          data-position={props.position}
+          value={props.value}
+          onChange={(event) => props.onChange(event.target.value)}
+          className={cn(fieldControlStyles)}
+        >
+          {props.candidates.map(({ player, disabled }) => (
+            <option key={player.id} value={player.id} disabled={disabled}>
+              {`${player.name} (${t(`position.short.${player.position}`)})`}
+            </option>
+          ))}
+        </select>
+      </label>
+      {current ? <ProfileLink playerId={current.id} name={current.name} /> : null}
+    </div>
   );
 }
 

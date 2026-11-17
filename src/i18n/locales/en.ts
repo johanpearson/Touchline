@@ -567,6 +567,7 @@ export const en = {
   "tactics.slot.label": "{role}, {player}, fitness {fitness}",
   "tactics.slot.fitness": "Fitness {fitness}",
   "tactics.bench.label": "Bench",
+  "tactics.profile.open": "Open profile of {player}",
   "tactics.bench.slot": "Bench slot {slot}: {player}, {position}, fitness {fitness}",
   "tactics.picker.title": "Choose {role}",
   "tactics.picker.bench": "Choose bench slot {slot}",

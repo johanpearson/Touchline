@@ -200,12 +200,12 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-  # Visual regression (#253): screenshots of every story and registered screen state compared with the baselines in
-  # e2e/visual/__screenshots__. A screenshot that DIFFERS (pixels, size, or no baseline yet for a new state) is only
-  # reported: a warning and an artifact with the diffs, never a failure, because the workflow `Visual baselines`
-  # makes the baselines after merge and nobody commits snapshots by hand. A screen state that is BROKEN (a
-  # timeout or an error in e2e/visual/screens.spec.ts) fails its shard and so the `Visual` check: nobody can make
-  # a baseline for it, and the baseline workflow would fail after merge (#322). Path-filtered to UI, Storybook and CSS changes.
+  # Visual smoke (#253, #351): a few simple desktop screens (`visualScreen({ smoke: true })`, desktop, midnight, English)
+  # compared with the baselines in e2e/visual/__screenshots__, with only the app built (no Storybook). A screenshot that
+  # DIFFERS (pixels, size, or no baseline yet) is only reported: a warning and an artifact with the diffs, never a
+  # failure. A screen that is BROKEN (a timeout or an error) fails the job and so the `Visual` check. The full run (every
+  # story and screen state, all widths) and the baselines are the job `Visual (full)` of the nightly workflow, which
+  # opens a baseline pull request and an issue when it breaks. Path-filtered to UI, Storybook and CSS changes.
   visual-scope:
     name: Visual scope
     runs-on: ubuntu-latest
@@ -228,19 +228,16 @@ jobs:
             fi
           fi
           echo "run=$run" >> "$GITHUB_OUTPUT"
-          echo "Visual report: $run"
+          echo "Visual smoke: $run"
 
-  # Keep the shard list and the --shard total in step.
-  visual-shard:
-    name: Visual shard ${{ matrix.shard }}
+  visual-smoke:
+    name: Visual smoke
     needs: visual-scope
     if: needs.visual-scope.outputs.run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
+    timeout-minutes: 10
+    env:
+      VISUAL_SMOKE: "1"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -249,21 +246,20 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx storybook build --quiet
       - run: npx vite build
       - name: Compare with the baselines (differences are only reported)
         id: compare
         continue-on-error: true
-        run: npx playwright test -c playwright.visual.config.ts --shard=${{ matrix.shard }}/4
+        run: npx playwright test -c playwright.visual.config.ts
       - name: Say that screens differ or failed
         if: steps.compare.outcome == 'failure'
         run: |
-          echo "::warning::Visual shard ${{ matrix.shard }}: screens differ from the baselines or a state failed. Differences do not block; a broken state fails the next step. Open the visual-report-${{ matrix.shard }} artifact for the diffs. If the changes are intended, merge: the Visual baselines workflow updates the baselines on main."
-          echo "Shard ${{ matrix.shard }}: screens differ from the baselines or a state failed. Differences do not block; see the visual-report-${{ matrix.shard }} artifact." >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::Visual smoke: screens differ from the baselines or a state failed. Differences do not block; a broken state fails the next step. Open the visual-report artifact for the diffs. If the changes are intended, merge: the nightly run updates the baselines."
+          echo "Visual smoke: screens differ from the baselines or a state failed. Differences do not block; see the visual-report artifact." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         if: steps.compare.outcome == 'failure'
         with:
-          name: visual-report-${{ matrix.shard }}
+          name: visual-report
           path: |
             playwright-report/
             test-results/
@@ -276,7 +272,7 @@ jobs:
 
   visual:
     name: Visual
-    needs: [visual-scope, visual-shard]
+    needs: [visual-scope, visual-smoke]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -287,7 +283,7 @@ jobs:
           echo "Results: $RESULTS"
           case "$RESULTS" in
             *cancelled*) echo "Cancelled (a newer run replaced this one)."; exit 0 ;;
-            *failure*) echo "::error::A visual shard failed: a broken screen state (see its annotations) or a build error."; exit 1 ;;
+            *failure*) echo "::error::The visual smoke run failed: a broken screen state (see its annotations) or a build error."; exit 1 ;;
           esac
 
   # Accessibility (#272): axe over every registered screen state at 3 widths x 3 themes x 2 languages, from the same
