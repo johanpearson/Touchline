@@ -284,7 +284,8 @@ const playMatchdays = async (page: Page, count: number) => {
   for (let i = 0; i < count; i++) {
     await page.getByTestId("quick-sim").click();
     await page.getByTestId("results-continue").click();
-    await page.getByTestId("career-hub").waitFor();
+    // The last matchday of the season continues to the season end instead of the hub.
+    await page.getByTestId(/^(career-hub|screen-season-end)$/).waitFor();
   }
 };
 
