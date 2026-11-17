@@ -16,7 +16,12 @@ export type MatchReport = {
   minutes: Record<string, number>;
   /** Extra fitness lost per player id beyond the minutes (touchline shouts); absent means none. */
   fatigue?: Record<string, number>;
+  /** What the user's opponent played in this match (substitutions and shouts of the AI club). */
+  opponent?: MatchReport;
 };
+
+/** The reports of the AI clubs of a round by club id; a club without one plays its auto-picked 4-4-2 for 90 minutes. */
+export type AiReports = Readonly<Record<string, MatchReport>>;
 
 const outcomeOf = (result: Result | undefined, clubId: string): MatchOutcome => {
   if (!result || result.homeGoals === result.awayGoals) return "draw";
@@ -29,17 +34,20 @@ const fullMatch = (ids: readonly string[]): Record<string, number> =>
 
 /**
  * Minutes played per player id of one club in a round (absent means 0). The user's club follows the
- * report (without one the starters play 90). AI clubs play their auto-picked 4-4-2 (with the condition
- * before the round) for 90 minutes.
+ * report (without one the starters play 90). An AI club follows its report in `aiReports`, or else
+ * plays its auto-picked 4-4-2 (with the condition before the round) for 90 minutes.
  */
 export const minutesOf = (
   career: Career,
   clubId: string,
   report?: MatchReport,
+  aiReports: AiReports = {},
 ): Record<string, number> => {
   if (clubId === career.userClubId) {
     return report ? report.minutes : fullMatch(career.squadPlan.starters);
   }
+  const played = aiReports[clubId];
+  if (played) return played.minutes;
   const club = career.league.clubs.find((c) => c.id === clubId);
   if (!club) return {};
   const squad = clubSquad(club, career.league.players);
@@ -55,15 +63,18 @@ export const updateConditionAfterMatchday = (
   career: Career,
   results: readonly Result[],
   report?: MatchReport,
+  aiReports: AiReports = {},
 ): Record<string, PlayerCondition> => {
   const next: Record<string, PlayerCondition> = { ...career.condition };
   for (const club of career.league.clubs) {
     const result = results.find((r) => r.homeClubId === club.id || r.awayClubId === club.id);
     const outcome = outcomeOf(result, club.id);
-    const minutes = minutesOf(career, club.id, report);
+    const minutes = minutesOf(career, club.id, report, aiReports);
     for (const id of club.playerIds) {
       const before = career.condition[id] ?? initialCondition();
-      const extraFatigue = club.id === career.userClubId ? report?.fatigue?.[id] : undefined;
+      const extraFatigue = (club.id === career.userClubId ? report : aiReports[club.id])?.fatigue?.[
+        id
+      ];
       const played = applyMatchToCondition(before, {
         minutes: minutes[id] ?? 0,
         outcome,

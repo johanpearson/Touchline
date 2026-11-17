@@ -2,7 +2,9 @@ import type { MatchInput, PerSide } from "../engine";
 import {
   type Career,
   type Club,
+  type CoachedMatch,
   chooseKits,
+  createCoachedMatch,
   type Fixture,
   type Kit,
   matchInputFor,
@@ -17,6 +19,8 @@ export type MatchSetup = {
   /** Body colour of each worn kit. */
   colours: PerSide<string>;
   input: MatchInput;
+  /** Creates the match with the AI club's substitutions and shouts, as the quick sim plays it. */
+  createMatch: () => CoachedMatch;
   /** Display name of every player who can appear in the log, by player id. */
   players: Readonly<Record<string, string>>;
 };
@@ -44,6 +48,7 @@ export const matchSetupFor = (career: Career, fixture: Fixture): MatchSetup => {
     kits,
     colours: { home: kits.home.body, away: kits.away.body },
     input: matchInputFor(career, fixture),
+    createMatch: () => createCoachedMatch(career, fixture),
     players: namesOf(career, [home, away]),
   };
 };

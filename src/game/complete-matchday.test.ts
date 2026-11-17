@@ -6,7 +6,7 @@ import { computeTable, type Result } from "./compute-table";
 import { getNextFixture } from "./get-next-fixture";
 import { FITNESS_MAX, FITNESS_MIN, FORM_MAX, FORM_MIN } from "./player-condition";
 import { playMatchdays } from "./season-test-helpers";
-import { simulateFixture } from "./simulate-fixture";
+import { playFixture, simulateFixture } from "./simulate-fixture";
 import { startNextSeason } from "./start-next-season";
 
 const userResultOf = (career: Career): Result => {
@@ -244,6 +244,63 @@ describe("completeMatchday", () => {
         Object.values(next.career.condition).every((c) => c.fitness === 100 && c.form === 5),
       ).toBe(true);
       expect(next.career.squadPlan).toEqual(finished.squadPlan);
+    });
+  });
+
+  describe("AI minutes", () => {
+    const tired = playMatchdays(aCareer(), 6);
+    const fixture = getNextFixture(tired.season, tired.userClubId) as NonNullable<
+      ReturnType<typeof getNextFixture>
+    >;
+    const aiFixture = tired.season.fixtures.find(
+      (f) =>
+        f.matchday === tired.season.currentMatchday &&
+        f.homeClubId !== tired.userClubId &&
+        f.awayClubId !== tired.userClubId,
+    ) as typeof fixture;
+
+    it("adds the minutes an AI club's substitutes and substituted players played to the season", () => {
+      const { aiReports } = playFixture(tired, aiFixture);
+      const clubId = aiFixture.homeClubId;
+      const expected = aiReports[clubId]?.minutes ?? {};
+
+      const next = complete(tired);
+
+      for (const [id, minutes] of Object.entries(expected)) {
+        expect((next.minutes[id] ?? 0) - (tired.minutes[id] ?? 0)).toBe(minutes);
+      }
+      expect(Object.values(expected).some((m) => m > 0 && m < 90)).toBe(true);
+    });
+
+    it("drains fitness in proportion to the minutes an AI player played", () => {
+      const { aiReports } = playFixture(tired, aiFixture);
+      const minutes = aiReports[aiFixture.homeClubId]?.minutes ?? {};
+      const partial = Object.entries(minutes).find(([, m]) => m > 0 && m < 90);
+      if (!partial) throw new Error("no partial minutes");
+      const [id, played] = partial;
+
+      const next = complete(tired);
+
+      const extra = aiReports[aiFixture.homeClubId]?.fatigue?.[id] ?? 0;
+      const before = tired.condition[id]?.fitness ?? 100;
+      const drained = before - (10 * played) / 90 - extra;
+      expect(next.condition[id]?.fitness).toBeCloseTo(drained + (100 - drained) * 0.25, 6);
+    });
+
+    it("uses the opponent's report from the match view for the user's match", () => {
+      const opponent =
+        fixture.homeClubId === tired.userClubId ? fixture.awayClubId : fixture.homeClubId;
+      const club = tired.league.clubs.find((c) => c.id === opponent);
+      const playerId = club?.playerIds[0] as string;
+      const report = {
+        minutes: Object.fromEntries(tired.squadPlan.starters.map((id) => [id, 90])),
+        opponent: { minutes: { [playerId]: 37 } },
+      };
+
+      const outcome = completeMatchday(tired, userResultOf(tired), report);
+
+      if (!outcome.ok) throw new Error(outcome.error);
+      expect((outcome.career.minutes[playerId] ?? 0) - (tired.minutes[playerId] ?? 0)).toBe(37);
     });
   });
 });

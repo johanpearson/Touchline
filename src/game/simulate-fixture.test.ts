@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createActionMatch } from "../engine";
 import { aCareer } from "./career-builders";
+import { createCoachedMatch } from "./coached-match";
 import { goalScorersOf } from "./goal-scorers";
-import { matchInputFor, matchSeed } from "./match-input-for";
 import { simulateFixture } from "./simulate-fixture";
 
 describe("simulateFixture", () => {
@@ -47,11 +46,10 @@ describe("simulateFixture", () => {
     expect(simulateFixture(career, fixture).engineVersion).toBe(2);
   });
 
-  it("plays the action engine, deterministically", () => {
+  it("plays the coached action match, deterministically", () => {
     const career = aCareer();
     const fixture = career.season.fixtures[2] as (typeof career.season.fixtures)[number];
-    const input = matchInputFor(career, fixture);
-    const match = createActionMatch(input, matchSeed(career, fixture));
+    const match = createCoachedMatch(career, fixture);
     match.advanceTo(1_000_000);
     match.resume();
     match.advanceTo(1_000_000);
@@ -68,9 +66,7 @@ describe("simulateFixture scorers", () => {
   it("records one scorer per goal, taken from the event log", () => {
     const career = aCareer();
     const fixture = career.season.fixtures[2] as (typeof career.season.fixtures)[number];
-    const match = createActionMatch(matchInputFor(career, fixture), matchSeed(career, fixture), {
-      detail: "fast",
-    });
+    const match = createCoachedMatch(career, fixture, { detail: "fast" });
     match.advanceTo(1_000_000);
     match.resume();
     match.advanceTo(1_000_000);

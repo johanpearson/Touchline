@@ -7,15 +7,14 @@ import {
   type SubstitutionError,
 } from "./check-substitutions";
 import type { Fixture } from "./generate-fixtures";
-import { liveSquadAfter, minutesOnPitch, type SubstitutionRecord } from "./live-squad";
-import type { Player } from "./player";
+import { liveSquadAfter, type SubstitutionRecord } from "./live-squad";
 import { FITNESS_MATCH_MINUTES } from "./player-condition";
+import { reportOf } from "./report-of";
 import {
   checkShout,
   type ShoutError,
   type ShoutKind,
   type ShoutRecord,
-  shoutFatigue,
   tacticsAtMinute,
 } from "./shouts";
 import type { PlayerPosition } from "./squad-player";
@@ -91,25 +90,6 @@ const recordsOf = (
   halfTime: boolean,
 ): SubstitutionRecord[] => substitutions.map(({ off, on }) => ({ minute, halfTime, off, on }));
 
-const reportOf = (
-  career: Career,
-  squadPlayers: readonly Player[],
-  changes: MatchChanges,
-  base: TeamTactics,
-): MatchReport => {
-  const live = liveSquadAfter(career.squadPlan, changes.substitutions, () => "MID");
-  const minutes: Record<string, number> = {};
-  const fatigue: Record<string, number> = {};
-  for (const { id } of squadPlayers) {
-    minutes[id] = minutesOnPitch(id, career.squadPlan, live);
-    const from = career.squadPlan.starters.includes(id) ? 0 : (live.cameOn[id] ?? 0);
-    const to = from + minutes[id];
-    const tired = shoutFatigue(base, changes.shouts, from, to);
-    if (tired > 0) fatigue[id] = tired;
-  }
-  return { minutes, fatigue };
-};
-
 /**
  * Plans a change at `atMinute` (a match minute, 0 to the end): substitutions (a bench player replaces a
  * pitch player of any position; at most 5 in all, in at most 3 windows plus half-time; a player
@@ -173,7 +153,7 @@ export const planChange = (
   return {
     ok: true,
     change: { side, lineup, tactics },
-    report: reportOf(career, squad, changes, base),
+    report: reportOf(career.squadPlan, squad, changes, base),
     changes,
   };
 };

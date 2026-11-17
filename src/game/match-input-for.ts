@@ -29,6 +29,14 @@ const clubOf = (career: Career, clubId: string): Club => {
   return club;
 };
 
+/** The eleven and bench an AI club kicks off with: an auto-picked 4-4-2 at the current condition. */
+export const aiLineupFor = (career: Career, clubId: string): Lineup =>
+  autoPickLineup(
+    clubSquad(clubOf(career, clubId), career.league.players),
+    "4-4-2",
+    career.condition,
+  );
+
 /** The user's saved plan; every AI club plays an auto-picked 4-4-2 with neutral tactics. */
 const setupOf = (career: Career, clubId: string): SideSetup => {
   const club = clubOf(career, clubId);

@@ -3,8 +3,8 @@ import type { Career, MatchdayError, MatchdayResult } from "./career";
 import type { Result } from "./compute-table";
 import type { Fixture } from "./generate-fixtures";
 import { getNextFixture } from "./get-next-fixture";
-import { simulateFixture } from "./simulate-fixture";
-import { type MatchReport, updateConditionAfterMatchday } from "./update-condition";
+import { type PlayedFixture, playFixture } from "./simulate-fixture";
+import { type AiReports, type MatchReport, updateConditionAfterMatchday } from "./update-condition";
 
 const fail = (error: MatchdayError): MatchdayResult => ({ ok: false, error });
 
@@ -32,6 +32,29 @@ const checkUserResult = (
 };
 
 /**
+ * What every AI club played this round: the other fixtures as simulated, and the user's opponent from
+ * the report of the match view or, without one, from replaying the user's fixture (the user made no
+ * changes, so the quick sim plays the same match).
+ */
+const aiReportsOf = (
+  career: Career,
+  userFixture: Fixture,
+  report: MatchReport | undefined,
+  others: readonly PlayedFixture[],
+): AiReports => {
+  const reports: Record<string, MatchReport> = Object.assign({}, ...others.map((p) => p.aiReports));
+  if (report?.opponent) {
+    const opponent =
+      userFixture.homeClubId === career.userClubId
+        ? userFixture.awayClubId
+        : userFixture.homeClubId;
+    reports[opponent] = report.opponent;
+    return reports;
+  }
+  return { ...reports, ...playFixture(career, userFixture).aiReports };
+};
+
+/**
  * Completes the current matchday: takes the user's result (from the match view or `simulateFixture`),
  * simulates every other fixture of the round and returns a new career on the next matchday.
  * The input career is not changed. Results are appended in fixture order, so the other matches
@@ -49,16 +72,22 @@ export const completeMatchday = (
   const error = checkUserResult(career, userFixture, userResult);
   if (error) return fail(error);
 
-  const matchdayResults = season.fixtures
-    .filter((f) => f.matchday === season.currentMatchday)
-    .map((f) => (f.id === userFixture.id ? userResult : simulateFixture(career, f)));
+  const round = season.fixtures.filter((f) => f.matchday === season.currentMatchday);
+  const played = round.map((f) => (f.id === userFixture.id ? undefined : playFixture(career, f)));
+  const matchdayResults = round.map((_, i) => played[i]?.result ?? userResult);
+  const aiReports = aiReportsOf(
+    career,
+    userFixture,
+    report,
+    played.flatMap((p) => (p ? [p] : [])),
+  );
 
   return {
     ok: true,
     career: {
       ...career,
-      condition: updateConditionAfterMatchday(career, matchdayResults, report),
-      minutes: addMinutes(career, report),
+      condition: updateConditionAfterMatchday(career, matchdayResults, report, aiReports),
+      minutes: addMinutes(career, report, aiReports),
       season: {
         ...season,
         results: [...season.results, ...matchdayResults],
