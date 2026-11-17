@@ -1,13 +1,13 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { generateLeague, parseCareer } from "../game";
+import { generateLeague, parseCareer } from "../../game";
 import {
   createMemoryFileTransfer,
   createMemoryLocaleStore,
   createMemorySaveStore,
-} from "../platform";
-import type { SaveEnvelope, SaveStore } from "../shared";
-import { App } from "./app";
+} from "../../platform";
+import type { SaveEnvelope, SaveStore } from "../../shared";
+import { App } from "../app";
 
 const SEED = 11;
 const createRenderer = () => ({ resize: vi.fn(), render: vi.fn(), dispose: vi.fn() });
@@ -90,7 +90,7 @@ describe("saves screen", () => {
     await openSaves();
 
     await waitFor(() => expect(info("autosave")).toContain(firstClub().name));
-    expect(info("autosave")).toMatch(/season 1, matchday 1/);
+    expect(info("autosave")).toMatch(/Season 1, matchday 1/);
     for (const id of ["slot-1", "slot-2", "slot-3"]) expect(info(id)).toBe("Empty slot");
     expect(screen.queryByTestId("save-autosave")).toBeNull();
   });
@@ -118,16 +118,39 @@ describe("saves screen", () => {
     await openSaves();
 
     fireEvent.click(screen.getByTestId("save-slot-1"));
-    expect(screen.getByTestId("confirm-overwrite")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("confirm-no"));
+    const dialog = screen.getByRole("dialog", { name: "Overwrite Slot 1?" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
 
-    expect(screen.queryByTestId("confirm-overwrite")).toBeNull();
-    expect(document.activeElement).toBe(screen.getByTestId("save-slot-1"));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("save-slot-1")));
     expect(matchdayOf(await store.load("slot-1"))).toBe(1);
 
     fireEvent.click(screen.getByTestId("save-slot-1"));
     fireEvent.click(screen.getByTestId("confirm-yes"));
     await waitFor(async () => expect(matchdayOf(await store.load("slot-1"))).toBe(2));
+  });
+
+  it("confirms a save with a toast", async () => {
+    mountApp();
+    startCareer();
+    await openSaves();
+
+    fireEvent.click(screen.getByTestId("save-slot-1"));
+
+    expect(await screen.findByText("Saved to Slot 1")).toBeTruthy();
+  });
+
+  it("confirms a delete with a toast", async () => {
+    mountApp();
+    startCareer();
+    await openSaves();
+    fireEvent.click(screen.getByTestId("save-slot-2"));
+    await waitFor(() => expect(info("slot-2")).toContain(firstClub().name));
+
+    fireEvent.click(screen.getByTestId("delete-slot-2"));
+    fireEvent.click(screen.getByTestId("confirm-yes"));
+
+    expect(await screen.findByText("Deleted Slot 2")).toBeTruthy();
   });
 
   it("loads a slot, replaces the running career and goes to the hub", async () => {
@@ -156,7 +179,7 @@ describe("saves screen", () => {
     await waitFor(() => expect(info("slot-2")).toContain(firstClub().name));
 
     fireEvent.click(screen.getByTestId("delete-slot-2"));
-    expect(screen.getByTestId("confirm-delete")).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Delete Slot 2?" })).toBeTruthy();
     expect(await store.load("slot-2")).not.toBeNull();
     fireEvent.click(screen.getByTestId("confirm-yes"));
 
@@ -236,13 +259,14 @@ describe("saves screen", () => {
     fireEvent.click(screen.getByTestId("save-slot-2"));
 
     expect(await screen.findByTestId("slot-error-slot-2")).toBeTruthy();
+    expect(await screen.findByText("That did not work")).toBeTruthy();
     expect(info("slot-2")).toBe("Empty slot");
     expect(info("slot-1")).toContain(firstClub().name);
   });
 
-  it("has a Saves link in the navigation and on the new-career screen", async () => {
+  it("has a Saves link in the navigation and a Settings link on the start screen", async () => {
     mountApp();
-    expect(screen.getByTestId("nav-saves").getAttribute("href")).toBe("#/saves");
+    expect(screen.getByTestId("nav-settings").getAttribute("href")).toBe("#/settings");
     startCareer();
     expect(screen.getByTestId("nav-saves").getAttribute("href")).toBe("#/saves");
   });

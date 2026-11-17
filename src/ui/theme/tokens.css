@@ -12,7 +12,8 @@
   --r-pill: 999px;
 }
 
-:root[data-theme="midnight"] {
+:root[data-theme="midnight"],
+[data-theme-preview="midnight"] {
   color-scheme: dark;
   --bg: #0a0e17;
   --side: #0d1220;
@@ -36,7 +37,8 @@
   --focus: #ffb547;
 }
 
-:root[data-theme="graphite"] {
+:root[data-theme="graphite"],
+[data-theme-preview="graphite"] {
   color-scheme: dark;
   --bg: #0e0f11;
   --side: #121316;
@@ -61,7 +63,8 @@
 }
 
 /* Light: status colours and focus are darker than the boards' values, which fail WCAG AA. */
-:root[data-theme="light"] {
+:root[data-theme="light"],
+[data-theme-preview="light"] {
   color-scheme: light;
   --bg: #f3f5f9;
   --side: #ffffff;

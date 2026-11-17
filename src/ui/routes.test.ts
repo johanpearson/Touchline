@@ -13,6 +13,7 @@ describe("parseRoute", () => {
     expect(parseRoute("#/season-end")).toEqual({ name: "season-end" });
     expect(parseRoute("#/results")).toEqual({ name: "results" });
     expect(parseRoute("#/saves")).toEqual({ name: "saves" });
+    expect(parseRoute("#/settings")).toEqual({ name: "settings" });
     expect(parseRoute("#/squad")).toEqual({ name: "squad" });
     expect(parseRoute("#/tactics")).toEqual({ name: "tactics" });
     expect(parseRoute("#/new")).toEqual({ name: "new" });
@@ -62,6 +63,7 @@ describe("hrefFor", () => {
       { name: "home" },
       { name: "league" },
       { name: "saves" },
+      { name: "settings" },
       { name: "squad" },
       { name: "tactics" },
       { name: "new" },

@@ -3,6 +3,7 @@ import {
   House,
   type LucideIcon,
   Save,
+  Settings,
   Shield,
   SlidersHorizontal,
   Trophy,
@@ -14,7 +15,15 @@ import type { Route } from "../routes";
 /** A route a link can point to (everything but the not-found placeholder). */
 export type LinkRoute = Exclude<Route, { name: "not-found" }>;
 
-export type NavId = "hub" | "squad" | "tactics" | "match" | "league" | "club" | "saves";
+export type NavId =
+  | "hub"
+  | "squad"
+  | "tactics"
+  | "match"
+  | "league"
+  | "club"
+  | "saves"
+  | "settings";
 
 export type NavItem = {
   id: NavId;
@@ -72,6 +81,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     labelKey: "nav.saves",
     icon: Save,
     route: () => ({ name: "saves" }),
+    phone: "more",
+  },
+  {
+    id: "settings",
+    labelKey: "nav.settings",
+    icon: Settings,
+    route: () => ({ name: "settings" }),
     phone: "more",
   },
 ];

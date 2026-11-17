@@ -115,8 +115,7 @@ test.describe("persistence", () => {
   });
 
   test("rejects a garbage file and stores nothing", async ({ page }) => {
-    await page.goto("./");
-    await page.getByTestId("nav-saves").click();
+    await page.goto("./#/saves");
     await expect(page.getByTestId("saves-screen")).toBeVisible();
 
     const chooserPromise = page.waitForEvent("filechooser");

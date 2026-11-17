@@ -31,6 +31,7 @@ describe("nav config", () => {
       expect.arrayContaining(["home", "squad", "tactics", "match", "league", "club"]),
     );
     expect(reached).toContain("saves");
+    expect(reached).toContain("settings");
   });
 
   it("links to routes that parse back to themselves", () => {
@@ -50,7 +51,7 @@ describe("nav config", () => {
   });
 
   it("lists every other item in the More drawer", () => {
-    expect(moreItems().map((item) => item.id)).toEqual(["tactics", "club", "saves"]);
+    expect(moreItems().map((item) => item.id)).toEqual(["tactics", "club", "saves", "settings"]);
   });
 
   it("shows every item either as a phone tab or in More, never both", () => {
@@ -67,6 +68,7 @@ describe("nav config", () => {
         "nav-league",
         "nav-match",
         "nav-saves",
+        "nav-settings",
         "nav-squad",
         "nav-tactics",
       ].sort(),

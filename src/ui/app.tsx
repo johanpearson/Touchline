@@ -14,8 +14,9 @@ import { NotFoundScreen } from "./not-found-screen";
 import { PlayerView } from "./player-screen";
 import { Redirect } from "./redirect";
 import type { Route } from "./routes";
-import { SavesScreen } from "./saves-screen";
+import { SavesScreen } from "./saves/saves-screen";
 import { SeasonEndScreen } from "./season-end-screen";
+import { SettingsScreen } from "./settings/settings-screen";
 import { AppShell } from "./shell/app-shell";
 import { BareShell } from "./shell/bare-shell";
 import { SquadScreen } from "./squad-screen";
@@ -23,6 +24,7 @@ import { StartScreen } from "./start/start-screen";
 import { TacticsScreen } from "./tactics/tactics-screen";
 import { DensityProvider } from "./theme/density-provider";
 import { ThemeProvider } from "./theme/theme-provider";
+import { Toasts } from "./toasts";
 import { CareerProvider, useCareer } from "./use-career";
 import { useRoute } from "./use-route";
 import "./theme/theme.css";
@@ -31,7 +33,7 @@ import "./app.css";
 type RendererProp = Pick<MatchScreenProps, "createRenderer" | "tickMs">;
 
 /** Routes that show the plain header instead of the start screen while there is no career. */
-const BARE_ROUTES: readonly Route["name"][] = ["new", "new-club", "saves", "not-found"];
+const BARE_ROUTES: readonly Route["name"][] = ["new", "new-club", "saves", "settings", "not-found"];
 
 type ScreenProps = RendererProp & { initialSeed: number };
 type CareerScreenProps = RendererProp & { career: Career; route: Route };
@@ -66,6 +68,7 @@ function Screen({ createRenderer, tickMs, initialSeed }: ScreenProps) {
   const { career } = useCareer();
   if (route.name === "not-found") return <NotFoundScreen />;
   if (route.name === "saves") return <SavesScreen />;
+  if (route.name === "settings") return <SettingsScreen />;
   if (!career) {
     const step = route.name === "new-club" ? "club" : "league";
     return <NewCareerWizard step={step} initialSeed={initialSeed} />;
@@ -131,13 +134,15 @@ export function App({
       <ThemeProvider store={themeStore ?? fallbackThemeStore}>
         <DensityProvider store={densityStore ?? fallbackDensityStore}>
           <CareerProvider saveStore={saveStore} now={now} fileTransfer={fileTransfer}>
-            <Shell
-              createRenderer={createRenderer}
-              tickMs={tickMs}
-              initialSeed={initialSeed}
-              storageAvailable={storageAvailable}
-              now={now}
-            />
+            <Toasts>
+              <Shell
+                createRenderer={createRenderer}
+                tickMs={tickMs}
+                initialSeed={initialSeed}
+                storageAvailable={storageAvailable}
+                now={now}
+              />
+            </Toasts>
           </CareerProvider>
         </DensityProvider>
       </ThemeProvider>

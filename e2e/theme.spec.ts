@@ -3,17 +3,23 @@ import { expect, test } from "@playwright/test";
 const htmlTheme = (page: import("@playwright/test").Page) =>
   page.evaluate(() => document.documentElement.dataset.theme);
 
+const pickTheme = async (page: import("@playwright/test").Page, name: string) => {
+  await page.goto("./#/settings");
+  await page.getByTestId(`theme-card-${name}`).click();
+};
+
 test.describe("themes and typography", () => {
   test("starts in Midnight and keeps the chosen theme after a reload @smoke", async ({ page }) => {
-    await page.goto("./");
+    await page.goto("./#/settings");
     expect(await htmlTheme(page)).toBe("midnight");
+    await expect(page.getByRole("radio", { name: "Midnight" })).toBeChecked();
 
-    await page.getByTestId("theme-switch").selectOption("light");
+    await page.getByTestId("theme-card-light").click();
     expect(await htmlTheme(page)).toBe("light");
 
     await page.reload();
     expect(await htmlTheme(page)).toBe("light");
-    await expect(page.getByTestId("theme-switch")).toHaveValue("light");
+    await expect(page.getByRole("radio", { name: "Light" })).toBeChecked();
   });
 
   test("sets the saved theme before the app renders (no flash)", async ({ page }) => {
@@ -30,9 +36,10 @@ test.describe("themes and typography", () => {
       Storage.prototype.getItem = blocked;
       Storage.prototype.setItem = blocked;
     });
-    await page.goto("./");
+    await page.goto("./#/settings");
     expect(await htmlTheme(page)).toBe("midnight");
-    await page.getByTestId("theme-switch").selectOption("graphite");
+    await expect(page.getByTestId("settings-storage-notice")).toBeVisible();
+    await page.getByTestId("theme-card-graphite").click();
     expect(await htmlTheme(page)).toBe("graphite");
   });
 
@@ -44,8 +51,7 @@ test.describe("themes and typography", () => {
       if (url.hostname !== "localhost") external.push(request.url());
       if (/\.woff2?$/.test(url.pathname)) fonts.push(url.pathname);
     });
-    await page.goto("./");
-    await page.getByTestId("theme-switch").selectOption("light");
+    await pickTheme(page, "light");
     await page.evaluate(() => document.fonts.ready);
 
     expect(external).toEqual([]);

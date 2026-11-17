@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateLeague, parseCareer } from "../game";
 import {
@@ -207,8 +207,8 @@ describe("exporting and importing saves", () => {
     await waitFor(() => expect(info("slot-2")).toMatch(/matchday 2/));
 
     await importFile(files, file.text, "slot-2");
-    expect(screen.getByTestId("confirm-import-overwrite")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("import-confirm-no"));
+    const dialog = screen.getByRole("dialog", { name: "Overwrite Slot 2?" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
     expect((await store.load("slot-2"))?.game).not.toEqual((await store.load("slot-1"))?.game);
 
     fireEvent.click(screen.getByTestId("import-into-slot-2"));

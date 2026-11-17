@@ -6,6 +6,7 @@ export {
 export type { MemoryFileTransfer } from "./file-transfer";
 export { createBrowserFileTransfer, createMemoryFileTransfer } from "./file-transfer";
 export { createBrowserLocaleStore, createMemoryLocaleStore } from "./locale-store";
+export { isPreferenceStorageWritable } from "./preferences-storage";
 export type { ReadEnvelopeResult } from "./save/codec";
 export { createEnvelope, readEnvelope, updateEnvelope } from "./save/codec";
 export { createIndexedDbSaveStore, isIndexedDbAvailable } from "./save/indexeddb-save-store";
