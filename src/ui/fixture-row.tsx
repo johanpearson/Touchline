@@ -77,55 +77,82 @@ function Scorers({
   );
 }
 
-/** One match: both crests and names, the score or a dash, and the scorers on expand when it was played. */
-export function FixtureRow({ fixture, home, away, result, players, userClubId }: Props) {
+function ScoreLine({
+  fixture,
+  home,
+  away,
+  result,
+}: Pick<Props, "fixture" | "home" | "away" | "result">) {
   const { t, formatNumber } = useI18n();
+  const score = result
+    ? `${formatNumber(result.homeGoals, 0)}–${formatNumber(result.awayGoals, 0)}`
+    : "–";
+  return (
+    <div className="grid min-h-14 grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-2">
+      <Side club={home} align="end" />
+      <span
+        className="min-w-12 text-center font-heading text-xl text-text tabular-nums"
+        data-testid={`fixture-score-${fixture.id}`}
+        title={result ? undefined : t("fixtures.notPlayed")}
+      >
+        {score}
+      </span>
+      <Side club={away} align="start" />
+    </div>
+  );
+}
+
+const TOGGLE =
+  "mx-auto mb-2 flex min-h-11 cursor-pointer items-center gap-1 rounded-sm border-0 bg-transparent px-3 text-sm text-info focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+
+/** The expandable scorers of a played match that had goals. */
+function ScorersToggle({
+  result,
+  home,
+  players,
+}: Pick<Props, "home" | "players"> & { result: Result }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const panelId = useId();
-  const mine = fixture.homeClubId === userClubId || fixture.awayClubId === userClubId;
-  const hasGoals = result !== undefined && result.homeGoals + result.awayGoals > 0;
-  const user = mine ? (fixture.homeClubId === userClubId ? home : away) : undefined;
+  return (
+    <>
+      <button
+        type="button"
+        data-testid={`fixture-toggle-${result.fixtureId}`}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen(!open)}
+        className={TOGGLE}
+      >
+        {open ? t("fixtures.scorers.hide") : t("fixtures.scorers.show")}
+        <ChevronDown aria-hidden="true" className={cn("size-4", open && "rotate-180")} />
+      </button>
+      {open ? <Scorers id={panelId} result={result} home={home} players={players} /> : null}
+    </>
+  );
+}
+
+const hasGoals = (result: Result | undefined): result is Result =>
+  result !== undefined && result.homeGoals + result.awayGoals > 0;
+
+/** The user's club if it plays in this fixture. */
+const userSide = (home: Club, away: Club, userClubId: string): Club | undefined =>
+  [home, away].find((club) => club.id === userClubId);
+
+/** One match: both crests and names, the score or a dash, and the scorers on expand when it was played. */
+export function FixtureRow({ fixture, home, away, result, players, userClubId }: Props) {
+  const { t } = useI18n();
+  const user = userSide(home, away, userClubId);
   return (
     <li
       data-testid={`fixture-${fixture.id}`}
-      data-highlighted={mine ? "true" : undefined}
+      data-highlighted={user ? "true" : undefined}
       style={user ? ({ "--row-accent": user.colours.primary } as CSSProperties) : undefined}
-      className={cn("rounded-lg border border-line", mine ? cn("bg-glow", EDGE) : "bg-surface")}
+      className={cn("rounded-lg border border-line", user ? cn("bg-glow", EDGE) : "bg-surface")}
     >
-      <div className="grid min-h-14 grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-2">
-        <Side club={home} align="end" />
-        <span
-          className="min-w-12 text-center font-heading text-xl text-text tabular-nums"
-          data-testid={`fixture-score-${fixture.id}`}
-          title={result ? undefined : t("fixtures.notPlayed")}
-        >
-          {result
-            ? `${formatNumber(result.homeGoals, 0)}–${formatNumber(result.awayGoals, 0)}`
-            : "–"}
-        </span>
-        <Side club={away} align="start" />
-      </div>
-      {mine ? <p className="sr-only">{t("fixtures.you")}</p> : null}
-      {result ? (
-        <>
-          {hasGoals ? (
-            <button
-              type="button"
-              data-testid={`fixture-toggle-${fixture.id}`}
-              aria-expanded={open}
-              aria-controls={panelId}
-              onClick={() => setOpen(!open)}
-              className="mx-auto mb-2 flex min-h-11 cursor-pointer items-center gap-1 rounded-sm border-0 bg-transparent px-3 text-sm text-info focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            >
-              {open ? t("fixtures.scorers.hide") : t("fixtures.scorers.show")}
-              <ChevronDown aria-hidden="true" className={cn("size-4", open && "rotate-180")} />
-            </button>
-          ) : null}
-          {open && hasGoals ? (
-            <Scorers id={panelId} result={result} home={home} players={players} />
-          ) : null}
-        </>
-      ) : null}
+      <ScoreLine fixture={fixture} home={home} away={away} result={result} />
+      {user ? <p className="sr-only">{t("fixtures.you")}</p> : null}
+      {hasGoals(result) ? <ScorersToggle result={result} home={home} players={players} /> : null}
     </li>
   );
 }
