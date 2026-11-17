@@ -225,6 +225,8 @@ function HeadCell<Row>({ column, first, sort, density, onSort }: HeadCellProps<R
     <th
       scope="col"
       aria-sort={ariaSortValue(sort, column.id)}
+      aria-label={column.fullHeader}
+      title={column.fullHeader}
       className={cn(
         "sticky top-0 border-b border-line bg-surface px-3 py-2 text-xs font-semibold tracking-wide whitespace-nowrap text-muted uppercase",
         alignClass[column.align ?? "start"],
@@ -387,7 +389,7 @@ function CardItem<Row>({
       <dl className="m-0 mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
         {details.map((column) => (
           <Fragment key={column.id}>
-            <dt className="text-muted">{column.header}</dt>
+            <dt className="text-muted">{column.fullHeader ?? column.header}</dt>
             <dd className="m-0 text-right text-text">{column.cell(row)}</dd>
           </Fragment>
         ))}
