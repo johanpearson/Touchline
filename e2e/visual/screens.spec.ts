@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { visualScreen } from "./visual-screen";
 
 const APP = "http://localhost:4174/Touchline/";
@@ -332,6 +332,16 @@ visualScreen({
   state: leagueAfter(25, "fixtures"),
 });
 
+// Closes the "Saved" toasts so the snapshot does not depend on how long they stay. Always the first one, and
+// until the count has dropped: `locator.all()` would give positions (`.nth(1)`) that vanish when the first closes.
+const closeToasts = async (page: Page) => {
+  const toasts = page.locator("[data-tone]");
+  for (let open = await toasts.count(); open > 0; open = await toasts.count()) {
+    await toasts.first().locator("button").click();
+    await expect(toasts).toHaveCount(open - 1);
+  }
+};
+
 // The saves screen (#270): autosave, two used manual slots and one damaged slot.
 visualScreen({
   name: "saves-slots-and-corrupt",
@@ -349,9 +359,7 @@ visualScreen({
     await page.getByTestId("save-slot-2").click();
     await page.getByTestId("load-slot-2").waitFor();
     await page.getByTestId("delete-slot-3").waitFor();
-    // Close the "Saved" toasts so the snapshot does not depend on how long they stay.
-    for (const close of await page.locator("[data-tone] button").all()) await close.click();
-    await page.locator("[data-tone]").first().waitFor({ state: "detached" });
+    await closeToasts(page);
   },
 });
 
