@@ -20,10 +20,24 @@ describe("visual regression setup (#253)", () => {
     expect(ci).toContain("name: visual-report-${{ matrix.shard }}");
   });
 
-  it("reports differences on a pull request without ever failing it", () => {
+  it("only reports screenshot differences: the comparison step may fail without failing the shard", () => {
     expect(visualJobs).toContain("continue-on-error: true");
-    expect(visualJobs).not.toMatch(/exit 1/);
     expect(visualJobs).toContain("::warning::");
+  });
+
+  it("fails a shard for a broken screen state, after the report is uploaded, from the JSON report", () => {
+    const upload = visualJobs.indexOf("name: visual-report-${{ matrix.shard }}");
+    const check = visualJobs.indexOf("node scripts/visual-breakage.mjs visual-results.json");
+    expect(upload).toBeGreaterThan(-1);
+    expect(check).toBeGreaterThan(upload);
+    expect(config).toContain('["json", { outputFile: "visual-results.json" }]');
+  });
+
+  it("fails the Visual check only for a failed shard, never for a cancelled run or a skipped one", () => {
+    const aggregate = visualJobs.slice(visualJobs.indexOf("\n  visual:\n"));
+    expect(aggregate).toMatch(/\*cancelled\*\) .*exit 0/);
+    expect(aggregate).toMatch(/\*failure\*\) .*exit 1/);
+    expect(aggregate.match(/exit 1/g)).toHaveLength(1);
   });
 
   it("does not run the comparison on pushes to main, where the baselines are being regenerated", () => {

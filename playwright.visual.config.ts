@@ -16,7 +16,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
+  // The JSON report is read by scripts/visual-breakage.mjs, which tells a broken screen state from a screenshot difference.
+  reporter: process.env.CI
+    ? [["github"], ["html", { open: "never" }], ["json", { outputFile: "visual-results.json" }]]
+    : "list",
   expect: {
     toHaveScreenshot: {
       animations: "disabled",
