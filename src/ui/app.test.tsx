@@ -301,6 +301,13 @@ describe("career navigation", () => {
     expect(screen.getByTestId("nav-squad").getAttribute("href")).toBe("#/squad");
   });
 
+  it("links to the tactics screen and opens it", () => {
+    startedClub();
+    expect(screen.getByTestId("nav-tactics").getAttribute("href")).toBe("#/tactics");
+    goTo("#/tactics");
+    expect(screen.getByTestId("tactics-screen")).toBeTruthy();
+  });
+
   it("shows the start screen on the squad route without a career", () => {
     renderApp();
     goTo("#/squad");

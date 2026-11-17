@@ -91,8 +91,8 @@ test.describe("app shell keyboard and focus", () => {
     await expect(page.getByRole("button", { name: "Skip to content" })).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(page.getByTestId("nav-hub")).toBeFocused();
-    // The other five items, then language and theme, then the search button and the header action.
-    for (let i = 0; i < 5; i += 1) await page.keyboard.press("Tab");
+    // The other six items, then language and theme, then the search button and the header action.
+    for (let i = 0; i < 6; i += 1) await page.keyboard.press("Tab");
     await expect(page.getByTestId("nav-saves")).toBeFocused();
     await page.keyboard.press("Tab");
     await page.keyboard.press("Tab");
