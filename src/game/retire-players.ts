@@ -1,6 +1,6 @@
 import { createRng } from "../engine";
 import type { Career } from "./career";
-import { repairSquadPlan } from "./repair-squad-plan";
+import { repairedSquadPlan } from "./repair-squad-plan";
 
 /** Players younger than this never retire. */
 export const RETIREMENT_START_AGE = 34;
@@ -56,5 +56,5 @@ export const retirePlayers = (career: Career): Career => {
     condition: without(career.condition, retiring),
     minutes: without(career.minutes, retiring),
   };
-  return { ...next, squadPlan: repairSquadPlan(next) };
+  return { ...next, squadPlan: repairedSquadPlan(next) };
 };

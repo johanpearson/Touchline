@@ -40,6 +40,8 @@ export const createCareer = (spec: CareerSpec): CareerResult => {
       finances: initialFinances(league.clubs, league.players, contracts, season.number),
       freeAgentIds: [],
       minutes: initialMinutes(league.players),
+      window: "closed",
+      offers: [],
     },
   };
 };

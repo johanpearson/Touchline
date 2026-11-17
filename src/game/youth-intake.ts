@@ -7,7 +7,7 @@ import { SQUAD_SHAPE, uniqueName } from "./generate-squad";
 import type { Player } from "./player";
 import { initialCondition } from "./player-condition";
 import { playerValue, wageFor } from "./player-value";
-import { repairSquadPlan } from "./repair-squad-plan";
+import { repairedSquadPlan } from "./repair-squad-plan";
 import { MIN_PER_POSITION } from "./squad-limits";
 import type { PlayerPosition } from "./squad-player";
 
@@ -146,5 +146,5 @@ export const generateYouthIntake = (career: Career): Career => {
     },
     minutes: { ...career.minutes, ...Object.fromEntries(players.map((p) => [p.id, 0])) },
   };
-  return { ...next, squadPlan: repairSquadPlan(next) };
+  return { ...next, squadPlan: repairedSquadPlan(next) };
 };

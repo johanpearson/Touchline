@@ -6,6 +6,7 @@ import { parseHistory } from "./parse-history";
 import { parseLeague } from "./parse-league";
 import { parseSeason } from "./parse-season";
 import { parseCondition, parseSquadPlan } from "./parse-squad-plan";
+import { parseOffers, parseWindow } from "./parse-transfers";
 import { scorersBelongToClubs } from "./scorers-belong-to-clubs";
 import { clubSquad } from "./squad-plan";
 
@@ -23,7 +24,9 @@ export type CareerParseError =
   | "invalid-contracts"
   | "invalid-finances"
   | "invalid-free-agents"
-  | "invalid-minutes";
+  | "invalid-minutes"
+  | "invalid-window"
+  | "invalid-offers";
 
 export type CareerParseResult =
   | { ok: true; career: Career }
@@ -58,6 +61,10 @@ const parseUnchecked = (raw: unknown): CareerParseResult => {
   if (!freeAgentIds) return fail("invalid-free-agents");
   const minutes = parseMinutes(raw.minutes, league.players);
   if (!minutes) return fail("invalid-minutes");
+  const window = parseWindow(raw.window);
+  if (!window) return fail("invalid-window");
+  const offers = parseOffers(raw.offers, league.clubs, raw.userClubId);
+  if (!offers) return fail("invalid-offers");
   return {
     ok: true,
     career: {
@@ -73,6 +80,8 @@ const parseUnchecked = (raw: unknown): CareerParseResult => {
       finances,
       freeAgentIds,
       minutes,
+      window,
+      offers,
     },
   };
 };

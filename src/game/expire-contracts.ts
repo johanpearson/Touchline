@@ -1,5 +1,5 @@
 import type { Career } from "./career";
-import { repairSquadPlan } from "./repair-squad-plan";
+import { repairedSquadPlan } from "./repair-squad-plan";
 
 /**
  * Lets every player whose contract ends with the finished season (`expiresSeason` up to the
@@ -23,5 +23,5 @@ export const expireContracts = (career: Career): Career => {
     league: { ...career.league, clubs },
     freeAgentIds: [...career.freeAgentIds, ...leaving],
   };
-  return { ...next, squadPlan: repairSquadPlan(next) };
+  return { ...next, squadPlan: repairedSquadPlan(next, new Set(leaving)) };
 };

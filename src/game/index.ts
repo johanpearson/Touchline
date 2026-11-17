@@ -1,7 +1,10 @@
+export { acceptOffer } from "./accept-offer";
 export { addCareerEconomy } from "./add-career-economy";
 export { addEngineVersion } from "./add-engine-version";
 export { addSquadPlanAndCondition } from "./add-squad-plan";
+export { askingPrice, BEST_ELEVEN_PREMIUM, marketValue, signingWage } from "./asking-price";
 export { autoPickLineup } from "./auto-pick-lineup";
+export { buyPlayer } from "./buy-player";
 export type {
   Career,
   CareerError,
@@ -133,6 +136,7 @@ export {
   positionPenalty,
   positionRating,
 } from "./position-rating";
+export { releasePlayer } from "./release-player";
 export type { RenewError, RenewResult } from "./renew-contract";
 export { askingWage, renewContract } from "./renew-contract";
 export {
@@ -165,6 +169,7 @@ export {
   shoutFatiguePerMinute,
   tacticsAtMinute,
 } from "./shouts";
+export { signFreeAgent } from "./sign-free-agent";
 export { simulateFixture } from "./simulate-fixture";
 export type { SquadLimits } from "./squad-limits";
 export { MAX_SQUAD_SIZE, MIN_PER_POSITION, MIN_SQUAD_SIZE, squadLimits } from "./squad-limits";
@@ -178,6 +183,10 @@ export { summariseSeason } from "./summarise-season";
 export type { PlayedPositions } from "./to-engine-players";
 export { toEngineBench, toEnginePlayers } from "./to-engine-players";
 export { toSquadPlayer } from "./to-squad-player";
+export { DEFAULT_CONTRACT_SEASONS } from "./transfer-core";
+export type { TransferOffer, TransferWindow } from "./transfer-offer";
+export type { TransferError, TransferResult } from "./transfer-result";
+export { isWindowOpen } from "./transfer-window";
 export type { MatchReport } from "./update-condition";
 export { useActionEngine } from "./use-action-engine";
 export { WAGE_BUDGET_SHARE, wageBill, wageBudget } from "./wage-budget";
