@@ -1,0 +1,57 @@
+import { askingPrice, signingWage } from "./asking-price";
+import type { Career } from "./career";
+import {
+  buyerError,
+  DEFAULT_CONTRACT_SEASONS,
+  isValidSeasons,
+  payFee,
+  reassign,
+  staysWithinMinimums,
+  withContract,
+} from "./transfer-core";
+import { refuse, type TransferError, type TransferResult } from "./transfer-result";
+import { isWindowOpen } from "./transfer-window";
+
+const sellerOf = (career: Career, playerId: string) =>
+  career.league.clubs.find((c) => c.playerIds.includes(playerId));
+
+const buyError = (
+  career: Career,
+  playerId: string,
+  fee: number,
+  seasons: number,
+): TransferError | undefined => {
+  if (!isWindowOpen(career)) return "window-closed";
+  const seller = sellerOf(career, playerId);
+  const ask = askingPrice(career, playerId);
+  const wage = signingWage(career, playerId);
+  if (!seller || ask === undefined || wage === undefined) return "unknown-player";
+  if (seller.id === career.userClubId) return "own-player";
+  if (!isValidSeasons(seasons)) return "invalid-length";
+  if (!Number.isInteger(fee)) return "invalid-fee";
+  if (fee < ask) return "fee-too-low";
+  const refused = buyerError(career, career.userClubId, fee, wage);
+  if (refused) return refused;
+  return staysWithinMinimums(career, seller.id, playerId) ? undefined : "seller-below-minimum";
+};
+
+/**
+ * Buys a player from an AI club for `fee` (thousands) during the off-season window. The AI accepts
+ * at once if the fee is at least the asking price and its squad stays within the minimums. The
+ * user pays the fee, the seller receives it, and the player gets a contract of `seasons` (1 to 5,
+ * default 3) at the wage he asks. The squad plan is left alone. The input career is not changed.
+ */
+export const buyPlayer = (
+  career: Career,
+  playerId: string,
+  fee: number,
+  seasons: number = DEFAULT_CONTRACT_SEASONS,
+): TransferResult => {
+  const error = buyError(career, playerId, fee, seasons);
+  if (error) return refuse(error);
+  const seller = sellerOf(career, playerId);
+  const wage = signingWage(career, playerId) as number;
+  const moved = reassign(career, playerId, career.userClubId);
+  const paid = payFee(moved, career.userClubId, seller?.id, fee);
+  return { ok: true, career: withContract(paid, playerId, wage, seasons) };
+};
