@@ -13,9 +13,18 @@ const startCareer = async (page: Page) => {
 const openSquad = async (page: Page) => {
   await page.getByTestId("nav-squad").click();
   await expect(page.getByTestId("squad-screen")).toBeVisible();
-  // The lineup and tactics editors sit behind a toggle until they get their own screen.
-  await page.getByTestId("edit-lineup").click();
-  await expect(page.getByTestId("lineup-editor")).toBeVisible();
+};
+
+/** Opens the tactics screen; `list` switches from the pitch to the selects (the keyboard route). */
+const openTactics = async (page: Page, view: "pitch" | "list" = "list") => {
+  await page.getByTestId("nav-tactics").click();
+  await expect(page.getByTestId("tactics-screen")).toBeVisible();
+  if (view === "list") await page.getByRole("radio", { name: "List" }).click();
+};
+
+/** Chooses a level of a tactic or a formation in its segmented control. */
+const choose = async (page: Page, testId: string, name: string) => {
+  await page.getByTestId(testId).getByRole("radio", { name, exact: true }).click();
 };
 
 const ratings = async (page: Page): Promise<string> =>
@@ -29,30 +38,20 @@ const idsWithStatus = async (page: Page, status: string): Promise<string[]> => {
   return testIds.map((t) => (t ?? "").replace(/^plan-status-/, ""));
 };
 
-const positionOfPlayer = async (page: Page, id: string): Promise<string> =>
-  (await page.getByTestId(`plan-row-${id}`).getAttribute("data-position")) ?? "";
-
-/** Swaps a starter for a bench player of the same position through the plan selects. */
+/** Swaps a starter for a bench player of the same position in one step, through the lineup selects. */
 const swapStarterWithBench = async (page: Page): Promise<{ off: string; on: string }> => {
-  const bench = await idsWithStatus(page, "bench");
-  const spare = await idsWithStatus(page, "out");
-  for (const on of bench) {
-    const position = await positionOfPlayer(page, on);
-    if (position === "GK") continue;
-    for (const free of spare) {
-      if ((await positionOfPlayer(page, free)) !== position) continue;
-      // Park a free player in the bench slot, then promote the freed bench player.
-      const slot = page
-        .locator("[data-testid^='bench-']")
-        .filter({ has: page.locator(`option[value='${on}']:checked`) });
-      await slot.selectOption(free);
-      const starter = page
-        .locator(`[data-testid^='starter-'][data-position='${position}']`)
-        .first();
-      const off = await starter.inputValue();
-      await starter.selectOption(on);
-      return { off, on };
-    }
+  const benchSlots = page.locator("[data-testid^='bench-']");
+  const count = await benchSlots.count();
+  for (let i = 0; i < count; i++) {
+    const slot = benchSlots.nth(i);
+    const label = (await slot.locator("option:checked").textContent()) ?? "";
+    const position = /\((DEF|MID|FWD)\)$/.exec(label)?.[1];
+    if (!position) continue;
+    const on = await slot.inputValue();
+    const starter = page.locator(`[data-testid^='starter-'][data-position='${position}']`).first();
+    const off = await starter.inputValue();
+    await starter.selectOption(on);
+    return { off, on };
   }
   throw new Error("no same-position swap available");
 };
@@ -60,16 +59,16 @@ const swapStarterWithBench = async (page: Page): Promise<{ off: string; on: stri
 test.describe("squad and tactics", () => {
   test("keeps a changed tactic after a reload @smoke", async ({ page }) => {
     await startCareer(page);
-    await openSquad(page);
-    await page.getByTestId("tactic-pressing").selectOption("high");
+    await openTactics(page);
+    await choose(page, "tactic-pressing", "High");
     await page.getByTestId("nav-hub").click();
     await page.getByTestId("quick-sim").click();
     await page.getByTestId("results-continue").click();
 
     await page.reload();
     await page.getByTestId("continue-career").click();
-    await openSquad(page);
-    await expect(page.getByTestId("tactic-pressing")).toHaveValue("high");
+    await openTactics(page);
+    await expect(page.getByTestId("tactic-pressing")).toHaveAttribute("data-value", "high");
   });
 
   test("sets up the team, plays with half-time changes and sees the consequences", async ({
@@ -77,23 +76,24 @@ test.describe("squad and tactics", () => {
   }) => {
     test.setTimeout(90_000);
     await startCareer(page);
-    await openSquad(page);
+    await openTactics(page);
 
     const initial = await ratings(page);
-    await page.getByTestId("formation").selectOption("4-3-3");
+    await choose(page, "formation", "4-3-3");
     const afterFormation = await ratings(page);
     expect(afterFormation).not.toBe(initial);
 
     // Ratings derive from the lineup only, so tactics leave them unchanged.
-    await page.getByTestId("tactic-pressing").selectOption("high");
-    await page.getByTestId("tactic-tempo").selectOption("fast");
-    await expect(page.getByTestId("tactic-pressing")).toHaveValue("high");
-    await expect(page.getByTestId("tactic-tempo")).toHaveValue("fast");
+    await choose(page, "tactic-pressing", "High");
+    await choose(page, "tactic-tempo", "Fast");
+    await expect(page.getByTestId("tactic-pressing")).toHaveAttribute("data-value", "high");
+    await expect(page.getByTestId("tactic-tempo")).toHaveAttribute("data-value", "fast");
     expect(await ratings(page)).toBe(afterFormation);
 
     const { off, on } = await swapStarterWithBench(page);
     expect(await ratings(page)).not.toBe(afterFormation);
 
+    await openSquad(page);
     const starters = await idsWithStatus(page, "starter");
     expect(starters).toContain(on);
     expect(starters).not.toContain(off);
@@ -132,14 +132,46 @@ test.describe("squad and tactics", () => {
 
     await page.reload();
     await page.getByTestId("continue-career").click();
+    await openTactics(page);
+    await expect(page.getByTestId("formation")).toHaveAttribute("data-value", "4-3-3");
+    await expect(page.getByTestId("tactic-pressing")).toHaveAttribute("data-value", "high");
+    await expect(page.getByTestId("tactic-tempo")).toHaveAttribute("data-value", "fast");
     await openSquad(page);
-    await expect(page.getByTestId("formation")).toHaveValue("4-3-3");
-    await expect(page.getByTestId("tactic-pressing")).toHaveValue("high");
-    await expect(page.getByTestId("tactic-tempo")).toHaveValue("fast");
     await expect(page.getByTestId(`plan-status-${on}`)).toHaveAttribute("data-status", "starter");
     await expect(page.getByTestId(`plan-status-${off}`)).not.toHaveAttribute(
       "data-status",
       "starter",
+    );
+  });
+
+  test("changes a starter through the pitch picker and keeps it after a reload", async ({
+    page,
+  }) => {
+    await startCareer(page);
+    await openTactics(page, "pitch");
+    const slot = page.getByTestId("pitch-slot-1");
+    const before = await slot.getAttribute("aria-label");
+    await slot.click();
+    await page
+      .getByTestId("player-picker")
+      .locator("button:not([disabled]):not([aria-current='true'])")
+      .first()
+      .click();
+    await expect(page.getByTestId("player-picker")).toHaveCount(0);
+    const after = await slot.getAttribute("aria-label");
+    expect(after).not.toBe(before);
+
+    await page.getByTestId("nav-hub").click();
+    await page.getByTestId("quick-sim").click();
+    await page.getByTestId("results-continue").click();
+    await page.reload();
+    await page.getByTestId("continue-career").click();
+    await openTactics(page, "pitch");
+    // Fitness changed with the match; the player in the slot is the one chosen.
+    const chosen = (after ?? "").split(", ")[1] ?? "";
+    await expect(page.getByTestId("pitch-slot-1")).toHaveAttribute(
+      "aria-label",
+      new RegExp(`^[^,]+, ${chosen}, fitness`),
     );
   });
 });

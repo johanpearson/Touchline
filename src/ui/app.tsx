@@ -18,6 +18,7 @@ import { AppShell } from "./shell/app-shell";
 import { BareShell } from "./shell/bare-shell";
 import { SquadScreen } from "./squad-screen";
 import { StartScreen } from "./start/start-screen";
+import { TacticsScreen } from "./tactics/tactics-screen";
 import { DensityProvider } from "./theme/density-provider";
 import { ThemeProvider } from "./theme/theme-provider";
 import { CareerProvider, useCareer } from "./use-career";
@@ -43,6 +44,8 @@ function CareerScreen({ career, route, createRenderer, tickMs }: CareerScreenPro
       return <MatchFlowScreen createRenderer={createRenderer} tickMs={tickMs} />;
     case "squad":
       return <SquadScreen career={career} />;
+    case "tactics":
+      return <TacticsScreen career={career} />;
     case "results":
       return <MatchdayResultsScreen />;
     case "season-end":

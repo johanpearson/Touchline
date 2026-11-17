@@ -12,8 +12,8 @@ import {
   TabsTrigger,
 } from "./components";
 import { useI18n } from "./i18n-provider";
-import { LineupEditor } from "./lineup-editor";
 import { DEFAULT_PLAN_SORT, planRows } from "./plan-rows";
+import { hrefFor } from "./routes";
 import { type SquadColumnContext, squadColumns, squadTieBreak } from "./squad-columns";
 import { averageAge, filterRows, POSITION_FILTERS, type PositionFilter } from "./squad-filter";
 import { loadSquadSort, saveSquadSort } from "./squad-sort-session";
@@ -26,14 +26,13 @@ const FIRST_SORT: SortState = {
 
 const GROUP_ORDER = ["GK", "DEF", "MID", "FWD"] as const;
 
-/** The squad as a player table; the lineup and tactics editors are one click away until they get their own screen. */
+/** The squad as a player table; the lineup and tactics are edited on the tactics screen. */
 export function SquadScreen({ career }: { career: Career }) {
   const { t, formatNumber, locale } = useI18n();
   const { density } = useDensity();
   const [position, setPosition] = useState<PositionFilter>("all");
   const [query, setQuery] = useState("");
   const [grouped, setGrouped] = useState(false);
-  const [editing, setEditing] = useState(false);
   const club = career.league.clubs.find((c) => c.id === career.userClubId);
   const ids = new Set(club?.playerIds);
   const players = career.league.players.filter((p) => ids.has(p.id));
@@ -147,21 +146,12 @@ export function SquadScreen({ career }: { career: Career }) {
         ))}
       </Tabs>
       <div>
-        <Button
-          variant="secondary"
-          aria-expanded={editing}
-          aria-controls="lineup-editor"
-          data-testid="edit-lineup"
-          onClick={() => setEditing((open) => !open)}
-        >
-          {t(editing ? "squad.editLineup.hide" : "squad.editLineup")}
+        <Button asChild variant="secondary">
+          <a href={hrefFor({ name: "tactics" })} data-testid="edit-lineup">
+            {t("squad.editLineup")}
+          </a>
         </Button>
       </div>
-      {editing ? (
-        <div id="lineup-editor">
-          <LineupEditor career={career} />
-        </div>
-      ) : null}
     </section>
   );
 }
