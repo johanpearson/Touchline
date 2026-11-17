@@ -419,11 +419,24 @@ visualScreen({
 // has no clashing pair to pick).
 const TERRAIN = ["[data-testid='momentum-terrain']"];
 
-const openMatch = async (page: Page) => {
+// `frozen` stops the page's timers before kick-off, so the playback clock (a wall-clock interval)
+// cannot advance between kick-off and the pause click: the match stays at 0:00 on every run.
+const openMatch = async (page: Page, { frozen = false }: { frozen?: boolean } = {}) => {
   await startCareerAtHub(page);
   await page.getByTestId("play-match").click();
+  if (frozen) {
+    await page.clock.install({ time: new Date("2030-01-15T12:00:00Z") });
+    await page.clock.pauseAt(new Date("2030-01-15T12:00:01Z"));
+  }
   await page.getByTestId("kick-off").click();
   await page.getByTestId("match-screen").waitFor();
+};
+
+// Pauses the match while its timers are frozen, then lets them run again (the screenshot waits on
+// animation frames); a paused match does not advance.
+const pauseFrozen = async (page: Page) => {
+  await page.getByTestId("pause-toggle").click();
+  await page.clock.resume();
 };
 
 visualScreen({
@@ -432,8 +445,8 @@ visualScreen({
   route: "#/new",
   mask: TERRAIN,
   state: async (page) => {
-    await openMatch(page);
-    await page.getByTestId("pause-toggle").click();
+    await openMatch(page, { frozen: true });
+    await pauseFrozen(page);
   },
 });
 
@@ -480,9 +493,9 @@ visualScreen({
   route: "#/new",
   mask: ["[data-testid='classic-pitch']"],
   state: async (page) => {
-    await openMatch(page);
+    await openMatch(page, { frozen: true });
     await page.getByTestId("view-pitch").click();
-    await page.getByTestId("pause-toggle").click();
+    await pauseFrozen(page);
   },
 });
 
