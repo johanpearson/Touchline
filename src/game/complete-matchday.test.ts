@@ -155,6 +155,49 @@ describe("completeMatchday", () => {
     expect(JSON.parse(JSON.stringify(career))).toEqual(career);
   });
 
+  describe("minutes", () => {
+    it("gives the starters 90 and an unused bench player 0", () => {
+      const career = aCareer();
+
+      const next = complete(career);
+
+      expect(next.minutes[career.squadPlan.starters[0] as string]).toBe(90);
+      expect(next.minutes[career.squadPlan.bench[0] as string] ?? 0).toBe(0);
+    });
+
+    it("gives the starters of AI clubs 90 minutes and counts every club", () => {
+      const career = aCareer();
+
+      const next = complete(career);
+
+      const total = Object.values(next.minutes).reduce((sum, minutes) => sum + minutes, 0);
+      expect(total).toBe(career.league.clubs.length * 11 * 90);
+    });
+
+    it("takes the minutes of the user's match from the report", () => {
+      const career = aCareer();
+      const [starter] = career.squadPlan.starters as [string];
+      const [substitute] = career.squadPlan.bench as [string];
+      const outcome = completeMatchday(career, userResultOf(career), {
+        minutes: { [starter]: 60, [substitute]: 30 },
+      });
+      if (!outcome.ok) throw new Error(outcome.error);
+
+      expect(outcome.career.minutes[starter]).toBe(60);
+      expect(outcome.career.minutes[substitute]).toBe(30);
+      expect(outcome.career.minutes[career.squadPlan.starters[1] as string] ?? 0).toBe(0);
+    });
+
+    it("adds up over matchdays and does not change the input", () => {
+      const career = deepFreeze(aCareer());
+
+      const twice = complete(complete(career));
+
+      expect(twice.minutes[career.squadPlan.starters[0] as string]).toBe(180);
+      expect(Object.values(career.minutes).every((minutes) => minutes === 0)).toBe(true);
+    });
+  });
+
   describe("condition", () => {
     it("drains the user's starters (90 minutes without a report) and keeps the bench fresh", () => {
       const career = aCareer();
