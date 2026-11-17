@@ -88,6 +88,16 @@ const showList = () => fireEvent.click(screen.getByRole("radio", { name: "List" 
 const pitchSlots = () => screen.getAllByTestId(/^pitch-slot-/);
 const options = () => screen.getAllByTestId(/^picker-option-/) as HTMLButtonElement[];
 const positionOf = (button: HTMLElement) => button.getAttribute("data-position");
+/** The player's name in a pitch or bench slot's accessible name. */
+const nameInLabel = (testId: string): string => {
+  const label = screen.getByTestId(testId).getAttribute("aria-label") ?? "";
+  return /^(?:Bench slot \d+: |[^,]+, )([^,]+),/.exec(label)?.[1] ?? "";
+};
+const sameLineBenchIndex = (position: string | null): number => {
+  const index = screen.getAllByTestId(/^bench-slot-/).findIndex((b) => positionOf(b) === position);
+  if (index < 0) throw new Error("no bench player of that position");
+  return index;
+};
 
 beforeEach(() => {
   installBrowserStubs();
@@ -152,26 +162,17 @@ describe("tactics screen", () => {
     mountApp();
     startCareer();
     const slot = screen.getByTestId("pitch-slot-1");
-    const position = positionOf(slot);
-    const benchIndex = screen
-      .getAllByTestId(/^bench-slot-/)
-      .findIndex((b) => positionOf(b) === position);
-    if (benchIndex < 0) throw new Error("no bench player of that position");
-    const benchLabel = screen.getByTestId(`bench-slot-${benchIndex}`).getAttribute("aria-label");
+    const benchIndex = sameLineBenchIndex(positionOf(slot));
+    const benchName = nameInLabel(`bench-slot-${benchIndex}`);
+    const starterName = nameInLabel("pitch-slot-1");
     const before = ratings();
-    const starterLabel = slot.getAttribute("aria-label");
     fireEvent.click(slot);
-    const free = options().find((o) => !o.disabled && o.getAttribute("aria-current") !== "true");
-    const benchName = /Bench slot \d+: ([^,]+),/.exec(benchLabel ?? "")?.[1] ?? "";
     const candidate = options().find((o) => o.textContent?.includes(benchName));
-    if (!free || !candidate) throw new Error("no candidate");
+    if (!candidate) throw new Error("no candidate");
     fireEvent.click(candidate);
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByTestId("pitch-slot-1").getAttribute("aria-label")).toContain(benchName);
-    const starterName = /^[^,]+, ([^,]+),/.exec(starterLabel ?? "")?.[1] ?? "";
-    expect(screen.getByTestId(`bench-slot-${benchIndex}`).getAttribute("aria-label")).toContain(
-      starterName,
-    );
+    expect(nameInLabel("pitch-slot-1")).toBe(benchName);
+    expect(nameInLabel(`bench-slot-${benchIndex}`)).toBe(starterName);
     expect(ratings()).not.toEqual(before);
     expect(screen.queryByTestId("squad-error")).toBeNull();
   });
