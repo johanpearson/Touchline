@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    # labeled/unlabeled re-run the checks so the `full-balance` label takes effect.
+    # labeled/unlabeled re-run the checks so the `full-balance` and `full-ci` labels take effect.
     types: [opened, synchronize, reopened, labeled, unlabeled]
   push:
     branches: [main]
@@ -16,8 +16,46 @@ permissions:
   pull-requests: read
 
 jobs:
+  # Risk-based scoping: which jobs can this pull request change the result of? scripts/ci-scope.mjs decides from the changed
+  # files (rules and tests: scripts/ci-scope.test.ts). A push to main, the label `full-ci`, an empty file list or any error runs
+  # everything, and every gated job below also runs when this job did not succeed, so a failure here makes CI slower, never weaker.
+  # A job skipped by `if` counts as passing for a required check.
+  scope:
+    name: CI scope
+    runs-on: ubuntu-latest
+    outputs:
+      verify: ${{ steps.scope.outputs.verify }}
+      perf: ${{ steps.scope.outputs.perf }}
+      storybook: ${{ steps.scope.outputs.storybook }}
+      balance: ${{ steps.scope.outputs.balance }}
+      e2eSmoke: ${{ steps.scope.outputs.e2eSmoke }}
+      e2eStories: ${{ steps.scope.outputs.e2eStories }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Decide which jobs this change needs
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            git diff --name-only "origin/$BASE_REF...HEAD" > changed-files.txt || : > changed-files.txt
+          else
+            : > changed-files.txt
+          fi
+          echo "Changed files:"; cat changed-files.txt
+          node scripts/ci-scope.mjs < changed-files.txt | tee -a "$GITHUB_OUTPUT"
+
   verify:
     name: Verify
+    needs: scope
+    if: ${{ !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.verify == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -49,48 +87,24 @@ jobs:
           # Only needed for a CodeScene on-prem installation; the secret is the instance base URL.
           CS_ONPREM_URL: ${{ secrets.CS_ONPREM_URL }}
       - name: Performance budget (runs alone, not in parallel with other tests)
+        if: ${{ needs.scope.result != 'success' || needs.scope.outputs.perf == 'true' }}
         run: npm run test:perf
       - run: npm run build
       - name: Storybook compiles
+        if: ${{ needs.scope.result != 'success' || needs.scope.outputs.storybook == 'true' }}
         run: npm run build-storybook
 
-  # Balance runs as separate jobs (#219). `balance-scope` decides whether the full suite is needed; the fast subset is one job, the
-  # full suite a matrix of groups from scripts/balance-groups.mjs (explicit groups of similar run time, a test checks that every
-  # balance file is in one). The final `Balance` job keeps the required check name and fails if any part failed.
-  balance-scope:
-    name: Balance scope
-    runs-on: ubuntu-latest
-    outputs:
-      full: ${{ steps.scope.outputs.full }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: Choose the balance suite
-        id: scope
-        env:
-          EVENT: ${{ github.event_name }}
-          BASE_REF: ${{ github.base_ref }}
-          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        run: |
-          # Fast subset by default. The full suite (all 81 tactic combinations) runs when the
-          # PR has the `full-balance` label or changes the engine, a balance test, the balance groups script or this workflow.
-          # The full suite also runs every night (nightly.yml).
-          full=false
-          if [ "$EVENT" = "pull_request" ]; then
-            case ",$LABELS," in *,full-balance,*) full=true; echo "Label full-balance set." ;; esac
-            if git diff --name-only "origin/$BASE_REF...HEAD" | grep -E '^src/engine/|\.balance\.test\.ts$|^vitest\.balance\.config\.ts$|^scripts/balance-groups\.mjs$|^\.github/workflows/ci\.yml$'; then
-              full=true
-            fi
-          fi
-          echo "full=$full" >> "$GITHUB_OUTPUT"
-          echo "Full balance suite: $full"
+  # Balance runs as separate jobs (#219). The `scope` job chooses `none` (nothing that can change balance was touched), the fast
+  # subset (one job per group) or the full suite (a matrix of groups from scripts/balance-groups.mjs: explicit groups of similar
+  # run time, a test checks that every balance file is in one). The full suite runs for a change to the engine, a balance test,
+  # the balance groups script or this workflow, or with the label `full-balance`, and every night (nightly.yml). The final
+  # `Balance` job keeps the required check name and fails if any part failed.
 
   # The fast subset as parallel jobs (FAST_GROUPS in scripts/balance-groups.mjs, balance-groups.test.ts checks the list), #292.
   balance-fast:
     name: Balance ${{ matrix.group }}
-    needs: balance-scope
-    if: needs.balance-scope.outputs.full != 'true'
+    needs: scope
+    if: ${{ !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.balance == 'fast') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -108,8 +122,8 @@ jobs:
   # Keep the group list in step with BALANCE_GROUPS in scripts/balance-groups.mjs (balance-groups.test.ts checks it).
   balance-shard:
     name: Balance ${{ matrix.group }}
-    needs: balance-scope
-    if: needs.balance-scope.outputs.full == 'true'
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.result == 'success' && needs.scope.outputs.balance == 'full' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -126,22 +140,26 @@ jobs:
 
   balance:
     name: Balance
-    needs: [balance-scope, balance-fast, balance-shard]
+    needs: [scope, balance-fast, balance-shard]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Require every balance job to pass or be skipped
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
+          MODE: ${{ needs.scope.outputs.balance }}
         run: |
-          echo "Results: $RESULTS"
+          echo "Balance mode: $MODE; results: $RESULTS"
           for result in $RESULTS; do
             case "$result" in success|skipped) ;; *) echo "::error::A balance job ended with: $result"; exit 1 ;; esac
           done
+          if [ "$MODE" = "none" ]; then echo "No change that can affect balance."; exit 0; fi
           case "$RESULTS" in *success*) ;; *) echo "::error::No balance job ran"; exit 1 ;; esac
 
   e2e:
     name: E2E smoke
+    needs: scope
+    if: ${{ !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.e2eSmoke == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -163,6 +181,8 @@ jobs:
   # Not a required check; it adds browsers, so it stays a separate job from the single-browser app smoke test.
   e2e-stories:
     name: E2E stories
+    needs: scope
+    if: ${{ !cancelled() && (needs.scope.result != 'success' || needs.scope.outputs.e2eStories == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

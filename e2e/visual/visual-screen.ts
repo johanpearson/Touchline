@@ -19,6 +19,42 @@ export type VisualScreenState = {
   readonly full?: boolean;
 };
 
+/**
+ * A full-page screenshot resizes the viewport while it captures, and a strip that re-centres on resize can be
+ * caught before or after that shift (a 48 px difference, about one run in four). So the viewport is resized
+ * to the page height up front and the screenshot is plain: everything has settled before it is taken.
+ */
+async function fitViewportToPage(page: Page, width: number, minHeight: number) {
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  await page.setViewportSize({ width, height: Math.max(minHeight, height) });
+  await page.evaluate(() => document.fonts.ready);
+  await waitForScrollToSettle(page);
+}
+
+/** Resolves when no scroll container has moved for ten animation frames. */
+function waitForScrollToSettle(page: Page) {
+  return page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const signature = () =>
+          Array.from(document.querySelectorAll<HTMLElement>("*"))
+            .filter((el) => el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight)
+            .map((el) => `${el.scrollLeft}:${el.scrollTop}`)
+            .join("|");
+        let last = "";
+        let stable = 0;
+        const check = () => {
+          const now = signature();
+          stable = now === last ? stable + 1 : 0;
+          last = now;
+          if (stable >= 10) resolve();
+          else requestAnimationFrame(check);
+        };
+        requestAnimationFrame(check);
+      }),
+  );
+}
+
 const FIXED_TIME = new Date("2030-01-15T12:00:00Z");
 
 async function preparePage(page: Page, theme: Theme, locale: Locale) {
@@ -58,10 +94,9 @@ export function visualScreen({
         await page.goto(`${APP}${route}`);
         await page.waitForFunction((id) => document.documentElement.dataset.theme === id, theme);
         await state?.(page);
-        await page.evaluate(() => document.fonts.ready);
+        await fitViewportToPage(page, viewport.width, viewport.height);
         await expect(page).toHaveScreenshot(snapshotName("screen", name, combination), {
           mask: mask.map((selector) => page.locator(selector)),
-          fullPage: true,
         });
       });
     }
