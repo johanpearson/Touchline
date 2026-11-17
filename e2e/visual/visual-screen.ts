@@ -21,17 +21,28 @@ export type VisualScreenState = {
 
 /**
  * A full-page screenshot resizes the viewport while it captures, and a strip that re-centres on resize can be
- * caught before or after that shift (a 48 px difference, about one run in four). So the viewport is resized
- * to the page height up front and the screenshot is plain: everything has settled before it is taken.
+ * caught before or after that shift (a 48 px difference, about one run in four). So the viewport is fitted to
+ * the page up front and the screenshot is plain: everything has settled before it is taken.
+ *
+ * The height is only trusted once the fonts are loaded and the page height has stopped changing (content that
+ * renders after load moved it by 8 px between two CI runs), and it is measured again after each resize until
+ * resizing no longer changes it.
  */
 async function fitViewportToPage(page: Page, width: number, minHeight: number) {
-  const height = await page.evaluate(() => document.documentElement.scrollHeight);
-  await page.setViewportSize({ width, height: Math.max(minHeight, height) });
+  const pageHeight = () => page.evaluate(() => document.documentElement.scrollHeight);
   await page.evaluate(() => document.fonts.ready);
   await waitForScrollToSettle(page);
+  let height = Math.max(minHeight, await pageHeight());
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await page.setViewportSize({ width, height });
+    await waitForScrollToSettle(page);
+    const measured = Math.max(minHeight, await pageHeight());
+    if (measured === height) return;
+    height = measured;
+  }
 }
 
-/** Resolves when no scroll container has moved for ten animation frames. */
+/** Resolves when the page height and every scroll position have not changed for ten animation frames. */
 function waitForScrollToSettle(page: Page) {
   return page.evaluate(
     () =>
@@ -40,6 +51,7 @@ function waitForScrollToSettle(page: Page) {
           Array.from(document.querySelectorAll<HTMLElement>("*"))
             .filter((el) => el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight)
             .map((el) => `${el.scrollLeft}:${el.scrollTop}`)
+            .concat(String(document.documentElement.scrollHeight))
             .join("|");
         let last = "";
         let stable = 0;
