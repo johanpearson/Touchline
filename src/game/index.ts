@@ -41,6 +41,7 @@ export {
 } from "./development-constants";
 export type { SetLineupResult } from "./edit-squad-plan";
 export { autoPickUserLineup, setLineup, setTactics } from "./edit-squad-plan";
+export { expireContracts } from "./expire-contracts";
 export type { Formation } from "./formation";
 export { FORMATION_SHAPE, FORMATIONS } from "./formation";
 export { formationShape } from "./formation-shape";
@@ -132,8 +133,16 @@ export {
   positionPenalty,
   positionRating,
 } from "./position-rating";
+export type { RenewError, RenewResult } from "./renew-contract";
+export { askingWage, renewContract } from "./renew-contract";
 export type { SeasonError, SeasonSummary, SummaryResult, TopScorer } from "./season-summary";
 export { extendTrail, type SeasonTrail } from "./season-trail";
+export {
+  PRIZE_FIRST_PLACE,
+  PRIZE_LAST_PLACE,
+  prizeFor,
+  settleSeasonFinances,
+} from "./settle-season-finances";
 export type { ShoutError, ShoutKind, ShoutRecord } from "./shouts";
 export {
   activeShout,
@@ -149,6 +158,8 @@ export {
   tacticsAtMinute,
 } from "./shouts";
 export { simulateFixture } from "./simulate-fixture";
+export type { SquadLimits } from "./squad-limits";
+export { MAX_SQUAD_SIZE, MIN_PER_POSITION, MIN_SQUAD_SIZE, squadLimits } from "./squad-limits";
 export type { SquadPlan } from "./squad-plan";
 export { initialConditions, initialSquadPlan } from "./squad-plan";
 export type { PlayerPosition, SquadPlayer } from "./squad-player";
@@ -161,3 +172,4 @@ export { toEngineBench, toEnginePlayers } from "./to-engine-players";
 export { toSquadPlayer } from "./to-squad-player";
 export type { MatchReport } from "./update-condition";
 export { useActionEngine } from "./use-action-engine";
+export { WAGE_BUDGET_SHARE, wageBill, wageBudget } from "./wage-budget";
