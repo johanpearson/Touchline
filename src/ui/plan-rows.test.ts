@@ -12,6 +12,7 @@ const aPlayer = (id: string, position: Player["position"], pace = 10): Player =>
   id,
   name: id.toUpperCase(),
   age: 25,
+  potential: 20,
   position,
   pace,
 });

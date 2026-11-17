@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createRng } from "../engine";
 import { generatePlayer } from "./generate-player";
 import { ATTRIBUTE_NAMES, MAX_ATTRIBUTE, MIN_ATTRIBUTE, type PlayerAttributes } from "./player";
+import { playerOverall } from "./player-overall";
 import type { PlayerPosition } from "./squad-player";
 
 const POSITIONS: PlayerPosition[] = ["GK", "DEF", "MID", "FWD"];
@@ -93,5 +94,32 @@ describe("generatePlayer", () => {
       expect(m.handling).toBeLessThan(5);
       expect(m.reflexes).toBeLessThan(5);
     }
+  });
+
+  it("gives a potential from the overall, never below it and at most 20", () => {
+    for (let i = 0; i < 200; i++) {
+      const rng = createRng(i);
+      const position = POSITIONS[i % 4] as PlayerPosition;
+      const player = generatePlayer({ position, quality: rng.next() }, rng, `p${i}`);
+      expect(Number.isInteger(player.potential)).toBe(true);
+      expect(player.potential).toBeGreaterThanOrEqual(Math.ceil(playerOverall(player)));
+      expect(player.potential).toBeLessThanOrEqual(MAX_ATTRIBUTE);
+    }
+  });
+
+  it("gives young players more room to grow than old ones", () => {
+    const gap = (age: number) => {
+      const rng = createRng(2);
+      const player = generatePlayer({ position: "MID", quality: 0.3, age }, rng, "p");
+      return player.potential - playerOverall(player);
+    };
+    expect(gap(17)).toBeGreaterThan(gap(30));
+  });
+
+  it("does not change the attributes, name or age of a player", () => {
+    const player = generatePlayer({ position: "FWD", quality: 0.5 }, createRng(1), "p");
+    expect(player).toMatchObject({ name: expect.any(String), age: expect.any(Number) });
+    const again = generatePlayer({ position: "FWD", quality: 0.5 }, createRng(1), "p");
+    expect(again).toEqual(player);
   });
 });

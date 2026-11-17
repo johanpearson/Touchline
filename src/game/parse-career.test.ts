@@ -482,3 +482,200 @@ describe("parseCareer scorers", () => {
     expect(errorOf(raw)).toBe("invalid-season");
   });
 });
+
+describe("parseCareer rejects the schema v7 data when", () => {
+  const firstPlayerId = (c: Career): string => c.league.players[0]?.id ?? "";
+
+  it("a potential is outside 1 to 20", () => {
+    expect(
+      errorOf(
+        mutated((c) => {
+          (c.league.players[0] as { potential: number }).potential = 21;
+        }),
+      ),
+    ).toBe("invalid-league");
+    expect(
+      errorOf(
+        mutated((c) => {
+          (c.league.players[0] as { potential: number }).potential = 0;
+        }),
+      ),
+    ).toBe("invalid-league");
+  });
+
+  it("a potential is below the overall", () => {
+    const raw = mutated((c) => {
+      const player = c.league.players[0] as unknown as Record<string, number>;
+      for (const key of [
+        "handling",
+        "reflexes",
+        "tackling",
+        "positioning",
+        "strength",
+        "passing",
+        "vision",
+        "ballControl",
+        "workRate",
+        "finishing",
+        "pace",
+        "dribbling",
+      ])
+        player[key] = 20;
+      player.potential = 19;
+    });
+    expect(errorOf(raw)).toBe("invalid-league");
+  });
+
+  it("a potential is missing", () => {
+    const raw = mutated((c) => {
+      delete (c.league.players[0] as { potential?: number }).potential;
+    });
+    expect(errorOf(raw)).toBe("invalid-league");
+  });
+
+  it("a contract belongs to an unknown player", () => {
+    expect(
+      errorOf(
+        mutated((c) => {
+          c.contracts.ghost = { wage: 1, expiresSeason: 1 };
+        }),
+      ),
+    ).toBe("invalid-contracts");
+  });
+
+  it("a club player has no contract", () => {
+    expect(
+      errorOf(
+        mutated((c) => {
+          delete c.contracts[firstPlayerId(c)];
+        }),
+      ),
+    ).toBe("invalid-contracts");
+  });
+
+  it("a contract is malformed", () => {
+    expect(
+      errorOf(
+        mutated((c) => {
+          c.contracts[firstPlayerId(c)] = { wage: -1, expiresSeason: 1 };
+        }),
+      ),
+    ).toBe("invalid-contracts");
+    expect(
+      errorOf(
+        mutated((c) => {
+          c.contracts[firstPlayerId(c)] = { wage: 1, expiresSeason: 0 };
+        }),
+      ),
+    ).toBe("invalid-contracts");
+  });
+
+  it("a finance belongs to an unknown club", () => {
+    expect(
+      errorOf(
+        mutated((c) => {
+          c.finances.ghost = { balance: 0, baseIncome: 1 };
+        }),
+      ),
+    ).toBe("invalid-finances");
+  });
+
+  it("a club has no finance", () => {
+    expect(
+      errorOf(
+        mutated((c) => {
+          delete c.finances[c.userClubId];
+        }),
+      ),
+    ).toBe("invalid-finances");
+  });
+
+  it("a finance is malformed", () => {
+    expect(
+      errorOf(
+        mutated((c) => {
+          c.finances[c.userClubId] = { balance: 0.5, baseIncome: 1 };
+        }),
+      ),
+    ).toBe("invalid-finances");
+    expect(
+      errorOf(
+        mutated((c) => {
+          c.finances[c.userClubId] = { balance: 0, baseIncome: -1 };
+        }),
+      ),
+    ).toBe("invalid-finances");
+  });
+
+  it("a free agent is also in a club", () => {
+    expect(
+      errorOf(
+        mutated((c) => {
+          c.freeAgentIds = [firstPlayerId(c)];
+        }),
+      ),
+    ).toBe("invalid-free-agents");
+  });
+
+  it("a free agent is unknown or listed twice", () => {
+    expect(
+      errorOf(
+        mutated((c) => {
+          c.freeAgentIds = ["ghost"];
+        }),
+      ),
+    ).toBe("invalid-free-agents");
+  });
+
+  it("a free agent is listed twice", () => {
+    const raw = mutated((c) => {
+      const id = c.league.clubs[1]?.playerIds.pop() ?? "";
+      c.freeAgentIds = [id, id];
+    });
+    expect(errorOf(raw)).toBe("invalid-free-agents");
+  });
+
+  it("minutes are negative or belong to an unknown player", () => {
+    expect(
+      errorOf(
+        mutated((c) => {
+          c.minutes[firstPlayerId(c)] = -1;
+        }),
+      ),
+    ).toBe("invalid-minutes");
+    expect(
+      errorOf(
+        mutated((c) => {
+          c.minutes.ghost = 0;
+        }),
+      ),
+    ).toBe("invalid-minutes");
+  });
+
+  it("any of the new fields is missing", () => {
+    expect(
+      errorOf(
+        mutated((c) => {
+          delete (c as Partial<Career>).minutes;
+        }),
+      ),
+    ).toBe("invalid-minutes");
+    expect(
+      errorOf(
+        mutated((c) => {
+          delete (c as Partial<Career>).freeAgentIds;
+        }),
+      ),
+    ).toBe("invalid-free-agents");
+  });
+
+  it("accepts a player without a club as a free agent without a contract", () => {
+    const raw = mutated((c) => {
+      const club = c.league.clubs[1];
+      const id = club?.playerIds.pop() ?? "";
+      delete c.contracts[id];
+      c.freeAgentIds = [id];
+    });
+    expect(errorOf(raw)).toBeUndefined();
+  });
+});

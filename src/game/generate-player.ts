@@ -5,8 +5,11 @@ import {
   MAX_ATTRIBUTE,
   MIN_ATTRIBUTE,
   type Player,
+  type PlayerAttributes,
 } from "./player";
 import { generateName } from "./player-names";
+import { overallIn } from "./player-overall";
+import { potentialFor } from "./potential";
 import type { PlayerPosition } from "./squad-player";
 
 export type PlayerSpec = {
@@ -68,11 +71,13 @@ export const generatePlayer = (spec: PlayerSpec, rng: Rng, id: string): Player =
   const attributes = Object.fromEntries(
     ATTRIBUTE_NAMES.map((name) => [name, attributeValue(name, spec.position, quality, rng)]),
   ) as Record<AttributeName, number>;
-  return {
-    id,
-    name: generateName(rng),
-    age: spec.age ?? randomAge(rng),
-    position: spec.position,
-    ...attributes,
-  };
+  const name = generateName(rng);
+  const age = spec.age ?? randomAge(rng);
+  // Own stream, so adding potential does not change any attribute, name or age.
+  const potential = potentialFor(
+    age,
+    overallIn(spec.position, attributes as PlayerAttributes),
+    rng.fork(`potential-${id}`),
+  );
+  return { id, name, age, position: spec.position, potential, ...attributes };
 };

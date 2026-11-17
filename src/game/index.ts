@@ -1,3 +1,4 @@
+export { addCareerEconomy } from "./add-career-economy";
 export { addEngineVersion } from "./add-engine-version";
 export { addSquadPlanAndCondition } from "./add-squad-plan";
 export { autoPickLineup } from "./auto-pick-lineup";
@@ -14,6 +15,7 @@ export { clubStarPlayer } from "./club-star-player";
 export { completeMatchday } from "./complete-matchday";
 export type { Outcome, Result, TableError, TableResult, TableRow } from "./compute-table";
 export { computeForm, computeTable } from "./compute-table";
+export type { ClubFinance, Contract } from "./contract";
 export type { CareerSpec } from "./create-career";
 export { createCareer } from "./create-career";
 export { createSeason } from "./create-season";
