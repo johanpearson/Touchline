@@ -19,9 +19,11 @@ type Listing = { sellerId: string; ask: number; wage: number };
 
 const listingOf = (career: Career, playerId: string): Listing | undefined => {
   const seller = sellerOf(career, playerId);
+  if (!seller) return undefined;
   const ask = askingPrice(career, playerId);
+  if (ask === undefined) return undefined;
   const wage = signingWage(career, playerId);
-  if (!seller || ask === undefined || wage === undefined) return undefined;
+  if (wage === undefined) return undefined;
   return { sellerId: seller.id, ask, wage };
 };
 
