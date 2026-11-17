@@ -111,3 +111,22 @@ Never push directly to `main`. Never disable, skip or weaken tests or CI checks 
 - User-facing strings exist in `en` and `sv`.
 - Docs updated if behaviour or architecture changed.
 - PR merged and the issue closed via `Closes #n`.
+
+## Line endings
+
+Every file uses LF (`.gitattributes`, `.editorconfig` and Biome enforce it). When you edit files with a script, keep LF: in Python read and write with `newline=""`, otherwise Windows rewrites the whole file with CRLF and the next merge conflicts on every line.
+
+## Versioning and releases
+
+release-please (`release-type: node`) opens the release PR and sets the version from the Conventional Commit type of each squash-merged PR title, so the title decides the release. Pick the type for the release the change should cause:
+
+| Title | Bump | Use for |
+|---|---|---|
+| `feat(...)` | minor | A user-visible feature or screen, a new capability, a save schema bump with a migration |
+| `fix(...)`, `perf(...)`, `revert(...)` | patch | A bug fix, a performance fix, a revert |
+| `feat(...)!` or a `BREAKING CHANGE:` footer | major | Only a real break (below) |
+| `docs`, `test`, `chore`, `ci`, `refactor`, `style`, `build` | none | Not released on their own; they ride along with the next release |
+
+- **Breaking** means an existing save or exported save file can no longer be loaded or imported, or a `platform` interface changes incompatibly. A schema bump with a migration is not breaking. Never use `!` without asking the maintainer first.
+- A fix to something that shipped in a release is `fix`, even when it is small. Visible UI changes that only polish an existing screen are `feat` when they are the point of the PR and `fix` when they correct a defect.
+- Never merge the release PR, edit `package.json`'s version or `CHANGELOG.md`, or use a `Release-As:` footer. The maintainer merges the release PR when a release is wanted.
