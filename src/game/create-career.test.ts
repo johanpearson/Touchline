@@ -60,6 +60,8 @@ describe("createCareer", () => {
     expect(Object.keys(career.contracts)).toHaveLength(career.league.players.length);
     expect(Object.keys(career.finances)).toHaveLength(career.league.clubs.length);
     expect(career.freeAgentIds).toEqual([]);
+    expect(career.window).toBe("closed");
+    expect(career.offers).toEqual([]);
     expect(Object.values(career.minutes).every((m) => m === 0)).toBe(true);
   });
 

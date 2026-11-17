@@ -5,6 +5,7 @@ import type { League } from "./league";
 import type { PlayerCondition } from "./player-condition";
 import type { SeasonSummary } from "./season-summary";
 import type { SquadPlan } from "./squad-plan";
+import type { TransferOffer, TransferWindow } from "./transfer-offer";
 
 /** One season of a career. Plain JSON-serialisable data. */
 export type Season = {
@@ -39,6 +40,10 @@ export type Career = {
   freeAgentIds: string[];
   /** Minutes played this season, by player id (schema v7). Zero at creation. */
   minutes: Record<string, number>;
+  /** Whether transfers between clubs are allowed. `"closed"` at creation; an older v7 save without it reads as closed. */
+  window: TransferWindow;
+  /** Offers from AI clubs for the user's players, valid while the window is open. Empty at creation. */
+  offers: TransferOffer[];
 };
 
 export type CareerError = "unknown-club";
