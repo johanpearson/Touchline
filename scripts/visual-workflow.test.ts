@@ -50,7 +50,9 @@ describe("visual regression setup (#253)", () => {
     expect(baselines).toMatch(/push:\n\s+branches: \[main\]/);
     expect(baselines).not.toContain("!e2e/visual/__screenshots__/**");
     expect(baselines).toContain("gh pr close");
-    expect(baselines).toContain("--update-snapshots");
+    expect(baselines).toContain("--update-snapshots=changed");
+    expect(baselines).toContain("rebuild_all:");
+    expect(baselines).toMatch(/if \[ "\$REBUILD_ALL" = "true" \]; then\n\s+rm -rf e2e\/visual\/__screenshots__/);
     expect(baselines).toContain("bot/visual-baselines");
     expect(baselines).toContain("gh pr merge");
     expect(baselines).toContain("--auto --squash");

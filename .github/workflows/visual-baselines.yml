@@ -11,6 +11,11 @@ name: Visual baselines
 # ever; see docs/architecture.md, "Visual baselines".
 on:
   workflow_dispatch:
+    inputs:
+      rebuild_all:
+        description: "Delete every baseline first and render them all again (also removes baselines of deleted states)"
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
@@ -42,6 +47,7 @@ jobs:
       APP_ID: ${{ secrets.APP_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       BRANCH: bot/visual-baselines
+      REBUILD_ALL: ${{ inputs.rebuild_all }}
     steps:
       - name: Check that the GitHub App is configured
         id: token
@@ -79,8 +85,12 @@ jobs:
       - name: Regenerate the baselines
         if: steps.token.outputs.ready == 'true'
         run: |
-          rm -rf e2e/visual/__screenshots__
-          npx playwright test -c playwright.visual.config.ts --update-snapshots
+          # Only a baseline that no longer matches within the tolerance is rewritten. Deleting them all first
+          # would turn harmless antialiasing noise into a changed PNG on every run, and so into a new pull request.
+          if [ "$REBUILD_ALL" = "true" ]; then
+            rm -rf e2e/visual/__screenshots__
+          fi
+          npx playwright test -c playwright.visual.config.ts --update-snapshots=changed
       - name: Check that a second run has no diffs
         if: steps.token.outputs.ready == 'true'
         run: npx playwright test -c playwright.visual.config.ts
