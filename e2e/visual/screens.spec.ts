@@ -236,6 +236,43 @@ visualScreen({
   state: openPlayerFrom("GK"),
 });
 
+// The tactics and lineup screen (#262): 4-4-2 on the pitch, 3-5-2, and the player picker open.
+// The pitch is shown on every width (phones default to the list), so the stage is in the snapshot.
+const openTacticsPitch = async (page: Page) => {
+  await startCareerAtHub(page);
+  // By hash: the Tactics link sits in the rail, the sidebar or the More sheet depending on width.
+  await page.evaluate(() => {
+    window.location.hash = "#/tactics";
+  });
+  await page.getByTestId("tactics-screen").waitFor();
+  await page.getByTestId("lineup-view").getByRole("radio").first().click();
+  await page.getByTestId("lineup-pitch").waitFor();
+};
+
+visualScreen({ name: "tactics-442", full: true, route: "#/new", state: openTacticsPitch });
+
+visualScreen({
+  name: "tactics-352",
+  full: true,
+  route: "#/new",
+  state: async (page) => {
+    await openTacticsPitch(page);
+    await page.getByTestId("formation").getByRole("radio", { name: "3-5-2", exact: true }).click();
+    await page.getByTestId("pitch-slot-10").waitFor();
+  },
+});
+
+visualScreen({
+  name: "tactics-picker",
+  full: true,
+  route: "#/new",
+  state: async (page) => {
+    await openTacticsPitch(page);
+    await page.getByTestId("pitch-slot-1").click();
+    await page.getByTestId("player-picker").waitFor();
+  },
+});
+
 // The league screen (#263): table at the start of the season, mid season and after 25 matchdays
 // (the last round is the current one), and the fixtures of those rounds.
 const playMatchdays = async (page: Page, count: number) => {
