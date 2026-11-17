@@ -4,6 +4,7 @@ export { addEngineVersion } from "./add-engine-version";
 export { addSquadPlanAndCondition } from "./add-squad-plan";
 export { askingPrice, BEST_ELEVEN_PREMIUM, marketValue, signingWage } from "./asking-price";
 export { autoPickLineup } from "./auto-pick-lineup";
+export { buildAiSquads } from "./build-ai-squads";
 export { buyPlayer } from "./buy-player";
 export type {
   Career,
@@ -64,6 +65,7 @@ export {
   LEAGUE_NAMES,
   STRENGTH_SPREAD,
 } from "./generate-league";
+export { generateOffers, MAX_OFFERS } from "./generate-offers";
 export type { PlayerSpec } from "./generate-player";
 export { generatePlayer } from "./generate-player";
 export type { SquadSpec } from "./generate-squad";
@@ -137,6 +139,7 @@ export {
   positionRating,
 } from "./position-rating";
 export { releasePlayer } from "./release-player";
+export { AI_RENEW_BEST_COUNT, AI_RENEW_MAX_AGE, renewAiContracts } from "./renew-ai-contracts";
 export type { RenewError, RenewResult } from "./renew-contract";
 export { askingWage, renewContract } from "./renew-contract";
 export {
