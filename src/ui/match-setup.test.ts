@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { createActionMatch } from "../engine";
 import {
   type Career,
   createCareer,
@@ -24,7 +23,7 @@ const nextFixtureOf = (career: Career) => {
 };
 
 const playToFullTime = (setup: ReturnType<typeof matchSetupFor>) => {
-  const match = createActionMatch(setup.input, setup.seed);
+  const match = setup.createMatch();
   match.advanceTo(1_000_000);
   match.resume();
   match.advanceTo(1_000_000);

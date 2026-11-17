@@ -264,6 +264,7 @@ describe("MatchScreen", () => {
     fireEvent.click(screen.getByTestId("continue"));
     expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ engineVersion: 2 }), {
       minutes: { [starter]: 45 },
+      opponent: expect.objectContaining({ minutes: expect.any(Object) }),
     });
   });
 
