@@ -230,9 +230,18 @@ jobs:
           name: nightly-result-e2e
           path: result-e2e.json
 
+  # The full visual run and the baselines (#351): every story and screen state, and a pull request with updated baselines.
+  visual:
+    name: Visual (full)
+    permissions:
+      contents: read
+      issues: write
+    uses: ./.github/workflows/visual-baselines.yml
+    secrets: inherit
+
   publish-status:
     name: Publish nightly status
-    needs: [balance-full, mutation, property-tests, e2e-full]
+    needs: [balance-full, mutation, property-tests, e2e-full, visual]
     # Runs even when a nightly job failed, so a red job shows up as a red badge.
     if: always()
     runs-on: ubuntu-latest

@@ -16,6 +16,7 @@ export const JOBS = [
   { key: "mutation", label: "mutation" },
   { key: "property", label: "property tests" },
   { key: "e2e", label: "e2e" },
+  { key: "visual", label: "visual" },
 ];
 
 /** Mutation score (percent) at or above which the badge is green, and at or above which it is yellow. */

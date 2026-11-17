@@ -6,7 +6,7 @@ const APP = "http://localhost:4174/Touchline/";
 // Key states of screens. Each screen issue adds its own states here (#253 registers the first one).
 
 // The new-career wizard: step 1 (#257) and step 2, the club picker (#258).
-visualScreen({ name: "new-career-league", route: "#/new", full: true });
+visualScreen({ name: "new-career-league", route: "#/new", full: true, smoke: true });
 
 // Scoped to the club strip: the theme and language selects in the shell also expose `option` roles.
 const clubOptions = (page: Page) => page.getByTestId("club-strip").getByRole("option");
@@ -141,7 +141,12 @@ const startCareerAtHub = async (page: Page) => {
   await page.getByTestId("career-hub").waitFor();
 };
 
-visualScreen({ name: "hub-first-matchday", route: "#/new", state: startCareerAtHub });
+visualScreen({
+  name: "hub-first-matchday",
+  route: "#/new",
+  smoke: true,
+  state: startCareerAtHub,
+});
 
 visualScreen({
   name: "hub-mid-season",
@@ -185,7 +190,7 @@ const openSquadTable = async (page: Page) => {
   await page.getByTestId("squad-table").waitFor();
 };
 
-visualScreen({ name: "squad-default", route: "#/new", state: openSquadTable });
+visualScreen({ name: "squad-default", route: "#/new", smoke: true, state: openSquadTable });
 
 visualScreen({
   name: "squad-filtered",
@@ -254,7 +259,13 @@ const openTacticsPitch = async (page: Page) => {
   await page.getByTestId("lineup-pitch").waitFor();
 };
 
-visualScreen({ name: "tactics-442", full: true, route: "#/new", state: openTacticsPitch });
+visualScreen({
+  name: "tactics-442",
+  full: true,
+  smoke: true,
+  route: "#/new",
+  state: openTacticsPitch,
+});
 
 visualScreen({
   name: "tactics-352",

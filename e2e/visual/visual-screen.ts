@@ -1,5 +1,12 @@
 import { expect, type Page, test } from "@playwright/test";
-import { type Locale, screenCombinations, snapshotName, type Theme } from "./visual-matrix";
+import {
+  isSmokeCombination,
+  type Locale,
+  SMOKE_TAG,
+  screenCombinations,
+  snapshotName,
+  type Theme,
+} from "./visual-matrix";
 
 const APP = "http://localhost:4174/Touchline/";
 
@@ -17,6 +24,11 @@ export type VisualScreenState = {
    * midnight, English). Reserve it for the few screens where theme, tablet or Swedish layout is a real risk.
    */
   readonly full?: boolean;
+  /**
+   * Part of the smoke set that runs on every PR (desktop, midnight, English only). Pick a few simple,
+   * fast and stable screens: the smoke run builds only the app and has to stay under a few minutes.
+   */
+  readonly smoke?: boolean;
 };
 
 /**
@@ -96,11 +108,15 @@ export function visualScreen({
   state,
   mask = [],
   full = false,
+  smoke = false,
 }: VisualScreenState): void {
   test.describe(`screen ${name}`, () => {
     for (const combination of screenCombinations(full)) {
       const { viewport, theme, locale } = combination;
-      test(`${viewport.name} ${theme} ${locale}`, async ({ page }) => {
+      const inSmokeSet = smoke && isSmokeCombination(combination);
+      test(`${viewport.name} ${theme} ${locale}`, { tag: inSmokeSet ? SMOKE_TAG : [] }, async ({
+        page,
+      }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await preparePage(page, theme, locale);
         await page.goto(`${APP}${route}`);
