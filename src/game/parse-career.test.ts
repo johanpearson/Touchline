@@ -679,3 +679,47 @@ describe("parseCareer rejects the schema v7 data when", () => {
     expect(errorOf(raw)).toBeUndefined();
   });
 });
+
+describe("parseCareer and the last development (schema v7, optional)", () => {
+  const withChange = (change: unknown): unknown =>
+    mutated((c) => {
+      const id = c.league.players[0]?.id ?? "";
+      (c as Record<string, unknown>).lastDevelopment = [
+        { playerId: id, attribute: "pace", before: 10, after: 11, ...(change as object) },
+      ];
+    });
+
+  it("keeps a valid change list", () => {
+    const raw = withChange({});
+    const result = parseCareer(raw);
+    expect(result.ok && result.career.lastDevelopment).toEqual(
+      (raw as { lastDevelopment: unknown }).lastDevelopment,
+    );
+  });
+
+  it("leaves it out of a save that has none", () => {
+    const result = parseCareer(roundTrip(aCareer()));
+    expect(result.ok && "lastDevelopment" in result.career).toBe(false);
+  });
+
+  it("rejects an unknown player, attribute or out-of-range value", () => {
+    for (const bad of [
+      { playerId: "ghost" },
+      { attribute: "luck" },
+      { after: 21 },
+      { before: 0 },
+    ]) {
+      expect(errorOf(withChange(bad))).toBe("invalid-development");
+    }
+  });
+
+  it("rejects a value that is not a list", () => {
+    expect(
+      errorOf(
+        mutated((c) => {
+          (c as Record<string, unknown>).lastDevelopment = "no";
+        }),
+      ),
+    ).toBe("invalid-development");
+  });
+});

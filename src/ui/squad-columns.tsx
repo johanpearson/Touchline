@@ -1,21 +1,30 @@
 import { TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import { ATTRIBUTE_NAMES, MAX_ATTRIBUTE } from "../game";
-import type { Translator } from "../i18n";
-import { Badge, type Column } from "./components";
-import { LOW_FITNESS, type PlanRow, type PlanStatus } from "./plan-rows";
+import type { Locale, Translator } from "../i18n";
+import { Badge, Button, type Column } from "./components";
+import { formatMoney } from "./money-format";
+import { LOW_FITNESS, type PlanStatus } from "./plan-rows";
 import { hrefFor } from "./routes";
+import type { SquadRow } from "./squad-rows";
 
 const POSITION_RANK = { GK: 0, DEF: 1, MID: 2, FWD: 3 } as const;
 const STATUS_RANK: Record<PlanStatus, number> = { starter: 0, bench: 1, out: 2 };
 
 /** Ties in any sort fall back to line order, then id, so the order is stable. */
-export const squadTieBreak = (row: PlanRow): string =>
+export const squadTieBreak = (row: SquadRow): string =>
   `${POSITION_RANK[row.player.position]}:${row.player.id}`;
 
 export type SquadColumnContext = Pick<Translator, "t" | "formatNumber"> & {
   /** The club identity colour for the overall bar. */
   barColour: string;
+};
+
+/** The squad screen's context: the shared one plus the locale and the detail panel opener. */
+export type SquadTableContext = SquadColumnContext & {
+  locale: Locale;
+  /** Opens the detail panel of a player. */
+  openDetails: (row: SquadRow) => void;
 };
 
 const TRACK = "h-1.5 w-16 overflow-hidden rounded-pill bg-track";
@@ -33,7 +42,7 @@ export function Gauge({ value, colour }: { value: number; colour: string }) {
   );
 }
 
-function FitnessCell({ row, ctx }: { row: PlanRow; ctx: SquadColumnContext }) {
+function FitnessCell({ row, ctx }: { row: SquadRow; ctx: SquadTableContext }) {
   const low = row.fitness < LOW_FITNESS;
   const colour = low ? "var(--warn)" : "var(--good)";
   return (
@@ -62,9 +71,9 @@ const numberColumn = (
   id: string,
   header: string,
   priority: 1 | 2 | 3,
-  value: (row: PlanRow) => number,
-  cell: (row: PlanRow) => ReactNode,
-): Column<PlanRow> => ({
+  value: (row: SquadRow) => number,
+  cell: (row: SquadRow) => ReactNode,
+): Column<SquadRow> => ({
   id,
   header,
   priority,
@@ -73,8 +82,26 @@ const numberColumn = (
   cell,
 });
 
-/** The squad table's columns, by priority: 1 player, position, overall, fitness; 2 age, form, status; 3 attributes. */
-export function squadColumns(ctx: SquadColumnContext): Column<PlanRow>[] {
+/** Filled and empty stars; the text label carries the value for assistive technology. */
+function Stars({ row, ctx }: { row: SquadRow; ctx: SquadTableContext }) {
+  const label = ctx.t("squad.stars", { count: row.potentialStars });
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      data-testid={`player-potential-${row.player.id}`}
+      data-stars={row.potentialStars}
+      className="tracking-tight text-accent"
+    >
+      {"★".repeat(row.potentialStars)}
+      <span className="text-muted">{"☆".repeat(5 - row.potentialStars)}</span>
+    </span>
+  );
+}
+
+/** The squad table's columns, by priority: 1 player, position, overall, fitness; 2 age, potential, contract, wage, value, minutes, form, status; 3 attributes. */
+export function squadColumns(ctx: SquadTableContext): Column<SquadRow>[] {
   const { t, formatNumber } = ctx;
   return [
     {
@@ -104,7 +131,16 @@ export function squadColumns(ctx: SquadColumnContext): Column<PlanRow>[] {
       t("squad.col.age"),
       2,
       (row) => row.player.age,
-      (row) => formatNumber(row.player.age, 0),
+      (row) => (
+        <span data-testid={`player-age-${row.player.id}`}>{formatNumber(row.player.age, 0)}</span>
+      ),
+    ),
+    numberColumn(
+      "potential",
+      t("squad.col.potential"),
+      2,
+      (row) => row.potentialStars,
+      (row) => <Stars row={row} ctx={ctx} />,
     ),
     numberColumn(
       "overall",
@@ -126,6 +162,48 @@ export function squadColumns(ctx: SquadColumnContext): Column<PlanRow>[] {
       (row) => <FitnessCell row={row} ctx={ctx} />,
     ),
     numberColumn(
+      "contract",
+      t("squad.col.contract"),
+      2,
+      (row) => row.contractEnd,
+      (row) => (
+        <span data-testid={`player-contract-${row.player.id}`}>
+          {t("squad.contractEnd", { season: row.contractEnd })}
+        </span>
+      ),
+    ),
+    numberColumn(
+      "wage",
+      t("squad.col.wage"),
+      2,
+      (row) => row.wage,
+      (row) => (
+        <span data-testid={`player-wage-${row.player.id}`}>
+          {formatMoney(row.wage, ctx.locale)}
+        </span>
+      ),
+    ),
+    numberColumn(
+      "value",
+      t("squad.col.value"),
+      2,
+      (row) => row.value,
+      (row) => (
+        <span data-testid={`player-value-${row.player.id}`}>
+          {formatMoney(row.value, ctx.locale)}
+        </span>
+      ),
+    ),
+    numberColumn(
+      "minutes",
+      t("squad.col.minutes"),
+      3,
+      (row) => row.minutes,
+      (row) => (
+        <span data-testid={`player-minutes-${row.player.id}`}>{formatNumber(row.minutes, 0)}</span>
+      ),
+    ),
+    numberColumn(
       "form",
       t("squad.col.form"),
       2,
@@ -145,6 +223,21 @@ export function squadColumns(ctx: SquadColumnContext): Column<PlanRow>[] {
         >
           {t(`squad.status.${row.status}`)}
         </Badge>
+      ),
+    },
+    {
+      id: "details",
+      header: t("squad.col.details"),
+      priority: 1,
+      cell: (row) => (
+        <Button
+          variant="secondary"
+          data-testid={`player-details-${row.player.id}`}
+          aria-label={t("squad.details.open", { name: row.player.name })}
+          onClick={() => ctx.openDetails(row)}
+        >
+          {t("squad.col.details")}
+        </Button>
       ),
     },
     ...ATTRIBUTE_NAMES.map((name) =>
