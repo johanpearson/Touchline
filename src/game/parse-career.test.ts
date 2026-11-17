@@ -703,7 +703,12 @@ describe("parseCareer and the last development (schema v7, optional)", () => {
   });
 
   it("rejects an unknown player, attribute or out-of-range value", () => {
-    for (const bad of [{ playerId: "ghost" }, { attribute: "luck" }, { after: 21 }, { before: 0 }]) {
+    for (const bad of [
+      { playerId: "ghost" },
+      { attribute: "luck" },
+      { after: 21 },
+      { before: 0 },
+    ]) {
       expect(errorOf(withChange(bad))).toBe("invalid-development");
     }
   });

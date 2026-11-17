@@ -220,3 +220,115 @@ describe("squad table", () => {
     expect(screen.getByTestId("edit-lineup").getAttribute("href")).toBe("#/tactics");
   });
 });
+
+describe("squad table: player data, detail panel and finances", () => {
+  const careerFor = (): Career => {
+    const league = generateLeague({ seed: SEED });
+    if (!league.ok) throw new Error("league");
+    const created = createCareer({ seed: SEED, userClubId: league.league.clubs[0]?.id ?? "" });
+    if (!created.ok) throw new Error("career");
+    return created.career;
+  };
+  const rowIds = () =>
+    screen.getAllByTestId(/^plan-row-/).map((row) => row.getAttribute("data-testid"));
+
+  beforeEach(() => window.sessionStorage.clear());
+  afterEach(cleanup);
+
+  it("shows age, potential stars, contract end, wage and value for every player", () => {
+    const career = careerFor();
+    renderSquad(career);
+    const id = career.squadPlan.starters[0] ?? "";
+    expect(screen.getByTestId(`player-age-${id}`).textContent).toMatch(/^\d+$/);
+    expect(screen.getByTestId(`player-potential-${id}`).getAttribute("aria-label")).toMatch(
+      /^[1-5] of 5 stars$/,
+    );
+    expect(screen.getByTestId(`player-contract-${id}`).textContent).toMatch(/^Season \d+$/);
+    expect(screen.getByTestId(`player-wage-${id}`).textContent).toMatch(/^€[\d.,]+[Mk]$/);
+    expect(screen.getByTestId(`player-value-${id}`).textContent).toMatch(/^€[\d.,]+[Mk]$/);
+  });
+
+  it.each(["Age", "Potential", "Wage", "Value", "Overall"])(
+    "sorts by %s without changing the lineup",
+    (label) => {
+      const career = careerFor();
+      renderSquad(career);
+      const before = screen
+        .getAllByTestId(/^plan-status-/)
+        .map((e) => [e.getAttribute("data-testid"), e.getAttribute("data-status")].join());
+      fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${label}`) }));
+      expect(
+        screen
+          .getByRole("columnheader", { name: new RegExp(`^${label}`) })
+          .getAttribute("aria-sort"),
+      ).toBe("ascending");
+      const after = screen
+        .getAllByTestId(/^plan-status-/)
+        .map((e) => [e.getAttribute("data-testid"), e.getAttribute("data-status")].join());
+      expect([...after].sort()).toEqual([...before].sort());
+      expect(rowIds()).toHaveLength(22);
+    },
+  );
+
+  it("sorts by wage from low to high", () => {
+    renderSquad(careerFor());
+    fireEvent.click(screen.getByRole("button", { name: /^Wage/ }));
+    const wages = screen.getAllByTestId(/^player-wage-/).map((e) => e.textContent ?? "");
+    expect(wages).toHaveLength(22);
+    const rank = (text: string) =>
+      Number.parseFloat(text.replace(/[^\d.]/g, "")) * (text.endsWith("M") ? 1000 : 1);
+    const numbers = wages.map(rank);
+    expect(numbers).toEqual([...numbers].sort((a, b) => a - b));
+  });
+
+  it("opens a labelled detail panel with all 12 attributes and no deltas before a rollover", () => {
+    const career = careerFor();
+    renderSquad(career);
+    const id = career.squadPlan.starters[0] ?? "";
+    fireEvent.click(screen.getByTestId(`player-details-${id}`));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.getByTestId("player-detail")).toBeTruthy();
+    expect(screen.getAllByTestId(/^detail-attr-/)).toHaveLength(12);
+    expect(screen.queryAllByTestId(/^detail-delta-/)).toHaveLength(0);
+    expect(screen.getByTestId("player-detail-no-history")).toBeTruthy();
+  });
+
+  it("shows the change since last season with a text marker", () => {
+    const base = careerFor();
+    const id = base.squadPlan.starters[0] ?? "";
+    const career: Career = {
+      ...base,
+      lastDevelopment: [
+        { playerId: id, attribute: "pace", before: 10, after: 12 },
+        { playerId: id, attribute: "passing", before: 9, after: 8 },
+      ],
+    };
+    renderSquad(career);
+    fireEvent.click(screen.getByTestId(`player-details-${id}`));
+    expect(screen.getByTestId("detail-delta-pace").textContent).toContain("+2");
+    expect(screen.getByTestId("detail-delta-pace").textContent).toContain("Up +2");
+    expect(screen.getByTestId("detail-delta-passing").textContent).toContain("Down −1");
+    expect(screen.getByTestId("detail-delta-finishing").textContent).toContain("Unchanged");
+  });
+
+  it("shows the club finances without warnings when the club can afford its wages", () => {
+    renderSquad(careerFor());
+    expect(screen.getByTestId("club-balance").textContent).toMatch(/^[−€]/);
+    expect(screen.getByTestId("club-wage-bill").textContent).toContain("a season");
+    expect(screen.getByTestId("club-wage-budget")).toBeTruthy();
+    expect(screen.queryByTestId("club-warning-wages")).toBeNull();
+    expect(screen.queryByTestId("club-warning-balance")).toBeNull();
+  });
+
+  it("warns in text when the wage bill is over budget and the balance is negative", () => {
+    const base = careerFor();
+    const career: Career = {
+      ...base,
+      finances: { ...base.finances, [base.userClubId]: { balance: -250, baseIncome: 1 } },
+    };
+    renderSquad(career);
+    expect(screen.getByTestId("club-warning-wages").textContent).toContain("over the wage budget");
+    expect(screen.getByTestId("club-warning-balance").textContent).toContain("negative");
+    expect(screen.getByTestId("club-balance").textContent).toMatch(/^−/);
+  });
+});

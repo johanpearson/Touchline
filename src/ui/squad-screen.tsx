@@ -12,10 +12,13 @@ import {
   TabsTrigger,
 } from "./components";
 import { useI18n } from "./i18n-provider";
-import { DEFAULT_PLAN_SORT, planRows } from "./plan-rows";
+import { DEFAULT_PLAN_SORT } from "./plan-rows";
 import { hrefFor } from "./routes";
-import { type SquadColumnContext, squadColumns, squadTieBreak } from "./squad-columns";
+import { type SquadTableContext, squadColumns, squadTieBreak } from "./squad-columns";
+import { SquadDetail } from "./squad-detail";
 import { averageAge, filterRows, POSITION_FILTERS, type PositionFilter } from "./squad-filter";
+import { SquadFinanceCard } from "./squad-finance";
+import { type SquadRow, squadFinance, squadRows } from "./squad-rows";
 import { loadSquadSort, saveSquadSort } from "./squad-sort-session";
 import { useDensity } from "./theme/density-provider";
 
@@ -33,24 +36,26 @@ export function SquadScreen({ career }: { career: Career }) {
   const [position, setPosition] = useState<PositionFilter>("all");
   const [query, setQuery] = useState("");
   const [grouped, setGrouped] = useState(false);
+  const [detail, setDetail] = useState<SquadRow | null>(null);
   const club = career.league.clubs.find((c) => c.id === career.userClubId);
-  const ids = new Set(club?.playerIds);
-  const players = career.league.players.filter((p) => ids.has(p.id));
 
   const columns = useMemo(() => {
-    const context: SquadColumnContext = {
+    const context: SquadTableContext = {
       t,
       formatNumber,
       barColour: club?.colours.primary ?? "var(--accent)",
+      locale,
+      openDetails: setDetail,
     };
     return squadColumns(context);
-  }, [t, formatNumber, club?.colours.primary]);
+  }, [t, formatNumber, locale, club?.colours.primary]);
   const initialSort = useMemo(
     () => loadSquadSort(new Set(columns.map((c) => c.id))) ?? FIRST_SORT,
     [columns],
   );
 
-  const all = planRows(players, career.squadPlan, career.condition, DEFAULT_PLAN_SORT);
+  const all = useMemo(() => squadRows(career), [career]);
+  const finance = squadFinance(career);
   const rows = filterRows(all, position, query);
   const positionLabel = (value: PositionFilter) =>
     value === "all" ? t("squad.filter.all") : t(`position.short.${value}`);
@@ -94,11 +99,12 @@ export function SquadScreen({ career }: { career: Career }) {
         <p className="m-0 text-muted" data-testid="squad-summary">
           {t("squad.summary", {
             club: club?.name ?? "",
-            players: t("squad.players", { count: players.length }),
-            age: formatNumber(averageAge(players), 1),
+            players: t("squad.players", { count: all.length }),
+            age: formatNumber(averageAge(all.map((row) => row.player)), 1),
           })}
         </p>
       </header>
+      <SquadFinanceCard finance={finance} />
       <Tabs
         value={position}
         onValueChange={(value) => setPosition(value as PositionFilter)}
@@ -152,6 +158,11 @@ export function SquadScreen({ career }: { career: Career }) {
           </a>
         </Button>
       </div>
+      <SquadDetail
+        row={detail}
+        development={career.lastDevelopment}
+        onClose={() => setDetail(null)}
+      />
     </section>
   );
 }

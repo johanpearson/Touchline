@@ -13,11 +13,11 @@ export const normalizeText = (text: string): string =>
     .toLowerCase();
 
 /** Rows of the chosen position line whose player name contains the query. */
-export const filterRows = (
-  rows: readonly PlanRow[],
+export const filterRows = <Row extends PlanRow>(
+  rows: readonly Row[],
   position: PositionFilter,
   query: string,
-): PlanRow[] => {
+): Row[] => {
   const needle = normalizeText(query.trim());
   return rows.filter(
     (row) =>

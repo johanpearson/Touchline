@@ -1,8 +1,8 @@
 import type { Career } from "./career";
 import type { Club } from "./club";
 import { isInt, isRecord, isString } from "./json-guards";
-import { parseContracts, parseFinances, parseFreeAgentIds, parseMinutes } from "./parse-economy";
 import { parseDevelopment } from "./parse-development";
+import { parseContracts, parseFinances, parseFreeAgentIds, parseMinutes } from "./parse-economy";
 import { parseHistory } from "./parse-history";
 import { parseLeague } from "./parse-league";
 import { parseSeason } from "./parse-season";

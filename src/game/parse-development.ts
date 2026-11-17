@@ -1,7 +1,7 @@
 import type { AttributeChange } from "./develop-player";
 import { isIntInRange, isRecord, isString, parseList } from "./json-guards";
-import { ATTRIBUTE_NAMES, type AttributeName, MAX_ATTRIBUTE, MIN_ATTRIBUTE } from "./player";
 import type { Player } from "./player";
+import { ATTRIBUTE_NAMES, type AttributeName, MAX_ATTRIBUTE, MIN_ATTRIBUTE } from "./player";
 
 const isAttributeName = (value: unknown): value is AttributeName =>
   ATTRIBUTE_NAMES.includes(value as AttributeName);
@@ -15,7 +15,8 @@ export const parseDevelopment = (
   return parseList(raw, (item) => {
     if (!isRecord(item)) return undefined;
     const { playerId, attribute, before, after } = item;
-    if (!isString(playerId) || !known.has(playerId) || !isAttributeName(attribute)) return undefined;
+    if (!isString(playerId) || !known.has(playerId) || !isAttributeName(attribute))
+      return undefined;
     if (!isIntInRange(before, MIN_ATTRIBUTE, MAX_ATTRIBUTE)) return undefined;
     if (!isIntInRange(after, MIN_ATTRIBUTE, MAX_ATTRIBUTE)) return undefined;
     return { playerId, attribute, before, after };
