@@ -541,3 +541,32 @@ visualScreen({
     await page.getByTestId("pre-match").waitFor();
   },
 });
+
+// The matchday results (#269): the user's match first, the position movement and the mini table.
+visualScreen({
+  name: "matchday-results",
+  full: true,
+  route: "#/new",
+  state: async (page) => {
+    await startCareerAtHub(page);
+    await playMatchdays(page, 5);
+    await page.getByTestId("quick-sim").click();
+    await page.getByTestId("user-movement").waitFor();
+  },
+});
+
+// The season end (#269): after 26 quick-simmed matchdays the champion, final table and top scorers.
+visualScreen({
+  name: "season-end",
+  full: true,
+  route: "#/new",
+  state: async (page) => {
+    test.setTimeout(180_000);
+    await startCareerAtHub(page);
+    await playMatchdays(page, 26);
+    await page.evaluate(() => {
+      window.location.hash = "#/season-end";
+    });
+    await page.getByTestId("screen-season-end").waitFor();
+  },
+});

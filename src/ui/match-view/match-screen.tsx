@@ -20,9 +20,11 @@ import { useI18n } from "../i18n-provider";
 import { useSuspendPaletteShortcut } from "../palette/palette-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
+import { FullTimeReport } from "./full-time-report";
 import type { AppliedHalfTimePlan, HalfTimeEditor } from "./half-time-panel";
 import { LineupsPanel } from "./lineups-panel";
 import { MatchLayout } from "./match-layout";
+import { goalsOf } from "./match-result";
 import { PlayerRatings } from "./player-ratings";
 import { buildRatingRows } from "./ratings-table";
 import { terrainEvents } from "./terrain-events";
@@ -123,6 +125,11 @@ export function MatchScreen({
   // biome-ignore lint/correctness/useExhaustiveDependencies: `match.changes` is mutated in place
   const played = useMemo(() => playedIds(input, match.changes), [input, state.period]);
   const ratingRows = useFinalRatings({ events, fullTime, played, players, userSide });
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place and only read at full time
+  const goals = useMemo(
+    () => (fullTime ? goalsOf(events, zoneEvents, players) : []),
+    [fullTime, zoneEvents, players],
+  );
   const shown = useMemo(() => terrainEvents(zoneEvents, state.period), [zoneEvents, state.period]);
   const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
@@ -161,10 +168,15 @@ export function MatchScreen({
       }
       onLeave={onLeave}
       fullTimePanel={
-        <PlayerRatings
-          rows={ratingRows}
-          teamNames={{ home: input.home.name, away: input.away.name }}
-        />
+        <FullTimeReport
+          names={names}
+          colours={colours}
+          score={state.score}
+          userSide={userSide}
+          goals={goals}
+        >
+          <PlayerRatings rows={ratingRows} teamNames={names} />
+        </FullTimeReport>
       }
       onResume={startSecondHalf}
       onContinue={
