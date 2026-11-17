@@ -284,7 +284,8 @@ const playMatchdays = async (page: Page, count: number) => {
   for (let i = 0; i < count; i++) {
     await page.getByTestId("quick-sim").click();
     await page.getByTestId("results-continue").click();
-    await page.getByTestId("career-hub").waitFor();
+    // The last matchday of the season continues to the season end instead of the hub.
+    await page.getByTestId(/^(career-hub|screen-season-end)$/).waitFor();
   }
 };
 
@@ -455,18 +456,36 @@ visualScreen({
   route: "#/new",
   mask: TERRAIN,
   state: async (page) => {
-    await openMatch(page);
     test.setTimeout(120_000);
+    await openMatch(page, { frozen: true });
     await page.getByTestId("speed-4").click();
-    // A goal in the first half, or half-time when there was none: both are settled states.
-    await page.waitForFunction(
-      () =>
-        document.querySelector("[data-testid='scoreboard']")?.getAttribute("data-goal") ||
-        document.querySelector("[data-testid='half-time']"),
-      undefined,
-      { timeout: 60_000 },
-    );
-    await page.getByTestId("pause-toggle").click();
+    // The playback clock only moves when the test moves the page clock, in steps of a fixed size, so
+    // the pause lands on the same minute on every run. A goal in the first half, or half-time when
+    // there was none: both are settled states.
+    const settled = () =>
+      page.evaluate(() =>
+        Boolean(
+          document.querySelector("[data-testid='scoreboard']")?.getAttribute("data-goal") ||
+            document.querySelector("[data-testid='half-time']"),
+        ),
+      );
+    for (let step = 0; step < 400 && !(await settled()); step++) {
+      await page.clock.runFor(250);
+      // Let React render what the ticks published: its scheduler uses a MessageChannel, which the page
+      // clock does not fake, so a round trip through one queues behind its render.
+      for (let flush = 0; flush < 2; flush++) {
+        await page.evaluate(
+          () =>
+            new Promise<void>((resolve) => {
+              const channel = new MessageChannel();
+              channel.port1.onmessage = () => resolve();
+              channel.port2.postMessage(null);
+            }),
+        );
+      }
+    }
+    expect(await settled()).toBe(true);
+    await pauseFrozen(page);
   },
 });
 
