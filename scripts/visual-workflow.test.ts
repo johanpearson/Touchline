@@ -48,7 +48,8 @@ describe("visual regression setup (#253)", () => {
   it("regenerates baselines on CI after a push to main and merges them through a pull request", () => {
     expect(baselines).toContain("workflow_dispatch:");
     expect(baselines).toMatch(/push:\n\s+branches: \[main\]/);
-    expect(baselines).toContain("!e2e/visual/__screenshots__/**");
+    expect(baselines).not.toContain("!e2e/visual/__screenshots__/**");
+    expect(baselines).toContain("gh pr close");
     expect(baselines).toContain("--update-snapshots");
     expect(baselines).toContain("bot/visual-baselines");
     expect(baselines).toContain("gh pr merge");

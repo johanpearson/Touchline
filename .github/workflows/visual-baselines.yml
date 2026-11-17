@@ -16,7 +16,8 @@ on:
     paths:
       - "src/ui/**"
       - "e2e/visual/**"
-      - "!e2e/visual/__screenshots__/**"
+      # e2e/visual/** includes the screenshots on purpose: a merged baseline PR changes main, so another open
+      # baseline PR is stale and conflicts. Running again rebuilds it from the new main, or closes it.
       - ".storybook/**"
       - "playwright.visual.config.ts"
       - "scripts/serve-static.mjs"
@@ -93,6 +94,9 @@ jobs:
           git add -A e2e/visual/__screenshots__
           if git diff --cached --quiet; then
             echo "Baselines are already up to date."
+            # An open baseline PR is now obsolete (for example after another one merged), so close it.
+            gh pr close "$BRANCH" --delete-branch \
+              --comment "Superseded: the baselines on main are already up to date." || true
             exit 0
           fi
           git checkout -B "$BRANCH"
