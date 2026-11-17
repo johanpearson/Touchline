@@ -19,6 +19,26 @@ export type { ClubFinance, Contract } from "./contract";
 export type { CareerSpec } from "./create-career";
 export { createCareer } from "./create-career";
 export { createSeason } from "./create-season";
+export type { AttributeChange, DevelopedPlayer } from "./develop-player";
+export { declineRate, developPlayer, growthShare, playingTimeFactor } from "./develop-player";
+export type { Development } from "./develop-players";
+export { developPlayers } from "./develop-players";
+export {
+  DECLINE_PHYSICAL,
+  DECLINE_TECHNICAL,
+  GROWTH_FACTOR_HIGH,
+  GROWTH_FACTOR_LOW,
+  GROWTH_MAX_AGE,
+  GROWTH_SHARES,
+  KEEPER_ATTRIBUTES,
+  MAX_CHANGE_PER_SEASON,
+  MINUTES_HIGH,
+  MINUTES_LOW,
+  PHYSICAL_ATTRIBUTES,
+  PLATEAU_DOWN_CHANCE,
+  PLATEAU_MAX_AGE,
+  PLATEAU_UP_CHANCE,
+} from "./development-constants";
 export type { SetLineupResult } from "./edit-squad-plan";
 export { autoPickUserLineup, setLineup, setTactics } from "./edit-squad-plan";
 export type { Formation } from "./formation";
