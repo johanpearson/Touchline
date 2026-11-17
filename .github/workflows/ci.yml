@@ -201,9 +201,11 @@ jobs:
           retention-days: 7
 
   # Visual regression (#253): screenshots of every story and registered screen state compared with the baselines in
-  # e2e/visual/__screenshots__. On a pull request this is a REPORT, not a gate: the job never fails the PR, it
-  # uploads a report with the diffs and prints a warning. Baselines are regenerated after merge by the workflow
-  # `Visual baselines`, so nobody commits snapshots by hand. Path-filtered to UI, Storybook and CSS changes.
+  # e2e/visual/__screenshots__. A screenshot that DIFFERS (pixels, size, or no baseline yet for a new state) is only
+  # reported: a warning and an artifact with the diffs, never a failure, because the workflow `Visual baselines`
+  # makes the baselines after merge and nobody commits snapshots by hand. A screen state that is BROKEN (a
+  # timeout or an error in e2e/visual/screens.spec.ts) fails its shard and so the `Visual` check: nobody can make
+  # a baseline for it, and the baseline workflow would fail after merge (#322). Path-filtered to UI, Storybook and CSS changes.
   visual-scope:
     name: Visual scope
     runs-on: ubuntu-latest
@@ -249,15 +251,15 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npx storybook build --quiet
       - run: npx vite build
-      - name: Compare with the baselines (report only)
+      - name: Compare with the baselines (differences are only reported)
         id: compare
         continue-on-error: true
         run: npx playwright test -c playwright.visual.config.ts --shard=${{ matrix.shard }}/4
-      - name: Say that screens differ
+      - name: Say that screens differ or failed
         if: steps.compare.outcome == 'failure'
         run: |
-          echo "::warning::Visual shard ${{ matrix.shard }}: screens differ from the baselines (not blocking). Open the visual-report-${{ matrix.shard }} artifact for the diffs. If the changes are intended, merge: the Visual baselines workflow updates the baselines on main."
-          echo "Shard ${{ matrix.shard }}: screens differ from the baselines. Not blocking; see the visual-report-${{ matrix.shard }} artifact." >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::Visual shard ${{ matrix.shard }}: screens differ from the baselines or a state failed. Differences do not block; a broken state fails the next step. Open the visual-report-${{ matrix.shard }} artifact for the diffs. If the changes are intended, merge: the Visual baselines workflow updates the baselines on main."
+          echo "Shard ${{ matrix.shard }}: screens differ from the baselines or a state failed. Differences do not block; see the visual-report-${{ matrix.shard }} artifact." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         if: steps.compare.outcome == 'failure'
         with:
@@ -265,7 +267,12 @@ jobs:
           path: |
             playwright-report/
             test-results/
+            visual-results.json
           retention-days: 7
+      # After the upload, so the diffs are kept even when this step fails. Differences and missing baselines pass.
+      - name: Fail when a screen state is broken
+        if: steps.compare.outcome == 'failure'
+        run: node scripts/visual-breakage.mjs visual-results.json
 
   visual:
     name: Visual
@@ -273,13 +280,14 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Never fail the pull request
+      - name: Fail for a broken screen state or a broken visual run, not for a screenshot difference
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
           echo "Results: $RESULTS"
           case "$RESULTS" in
-            *failure*) echo "::warning::A visual job could not run (build or set-up error). Check the Visual shard logs." ;;
+            *cancelled*) echo "Cancelled (a newer run replaced this one)."; exit 0 ;;
+            *failure*) echo "::error::A visual shard failed: a broken screen state (see its annotations) or a build error."; exit 1 ;;
           esac
 
   pr-title:
