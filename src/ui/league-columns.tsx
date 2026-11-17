@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { Translator } from "../i18n";
-import type { Column } from "./components";
+import { ChangeFlash, type Column } from "./components";
 import { FormChips } from "./form-chips";
 import type { LeagueRow } from "./league-rows";
 import { hrefFor } from "./routes";
@@ -49,7 +49,9 @@ const numeric = (
 export function leagueColumns(ctx: LeagueColumnContext): Column<LeagueRow>[] {
   const { t, formatNumber, formatSigned } = ctx;
   const count = (key: Count, priority: 1 | 2 | 3) =>
-    numeric(key, ctx, priority, (row) => formatNumber(row[key], 0));
+    numeric(key, ctx, priority, (row) => (
+      <ChangeFlash value={row[key]}>{formatNumber(row[key], 0)}</ChangeFlash>
+    ));
   return [
     {
       id: "position",
@@ -75,9 +77,13 @@ export function leagueColumns(ctx: LeagueColumnContext): Column<LeagueRow>[] {
     count("lost", 2),
     count("goalsFor", 3),
     count("goalsAgainst", 3),
-    numeric("goalDifference", ctx, 1, (row) => formatSigned(row.goalDifference)),
+    numeric("goalDifference", ctx, 1, (row) => (
+      <ChangeFlash value={row.goalDifference}>{formatSigned(row.goalDifference)}</ChangeFlash>
+    )),
     numeric("points", ctx, 1, (row) => (
-      <strong data-testid={`table-points-${row.clubId}`}>{formatNumber(row.points, 0)}</strong>
+      <ChangeFlash value={row.points}>
+        <strong data-testid={`table-points-${row.clubId}`}>{formatNumber(row.points, 0)}</strong>
+      </ChangeFlash>
     )),
     {
       id: "form",

@@ -59,4 +59,41 @@ test.describe("motion", () => {
     const duration = await toast.evaluate((el) => getComputedStyle(el).animationDuration);
     expect(Number.parseFloat(duration)).toBeLessThan(0.001);
   });
+
+  test("with reduced motion a dialog and a drawer only fade", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await startCareer(page);
+    const identity = ["none", "matrix(1, 0, 0, 1, 0, 0)"];
+
+    await page.goto("./#/saves");
+    await page.getByTestId("save-slot-1").click();
+    await page.getByTestId("delete-slot-1").click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    expect(identity).toContain(await dialog.evaluate((el) => getComputedStyle(el).transform));
+    // The exit lasts about 120 ms, so sample every frame until the dialog is gone.
+    const exitTransforms = page.evaluate(
+      () =>
+        new Promise<string[]>((resolve) => {
+          const seen: string[] = [];
+          const sample = () => {
+            const el = document.querySelector("[role='dialog']");
+            if (!el) return resolve(seen);
+            seen.push(getComputedStyle(el).transform);
+            requestAnimationFrame(sample);
+          };
+          sample();
+        }),
+    );
+    await page.keyboard.press("Escape");
+    for (const transform of await exitTransforms) expect(identity).toContain(transform);
+    await expect(dialog).toBeHidden();
+    await expect(page.getByTestId("delete-slot-1")).toBeFocused();
+
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.getByTestId("nav-more").click();
+    const drawer = page.getByRole("dialog");
+    await expect(drawer).toBeVisible();
+    expect(identity).toContain(await drawer.evaluate((el) => getComputedStyle(el).transform));
+  });
 });

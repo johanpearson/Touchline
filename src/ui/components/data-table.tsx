@@ -1,5 +1,7 @@
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import { motion } from "motion/react";
 import { type CSSProperties, Fragment, type ReactNode, useMemo, useRef, useState } from "react";
+import { DURATION, EASE, useReducedMotion } from "../motion";
 import type { Density } from "../theme/density";
 import { cn } from "./cn";
 import {
@@ -258,8 +260,11 @@ function BodyRow<Row>({
   rowAttributes,
 }: BodyRowProps<Row>) {
   const { marked, attributes } = markingFor(row, highlight, accent);
+  const reduced = useReducedMotion();
   return (
-    <tr
+    <motion.tr
+      layout={reduced ? false : "position"}
+      transition={{ duration: DURATION.base, ease: EASE.out }}
       {...rowAttributes?.(row)}
       {...attributes}
       className={cn(
@@ -282,7 +287,7 @@ function BodyRow<Row>({
           {column.cell(row)}
         </td>
       ))}
-    </tr>
+    </motion.tr>
   );
 }
 

@@ -46,6 +46,16 @@ describe("Dialog", () => {
     expect(dialog.getAttribute("aria-describedby")).toBeTruthy();
   });
 
+  it("plays an exit animation: the dialog stays mounted briefly after closing", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText("Open"));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(dialog.isConnected).toBe(true);
+    expect(dialog.getAttribute("data-state")).toBe("closed");
+    await waitFor(() => expect(dialog.isConnected).toBe(false));
+  });
+
   it("moves focus into the dialog and returns it to the trigger on Escape", async () => {
     render(<Harness />);
     const trigger = screen.getByText("Open");

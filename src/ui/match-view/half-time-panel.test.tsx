@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ActionStats } from "../../engine";
 import {
@@ -278,10 +278,10 @@ describe("HalfTimePanel changes", () => {
     expect(screen.queryByTestId("half-time-error")).toBeNull();
   });
 
-  it("closes without asking when nothing is pending", () => {
+  it("closes without asking when nothing is pending", async () => {
     mountEditor();
     fireEvent.keyDown(screen.getByRole("dialog", { name: "Make changes" }), { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: "Make changes" })).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Make changes" })).toBeNull());
     expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
@@ -294,12 +294,12 @@ describe("HalfTimePanel changes", () => {
     expect(screen.getByTestId("sub-off-0")).toBeTruthy();
   });
 
-  it("drops the pending changes when the user confirms the discard", () => {
+  it("drops the pending changes when the user confirms the discard", async () => {
     const onResume = mountEditor();
     makeSub(swap());
     fireEvent.keyDown(screen.getByRole("dialog", { name: "Make changes" }), { key: "Escape" });
     fireEvent.click(screen.getByTestId("half-time-discard"));
-    expect(screen.queryByTestId("sub-off-0")).toBeNull();
+    await waitFor(() => expect(screen.queryByTestId("sub-off-0")).toBeNull());
     fireEvent.click(screen.getByTestId("half-time-open-changes"));
     expect(screen.queryByTestId("sub-off-0")).toBeNull();
     fireEvent.click(screen.getByTestId("start-second-half"));
