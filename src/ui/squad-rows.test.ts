@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { AttributeChange } from "../game";
-import { developmentOf, potentialStars, squadFinance, squadRows } from "./squad-rows";
+import {
+  developmentOf,
+  potentialStars,
+  type SquadRow,
+  squadFinance,
+  squadRows,
+} from "./squad-rows";
 import { careerAfter } from "./test-career";
 
 describe("potentialStars", () => {
@@ -29,15 +35,22 @@ describe("squadRows", () => {
     expect(rows.map((r) => r.player.id).sort()).toEqual([...(club?.playerIds ?? [])].sort());
   });
 
-  it("carries age, potential stars, contract end, wage, value and minutes", () => {
-    const row = rows[0];
-    const id = row?.player.id ?? "";
-    expect(row?.age).toBe(row?.player.age);
-    expect(row?.potentialStars).toBe(potentialStars(row?.player.potential ?? 1));
-    expect(row?.contractEnd).toBe(career.contracts[id]?.expiresSeason);
-    expect(row?.wage).toBe(career.contracts[id]?.wage);
-    expect(row?.value).toBeGreaterThan(0);
-    expect(row?.minutes).toBe(0);
+  const first = rows[0] as SquadRow;
+  const contract = career.contracts[first.player.id];
+
+  it("carries age and potential stars", () => {
+    expect(first.age).toBe(first.player.age);
+    expect(first.potentialStars).toBe(potentialStars(first.player.potential));
+  });
+
+  it("carries the contract end and the wage", () => {
+    expect(first.contractEnd).toBe(contract?.expiresSeason);
+    expect(first.wage).toBe(contract?.wage);
+  });
+
+  it("carries a positive value and no minutes before the first match", () => {
+    expect(first.value).toBeGreaterThan(0);
+    expect(first.minutes).toBe(0);
   });
 
   it("reads season minutes from the career", () => {
