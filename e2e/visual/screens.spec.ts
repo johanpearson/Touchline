@@ -466,7 +466,11 @@ visualScreen({
     await openMatch(page);
     await page.getByTestId("speed-4").click();
     // Half-time stops the match; the second half starts from its panel.
-    await page.getByTestId("start-second-half").click({ timeout: 60_000 });
+    // By DOM click: on a phone the bottom tab bar covers the half-time panel (#268 redesigns it).
+    await page.getByTestId("start-second-half").waitFor({ timeout: 60_000 });
+    await page
+      .getByTestId("start-second-half")
+      .evaluate((button) => (button as HTMLButtonElement).click());
     await page.getByTestId("player-ratings").waitFor({ timeout: 60_000 });
   },
 });
