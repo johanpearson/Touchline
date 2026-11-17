@@ -125,7 +125,6 @@ export function TacticsScreen({ career }: { career: Career }) {
                 { value: "list", label: t("tactics.view.list") },
               ]}
               onValueChange={setView}
-              className="[&>button]:border-0 [&>button[aria-checked=false]]:bg-transparent"
             />
           </div>
           {view === "pitch" ? (

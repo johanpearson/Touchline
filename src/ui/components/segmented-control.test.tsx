@@ -34,6 +34,14 @@ describe("SegmentedControl", () => {
     expect(radio("x1").getAttribute("aria-checked")).toBe("false");
   });
 
+  it("resets the browser button face on every option and gives unchecked ones a transparent background", () => {
+    render(<Harness initial="x2" />);
+    expect(radio("x1").classList.contains("border-0")).toBe(true);
+    expect(radio("x1").classList.contains("bg-transparent")).toBe(true);
+    expect(radio("x2").classList.contains("border-0")).toBe(true);
+    expect(radio("x2").classList.contains("bg-transparent")).toBe(false);
+  });
+
   it("has a single tab stop on the selected option", () => {
     render(<Harness initial="x2" />);
     expect(radio("x2").tabIndex).toBe(0);

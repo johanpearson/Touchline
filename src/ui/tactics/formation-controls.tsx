@@ -18,7 +18,7 @@ export function FormationControls({ formation, onPick }: FormationControlsProps)
           value={formation}
           options={FORMATIONS.map((f) => ({ value: f, label: f }))}
           onValueChange={onPick}
-          className="grid w-full grid-cols-3 sm:grid-cols-6 [&>button]:border-0 [&>button[aria-checked=false]]:bg-transparent"
+          className="grid w-full grid-cols-3 sm:grid-cols-6"
         />
       </div>
       <div>

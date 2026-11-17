@@ -36,7 +36,7 @@ export function TacticControls({ tactics, onChange }: TacticControlsProps) {
               label: t(`squad.level.${level}` as MessageKey),
             }))}
             onValueChange={(level) => onChange(withTactic(tactics, name, level))}
-            className="w-full [&>button]:flex-1 [&>button]:border-0 [&>button[aria-checked=false]]:bg-transparent"
+            className="w-full [&>button]:flex-1"
           />
           <p className="m-0 text-sm text-muted">
             <span className="font-semibold">{t("tactics.risk")}: </span>
