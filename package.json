@@ -25,6 +25,7 @@
     "test:e2e:smoke": "playwright test --grep @smoke",
     "test:visual": "storybook build --quiet && vite build && playwright test -c playwright.visual.config.ts",
     "test:visual:update": "storybook build --quiet && vite build && playwright test -c playwright.visual.config.ts --update-snapshots",
+    "test:a11y": "vite build && playwright test -c playwright.a11y.config.ts",
     "test:e2e:stories": "playwright test -c playwright.stories.config.ts",
     "test:mutation": "stryker run",
     "test:mutation:action": "stryker run stryker.action.config.json",
@@ -48,6 +49,7 @@
     "three": "^0.187.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@biomejs/biome": "^2.6.7",
     "@fontsource/barlow": "^5.3.0",
     "@fontsource/barlow-condensed": "^5.3.0",

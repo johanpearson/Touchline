@@ -223,7 +223,7 @@ jobs:
         run: |
           run=false
           if [ "$EVENT" = "pull_request" ]; then
-            if git diff --name-only "origin/$BASE_REF...HEAD" | grep -E '^src/ui/|^e2e/visual/|^\.storybook/|^playwright\.visual\.config\.ts$|^scripts/serve-static\.mjs$|\.css$|^package-lock\.json$|^index\.html$|^\.github/workflows/(ci|visual-baselines)\.yml$'; then
+            if git diff --name-only "origin/$BASE_REF...HEAD" | grep -E '^src/ui/|^e2e/visual/|^\.storybook/|^playwright\.(visual|a11y)\.config\.ts$|^e2e/a11y|^scripts/serve-static\.mjs$|\.css$|^package-lock\.json$|^index\.html$|^\.github/workflows/(ci|visual-baselines)\.yml$'; then
               run=true
             fi
           fi
@@ -289,6 +289,39 @@ jobs:
             *cancelled*) echo "Cancelled (a newer run replaced this one)."; exit 0 ;;
             *failure*) echo "::error::A visual shard failed: a broken screen state (see its annotations) or a build error."; exit 1 ;;
           esac
+
+  # Accessibility (#272): axe over every registered screen state at 3 widths x 3 themes x 2 languages, from the same
+  # registry as the visual tests. Not a required check for the first week; the maintainer then promotes it.
+  # Keep the shard list and the --shard total in step.
+  accessibility:
+    name: Accessibility
+    needs: visual-scope
+    if: needs.visual-scope.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx vite build
+      - run: npx playwright test -c playwright.a11y.config.ts --shard=${{ matrix.shard }}/6
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: a11y-report-${{ matrix.shard }}
+          path: |
+            playwright-report/
+            test-results/
+            a11y-results.json
+          retention-days: 7
 
   pr-title:
     name: PR title
