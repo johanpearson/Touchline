@@ -189,11 +189,11 @@ describe("app shell on a phone", () => {
     expect(within(sheet).queryByTestId("theme-switch")).toBeNull();
   });
 
-  it("closes the More sheet after choosing a screen", () => {
+  it("closes the More sheet after choosing a screen", async () => {
     startCareer();
     fireEvent.click(screen.getByTestId("nav-more"));
     fireEvent.click(screen.getByTestId("nav-saves"));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
   it("returns focus to the More button when the sheet closes", async () => {

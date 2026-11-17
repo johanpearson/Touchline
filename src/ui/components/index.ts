@@ -1,6 +1,7 @@
 export { Badge, type BadgeProps } from "./badge";
 export { Button, type ButtonProps } from "./button";
 export { Card, type CardProps } from "./card";
+export { ChangeFlash } from "./change-flash";
 export { cn } from "./cn";
 export { ConfirmDialog, type ConfirmDialogProps } from "./confirm-dialog";
 export {

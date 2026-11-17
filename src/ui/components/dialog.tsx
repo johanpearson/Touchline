@@ -1,8 +1,9 @@
 import * as RadixDialog from "@radix-ui/react-dialog";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
 import { cn } from "./cn";
 import { OverlayActions, OverlayHeader, scrimStyles } from "./overlay-parts";
+import { useOpenState } from "./use-open-state";
 import { useOverlayMotion } from "./use-overlay-motion";
 
 export type DialogProps = {
@@ -26,41 +27,49 @@ export type DialogProps = {
 export function Dialog(props: DialogProps) {
   const motionProps = useOverlayMotion();
   const { destructive = false } = props;
+  const [open, setOpen] = useOpenState(props);
   return (
-    <RadixDialog.Root
-      open={props.open}
-      defaultOpen={props.defaultOpen}
-      onOpenChange={props.onOpenChange}
-    >
+    <RadixDialog.Root open={open} onOpenChange={setOpen}>
       {props.trigger ? <RadixDialog.Trigger asChild>{props.trigger}</RadixDialog.Trigger> : null}
-      <RadixDialog.Portal>
-        <RadixDialog.Overlay
-          className={cn(scrimStyles, "grid place-items-center overflow-y-auto p-4")}
-        >
-          <RadixDialog.Content
-            asChild
-            onInteractOutside={destructive ? (e) => e.preventDefault() : undefined}
-          >
-            <motion.div
-              {...motionProps}
-              className={cn(
-                "w-full max-w-lg rounded-xl border border-line bg-raised p-6 text-text shadow-xl",
-                "focus:outline-none",
-                props.className,
-              )}
-            >
-              <OverlayHeader
-                title={props.title}
-                description={props.description}
-                closeLabel={props.closeLabel}
-                showClose={!destructive}
-              />
-              {props.children ? <div className="mt-4">{props.children}</div> : null}
-              {props.actions ? <OverlayActions>{props.actions}</OverlayActions> : null}
-            </motion.div>
-          </RadixDialog.Content>
-        </RadixDialog.Overlay>
-      </RadixDialog.Portal>
+      <AnimatePresence>
+        {open ? (
+          <RadixDialog.Portal forceMount>
+            <RadixDialog.Overlay asChild forceMount>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={motionProps.transition}
+                className={cn(scrimStyles, "grid place-items-center overflow-y-auto p-4")}
+              >
+                <RadixDialog.Content
+                  asChild
+                  forceMount
+                  onInteractOutside={destructive ? (e) => e.preventDefault() : undefined}
+                >
+                  <motion.div
+                    {...motionProps}
+                    className={cn(
+                      "w-full max-w-lg rounded-xl border border-line bg-raised p-6 text-text shadow-xl",
+                      "focus:outline-none",
+                      props.className,
+                    )}
+                  >
+                    <OverlayHeader
+                      title={props.title}
+                      description={props.description}
+                      closeLabel={props.closeLabel}
+                      showClose={!destructive}
+                    />
+                    {props.children ? <div className="mt-4">{props.children}</div> : null}
+                    {props.actions ? <OverlayActions>{props.actions}</OverlayActions> : null}
+                  </motion.div>
+                </RadixDialog.Content>
+              </motion.div>
+            </RadixDialog.Overlay>
+          </RadixDialog.Portal>
+        ) : null}
+      </AnimatePresence>
     </RadixDialog.Root>
   );
 }

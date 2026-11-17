@@ -1,4 +1,5 @@
 import type { ActionMatchState, PerSide, Side, ZoneEvent } from "../../engine";
+import { ChangeFlash } from "../components/change-flash";
 import { cn } from "../components/cn";
 import { useI18n } from "../i18n-provider";
 import { ClubCrest } from "../shell/club-crest";
@@ -79,7 +80,9 @@ export function Scoreboard({
           data-testid="score"
           className="whitespace-nowrap font-heading text-4xl font-bold tabular-nums sm:text-5xl"
         >
-          {score.home} – {score.away}
+          <ChangeFlash value={`${score.home}-${score.away}`}>
+            {score.home} – {score.away}
+          </ChangeFlash>
         </span>
         <span className="flex gap-2 text-[13px] text-muted tabular-nums">
           <span data-testid="clock">{formatMatchMinute(matchTime, events)}</span>

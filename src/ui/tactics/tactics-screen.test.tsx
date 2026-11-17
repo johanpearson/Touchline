@@ -158,7 +158,7 @@ describe("tactics screen", () => {
     expect(within(dialog).getAllByText(/Fitness \d+/).length).toBe(list.length);
   });
 
-  it("swaps a starter with a bench player of the same position in one step", () => {
+  it("swaps a starter with a bench player of the same position in one step", async () => {
     mountApp();
     startCareer();
     const slot = screen.getByTestId("pitch-slot-1");
@@ -170,7 +170,7 @@ describe("tactics screen", () => {
     const candidate = options().find((o) => o.textContent?.includes(benchName));
     if (!candidate) throw new Error("no candidate");
     fireEvent.click(candidate);
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(nameInLabel("pitch-slot-1")).toBe(benchName);
     expect(nameInLabel(`bench-slot-${benchIndex}`)).toBe(starterName);
     expect(ratings()).not.toEqual(before);
@@ -242,7 +242,7 @@ describe("tactics screen", () => {
     expect(screen.getByTestId("tactic-pressing").dataset.value).toBe("high");
   });
 
-  it("shows the error and changes nothing when setLineup rejects the lineup", () => {
+  it("shows the error and changes nothing when setLineup rejects the lineup", async () => {
     // The provider holds no career, so every lineup edit is rejected by the store.
     renderScreen(careerOf());
     expect(screen.queryByTestId("squad-error")).toBeNull();
@@ -251,7 +251,7 @@ describe("tactics screen", () => {
     const free = options().find((o) => !o.disabled && o.getAttribute("aria-current") !== "true");
     if (!free) throw new Error("no alternative");
     fireEvent.click(free);
-    const alert = screen.getByRole("alert");
+    const alert = await screen.findByRole("alert");
     expect(alert.textContent).toMatch(/not in your squad/);
     expect(screen.getByTestId("pitch-slot-1").getAttribute("aria-label")).toBe(before);
   });

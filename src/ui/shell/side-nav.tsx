@@ -1,8 +1,10 @@
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { type KeyboardEvent, useEffect, useState } from "react";
 import { cn, IconButton, Tooltip } from "../components";
 import { useI18n } from "../i18n-provider";
 import { LocaleSwitch } from "../locale-switch";
+import { DURATION, EASE, useReducedMotion } from "../motion";
 import { Brand } from "./brand";
 import { NAV_ITEMS } from "./nav-config";
 import { type NavEntry, useNavEntries } from "./use-nav-entries";
@@ -60,10 +62,14 @@ type SideNavProps = {
 
 function Scrim({ onClose }: { onClose: () => void }) {
   return (
-    <button
+    <motion.button
       type="button"
       tabIndex={-1}
       aria-hidden="true"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: DURATION.base, ease: EASE.out }}
       className="fixed inset-0 z-30 cursor-default bg-bg/70"
       onClick={onClose}
     />
@@ -92,11 +98,15 @@ function NavFooter() {
   );
 }
 
+/** Width in pixels of the icon rail and of the rail expanded to an overlay (w-18, w-60). */
+const RAIL_CLOSED = 72;
+const RAIL_OPEN = 240;
+
 const navStyles = (mode: SideNavProps["mode"], overlay: boolean): string =>
   cn(
     "box-border flex h-dvh flex-col gap-4 overflow-y-auto border-r border-line bg-side p-3",
-    mode === "sidebar" ? "sticky top-0" : "fixed inset-y-0 left-0 z-20 w-18",
-    overlay && "z-40 w-60 shadow-xl",
+    mode === "sidebar" ? "sticky top-0" : "fixed inset-y-0 left-0 z-20 overflow-x-hidden",
+    overlay && "z-40 shadow-xl",
   );
 
 /** Expanded state of the rail: collapses on Escape and whenever the layout is the sidebar. */
@@ -119,13 +129,17 @@ export function SideNav({ mode }: SideNavProps) {
   const { expanded, toggle, collapse, onKeyDown } = useRailExpansion(mode);
   const overlay = rail && expanded;
   const compact = rail && !expanded;
+  const reduced = useReducedMotion();
   return (
     <div className={cn("shrink-0", rail ? "w-18" : "w-60")}>
-      {overlay ? <Scrim onClose={collapse} /> : null}
-      <nav
+      <AnimatePresence>{overlay ? <Scrim onClose={collapse} /> : null}</AnimatePresence>
+      <motion.nav
         aria-label={t("nav.label")}
         data-testid="career-nav"
         onKeyDown={onKeyDown}
+        initial={false}
+        animate={rail ? { width: overlay ? RAIL_OPEN : RAIL_CLOSED } : undefined}
+        transition={{ duration: reduced ? 0 : DURATION.base, ease: EASE.out }}
         className={navStyles(mode, overlay)}
       >
         <div
@@ -136,7 +150,7 @@ export function SideNav({ mode }: SideNavProps) {
         </div>
         <NavList compact={compact} onNavigate={collapse} />
         {compact ? null : <NavFooter />}
-      </nav>
+      </motion.nav>
     </div>
   );
 }

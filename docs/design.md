@@ -112,6 +112,7 @@ Compact density by default (8 px row padding), comfortable (14 px) as a setting.
 
 - **WCAG 2.2 AA**, full keyboard navigation, visible focus (not obscured), touch targets at least 44 px, no drag-only action.
 - `prefers-reduced-motion` honoured everywhere (instant or opacity-only; no goal shake or shockwave).
+- Motion pass (#271, #347): dialogs and drawers play an exit (opacity and transform, opacity-only with reduced motion; focus returns to the trigger once it ends), the icon rail expands over `DURATION.base`, sorted table rows reorder with a position-only layout animation, and a changed number in the scoreboard or league table gets a brief background highlight (`ChangeFlash`), never a counting animation.
 - All text through i18n, English and Swedish; layouts are tested with the longer Swedish strings and the longest generated club names.
 - Visual regression (#253) and axe (#272) run in CI; every screen issue adds its states to both.
 
