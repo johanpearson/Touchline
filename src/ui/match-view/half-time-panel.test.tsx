@@ -92,14 +92,14 @@ describe("HalfTimePanel", () => {
     expect(screen.getByTestId("half-time-score").textContent).toContain(
       "Kvarnby 1 – 0 Västerås Park",
     );
-    expect(screen.getByTestId("stat-shots").textContent).toBe("5Shots3");
+    expect(screen.getByTestId("stat-shots").textContent).toBe("Shots53");
   });
 
   it("shows the action stats rows, including passes, pass completion and key passes", () => {
     mount();
-    expect(screen.getByTestId("stat-passes").textContent).toBe("210Passes150");
-    expect(screen.getByTestId("stat-passCompletion").textContent).toBe("86%Pass completion70%");
-    expect(screen.getByTestId("stat-keyPasses").textContent).toBe("2Key passes1");
+    expect(screen.getByTestId("stat-passes").textContent).toBe("Passes210150");
+    expect(screen.getByTestId("stat-passCompletion").textContent).toBe("Pass completion86%70%");
+    expect(screen.getByTestId("stat-keyPasses").textContent).toBe("Key passes21");
     expect(screen.queryByTestId("stat-fieldTilt")).toBeNull();
   });
 

@@ -81,7 +81,7 @@ function waitForScrollToSettle(page: Page) {
 
 const FIXED_TIME = new Date("2030-01-15T12:00:00Z");
 
-async function preparePage(page: Page, theme: Theme, locale: Locale) {
+export async function preparePage(page: Page, theme: Theme, locale: Locale) {
   // Deterministic data: the composition root draws its seed from Math.random and the clock from Date,
   // so both are fixed before the app starts.
   await page.clock.setFixedTime(FIXED_TIME);

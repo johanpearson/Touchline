@@ -8,7 +8,7 @@ import { type NavEntry, useNavEntries } from "./use-nav-entries";
 
 const tabStyles = cn(
   "flex min-h-14 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 px-1",
-  "text-xs font-medium text-muted hover:text-text",
+  "border-0 bg-transparent text-xs font-medium text-muted hover:text-text",
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus",
   "aria-[current=page]:text-text data-[active=true]:text-text",
 );

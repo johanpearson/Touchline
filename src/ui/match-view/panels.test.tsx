@@ -297,12 +297,12 @@ describe("ActionStatsPanel", () => {
   it("shows each stat as text for both sides, with key passes totalled per side", () => {
     inLocale(<ActionStatsPanel stats={stats} playerIds={playerIds} />);
     const text = (id: string) => screen.getByTestId(`stat-${id}`).textContent;
-    expect(text("shots")).toBe("7Shots3");
-    expect(text("shotsOnTarget")).toBe("4On target1");
-    expect(text("xg")).toBe("1.23xG0.50");
-    expect(text("fouls")).toBe("9Fouls11");
-    expect(text("passes")).toBe("400Passes300");
-    expect(text("keyPasses")).toBe("3Key passes4");
+    expect(text("shots")).toBe("Shots73");
+    expect(text("shotsOnTarget")).toBe("On target41");
+    expect(text("xg")).toBe("xG1.230.50");
+    expect(text("fouls")).toBe("Fouls911");
+    expect(text("passes")).toBe("Passes400300");
+    expect(text("keyPasses")).toBe("Key passes34");
     expect(text("passCompletion")).toContain("Pass completion");
     expect(text("possession")).toMatch(/60.*40/);
   });
