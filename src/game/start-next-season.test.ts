@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { acceptOffer } from "./accept-offer";
+import { autoManageUserSquad } from "./auto-manage-squad";
 import type { Career } from "./career";
 import { aCareer, deepFreeze } from "./career-builders";
 import { finishSeason } from "./finish-season";
@@ -109,6 +110,31 @@ describe("startNextSeason", () => {
     expect(expiring.every((id) => !kept.includes(id) && career.freeAgentIds.includes(id))).toBe(
       true,
     );
+  });
+
+  it("re-picks the user's lineup when a starter is no longer in the squad", () => {
+    const career = autoManageUserSquad(offSeason());
+    const user = career.league.clubs.find((c) => c.id === career.userClubId);
+    const without = (gone: string): Career => ({
+      ...career,
+      league: {
+        ...career.league,
+        clubs: career.league.clubs.map((c) =>
+          c === user ? { ...c, playerIds: c.playerIds.filter((id) => id !== gone) } : c,
+        ),
+      },
+      freeAgentIds: [...career.freeAgentIds, gone],
+    });
+    const gone = career.squadPlan.starters.find((id) => startNextSeason(without(id)).ok);
+    if (!gone) throw new Error("expected a starter the squad can spare");
+    const stale = without(gone);
+
+    const started = next(stale);
+
+    const mine = started.league.clubs.find((c) => c.id === started.userClubId)?.playerIds ?? [];
+    expect(started.squadPlan.starters).not.toContain(gone);
+    expect(started.squadPlan.starters.every((id) => mine.includes(id))).toBe(true);
+    expect(started.squadPlan.bench.every((id) => mine.includes(id))).toBe(true);
   });
 
   it("leaves every AI club with a legal squad", () => {

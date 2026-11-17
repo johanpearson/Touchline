@@ -1,8 +1,10 @@
 import { marketValue, signingWage } from "./asking-price";
 import type { Career } from "./career";
+import { expireContracts } from "./expire-contracts";
 import { playerOverall } from "./player-overall";
 import { releasePlayer } from "./release-player";
 import { askingWage, renewContract } from "./renew-contract";
+import { repairedSquadPlan } from "./repair-squad-plan";
 import { signFreeAgent } from "./sign-free-agent";
 import { MAX_SQUAD_SIZE, MIN_PER_POSITION, squadLimits } from "./squad-limits";
 import type { PlayerPosition } from "./squad-player";
@@ -68,9 +70,14 @@ const fillSquad = (career: Career): Career => {
 };
 
 /**
- * What a user who does not use the market does in the off-season, so a played-through career can
- * start the next season: renew every expiring contract the wage budget allows, release the
- * weakest surplus above 30 and sign free agents until the squad is legal. Test helper.
+ * What a user who leaves the market alone gets in the off-season: renews every expiring contract
+ * the wage budget allows at the player's asking wage for three seasons, lets the others end,
+ * releases the weakest surplus above 30 (never below a position minimum) and signs the best free
+ * agents of the needed positions until the squad is legal, then re-picks the lineup if a planned
+ * player left. A stop-gap until the off-season screen (#233) lets the user decide; also the passive
+ * user of the long-run balance test. Pure and deterministic; AI clubs are not touched.
  */
-export const passiveUserOffSeason = (career: Career): Career =>
-  fillSquad(releaseSurplus(renewExpiring(career)));
+export const autoManageUserSquad = (career: Career): Career => {
+  const legal = fillSquad(releaseSurplus(expireContracts(renewExpiring(career))));
+  return { ...legal, squadPlan: repairedSquadPlan(legal) };
+};

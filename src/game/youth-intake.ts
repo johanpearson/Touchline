@@ -18,7 +18,7 @@ export const YOUTH_MAX_AGE = 18;
 /** Seasons a youth contract covers, counted from the next season. */
 export const YOUTH_CONTRACT_SEASONS = 3;
 /** Added to the club's initial strength to get the youth quality, so youth is weaker than the first team. */
-export const YOUTH_QUALITY_OFFSET = -0.25;
+export const YOUTH_QUALITY_OFFSET = -0.35;
 /** Largest seeded shift of a club's youth quality (club level) and of each player (player level). */
 export const YOUTH_CLUB_NOISE = 0.05;
 export const YOUTH_PLAYER_NOISE = 0.04;

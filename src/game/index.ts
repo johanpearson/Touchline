@@ -3,6 +3,7 @@ export { addCareerEconomy } from "./add-career-economy";
 export { addEngineVersion } from "./add-engine-version";
 export { addSquadPlanAndCondition } from "./add-squad-plan";
 export { askingPrice, BEST_ELEVEN_PREMIUM, marketValue, signingWage } from "./asking-price";
+export { autoManageUserSquad } from "./auto-manage-squad";
 export { autoPickLineup } from "./auto-pick-lineup";
 export { buildAiSquads } from "./build-ai-squads";
 export { buyPlayer } from "./buy-player";

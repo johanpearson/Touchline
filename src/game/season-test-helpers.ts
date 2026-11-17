@@ -1,8 +1,8 @@
 import { inject } from "vitest";
+import { autoManageUserSquad } from "./auto-manage-squad";
 import type { Career } from "./career";
 import { aCareer } from "./career-builders";
 import { finishSeason } from "./finish-season";
-import { passiveUserOffSeason } from "./passive-user-test-helpers";
 import { extendTrail, type SeasonTrail } from "./season-trail";
 import { startNextSeason } from "./start-next-season";
 
@@ -70,7 +70,7 @@ const playSeasonsUnmemoised = (start: Career, seasons: number, extraMatchdays: n
 export const rolledOver = (career: Career): Career => {
   const finished = finishSeason(career);
   if (!finished.ok) throw new Error(finished.error);
-  const next = startNextSeason(passiveUserOffSeason(finished.career));
+  const next = startNextSeason(autoManageUserSquad(finished.career));
   if (!next.ok) throw new Error(next.error);
   return next.career;
 };

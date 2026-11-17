@@ -3,6 +3,7 @@ import type { Career } from "./career";
 import { createSeason } from "./create-season";
 import { expireContracts } from "./expire-contracts";
 import { isSeasonComplete } from "./is-season-complete";
+import { repairedSquadPlan } from "./repair-squad-plan";
 import { squadLimits } from "./squad-limits";
 import { initialConditions } from "./squad-plan";
 
@@ -21,14 +22,14 @@ const zeroMinutes = (career: Career): Career["minutes"] =>
  * his unrenewed contracts end, is outside 18 to 30 players or misses a position minimum. Then the
  * user's unrenewed players leave for the free agents, the AI clubs release surplus players and sign
  * free agents to fill their holes, offers are cleared, the window closes, fitness and form reset and
- * the new season (fixtures, no results) starts. The squad plan is kept. Pure and deterministic.
+ * the new season (fixtures, no results) starts. The squad plan keeps its formation and tactics and is re-picked if a starter or substitute left. Pure and deterministic.
  */
 export const startNextSeason = (career: Career): NextSeasonResult => {
   if (!isSeasonComplete(career.season)) return { ok: false, error: "season-incomplete" };
   if (career.window !== "open") return { ok: false, error: "window-not-open" };
   const expired = expireContracts(career);
   if (!squadLimits(expired, expired.userClubId).ok) return { ok: false, error: "squad-over-limit" };
-  const staffed = buildAiSquads(expired);
+  const staffed = buildAiSquads({ ...expired, squadPlan: repairedSquadPlan(expired) });
   const season = createSeason(
     career.seed,
     career.season.number + 1,

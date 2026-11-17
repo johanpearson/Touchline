@@ -11,16 +11,20 @@ import type { TeamTactics } from "../engine";
 import {
   setLineup as applyLineup,
   setTactics as applyTactics,
+  autoManageUserSquad,
   autoPickUserLineup,
   type Career,
   type CareerError,
   completeMatchday,
   createCareer,
   type Formation,
+  finishSeason,
+  isSeasonFinished,
   type Lineup,
   type LineupError,
   type MatchdayError,
   type MatchReport,
+  type NextSeasonError,
   parseCareer,
   type Result,
   startNextSeason,
@@ -63,8 +67,12 @@ export type CareerStore = {
   setTactics: (tactics: TeamTactics) => void;
   /** Auto-picks starters and bench for a formation, keeping the tactics. */
   autoPickLineup: (formation: Formation) => void;
-  /** Rolls a finished season over to the next one. Returns an error while the season is running. */
-  startNextSeason: () => "season-incomplete" | null;
+  /**
+   * Rolls a finished season over to the next one: the off-season (`finishSeason`), the user's squad
+   * on autopilot (`autoManageUserSquad`, until the off-season screen lets the user decide) and
+   * `startNextSeason`. Returns an error while the season is running.
+   */
+  startNextSeason: () => NextSeasonError | null;
   /** State of the latest autosave. */
   saveStatus: SaveStatus;
   /** Time (from the injected clock) of the latest successful autosave, or null. */
@@ -220,9 +228,11 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       setCareer((current) => (current ? autoPickUserLineup(current, formation) : current)),
     [],
   );
-  const rollOver = useCallback((): "season-incomplete" | null => {
+  const rollOver = useCallback((): NextSeasonError | null => {
     if (!career) return "season-incomplete";
-    const outcome = startNextSeason(career);
+    const opened = isSeasonFinished(career) ? { ok: true as const, career } : finishSeason(career);
+    if (!opened.ok) return "season-incomplete";
+    const outcome = startNextSeason(autoManageUserSquad(opened.career));
     if (!outcome.ok) return outcome.error;
     setCareer(outcome.career);
     persist(outcome.career, "continue");
