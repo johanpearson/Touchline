@@ -1,23 +1,10 @@
 import { useMemo } from "react";
-import type { Career, Club } from "../game";
+import type { Career } from "../game";
 import { DataTable, EmptyState } from "./components";
 import { useI18n } from "./i18n-provider";
 import { leagueColumns } from "./league-columns";
 import { leagueRows } from "./league-rows";
 import { useDensity } from "./theme/density-provider";
-
-/** The two club colours as a small swatch, still used by the results and season-end screens. */
-export function ClubChip({ club }: { club: Club }) {
-  return (
-    <span
-      className="club-colours"
-      aria-hidden="true"
-      style={{
-        background: `linear-gradient(90deg, ${club.colours.primary} 50%, ${club.colours.secondary} 50%)`,
-      }}
-    />
-  );
-}
 
 /** The standings in `computeTable` order: a table on wide screens, cards on phones. Not sortable. */
 export function LeagueTable({ career }: { career: Career }) {

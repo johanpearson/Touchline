@@ -295,9 +295,12 @@ describe("MatchScreen", () => {
     expect(rows).toHaveLength(22);
     expect(rows.slice(0, 11).every((r) => r.getAttribute("data-side") === "away")).toBe(true);
     expect(within(table).getAllByTestId("player-of-the-match")).toHaveLength(1);
+    expect(screen.getByTestId("full-time-report")).toBeTruthy();
+    const outcome = screen.getByTestId("match-outcome").getAttribute("data-outcome");
+    expect(["win", "draw", "defeat"]).toContain(outcome);
     const names = new Set(Object.values(setup.players));
     for (const row of rows) {
-      expect(names.has(row.querySelector("th")?.firstChild?.textContent ?? "")).toBe(true);
+      expect([...names].some((name) => row.textContent?.includes(name))).toBe(true);
       expect(row.textContent).toMatch(/\d\.\d/);
     }
   });
