@@ -34,6 +34,17 @@ describe("parseRoute", () => {
     expect(parseRoute("#/club/a%20b")).toEqual({ name: "club", clubId: "a b" });
   });
 
+  it("parses a player route with its id", () => {
+    expect(parseRoute("#/player/p-12")).toEqual({ name: "player", playerId: "p-12" });
+    expect(parseRoute("#/player/a%20b")).toEqual({ name: "player", playerId: "a b" });
+  });
+
+  it("returns not-found for a player route without a usable id", () => {
+    expect(parseRoute("#/player")).toEqual({ name: "not-found" });
+    expect(parseRoute("#/player/%E0%A4%A")).toEqual({ name: "not-found" });
+    expect(parseRoute("#/player/a/b")).toEqual({ name: "not-found" });
+  });
+
   it("returns not-found for unknown routes", () => {
     expect(parseRoute("#/nowhere")).toEqual({ name: "not-found" });
     expect(parseRoute("#/club")).toEqual({ name: "not-found" });
@@ -58,6 +69,7 @@ describe("hrefFor", () => {
       { name: "match" },
       { name: "season-end" },
       { name: "club", clubId: "a b" },
+      { name: "player", playerId: "a b" },
     ] as const) {
       expect(parseRoute(hrefFor(route))).toEqual(route);
     }

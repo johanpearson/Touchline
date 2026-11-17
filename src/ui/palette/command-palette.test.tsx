@@ -187,7 +187,7 @@ describe("command palette", () => {
     expect(palette()).toBeNull();
   });
 
-  it("finds a player by name, shows position and club, and opens the player's club", () => {
+  it("finds a player by name, shows position and club, and opens the player's profile", () => {
     startCareer();
     const club = league.clubs[3];
     const player = league.players.find((p) => p.id === club?.playerIds[0]);
@@ -198,7 +198,7 @@ describe("command palette", () => {
     expect(option.textContent).toContain(player.name);
     expect(option.textContent).toContain(club.name);
     fireEvent.click(option);
-    expect(window.location.hash).toBe(`#/club/${encodeURIComponent(club.id)}`);
+    expect(window.location.hash).toBe(`#/player/${encodeURIComponent(player.id)}`);
   });
 
   it("shows an empty state when nothing matches", () => {

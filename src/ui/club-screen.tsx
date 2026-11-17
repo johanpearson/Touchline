@@ -12,6 +12,7 @@ import {
 import type { MessageKey } from "../i18n";
 import { useI18n } from "./i18n-provider";
 import { NotFoundScreen } from "./not-found-screen";
+import { hrefFor } from "./routes";
 import {
   DEFAULT_SORT,
   groupSquad,
@@ -181,7 +182,12 @@ function PlayerRow({ row }: { row: SquadRow }) {
             ★{" "}
           </span>
         ) : null}
-        {player.name}
+        <a
+          data-testid={`player-link-${player.id}`}
+          href={hrefFor({ name: "player", playerId: player.id })}
+        >
+          {player.name}
+        </a>
       </td>
       <td className="num">{player.age}</td>
       <td className="num">{formatNumber(row.overall, 1)}</td>
