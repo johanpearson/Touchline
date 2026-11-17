@@ -11,6 +11,7 @@ import type { MatchScreenProps } from "./match-view";
 import { MatchdayResultsScreen } from "./matchday-results-screen";
 import { NewCareerWizard } from "./new-career/new-career-wizard";
 import { NotFoundScreen } from "./not-found-screen";
+import { PlayerView } from "./player-screen";
 import { Redirect } from "./redirect";
 import type { Route } from "./routes";
 import { SavesScreen } from "./saves/saves-screen";
@@ -44,6 +45,8 @@ const CAREER_SCREENS: Partial<Record<Route["name"], ScreenBuilder>> = {
   league: () => <LeagueScreen />,
   club: ({ career, route }) =>
     route.name === "club" ? <ClubView career={career} clubId={route.clubId} /> : null,
+  player: ({ career, route }) =>
+    route.name === "player" ? <PlayerView career={career} playerId={route.playerId} /> : null,
   match: ({ createRenderer, tickMs }) => (
     <MatchFlowScreen createRenderer={createRenderer} tickMs={tickMs} />
   ),

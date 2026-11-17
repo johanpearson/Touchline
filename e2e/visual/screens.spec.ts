@@ -218,6 +218,29 @@ visualScreen({
   },
 });
 
+// The player profile (#261): an outfield player and a goalkeeper, opened from the squad table.
+const openPlayerFrom = (position: "FWD" | "GK") => async (page: Page) => {
+  await openSquadTable(page);
+  await page.getByTestId(`squad-filter-${position}`).click();
+  await page.getByTestId("squad-table").waitFor();
+  await page.locator('[data-testid^="player-link-"]').first().click();
+  await page.getByTestId("player-screen").waitFor();
+};
+
+visualScreen({
+  name: "player-outfield",
+  full: true,
+  route: "#/new",
+  state: openPlayerFrom("FWD"),
+});
+
+visualScreen({
+  name: "player-goalkeeper",
+  full: true,
+  route: "#/new",
+  state: openPlayerFrom("GK"),
+});
+
 // The tactics and lineup screen (#262): 4-4-2 on the pitch, 3-5-2, and the player picker open.
 // The pitch is shown on every width (phones default to the list), so the stage is in the snapshot.
 const openTacticsPitch = async (page: Page) => {
