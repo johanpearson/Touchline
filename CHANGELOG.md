@@ -1,5 +1,50 @@
 # Changelog
 
+## [1.7.0](https://github.com/johanpearson/Touchline/compare/v1.6.0...v1.7.0) (2026-11-17)
+
+
+### Features
+
+* **game:** changes at any minute and touchline shouts ([#293](https://github.com/johanpearson/Touchline/issues/293)) ([de937a5](https://github.com/johanpearson/Touchline/commit/de937a5c7360ca22a927ba16cf963eeec4cfb41d))
+* **game:** home and away kits with clash detection in the match view ([#274](https://github.com/johanpearson/Touchline/issues/274)) ([6ba1e8d](https://github.com/johanpearson/Touchline/commit/6ba1e8d6ffbbe6d57c25eb776239d371aa5a9241)), closes [#248](https://github.com/johanpearson/Touchline/issues/248)
+* **game:** rate players at the position played ([#288](https://github.com/johanpearson/Touchline/issues/288)) ([710c052](https://github.com/johanpearson/Touchline/commit/710c0525fd36640695d432e64e3ddfebcacbcf11))
+* **ui:** add app shell with sidebar, icon rail, bottom tab bar and header ([#290](https://github.com/johanpearson/Touchline/issues/290)) ([f6bb554](https://github.com/johanpearson/Touchline/commit/f6bb55404ff6166fc21abc174248197fee3b64a4))
+* **ui:** add data table with column priorities, sorting, density and card mode ([#286](https://github.com/johanpearson/Touchline/issues/286)) ([1dac1a5](https://github.com/johanpearson/Touchline/commit/1dac1a54b35830c66cae717463581dfe32372ff7))
+* **ui:** add design tokens, themes and typography ([#276](https://github.com/johanpearson/Touchline/issues/276)) ([1d946bb](https://github.com/johanpearson/Touchline/commit/1d946bbe49b7cac525488b5ee8bb69e17bbf9673)), closes [#247](https://github.com/johanpearson/Touchline/issues/247)
+* **ui:** add dialog, confirm dialog, drawer, tooltip and toast components ([#284](https://github.com/johanpearson/Touchline/issues/284)) ([157e284](https://github.com/johanpearson/Touchline/commit/157e284acf2e555a2c3d1114ceb6d3560e4835b4))
+* **ui:** add input, select, segmented control, tabs and scroll area ([#283](https://github.com/johanpearson/Touchline/issues/283)) ([56267c6](https://github.com/johanpearson/Touchline/commit/56267c65c81d5f6b261db469fa6ac2e7b87c682a))
+* **ui:** add Storybook and the first components (button, icon button, badge, card, skeleton, empty state) ([#279](https://github.com/johanpearson/Touchline/issues/279)) ([bd34427](https://github.com/johanpearson/Touchline/commit/bd34427190c7572af20397cebd16bcb3ac289974))
+* **ui:** add the player profile screen ([#312](https://github.com/johanpearson/Touchline/issues/312)) ([b5436fc](https://github.com/johanpearson/Touchline/commit/b5436fc0388a1ac2b3657e9870dde11d2fb36a89))
+* **ui:** command palette on Ctrl/Cmd+K for screens, clubs and players ([#297](https://github.com/johanpearson/Touchline/issues/297)) ([9143207](https://github.com/johanpearson/Touchline/commit/9143207b7aecc1a7433dc7cd766431041e97fd32))
+* **ui:** link player profiles from the tactics screen ([#353](https://github.com/johanpearson/Touchline/issues/353)) ([138aeec](https://github.com/johanpearson/Touchline/commit/138aeecd395a8e421af422f1dae9e46bf9720a31)), closes [#321](https://github.com/johanpearson/Touchline/issues/321)
+* **ui:** motion module, route transitions and feedback toasts ([#348](https://github.com/johanpearson/Touchline/issues/348)) ([e5cd87d](https://github.com/johanpearson/Touchline/commit/e5cd87da3655e4ad6a28c2365c1ec6ad348ddcd1))
+* **ui:** motion pass part 2 (exit animations, rail expand, row reorder, number highlights) ([#355](https://github.com/johanpearson/Touchline/issues/355)) ([52f688e](https://github.com/johanpearson/Touchline/commit/52f688ebaaaec86195add01c8ae8653b84b6fb28)), closes [#347](https://github.com/johanpearson/Touchline/issues/347)
+* **ui:** new career step 1, pick a league ([#303](https://github.com/johanpearson/Touchline/issues/303)) ([5a566b6](https://github.com/johanpearson/Touchline/commit/5a566b69ef3642d7f6d08cc56e3d0c6846e9d164))
+* **ui:** new career step 2, pick your club (club card, kits, club strip) ([#304](https://github.com/johanpearson/Touchline/issues/304)) ([e90ee9e](https://github.com/johanpearson/Touchline/commit/e90ee9ea99b3df0214f8ce90220f3f429fe2e43f))
+* **ui:** pre-match screen with lineup check and opponent before kickoff ([#330](https://github.com/johanpearson/Touchline/issues/330)) ([7b60a04](https://github.com/johanpearson/Touchline/commit/7b60a04e19e63920f07e5f8db22f2dac73ad520b)), closes [#265](https://github.com/johanpearson/Touchline/issues/265)
+* **ui:** redesign half-time and the changes panel ([#344](https://github.com/johanpearson/Touchline/issues/344)) ([0ab7514](https://github.com/johanpearson/Touchline/commit/0ab7514d75dc32dfb613ef35d3a231cc1079c5c0)), closes [#268](https://github.com/johanpearson/Touchline/issues/268)
+* **ui:** redesign league table and fixtures ([#315](https://github.com/johanpearson/Touchline/issues/315)) ([eae3cef](https://github.com/johanpearson/Touchline/commit/eae3cefba6e1233ba2910d1e51faa450e7e37187))
+* **ui:** redesign saves and add the settings screen ([#322](https://github.com/johanpearson/Touchline/issues/322)) ([069a750](https://github.com/johanpearson/Touchline/commit/069a7501415504f47a8911bec203c67564f9a8da))
+* **ui:** redesign the club screen ([#329](https://github.com/johanpearson/Touchline/issues/329)) ([4222281](https://github.com/johanpearson/Touchline/commit/42222811a4f622fc17e73db0bb2abb12b6d6826f))
+* **ui:** redesign the home screen as a dashboard ([#296](https://github.com/johanpearson/Touchline/issues/296)) ([831d3b1](https://github.com/johanpearson/Touchline/commit/831d3b1ef3b0e12167ba836c4dd1abefe4ccd9f6))
+* **ui:** redesign the match screen (pitch, momentum, controls, side panel, phone tabs) ([#338](https://github.com/johanpearson/Touchline/issues/338)) ([857d2d5](https://github.com/johanpearson/Touchline/commit/857d2d53994aa4335b204838c76a6f8480056b03))
+* **ui:** redesign the post-match report, matchday results and season end ([#343](https://github.com/johanpearson/Touchline/issues/343)) ([e2dda90](https://github.com/johanpearson/Touchline/commit/e2dda905792abd46ea672485f32fa492c1f63222))
+* **ui:** redesign the squad screen as a player table ([#305](https://github.com/johanpearson/Touchline/issues/305)) ([0e50eb6](https://github.com/johanpearson/Touchline/commit/0e50eb6cdb42c9c82e8a974274200da6cb7a5478))
+* **ui:** start screen with continue, new career and load career ([#298](https://github.com/johanpearson/Touchline/issues/298)) ([fa8af77](https://github.com/johanpearson/Touchline/commit/fa8af77b23e79b569936e3246f53f7cf8ad99a75))
+* **ui:** tactics and lineup screen (formation, starters, bench, tactics) ([#317](https://github.com/johanpearson/Touchline/issues/317)) ([c6d5674](https://github.com/johanpearson/Touchline/commit/c6d567446801893eabd608abba1142093fb4538b))
+
+
+### Bug Fixes
+
+* **ci:** add the shout balance suite to the fast balance groups ([#299](https://github.com/johanpearson/Touchline/issues/299)) ([2c02ca9](https://github.com/johanpearson/Touchline/commit/2c02ca984b97b232c4a7fa8cdd6fc53e2a4e78c5)), closes [#295](https://github.com/johanpearson/Touchline/issues/295)
+* **ci:** run the fast balance gate as three parallel jobs ([#294](https://github.com/johanpearson/Touchline/issues/294)) ([3d316a2](https://github.com/johanpearson/Touchline/commit/3d316a2dacb62261c1b7ecb30de4ccfe59081fc3)), closes [#292](https://github.com/johanpearson/Touchline/issues/292)
+* **platform:** read window.localStorage lazily in the locale store ([#280](https://github.com/johanpearson/Touchline/issues/280)) ([6cb5cf8](https://github.com/johanpearson/Touchline/commit/6cb5cf82e7a28a1cab4095e2a3570201193e8dc0)), closes [#275](https://github.com/johanpearson/Touchline/issues/275)
+* **ui:** freeze timers in the match-kickoff and match-2d-pitch visual states ([#341](https://github.com/johanpearson/Touchline/issues/341)) ([ba6d3f0](https://github.com/johanpearson/Touchline/commit/ba6d3f049220eedb1c3df056de22e46dd03f8a4e))
+* **ui:** make visual baselines stable between CI runs ([#349](https://github.com/johanpearson/Touchline/issues/349)) ([037bba0](https://github.com/johanpearson/Touchline/commit/037bba0939a6b2879e6d6d10b515c6019c43d98a))
+* **ui:** style unchecked segmented control options in the component ([#335](https://github.com/johanpearson/Touchline/issues/335)) ([feb48f0](https://github.com/johanpearson/Touchline/commit/feb48f0c2d8500bf99c070d6fb42ab3bbdce35a2))
+* **visual:** close the saved toasts one at a time in the saves screen state ([#326](https://github.com/johanpearson/Touchline/issues/326)) ([7b10607](https://github.com/johanpearson/Touchline/commit/7b106072284dc99b1835aef25a62513c0ce3a861)), closes [#325](https://github.com/johanpearson/Touchline/issues/325)
+* **visual:** wait for the page height to settle before fitting the viewport ([#314](https://github.com/johanpearson/Touchline/issues/314)) ([6d68445](https://github.com/johanpearson/Touchline/commit/6d6844561f853498b985f4c8d041d7a413dfd48d)), closes [#313](https://github.com/johanpearson/Touchline/issues/313)
+
 ## [1.6.0](https://github.com/johanpearson/Touchline/compare/v1.5.0...v1.6.0) (2026-11-16)
 
 
