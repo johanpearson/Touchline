@@ -27,8 +27,12 @@ const outcomeOf = (result: Result | undefined, clubId: string): MatchOutcome => 
 const fullMatch = (ids: readonly string[]): Record<string, number> =>
   Object.fromEntries(ids.map((id) => [id, FITNESS_MATCH_MINUTES]));
 
-/** AI clubs play their auto-picked 4-4-2 (with the condition before the round) for 90 minutes. */
-const minutesOf = (
+/**
+ * Minutes played per player id of one club in a round (absent means 0). The user's club follows the
+ * report (without one the starters play 90). AI clubs play their auto-picked 4-4-2 (with the condition
+ * before the round) for 90 minutes.
+ */
+export const minutesOf = (
   career: Career,
   clubId: string,
   report?: MatchReport,
