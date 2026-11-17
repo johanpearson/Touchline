@@ -6,6 +6,7 @@ import { PaletteProvider } from "../palette/palette-provider";
 import { StorageWarning } from "../storage-warning";
 import { useCareer } from "../use-career";
 import { AppHeader } from "./app-header";
+import { RouteTransition } from "./route-transition";
 import { SideNav } from "./side-nav";
 import { TabBar } from "./tab-bar";
 import { usePageAnnouncement } from "./use-page-announcement";
@@ -50,7 +51,7 @@ export function AppShell({ children, storageAvailable }: AppShellProps) {
             )}
           >
             {storageAvailable ? null : <StorageWarning />}
-            {children}
+            <RouteTransition>{children}</RouteTransition>
           </main>
           <output className="sr-only" aria-live="polite" data-testid="page-announcement">
             {title}

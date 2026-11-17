@@ -1,3 +1,4 @@
+import { DURATION } from "../motion/tokens";
 import { useMediaQuery } from "./use-media-query";
 
 export type MotionProps = {
@@ -18,12 +19,12 @@ export function useOverlayMotion(from: Offset = { y: "8px", scale: 0.98 }): Moti
     return {
       initial: { opacity: 0 },
       animate: { opacity: 1 },
-      transition: { duration: 0.1, ease: "easeOut" },
+      transition: { duration: DURATION.fast, ease: "easeOut" },
     };
   }
   return {
     initial: { opacity: 0, x: from.x ?? 0, y: from.y ?? 0, scale: from.scale ?? 1 },
     animate: { opacity: 1, x: 0, y: 0, scale: 1 },
-    transition: { duration: 0.18, ease: "easeOut" },
+    transition: { duration: DURATION.base, ease: "easeOut" },
   };
 }

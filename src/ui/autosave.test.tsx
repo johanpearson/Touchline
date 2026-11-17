@@ -231,7 +231,9 @@ describe("autosave and continue", () => {
     await waitFor(() =>
       expect(screen.getByTestId("save-status").textContent).toMatch(/Could not save/),
     );
+    expect(await screen.findByText("Autosave failed")).toBeTruthy();
     quickSim();
+    expect(screen.getAllByText("Autosave failed")).toHaveLength(1);
     expect(screen.getByTestId("career-hub")).toBeTruthy();
     expect(screen.getByTestId("nav-progress").textContent).toContain("2");
   });

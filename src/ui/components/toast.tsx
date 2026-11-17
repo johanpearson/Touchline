@@ -57,7 +57,7 @@ function ToastView(props: {
       }}
       data-tone={tone}
       className={cn(
-        "flex items-start gap-3 rounded-lg border border-l-4 border-line bg-raised p-4 text-text shadow-lg",
+        "flex items-start gap-3 motion-safe:animate-[toast-in_200ms_ease-out] rounded-lg border border-l-4 border-line bg-raised p-4 text-text shadow-lg",
         toneEdge[tone],
       )}
     >
