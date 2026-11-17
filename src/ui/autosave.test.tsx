@@ -259,6 +259,7 @@ describe("autosave and continue", () => {
     startCareer();
     await autosaved(store);
     goTo("#/match");
+    fireEvent.click(screen.getByTestId("kick-off"));
     expect(screen.getByTestId("match-screen")).toBeTruthy();
     first.unmount();
     goTo("#/");
@@ -266,6 +267,7 @@ describe("autosave and continue", () => {
     mountApp({ store });
     fireEvent.click(await screen.findByTestId("continue-career"));
     goTo("#/match");
+    fireEvent.click(screen.getByTestId("kick-off"));
 
     expect(screen.getByTestId("clock").textContent).toBe("0’");
     expect(savedCareer(await autosaved(store)).season.results).toEqual([]);

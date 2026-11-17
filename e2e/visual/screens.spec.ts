@@ -412,3 +412,17 @@ visualScreen({
     await page.getByTestId("your-club").waitFor();
   },
 });
+
+// The pre-match screen (#265): lineup check, kits and comparison before kickoff.
+visualScreen({
+  name: "pre-match",
+  full: true,
+  route: "#/new",
+  state: async (page) => {
+    await startCareerAtHub(page);
+    await page.evaluate(() => {
+      window.location.hash = "#/match";
+    });
+    await page.getByTestId("pre-match").waitFor();
+  },
+});

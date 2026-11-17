@@ -12,6 +12,7 @@ test.describe("season flow", () => {
     await page.getByTestId("start-career").click();
 
     await page.getByTestId("play-match").click();
+    await page.getByTestId("kick-off").click();
     await page.getByTestId("speed-4").click();
     await expect(page.getByTestId("half-time")).toBeVisible({ timeout: 30_000 });
     await page.getByTestId("start-second-half").click();

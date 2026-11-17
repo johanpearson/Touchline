@@ -77,6 +77,7 @@ const startMatch = async (page: Page) => {
   await page.getByTestId("club-name").first().click();
   await page.getByTestId("start-career").click();
   await page.getByTestId("play-match").click();
+  await page.getByTestId("kick-off").click();
 };
 
 test.describe("match screen", () => {

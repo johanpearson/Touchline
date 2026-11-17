@@ -557,4 +557,10 @@ export const sv = {
   "tactics.role.centreForward": "Central anfallare",
   "tactics.role.rightForward": "Höger anfallare",
   "tactics.role.striker": "Anfallare",
+  "prematch.title": "Inför matchen",
+  "prematch.teams": "De två klubbarna",
+  "prematch.kickOff": "Avspark",
+  "prematch.editLineup": "Ändra laguppställning och taktik",
+  "prematch.kit.home": "Hemmaställ",
+  "prematch.kit.away": "Bortaställ",
 } as const satisfies Record<keyof typeof en, Message>;

@@ -1,35 +1,29 @@
-import { useMemo } from "react";
-import { getNextFixture, type MatchReport, planHalfTime, type Result } from "../game";
-import { matchSetupFor } from "./match-setup";
+import { useMemo, useState } from "react";
+import {
+  type Career,
+  type Fixture,
+  getNextFixture,
+  type MatchReport,
+  planHalfTime,
+  type Result,
+} from "../game";
+import { type MatchSetup, matchSetupFor } from "./match-setup";
 import {
   type FinishedMatch,
   type HalfTimeEditor,
   MatchScreen,
   type MatchScreenProps,
 } from "./match-view";
-
+import { PreMatchStep } from "./pre-match/pre-match-step";
 import { Redirect } from "./redirect";
 import { hrefFor } from "./routes";
 import { useCareer } from "./use-career";
 
 type Props = Pick<MatchScreenProps, "createRenderer" | "tickMs">;
+type PlayProps = Props & { career: Career; fixture: Fixture; setup: MatchSetup };
 
-/**
- * Plays the user's next fixture in the match view. Leaving the screen mid-match resumes nothing:
- * coming back starts from kickoff and no result is recorded until the user presses "Continue"
- * at full time. A reload loses the career until the save system (M4) exists.
- */
-export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
-  const { career, completeMatch } = useCareer();
-  const fixture = career ? getNextFixture(career.season, career.userClubId) : undefined;
-  const setup = useMemo(
-    () => (career && fixture ? matchSetupFor(career, fixture) : null),
-    [career, fixture],
-  );
-  if (!career || !fixture || !setup) {
-    return <Redirect to={{ name: "home" }} />;
-  }
-
+function PlayMatch({ career, fixture, setup, createRenderer, tickMs }: PlayProps) {
+  const { completeMatch } = useCareer();
   const club = career.league.clubs.find((c) => c.id === career.userClubId);
   const editor: HalfTimeEditor = {
     players: career.league.players.filter((p) => club?.playerIds.includes(p.id)),
@@ -62,6 +56,43 @@ export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
       tickMs={tickMs}
       halfTimeEditor={editor}
       onContinue={finish}
+    />
+  );
+}
+
+/**
+ * Shows the pre-match screen for the user's next fixture and, on "Kick off", plays it in the match view.
+ * Leaving the screen resumes nothing: coming back shows the pre-match screen again and the match starts
+ * from kickoff; no result is recorded until the user presses "Continue" at full time.
+ */
+export function MatchFlowScreen({ createRenderer, tickMs }: Props) {
+  const { career } = useCareer();
+  const [kickedOff, setKickedOff] = useState<string | null>(null);
+  const fixture = career ? getNextFixture(career.season, career.userClubId) : undefined;
+  const setup = useMemo(
+    () => (career && fixture ? matchSetupFor(career, fixture) : null),
+    [career, fixture],
+  );
+  if (!career || !fixture || !setup) {
+    return <Redirect to={{ name: "home" }} />;
+  }
+  if (kickedOff !== fixture.id) {
+    return (
+      <PreMatchStep
+        career={career}
+        fixture={fixture}
+        setup={setup}
+        onKickOff={() => setKickedOff(fixture.id)}
+      />
+    );
+  }
+  return (
+    <PlayMatch
+      career={career}
+      fixture={fixture}
+      setup={setup}
+      createRenderer={createRenderer}
+      tickMs={tickMs}
     />
   );
 }
