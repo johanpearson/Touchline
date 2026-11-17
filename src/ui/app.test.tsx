@@ -254,6 +254,8 @@ describe("new career, club step", () => {
     toClubStep();
     startCareer(leagueFor(11).clubs[0]?.id ?? "");
     goTo("#/match");
+    expect(screen.getByTestId("pre-match")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("kick-off"));
     expect(screen.getByTestId("match-screen")).toBeTruthy();
   });
 });

@@ -422,6 +422,7 @@ const TERRAIN = ["[data-testid='momentum-terrain']"];
 const openMatch = async (page: Page) => {
   await startCareerAtHub(page);
   await page.getByTestId("play-match").click();
+  await page.getByTestId("kick-off").click();
   await page.getByTestId("match-screen").waitFor();
 };
 
@@ -478,5 +479,19 @@ visualScreen({
     await openMatch(page);
     await page.getByTestId("view-pitch").click();
     await page.getByTestId("pause-toggle").click();
+  },
+});
+
+// The pre-match screen (#265): lineup check, kits and comparison before kickoff.
+visualScreen({
+  name: "pre-match",
+  full: true,
+  route: "#/new",
+  state: async (page) => {
+    await startCareerAtHub(page);
+    await page.evaluate(() => {
+      window.location.hash = "#/match";
+    });
+    await page.getByTestId("pre-match").waitFor();
   },
 });

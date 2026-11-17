@@ -101,6 +101,7 @@ test.describe("squad and tactics", () => {
 
     await page.getByTestId("nav-hub").click();
     await page.getByTestId("play-match").click();
+    await page.getByTestId("kick-off").click();
     await page.getByTestId("speed-4").click();
     await expect(page.getByTestId("half-time")).toBeVisible({ timeout: 30_000 });
     await page.getByTestId("sub-add").click();

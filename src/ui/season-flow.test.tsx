@@ -53,8 +53,14 @@ const click = (testId: string) => {
   act(() => void window.dispatchEvent(new HashChangeEvent("hashchange")));
 };
 
-const playMatchToFullTime = () => {
+/** Opens the pre-match screen from the hub and kicks off. */
+const startMatch = () => {
   click("play-match");
+  click("kick-off");
+};
+
+const playMatchToFullTime = () => {
+  startMatch();
   fireEvent.click(screen.getByTestId("speed-4"));
   act(() => vi.advanceTimersByTime(40_000));
   fireEvent.click(screen.getByTestId("start-second-half"));
@@ -94,9 +100,25 @@ describe("season flow", () => {
     }
   });
 
+  it("play match opens the pre-match screen first and starts the match on Kick off", () => {
+    mount();
+    click("play-match");
+    expect(screen.getByTestId("pre-match")).toBeTruthy();
+    expect(screen.queryByTestId("match-screen")).toBeNull();
+    click("kick-off");
+    expect(screen.getByTestId("match-screen")).toBeTruthy();
+  });
+
+  it("quick sim on the pre-match screen records the result and shows the matchday", () => {
+    mount();
+    click("play-match");
+    click("quick-sim");
+    expect(screen.getByTestId("matchday-results")).toBeTruthy();
+  });
+
   it("play match shows the match screen with real club names", () => {
     const club = mount();
-    click("play-match");
+    startMatch();
     expect(screen.getByTestId("match-screen")).toBeTruthy();
     const names = [screen.getByTestId("home-name"), screen.getByTestId("away-name")].map(
       (e) => e.textContent,
@@ -116,7 +138,7 @@ describe("season flow", () => {
 
   it("does not record a result when leaving the match early", () => {
     mount();
-    click("play-match");
+    startMatch();
     goTo("#/league");
     for (const cell of screen.getAllByTestId(/^table-row-/)) {
       expect(within(cell).getAllByRole("cell")[2]?.textContent).toBe("0");
@@ -125,11 +147,11 @@ describe("season flow", () => {
 
   it("restarts the match from kickoff after leaving it", () => {
     mount();
-    click("play-match");
+    startMatch();
     fireEvent.click(screen.getByTestId("speed-4"));
     act(() => vi.advanceTimersByTime(5_000));
     goTo("#/");
-    click("play-match");
+    startMatch();
     expect(screen.getByTestId("clock").textContent).toBe("0’");
   });
 
@@ -176,7 +198,7 @@ describe("season flow", () => {
 
   it("records minutes from a half-time substitution in fitness after the match", () => {
     mount();
-    click("play-match");
+    startMatch();
     fireEvent.click(screen.getByTestId("speed-4"));
     act(() => vi.advanceTimersByTime(40_000));
     fireEvent.click(screen.getByTestId("sub-add"));
