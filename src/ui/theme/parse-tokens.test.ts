@@ -19,6 +19,12 @@ describe("parseThemeTokens", () => {
     });
   });
 
+  it("reads a block that also applies to a theme preview element", () => {
+    const shared =
+      ':root[data-theme="graphite"], [data-theme-preview="graphite"] { --bg: #0E0F11; }';
+    expect(parseThemeTokens(shared)).toEqual({ graphite: { bg: "#0E0F11" } });
+  });
+
   it("ignores comments and blocks that are not a theme", () => {
     expect(Object.keys(parseThemeTokens(css))).toEqual(["midnight", "light"]);
   });

@@ -3,7 +3,6 @@ import { type KeyboardEvent, useEffect, useState } from "react";
 import { cn, IconButton, Tooltip } from "../components";
 import { useI18n } from "../i18n-provider";
 import { LocaleSwitch } from "../locale-switch";
-import { ThemeSwitch } from "../theme/theme-switch";
 import { Brand } from "./brand";
 import { NAV_ITEMS } from "./nav-config";
 import { type NavEntry, useNavEntries } from "./use-nav-entries";
@@ -89,7 +88,6 @@ function NavFooter() {
   return (
     <div className="mt-auto flex flex-col gap-2 text-sm text-soft">
       <LocaleSwitch />
-      <ThemeSwitch />
     </div>
   );
 }

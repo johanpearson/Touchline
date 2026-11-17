@@ -3,7 +3,6 @@ import { useI18n } from "../i18n-provider";
 import { LocaleSwitch } from "../locale-switch";
 import { SaveStatus } from "../save-status";
 import { StorageWarning } from "../storage-warning";
-import { ThemeSwitch } from "../theme/theme-switch";
 
 export type BareShellProps = { children: ReactNode; storageAvailable: boolean };
 
@@ -16,7 +15,6 @@ export function BareShell({ children, storageAvailable }: BareShellProps) {
         <h1 data-testid="app-title">{t("app.title")}</h1>
         <SaveStatus />
         <LocaleSwitch />
-        <ThemeSwitch />
       </header>
       {storageAvailable ? null : <StorageWarning />}
       {children}

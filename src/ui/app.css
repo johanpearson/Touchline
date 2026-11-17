@@ -169,36 +169,15 @@
   color: #b3261e;
   opacity: 1;
 }
-.storage-warning,
-.load-error {
-  padding: 8px 12px;
-  border: 1px solid #b3261e;
-  border-radius: 4px;
-}
 .continue-career {
   display: block;
   margin-bottom: 16px;
 }
-.saves-actions,
 .import-controls {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
-}
-.import-error {
-  color: #b3261e;
-  margin: 0;
-}
-.import-picker {
-  padding: 8px 12px;
-  margin-bottom: 12px;
-  border: 1px solid currentColor;
-  border-radius: 4px;
-}
-.slot-row[data-highlighted="true"] {
-  outline: 2px solid #1a73e8;
-  outline-offset: 2px;
 }
 
 .squad-controls,

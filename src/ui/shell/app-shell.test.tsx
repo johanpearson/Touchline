@@ -177,7 +177,7 @@ describe("app shell on a phone", () => {
     expect(screen.getByTestId("app-shell").dataset.mode).toBe("tabs");
   });
 
-  it("lists My club, Saves, language and theme in the More sheet", () => {
+  it("lists My club, Saves, Settings and language in the More sheet", () => {
     startCareer();
     expect(screen.queryByTestId("nav-saves")).toBeNull();
     fireEvent.click(screen.getByTestId("nav-more"));
@@ -185,7 +185,8 @@ describe("app shell on a phone", () => {
     expect(within(sheet).getByTestId("nav-club")).toBeTruthy();
     expect(within(sheet).getByTestId("nav-saves")).toBeTruthy();
     expect(within(sheet).getByTestId("locale-switch")).toBeTruthy();
-    expect(within(sheet).getByTestId("theme-switch")).toBeTruthy();
+    expect(within(sheet).getByTestId("nav-settings")).toBeTruthy();
+    expect(within(sheet).queryByTestId("theme-switch")).toBeNull();
   });
 
   it("closes the More sheet after choosing a screen", () => {

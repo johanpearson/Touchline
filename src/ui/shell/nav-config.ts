@@ -1,11 +1,20 @@
-import { CirclePlay, House, type LucideIcon, Save, Shield, Trophy, Users } from "lucide-react";
+import {
+  CirclePlay,
+  House,
+  type LucideIcon,
+  Save,
+  Settings,
+  Shield,
+  Trophy,
+  Users,
+} from "lucide-react";
 import type { MessageKey } from "../../i18n";
 import type { Route } from "../routes";
 
 /** A route a link can point to (everything but the not-found placeholder). */
 export type LinkRoute = Exclude<Route, { name: "not-found" }>;
 
-export type NavId = "hub" | "squad" | "match" | "league" | "club" | "saves";
+export type NavId = "hub" | "squad" | "match" | "league" | "club" | "saves" | "settings";
 
 export type NavItem = {
   id: NavId;
@@ -56,6 +65,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     labelKey: "nav.saves",
     icon: Save,
     route: () => ({ name: "saves" }),
+    phone: "more",
+  },
+  {
+    id: "settings",
+    labelKey: "nav.settings",
+    icon: Settings,
+    route: () => ({ name: "settings" }),
     phone: "more",
   },
 ];

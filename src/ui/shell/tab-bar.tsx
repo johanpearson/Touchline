@@ -3,7 +3,6 @@ import { useState } from "react";
 import { cn, Drawer } from "../components";
 import { useI18n } from "../i18n-provider";
 import { LocaleSwitch } from "../locale-switch";
-import { ThemeSwitch } from "../theme/theme-switch";
 import { moreItems, phoneTabItems } from "./nav-config";
 import { type NavEntry, useNavEntries } from "./use-nav-entries";
 
@@ -96,7 +95,6 @@ export function TabBar() {
           <MoreList onNavigate={() => setOpen(false)} />
           <div className="flex flex-col gap-3 border-t border-line pt-4 text-soft">
             <LocaleSwitch />
-            <ThemeSwitch />
           </div>
         </Drawer>
       </div>

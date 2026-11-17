@@ -26,7 +26,7 @@ describe("buildPaletteItems", () => {
   it("lists every screen of the navigation config, labelled in the locale", () => {
     const en = ofGroup(build("en").items, "screens").map((i) => i.label);
     const sv = ofGroup(build("sv").items, "screens").map((i) => i.label);
-    expect(en).toEqual(["Home", "Squad", "Next match", "League", "My club", "Saves"]);
+    expect(en).toEqual(["Home", "Squad", "Next match", "League", "My club", "Saves", "Settings"]);
     expect(sv).not.toEqual(en);
   });
 

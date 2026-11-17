@@ -99,10 +99,10 @@ describe("start screen", () => {
       expect(window.location.hash).toBe("#/");
     });
 
-    it("links the settings button to the saves screen", () => {
+    it("links the settings button to the settings screen", () => {
       mountApp(createMemorySaveStore());
-      const link = screen.getByTestId("nav-saves");
-      expect(link.getAttribute("href")).toBe("#/saves");
+      const link = screen.getByTestId("nav-settings");
+      expect(link.getAttribute("href")).toBe("#/settings");
       expect(link.getAttribute("aria-label")).toBe("Settings");
     });
 

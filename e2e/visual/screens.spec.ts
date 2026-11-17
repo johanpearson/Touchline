@@ -85,31 +85,36 @@ visualScreen({
   },
 });
 
+// Writes a damaged envelope straight into IndexedDB, as a half-finished write would leave it.
+const putCorruptSave = (page: Page, slotId: string) =>
+  page.evaluate(
+    (id) =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open("touchline", 1);
+        open.onupgradeneeded = () => open.result.createObjectStore("saves");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const tx = open.result.transaction("saves", "readwrite");
+          tx.objectStore("saves").put(
+            { schemaVersion: 2, createdAt: "x", savedAt: "x", game: { broken: true } },
+            id,
+          );
+          tx.oncomplete = () => {
+            open.result.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+    slotId,
+  );
+
 visualScreen({
   name: "start-corrupt-autosave",
   route: "#/",
   state: async (page) => {
     await page.getByTestId("saved-empty").waitFor();
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve, reject) => {
-          const open = indexedDB.open("touchline", 1);
-          open.onupgradeneeded = () => open.result.createObjectStore("saves");
-          open.onerror = () => reject(open.error);
-          open.onsuccess = () => {
-            const tx = open.result.transaction("saves", "readwrite");
-            tx.objectStore("saves").put(
-              { schemaVersion: 2, createdAt: "x", savedAt: "x", game: { broken: true } },
-              "autosave",
-            );
-            tx.oncomplete = () => {
-              open.result.close();
-              resolve();
-            };
-            tx.onerror = () => reject(tx.error);
-          };
-        }),
-    );
+    await putCorruptSave(page, "autosave");
     await page.reload();
     await page.getByTestId("load-error").waitFor();
   },
@@ -210,5 +215,42 @@ visualScreen({
     await page.evaluate(() => window.localStorage.setItem("touchline.density", "comfortable"));
     await page.reload();
     await openSquadTable(page);
+  },
+});
+
+// The saves screen (#270): autosave, two used manual slots and one damaged slot.
+visualScreen({
+  name: "saves-slots-and-corrupt",
+  full: true,
+  route: "#/new",
+  state: async (page) => {
+    await startCareerAtHub(page);
+    await putCorruptSave(page, "slot-3");
+    // By hash: the Saves link sits in the More sheet on a phone.
+    await page.evaluate(() => {
+      window.location.hash = "#/saves";
+    });
+    await page.getByTestId("save-slot-1").click();
+    await page.getByTestId("load-slot-1").waitFor();
+    await page.getByTestId("save-slot-2").click();
+    await page.getByTestId("load-slot-2").waitFor();
+    await page.getByTestId("delete-slot-3").waitFor();
+    // Close the "Saved" toasts so the snapshot does not depend on how long they stay.
+    for (const close of await page.locator("[data-tone] button").all()) await close.click();
+    await page.locator("[data-tone]").first().waitFor({ state: "detached" });
+  },
+});
+
+// The settings screen (#270): the theme cards show all three themes in each theme.
+visualScreen({
+  name: "settings-default",
+  full: true,
+  route: "#/new",
+  state: async (page) => {
+    await startCareerAtHub(page);
+    await page.evaluate(() => {
+      window.location.hash = "#/settings";
+    });
+    await page.getByTestId("settings-screen").waitFor();
   },
 });

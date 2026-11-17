@@ -29,6 +29,7 @@ describe("nav config", () => {
     const reached = NAV_ITEMS.map((item) => navRoute(item, CLUB).name);
     expect(reached).toEqual(expect.arrayContaining(["home", "squad", "match", "league", "club"]));
     expect(reached).toContain("saves");
+    expect(reached).toContain("settings");
   });
 
   it("links to routes that parse back to themselves", () => {
@@ -48,7 +49,7 @@ describe("nav config", () => {
   });
 
   it("lists every other item in the More drawer", () => {
-    expect(moreItems().map((item) => item.id)).toEqual(["club", "saves"]);
+    expect(moreItems().map((item) => item.id)).toEqual(["club", "saves", "settings"]);
   });
 
   it("shows every item either as a phone tab or in More, never both", () => {
@@ -59,7 +60,15 @@ describe("nav config", () => {
 
   it("keeps the test ids the end-to-end specs rely on", () => {
     expect(NAV_ITEMS.map(navTestId).sort()).toEqual(
-      ["nav-club", "nav-hub", "nav-league", "nav-match", "nav-saves", "nav-squad"].sort(),
+      [
+        "nav-club",
+        "nav-hub",
+        "nav-league",
+        "nav-match",
+        "nav-saves",
+        "nav-settings",
+        "nav-squad",
+      ].sort(),
     );
   });
 

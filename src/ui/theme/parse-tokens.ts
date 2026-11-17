@@ -1,6 +1,8 @@
 export type ThemeTokens = Record<string, Record<string, string>>;
 
-const THEME_BLOCK = /:root\[data-theme="([a-z-]+)"\]\s*\{([^}]*)\}/g;
+// A theme block may also name the preview element of the settings screen: `, [data-theme-preview="x"]`.
+const THEME_BLOCK =
+  /:root\[data-theme="([a-z-]+)"\](?:\s*,\s*\[data-theme-preview="[a-z-]+"\])?\s*\{([^}]*)\}/g;
 const DECLARATION = /--([a-z0-9-]+)\s*:\s*([^;]+);/g;
 
 /** Reads the custom properties of every `:root[data-theme="..."]` block of a token file. */
