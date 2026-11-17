@@ -56,14 +56,11 @@ const coachesOf = (career: Career, fixture: Fixture): Coach[] =>
 const isPlaying = (period: ActionMatch["state"]["period"]): boolean =>
   period === "firstHalf" || period === "secondHalf";
 
+/** A pause at which the AI clubs act; `halfTime` marks the half-time window. */
+type AiMoment = { minute: number; halfTime: boolean };
+
 /** Lets one AI side act at `minute` and applies the result to the match. */
-const act = (
-  career: Career,
-  match: ActionMatch,
-  coach: Coach,
-  minute: number,
-  halfTime: boolean,
-) => {
+const act = (career: Career, match: ActionMatch, coach: Coach, { minute, halfTime }: AiMoment) => {
   const { score } = match.state;
   const plan = planAiChange({
     squad: coach.squad,
@@ -115,8 +112,8 @@ export const createCoachedMatch = (
   );
   const coaches = coachesOf(career, fixture);
   let next = 0;
-  const actAll = (minute: number, halfTime: boolean) => {
-    for (const coach of coaches) act(career, match, coach, minute, halfTime);
+  const actAll = (moment: AiMoment) => {
+    for (const coach of coaches) act(career, match, coach, moment);
   };
 
   return {
@@ -138,13 +135,14 @@ export const createCoachedMatch = (
         const minute = AI_WINDOW_MINUTES[next] as number;
         match.advanceTo(minute * 60);
         if (!isPlaying(match.state.period)) return;
-        actAll(minute, false);
+        actAll({ minute, halfTime: false });
         next += 1;
       }
       match.advanceTo(seconds);
     },
     resume: () => {
-      if (match.state.period === "halfTime") actAll(AI_HALF_TIME_MINUTE, true);
+      if (match.state.period === "halfTime")
+        actAll({ minute: AI_HALF_TIME_MINUTE, halfTime: true });
       match.resume();
     },
     aiReports: () =>
