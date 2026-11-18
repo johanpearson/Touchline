@@ -1,8 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { resignExpiredPlayers } from "./off-season-helpers";
+import { quickSimToSeasonEnd, resignExpiredPlayers } from "./off-season-helpers";
 
 const CLUBS = 14;
-const MATCHDAYS = 26;
 
 test.describe("season flow", () => {
   test("plays a match, quick-sims the season and starts season 2", async ({ page }) => {
@@ -33,15 +32,7 @@ test.describe("season flow", () => {
     expect(played.every((p) => p === "1")).toBe(true);
 
     await page.getByTestId("nav-hub").click();
-    for (let matchday = 2; matchday <= MATCHDAYS; matchday++) {
-      await page.getByTestId("quick-sim").click();
-      // After the last matchday the results page leads to the season end screen.
-      if (matchday === MATCHDAYS) {
-        await expect(page.getByTestId("results-continue")).toHaveAttribute("href", "#/season-end");
-      }
-      await page.getByTestId("results-continue").click();
-    }
-    await expect(page.getByTestId("champion")).toBeVisible();
+    await quickSimToSeasonEnd(page, 2);
 
     await page.getByTestId("next-season").click();
     await expect(page.getByTestId("screen-off-season")).toBeVisible();
