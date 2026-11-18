@@ -17,10 +17,8 @@ import {
   type LineupError,
   type MatchdayError,
   type MatchReport,
-  type NextSeasonError,
   parseCareer,
   type Result,
-  rollOverSeason,
 } from "../game";
 import { createEnvelope, parseSaveFile, saveFileName, serializeSave } from "../platform";
 import type { FileTransfer, SaveEnvelope, SaveStore } from "../shared";
@@ -43,6 +41,7 @@ import {
 } from "./save-slots";
 import { useContinueCandidate } from "./use-continue-candidate";
 import { type PlanEdits, usePlanEdits } from "./use-plan-edits";
+import { type SeasonActions, useSeasonActions } from "./use-season-actions";
 import { type TransferActions, useTransferActions } from "./use-transfer-actions";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -50,7 +49,8 @@ export type SaveStatus = "idle" | "saving" | "saved" | "error";
 export type { ContinueInfo };
 
 export type CareerStore = PlanEdits &
-  TransferActions & {
+  TransferActions &
+  SeasonActions & {
     /** The running career, or null before one has been started. */
     career: Career | null;
     /** Starts a career and replaces any running one. Returns an error for an unknown club. */
@@ -59,12 +59,6 @@ export type CareerStore = PlanEdits &
     completeMatch: (userResult: Result, report?: MatchReport) => MatchdayError | null;
     /** Replaces the user's lineup. An invalid lineup returns the error and changes nothing. */
     setLineup: (lineup: Lineup) => { ok: true } | { ok: false; error: LineupError };
-    /**
-     * Rolls a finished season over to the next one with `rollOverSeason` (the off-season, the user's
-     * squad on autopilot until the off-season screen lets the user decide, then the new season).
-     * Returns an error while the season is running.
-     */
-    startNextSeason: () => NextSeasonError | null;
     /** State of the latest autosave. */
     saveStatus: SaveStatus;
     /** Time (from the injected clock) of the latest successful autosave, or null. */
@@ -211,15 +205,7 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
     [career],
   );
   const planEdits = usePlanEdits(setCareer);
-  const rollOver = useCallback((): NextSeasonError | null => {
-    if (!career) return "season-incomplete";
-    const outcome = rollOverSeason(career);
-    if (!outcome.ok) return outcome.error;
-    setCareer(outcome.career);
-    persist(outcome.career, "continue");
-    return null;
-  }, [career, persist]);
-
+  const seasonActions = useSeasonActions(career, setCareer, persist);
   const transfers = useTransferActions(career, setCareer, persist);
 
   const loadAutosave = useCallback(async (): Promise<boolean> => {
@@ -358,7 +344,7 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       completeMatch,
       setLineup,
       ...planEdits,
-      startNextSeason: rollOver,
+      ...seasonActions,
       ...transfers,
       saveStatus,
       lastSavedAt,
@@ -388,7 +374,7 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       completeMatch,
       setLineup,
       planEdits,
-      rollOver,
+      seasonActions,
       transfers,
       saveStatus,
       lastSavedAt,

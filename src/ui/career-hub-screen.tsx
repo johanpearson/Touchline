@@ -1,4 +1,10 @@
-import { type Career, getNextFixture, isSeasonComplete, simulateFixture } from "../game";
+import {
+  type Career,
+  getNextFixture,
+  isSeasonComplete,
+  isWindowOpen,
+  simulateFixture,
+} from "../game";
 import { Button, Card } from "./components";
 import { HubLeagueCard } from "./hub-league-card";
 import { NextMatchCard } from "./hub-next-match";
@@ -7,7 +13,7 @@ import { useI18n } from "./i18n-provider";
 import { hrefFor } from "./routes";
 import { useCareer } from "./use-career";
 
-function SeasonComplete() {
+function SeasonComplete({ offSeason }: { offSeason: boolean }) {
   const { t } = useI18n();
   return (
     <Card
@@ -20,13 +26,21 @@ function SeasonComplete() {
       data-testid="season-complete"
     >
       <h2 id="hub-season-complete" className="m-0 font-heading text-3xl text-text">
-        {t("hub.seasonComplete")}
+        {t(offSeason ? "offSeason.hub.title" : "hub.seasonComplete")}
       </h2>
-      <Button asChild variant="primary" size="lg">
-        <a data-testid="to-season-end" href={hrefFor({ name: "season-end" })}>
-          {t("hub.toSeasonEnd")}
-        </a>
-      </Button>
+      {offSeason ? (
+        <Button asChild variant="primary" size="lg">
+          <a data-testid="to-off-season" href={hrefFor({ name: "off-season" })}>
+            {t("offSeason.hub.open")}
+          </a>
+        </Button>
+      ) : (
+        <Button asChild variant="primary" size="lg">
+          <a data-testid="to-season-end" href={hrefFor({ name: "season-end" })}>
+            {t("hub.toSeasonEnd")}
+          </a>
+        </Button>
+      )}
     </Card>
   );
 }
@@ -53,7 +67,7 @@ export function CareerHubView({ career, onQuickSim }: ViewProps) {
           onQuickSim={onQuickSim}
         />
       ) : (
-        isSeasonComplete(career.season) && <SeasonComplete />
+        isSeasonComplete(career.season) && <SeasonComplete offSeason={isWindowOpen(career)} />
       )}
       <div className="grid gap-4 lg:grid-cols-2">
         <HubLeagueCard career={career} />

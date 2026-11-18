@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { autoManageUserSquad } from "./auto-manage-squad";
 import type { Career } from "./career";
 import { aCareer, deepFreeze } from "./career-builders";
 import { finishSeason, isSeasonFinished } from "./finish-season";
 import { playMatchdays } from "./season-test-helpers";
+import { startNextSeason } from "./start-next-season";
 import { summariseSeason } from "./summarise-season";
 import { wageBill } from "./wage-budget";
 
@@ -13,6 +15,12 @@ const finished = (career: Career): Career => {
 };
 
 const completed = () => playMatchdays(aCareer(), 26);
+
+const startedSeasonTwo = (career: Career): Career => {
+  const result = startNextSeason(autoManageUserSquad(career));
+  if (!result.ok) throw new Error(result.error);
+  return result.career;
+};
 
 const sorted = <T>(values: readonly T[]): T[] => [...values].sort();
 
@@ -144,5 +152,56 @@ describe("finishSeason", () => {
       Object.fromEntries(career.league.players.map((p) => [p.id, p]));
     expect(byId(b)).toEqual(byId(a));
     expect(b.offers).toEqual(a.offers);
+  });
+
+  it("stores the development change list, only for players still in the league", () => {
+    const old = completed();
+
+    const career = finished(old);
+
+    const ids = new Set(career.league.players.map((p) => p.id));
+    expect(career.lastDevelopment?.length).toBeGreaterThan(100);
+    expect(career.lastDevelopment?.every((change) => ids.has(change.playerId))).toBe(true);
+  });
+
+  it("replaces the stored change list every season instead of adding to it", () => {
+    const first = finished(completed());
+
+    const second = finished(playMatchdays(startedSeasonTwo(first), 26));
+
+    expect(second.lastDevelopment).not.toEqual(first.lastDevelopment);
+    const ids = new Set(second.league.players.map((p) => p.id));
+    expect(second.lastDevelopment?.every((change) => ids.has(change.playerId))).toBe(true);
+  });
+
+  it("records the user's season income and wages, so wages plus the balance change add up", () => {
+    const old = completed();
+    const career = finished(old);
+    const record = career.lastRollover;
+    const userId = old.userClubId;
+
+    expect(record?.wages).toBe(wageBill(old, userId));
+    const gain =
+      (career.finances[userId]?.balance as number) - (old.finances[userId]?.balance as number);
+    expect((record?.income ?? 0) - (record?.wages ?? 0)).toBe(gain);
+  });
+
+  it("records the user's retired players with the age they retired at", () => {
+    const old = completed();
+    const career = finished(old);
+    const gone = (old.league.clubs.find((c) => c.id === old.userClubId)?.playerIds ?? []).filter(
+      (id) => !career.league.players.some((p) => p.id === id),
+    );
+
+    const retired = career.lastRollover?.retired ?? [];
+
+    expect(retired.map((r) => r.name)).toEqual(
+      gone.map((id) => old.league.players.find((p) => p.id === id)?.name),
+    );
+    for (const r of retired) {
+      const was = old.league.players.find((p) => p.name === r.name);
+      expect(r.age).toBe((was?.age ?? 0) + 1);
+      expect(r.position).toBe(was?.position);
+    }
   });
 });

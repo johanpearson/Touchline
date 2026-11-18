@@ -5,6 +5,7 @@ import { parseDevelopment } from "./parse-development";
 import { parseContracts, parseFinances, parseFreeAgentIds, parseMinutes } from "./parse-economy";
 import { parseHistory } from "./parse-history";
 import { parseLeague } from "./parse-league";
+import { parseRollover } from "./parse-rollover";
 import { parseSeason } from "./parse-season";
 import { parseCondition, parseSquadPlan } from "./parse-squad-plan";
 import { parseOffers, parseWindow } from "./parse-transfers";
@@ -28,7 +29,8 @@ export type CareerParseError =
   | "invalid-minutes"
   | "invalid-window"
   | "invalid-offers"
-  | "invalid-development";
+  | "invalid-development"
+  | "invalid-rollover";
 
 export type CareerParseResult =
   | { ok: true; career: Career }
@@ -72,6 +74,8 @@ const parseUnchecked = (raw: unknown): CareerParseResult => {
       ? undefined
       : parseDevelopment(raw.lastDevelopment, league.players);
   if (raw.lastDevelopment !== undefined && !lastDevelopment) return fail("invalid-development");
+  const lastRollover = raw.lastRollover === undefined ? undefined : parseRollover(raw.lastRollover);
+  if (raw.lastRollover !== undefined && !lastRollover) return fail("invalid-rollover");
   return {
     ok: true,
     career: {
@@ -90,6 +94,7 @@ const parseUnchecked = (raw: unknown): CareerParseResult => {
       window,
       offers,
       ...(lastDevelopment ? { lastDevelopment } : {}),
+      ...(lastRollover ? { lastRollover } : {}),
     },
   };
 };

@@ -38,6 +38,12 @@ function ClubIdentity({ career }: { career: Career }) {
   );
 }
 
+const HEADER_LABELS = {
+  continue: "save.continue",
+  "season-complete": "hub.seasonComplete",
+  "off-season": "offSeason.hub.open",
+} as const;
+
 function HeaderAction({ career }: { career: Career }) {
   const { t } = useI18n();
   const action = headerActionFor(career);
@@ -45,7 +51,7 @@ function HeaderAction({ career }: { career: Career }) {
   return (
     <Button asChild variant="primary" className="shrink-0">
       <a data-testid="header-action" href={hrefFor(action.route)}>
-        {t(action.kind === "continue" ? "save.continue" : "hub.seasonComplete")}
+        {t(HEADER_LABELS[action.kind])}
       </a>
     </Button>
   );

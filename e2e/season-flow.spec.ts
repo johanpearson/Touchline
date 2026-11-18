@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { resignExpiredPlayers } from "./off-season-helpers";
 
 const CLUBS = 14;
 const MATCHDAYS = 26;
@@ -43,6 +44,10 @@ test.describe("season flow", () => {
     await expect(page.getByTestId("champion")).toBeVisible();
 
     await page.getByTestId("next-season").click();
+    await expect(page.getByTestId("screen-off-season")).toBeVisible();
+    await expect(page.getByTestId(/^youth-/)).toHaveCount(3);
+    await resignExpiredPlayers(page);
+    await page.getByTestId("start-next-season").click();
     await expect(page.getByTestId("career-hub")).toBeVisible();
     await expect(page.getByTestId("next-match-matchday")).toContainText("1");
   });

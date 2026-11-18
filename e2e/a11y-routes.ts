@@ -16,6 +16,7 @@ export const ROUTE_STATES: Readonly<Record<string, readonly string[]>> = {
   match: ["pre-match", "match-kickoff", "match-half-time-changes", "match-full-time"],
   results: ["matchday-results"],
   "season-end": ["season-end"],
+  "off-season": ["off-season"],
   saves: ["saves-slots-and-corrupt"],
   settings: ["settings-default"],
   "not-found": ["not-found"],
