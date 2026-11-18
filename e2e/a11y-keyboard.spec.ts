@@ -54,7 +54,7 @@ test.describe("keyboard only", () => {
     await press(page, "kick-off");
     // The speed control is a radio group: Tab reaches the selected speed, the arrow keys choose another.
     await tabTo(page, /^speed-/);
-    await page.keyboard.press("ArrowRight");
+    // The default is the second speed, so two presses reach the fourth.
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("ArrowRight");
     await expect(page.getByTestId("speed-4")).toBeChecked();
@@ -63,7 +63,7 @@ test.describe("keyboard only", () => {
     await press(page, "sub-add");
     await press(page, /^pick-/);
     await press(page, /^pick-/);
-    await expect(page.getByTestId("sub-off-1")).toBeVisible();
+    await expect(page.getByTestId("sub-off-0")).toBeVisible();
   });
 
   test("saves and loads a career", async ({ page }) => {

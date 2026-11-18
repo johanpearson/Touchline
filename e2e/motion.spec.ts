@@ -8,9 +8,13 @@ const startCareer = async (page: Page) => {
   await expect(page.getByTestId("career-hub")).toBeVisible();
 };
 
-/** Records every layout shift score of the page from now on. */
+/**
+ * Records every layout shift score of the page from now on. It waits for the web fonts first and
+ * does not replay earlier entries: a font swap reflows text and is not caused by a route change.
+ */
 const watchLayoutShift = (page: Page) =>
-  page.evaluate(() => {
+  page.evaluate(async () => {
+    await document.fonts.ready;
     const w = window as unknown as { __cls: number };
     w.__cls = 0;
     new PerformanceObserver((list) => {
@@ -18,7 +22,7 @@ const watchLayoutShift = (page: Page) =>
         const shift = entry as PerformanceEntry & { value: number; hadRecentInput: boolean };
         if (!shift.hadRecentInput) w.__cls += shift.value;
       }
-    }).observe({ type: "layout-shift", buffered: true });
+    }).observe({ type: "layout-shift" });
   });
 
 test.describe("motion", () => {
@@ -41,11 +45,16 @@ test.describe("motion", () => {
     await startCareer(page);
 
     await page.getByTestId("nav-league").click();
-    const transform = await page
-      .getByTestId("route-transition")
-      .evaluate((el) => getComputedStyle(el).transform);
-
-    expect(["none", "matrix(1, 0, 0, 1, 0, 0)"]).toContain(transform);
+    await expect(page.getByTestId("league-table")).toBeVisible();
+    // The wrapper is re-keyed on a route change, so read it until it is the mounted one.
+    await expect
+      .poll(() =>
+        page
+          .getByTestId("route-transition")
+          .evaluate((el) => getComputedStyle(el).transform)
+          .catch(() => ""),
+      )
+      .toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
   });
 
   test("with reduced motion a toast appears without moving", async ({ page }) => {
