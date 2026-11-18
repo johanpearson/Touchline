@@ -65,15 +65,15 @@ export function AppHeader({ showBrand }: { showBrand: boolean }) {
   return (
     <header
       className={cn(
-        "flex items-center justify-between gap-3 border-b border-line bg-bg px-4 py-3 sm:px-6",
+        "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-line bg-bg px-4 py-3 sm:px-6",
       )}
     >
       {showBrand ? <Brand hidden /> : null}
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="flex min-w-0 flex-1 basis-40 items-center gap-2">
         <BackButton hasCareer />
         <ClubIdentity career={career} />
       </div>
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="ml-auto flex shrink-0 items-center gap-3">
         <PaletteButton />
         <SaveStatus />
         <HeaderAction career={career} />
