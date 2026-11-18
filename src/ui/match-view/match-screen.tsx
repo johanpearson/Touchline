@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { generateActionCommentary } from "../../commentary";
 import type {
   ActionEvent,
+  ActionMatch,
   ActionMatchState,
   EngineVersion,
   MatchInput,
@@ -15,7 +16,7 @@ import {
   playerRatings,
   type ZoneEvent,
 } from "../../engine";
-import { goalScorersOf, type MatchReport } from "../../game";
+import { type CoachedMatch, goalScorersOf, type MatchReport } from "../../game";
 import { useI18n } from "../i18n-provider";
 import { useSuspendPaletteShortcut } from "../palette/palette-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
@@ -42,6 +43,11 @@ export type FinishedMatch = {
 export type MatchScreenProps = {
   seed: number;
   input: MatchInput;
+  /**
+   * Creates the match, for example with AI substitutions (`createCoachedMatch`); default a plain
+   * `createActionMatch(input, seed)`.
+   */
+  createMatch?: () => ActionMatch | CoachedMatch;
   colours: PerSide<string>;
   /** Display name of every player who can appear in the log, by player id. */
   players: Readonly<Record<string, string>>;
@@ -72,6 +78,7 @@ export type MatchScreenProps = {
 export function MatchScreen({
   input,
   seed,
+  createMatch,
   colours,
   players,
   userSide = "home",
@@ -83,7 +90,7 @@ export function MatchScreen({
   onLeave,
 }: MatchScreenProps) {
   const { locale } = useI18n();
-  const [match] = useState(() => createActionMatch(input, seed));
+  const [match] = useState(() => createMatch?.() ?? createActionMatch(input, seed));
   const { matchTime, state, events, eventCount, resume, ...playback } = useMatchPlayback(
     match,
     tickMs,
@@ -188,12 +195,22 @@ export function MatchScreen({
               scorers: goalScorersOf(events),
               engineVersion: input.engineVersion,
             },
-            report,
+            withOpponent(report, match, userSide),
           ))
       }
     />
   );
 }
+
+/** The user's report with what the AI opponent played; the user's report is absent when nothing was changed. */
+const withOpponent = (
+  report: MatchReport | undefined,
+  match: ActionMatch | CoachedMatch,
+  userSide: Side,
+): MatchReport | undefined => {
+  if (!report || !("aiReports" in match)) return report;
+  return { ...report, opponent: match.aiReports()[userSide === "home" ? "away" : "home"] };
+};
 
 /** Ids of the players who played, per side: the starters and everyone a change brought on. */
 const playedIds = (

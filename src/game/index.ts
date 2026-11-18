@@ -2,6 +2,21 @@ export { acceptOffer } from "./accept-offer";
 export { addCareerEconomy } from "./add-career-economy";
 export { addEngineVersion } from "./add-engine-version";
 export { addSquadPlanAndCondition } from "./add-squad-plan";
+export {
+  AI_FITNESS_MARGIN,
+  AI_HALF_TIME_MINUTE,
+  AI_MAX_SUBSTITUTIONS_PER_WINDOW,
+  AI_SHOUT_FROM_MINUTE,
+  AI_TACTICS,
+  AI_TIRED_FITNESS,
+  AI_WINDOW_MINUTES,
+  type AiChanges,
+  type AiContext,
+  type AiPlan,
+  type AiSituation,
+  NO_AI_CHANGES,
+  planAiChange,
+} from "./ai-coach";
 export { askingPrice, BEST_ELEVEN_PREMIUM, marketValue, signingWage } from "./asking-price";
 export { autoManageUserSquad } from "./auto-manage-squad";
 export { autoPickLineup } from "./auto-pick-lineup";
@@ -17,6 +32,7 @@ export type {
 } from "./career";
 export type { Club } from "./club";
 export { clubStarPlayer } from "./club-star-player";
+export { type CoachedMatch, createCoachedMatch } from "./coached-match";
 export { completeMatchday } from "./complete-matchday";
 export type { Outcome, Result, TableError, TableResult, TableRow } from "./compute-table";
 export { computeForm, computeTable } from "./compute-table";
@@ -177,7 +193,7 @@ export {
   tacticsAtMinute,
 } from "./shouts";
 export { signFreeAgent } from "./sign-free-agent";
-export { simulateFixture } from "./simulate-fixture";
+export { playFixture, simulateFixture } from "./simulate-fixture";
 export type { SquadLimits } from "./squad-limits";
 export { MAX_SQUAD_SIZE, MIN_PER_POSITION, MIN_SQUAD_SIZE, squadLimits } from "./squad-limits";
 export type { SquadPlan } from "./squad-plan";
@@ -194,7 +210,7 @@ export { DEFAULT_CONTRACT_SEASONS } from "./transfer-core";
 export type { TransferOffer, TransferWindow } from "./transfer-offer";
 export type { TransferError, TransferResult } from "./transfer-result";
 export { isWindowOpen } from "./transfer-window";
-export type { MatchReport } from "./update-condition";
+export type { AiReports, MatchReport } from "./update-condition";
 export { useActionEngine } from "./use-action-engine";
 export { WAGE_BUDGET_SHARE, wageBill, wageBudget } from "./wage-budget";
 export {
