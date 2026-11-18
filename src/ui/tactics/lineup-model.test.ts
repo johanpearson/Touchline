@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { Player, SquadPlan } from "../../game";
+import { type Player, positionRating, type SquadPlan } from "../../game";
 import {
   benchCandidates,
   benchEdit,
   orderedStarters,
+  slotRating,
   starterCandidates,
   starterEdit,
 } from "./lineup-model";
@@ -106,5 +107,46 @@ describe("benchCandidates", () => {
     const players = [...PLAYERS, player("g3", "GK")];
     const list = benchCandidates(players, base, "g2", new Map(players.map((p) => [p.id, p])));
     expect(list.find((c) => c.player.id === "m1")?.disabled).toBe(false);
+  });
+});
+
+describe("slotRating", () => {
+  const rated = (position: Player["position"], value: number): Player =>
+    ({ ...player("x", position), ...Object.fromEntries(ATTRS.map((a) => [a, value])) }) as Player;
+  const ATTRS = [
+    "handling",
+    "reflexes",
+    "tackling",
+    "positioning",
+    "strength",
+    "passing",
+    "vision",
+    "ballControl",
+    "workRate",
+    "finishing",
+    "pace",
+    "dribbling",
+  ];
+  const FIT = { fitness: 100, form: 5 };
+
+  it("is the player's rating at the own position for a fully fit player in neutral form", () => {
+    const p = rated("MID", 14);
+    expect(slotRating(p, "MID", FIT)).toBeCloseTo(14, 10);
+  });
+
+  it("shows the lower number for a player out of position", () => {
+    const p = rated("DEF", 14);
+    expect(slotRating(p, "MID", FIT)).toBeCloseTo(positionRating(p, "MID"), 10);
+    expect(slotRating(p, "MID", FIT)).toBeLessThan(slotRating(p, "DEF", FIT));
+  });
+
+  it("shows the lower number for a tired player", () => {
+    const p = rated("FWD", 14);
+    expect(slotRating(p, "FWD", { fitness: 30, form: 5 })).toBeLessThan(slotRating(p, "FWD", FIT));
+  });
+
+  it("falls back to full fitness and neutral form without a condition", () => {
+    const p = rated("GK", 12);
+    expect(slotRating(p, "GK", undefined)).toBeCloseTo(12, 10);
   });
 });

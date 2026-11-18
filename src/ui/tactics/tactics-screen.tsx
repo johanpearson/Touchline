@@ -1,12 +1,18 @@
 import { useState } from "react";
-import { type Career, kitsOf, type Player } from "../../game";
+import { type Career, kitsOf, type Player, type PlayerPosition } from "../../game";
 import type { MessageKey } from "../../i18n";
 import { Card, SegmentedControl } from "../components";
 import { useMediaQuery } from "../components/use-media-query";
 import { useI18n } from "../i18n-provider";
 import { BenchList } from "./bench-list";
 import { FormationControls } from "./formation-controls";
-import { benchCandidates, benchEdit, starterCandidates, starterEdit } from "./lineup-model";
+import {
+  benchCandidates,
+  benchEdit,
+  slotRating,
+  starterCandidates,
+  starterEdit,
+} from "./lineup-model";
 import { LineupPitch } from "./lineup-pitch";
 import { type PickerState, PlayerPicker } from "./player-picker";
 import { RatingsPanel } from "./ratings-panel";
@@ -60,6 +66,8 @@ export function TacticsScreen({ career }: { career: Career }) {
         : "out";
   const picker = (): PickerState | null => {
     if (!target) return null;
+    const ratingAt = (position?: PlayerPosition) => (player: Player) =>
+      slotRating(player, position ?? player.position, career.condition[player.id]);
     const common = {
       statusOf,
       fitnessOf: (id: string) => Math.round(career.condition[id]?.fitness ?? 100),
@@ -74,6 +82,7 @@ export function TacticsScreen({ career }: { career: Career }) {
         hint: t("tactics.picker.hint"),
         currentId: slot.player.id,
         candidates: starterCandidates(players, plan, slot.player.id, slot.line),
+        ratingOf: ratingAt(slot.line),
         keeperLocked: () => false,
         onChoose: (id) => {
           editing.edit(starterEdit(plan, slot.player.id, id));
@@ -89,6 +98,7 @@ export function TacticsScreen({ career }: { career: Career }) {
       hint: t("tactics.picker.benchHint"),
       currentId: slot.player.id,
       candidates: benchCandidates(players, plan, slot.player.id, byId),
+      ratingOf: ratingAt(),
       keeperLocked: (candidate) => !plan.starters.includes(candidate.player.id),
       onChoose: (id) => {
         editing.edit(benchEdit(plan, slot.player.id, id));

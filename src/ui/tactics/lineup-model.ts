@@ -1,4 +1,11 @@
-import type { Player, PlayerPosition, SquadPlan } from "../../game";
+import {
+  effectiveRating,
+  initialCondition,
+  type Player,
+  type PlayerCondition,
+  type PlayerPosition,
+  type SquadPlan,
+} from "../../game";
 import { LINE_ORDER } from "./pitch-layout";
 
 /** Changes to the starters and/or the bench; an absent list stays as it is. */
@@ -64,3 +71,13 @@ export const benchCandidates = (
       (starters.has(player.id) || (keeperLocked && player.position !== "GK")),
   }));
 };
+
+/**
+ * The rating shown for a player at a position: what the engine will use (fitness, form and the
+ * out-of-position penalty applied). A player without a condition is fully fit with neutral form.
+ */
+export const slotRating = (
+  player: Player,
+  position: PlayerPosition,
+  condition: PlayerCondition | undefined,
+): number => effectiveRating(player, position, condition ?? initialCondition());

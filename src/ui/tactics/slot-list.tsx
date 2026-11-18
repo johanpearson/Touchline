@@ -1,12 +1,14 @@
-import type { Career, Player } from "../../game";
+import type { Career, Player, PlayerPosition } from "../../game";
 import { cn } from "../components";
 import { fieldControlStyles } from "../components/field-styles";
 import { useI18n } from "../i18n-provider";
+import { PlayerRatingBadge } from "../player-rating-badge";
 import {
   benchCandidates,
   benchEdit,
   type Candidate,
   type LineupEdit,
+  slotRating,
   starterCandidates,
   starterEdit,
 } from "./lineup-model";
@@ -19,6 +21,9 @@ function CandidateSelect(props: {
   label: string;
   value: string;
   candidates: readonly Candidate[];
+  /** The rating and fitness of a candidate at this slot. */
+  ratingOf: (player: Player) => number;
+  fitnessOf: (player: Player) => number;
   onChange: (id: string) => void;
 }) {
   const { t } = useI18n();
@@ -41,6 +46,13 @@ function CandidateSelect(props: {
           ))}
         </select>
       </label>
+      {current ? (
+        <PlayerRatingBadge
+          rating={props.ratingOf(current)}
+          fitness={props.fitnessOf(current)}
+          className="min-h-11 shrink-0 justify-center"
+        />
+      ) : null}
       {current ? <ProfileLink playerId={current.id} name={current.name} /> : null}
     </div>
   );
@@ -62,6 +74,9 @@ export type SlotListProps = {
 export function SlotList({ career, players, byId, starters, bench, edit }: SlotListProps) {
   const { t } = useI18n();
   const plan = career.squadPlan;
+  const ratingAt = (position?: PlayerPosition) => (player: Player) =>
+    slotRating(player, position ?? player.position, career.condition[player.id]);
+  const fitnessOf = (player: Player) => Math.round(career.condition[player.id]?.fitness ?? 100);
   return (
     <div data-testid="slot-list" className="flex flex-col gap-5">
       <section className="flex flex-col gap-3">
@@ -75,6 +90,8 @@ export function SlotList({ career, players, byId, starters, bench, edit }: SlotL
               label={t(`tactics.role.${slot.role}`)}
               value={slot.player.id}
               candidates={starterCandidates(players, plan, slot.player.id, slot.line)}
+              ratingOf={ratingAt(slot.line)}
+              fitnessOf={fitnessOf}
               onChange={(to) => edit(starterEdit(plan, slot.player.id, to))}
             />
           ))}
@@ -90,6 +107,8 @@ export function SlotList({ career, players, byId, starters, bench, edit }: SlotL
               label={t("squad.benchSlot", { slot: slot.index + 1 })}
               value={slot.player.id}
               candidates={benchCandidates(players, plan, slot.player.id, byId)}
+              ratingOf={ratingAt()}
+              fitnessOf={fitnessOf}
               onChange={(to) => edit(benchEdit(plan, slot.player.id, to))}
             />
           ))}

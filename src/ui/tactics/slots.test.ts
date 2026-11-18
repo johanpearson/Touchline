@@ -34,6 +34,27 @@ describe("starterSlots", () => {
   });
 });
 
+describe("rating", () => {
+  it("is the effective rating at the slot's position and drops when the player is tired", () => {
+    const c = career();
+    const first = c.squadPlan.starters[0] ?? "";
+    const before = starterSlots(c, byIdOf(c)).find((s) => s.player.id === first)?.rating ?? 0;
+    const tired: Career = {
+      ...c,
+      condition: { ...c.condition, [first]: { fitness: 20, form: 5 } },
+    };
+    const after =
+      starterSlots(tired, byIdOf(tired)).find((s) => s.player.id === first)?.rating ?? 0;
+    expect(before).toBeGreaterThan(1);
+    expect(after).toBeLessThan(before);
+  });
+
+  it("is also given for bench players", () => {
+    const c = career();
+    for (const slot of benchSlots(c, byIdOf(c))) expect(slot.rating).toBeGreaterThan(0);
+  });
+});
+
 describe("fitness", () => {
   it("is rounded to a whole number for labels", () => {
     const c = career();

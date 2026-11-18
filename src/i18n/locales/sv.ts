@@ -570,6 +570,7 @@ export const sv = {
   "player.ageLine": "{position}, {age} år",
   "player.club": "Klubb",
   "player.overall": "Helhet",
+  "player.rating": "Betyg",
   "player.fitness": "Kondition",
   "player.form": "Form",
   "player.status": "Matchtrupp",
@@ -596,11 +597,12 @@ export const sv = {
   "tactics.view.list": "Lista",
   "tactics.pitch.label": "Startelvan på planen",
   "tactics.pitch.hint": "Välj en position för att byta vem som spelar där.",
-  "tactics.slot.label": "{role}, {player}, kondition {fitness}",
+  "tactics.slot.label": "{role}, {player}, betyg {rating}, kondition {fitness}",
   "tactics.slot.fitness": "Kondition {fitness}",
   "tactics.bench.label": "Bänken",
   "tactics.profile.open": "Öppna profilen för {player}",
-  "tactics.bench.slot": "Bänkplats {slot}: {player}, {position}, kondition {fitness}",
+  "tactics.bench.slot":
+    "Bänkplats {slot}: {player}, {position}, betyg {rating}, kondition {fitness}",
   "tactics.picker.title": "Välj {role}",
   "tactics.picker.bench": "Välj bänkplats {slot}",
   "tactics.picker.hint":

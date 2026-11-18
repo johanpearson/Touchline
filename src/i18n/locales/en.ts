@@ -564,6 +564,7 @@ export const en = {
   "player.ageLine": "{position}, age {age}",
   "player.club": "Club",
   "player.overall": "Overall",
+  "player.rating": "Rating",
   "player.fitness": "Fitness",
   "player.form": "Form",
   "player.status": "Matchday squad",
@@ -590,11 +591,12 @@ export const en = {
   "tactics.view.list": "List",
   "tactics.pitch.label": "Starting eleven on the pitch",
   "tactics.pitch.hint": "Choose a position to change who plays there.",
-  "tactics.slot.label": "{role}, {player}, fitness {fitness}",
+  "tactics.slot.label": "{role}, {player}, rating {rating}, fitness {fitness}",
   "tactics.slot.fitness": "Fitness {fitness}",
   "tactics.bench.label": "Bench",
   "tactics.profile.open": "Open profile of {player}",
-  "tactics.bench.slot": "Bench slot {slot}: {player}, {position}, fitness {fitness}",
+  "tactics.bench.slot":
+    "Bench slot {slot}: {player}, {position}, rating {rating}, fitness {fitness}",
   "tactics.picker.title": "Choose {role}",
   "tactics.picker.bench": "Choose bench slot {slot}",
   "tactics.picker.hint":

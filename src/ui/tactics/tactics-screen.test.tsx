@@ -155,7 +155,10 @@ describe("tactics screen", () => {
     }
     const disabled = list.filter((o) => o.disabled);
     expect(disabled).toHaveLength(3);
-    expect(within(dialog).getAllByText(/Fitness \d+/).length).toBe(list.length);
+    for (const option of list) {
+      expect(option.textContent).toMatch(/Rating\s*\d+\.\d/);
+      expect(option.textContent).toMatch(/Fitness\s*\d+/);
+    }
   });
 
   it("swaps a starter with a bench player of the same position in one step", async () => {
@@ -413,5 +416,70 @@ describe("tactics screen list view", () => {
     fireEvent.change(slot, { target: { value: target.value } });
     expect(select(`bench-${slotIndex}`).value).toBe(target.value);
     expect(select(`bench-${targetIndex}`).value).toBe(first);
+  });
+});
+
+describe("tactics screen ratings", () => {
+  const ratingIn = (element: HTMLElement | null): number =>
+    Number(
+      within(element as HTMLElement)
+        .getByTestId("rating-value")
+        .textContent?.replace(/[^\d.]/g, ""),
+    );
+
+  it("shows each pitch slot's rating with a label for screen readers", () => {
+    renderScreen(careerOf());
+    for (const slot of pitchSlots()) {
+      expect(ratingIn(slot)).toBeGreaterThan(0);
+      expect(slot.getAttribute("aria-label")).toMatch(/, rating \d+\.\d, fitness \d+$/);
+      expect(within(slot).getByTestId("rating-value").textContent).toMatch(/^Rating /);
+    }
+  });
+
+  it("shows the rating as the primary figure and the fitness as a quieter one on the bench", () => {
+    renderScreen(careerOf());
+    const benchSlots = screen.getAllByTestId(/^bench-slot-/);
+    expect(benchSlots).toHaveLength(7);
+    for (const slot of benchSlots) {
+      expect(ratingIn(slot)).toBeGreaterThan(0);
+      expect(within(slot).getByTestId("fitness-value").textContent).toMatch(/^\d+$/);
+      expect(slot.getAttribute("aria-label")).toMatch(/rating \d+\.\d, fitness \d+$/);
+    }
+  });
+
+  it("shows a lower rating for a tired player than for the same player fully fit", () => {
+    const career = careerOf();
+    const id = career.squadPlan.starters[1] ?? "";
+    const fit = renderScreen(career);
+    const before = ratingIn(pitchSlots()[1] ?? null);
+    fit.unmount();
+    renderScreen({ ...career, condition: { ...career.condition, [id]: { fitness: 20, form: 5 } } });
+    expect(ratingIn(pitchSlots()[1] ?? null)).toBeLessThan(before);
+  });
+
+  it("lists each candidate's rating at the slot in the picker", () => {
+    renderScreen(careerOf());
+    fireEvent.click(screen.getByTestId("pitch-slot-1"));
+    for (const option of options()) {
+      expect(within(option).getByTestId("rating-value").textContent).toMatch(/\d+\.\d$/);
+    }
+  });
+
+  it("updates the slot's rating live when another player is chosen", async () => {
+    mountApp();
+    startCareer();
+    fireEvent.click(screen.getByTestId("pitch-slot-1"));
+    const other = options().find((o) => !o.disabled && o.getAttribute("aria-current") !== "true");
+    if (!other) throw new Error("no alternative");
+    const chosen = ratingIn(other);
+    fireEvent.click(other);
+    await waitFor(() => expect(ratingIn(screen.getByTestId("pitch-slot-1"))).toBe(chosen));
+  });
+
+  it("shows the rating beside each select in the list view", () => {
+    renderScreen(careerOf());
+    showList();
+    const list = screen.getByTestId("slot-list");
+    expect(within(list).getAllByTestId("rating-badge")).toHaveLength(18);
   });
 });

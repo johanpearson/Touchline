@@ -1,7 +1,7 @@
-import { type Player, playerOverall } from "../../game";
+import type { Player } from "../../game";
 import { Drawer } from "../components";
 import { useI18n } from "../i18n-provider";
-import { LOW_FITNESS } from "../plan-rows";
+import { PlayerRatingBadge } from "../player-rating-badge";
 import type { Candidate } from "./lineup-model";
 import { ProfileLink } from "./profile-link";
 
@@ -14,6 +14,8 @@ export type PickerState = {
   statusOf: (player: Player) => "starter" | "bench" | "out";
   /** Whether a disabled candidate is locked by the bench keeper rule rather than by starting. */
   keeperLocked: (candidate: Candidate) => boolean;
+  /** The rating at the slot being filled (effective, as the engine uses it). */
+  ratingOf: (player: Player) => number;
   fitnessOf: (id: string) => number;
   formOf: (id: string) => number;
   onChoose: (id: string) => void;
@@ -24,7 +26,6 @@ function PickerOption({ state, candidate }: { state: PickerState; candidate: Can
   const { player } = candidate;
   const current = player.id === state.currentId;
   const status = state.statusOf(player);
-  const fitness = state.fitnessOf(player.id);
   const note = current
     ? t("tactics.picker.current")
     : status === "out"
@@ -45,11 +46,15 @@ function PickerOption({ state, candidate }: { state: PickerState; candidate: Can
           {player.name}{" "}
           <span className="font-normal text-soft">{t(`position.short.${player.position}`)}</span>
         </span>
-        <span className="text-sm text-soft">
-          {t("squad.col.overall")} {formatNumber(playerOverall(player), 0)} ·{" "}
-          {t("tactics.option.fitness", { value: fitness })}
-          {fitness < LOW_FITNESS ? ` (${t("squad.lowFitness")})` : ""} ·{" "}
-          {t("tactics.option.form", { value: formatNumber(state.formOf(player.id), 1) })}
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-soft">
+          <PlayerRatingBadge
+            rating={state.ratingOf(player)}
+            fitness={state.fitnessOf(player.id)}
+            layout="inline"
+          />
+          <span>
+            {t("tactics.option.form", { value: formatNumber(state.formOf(player.id), 1) })}
+          </span>
         </span>
         <span className="text-sm text-muted">
           {note}
