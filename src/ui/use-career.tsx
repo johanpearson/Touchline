@@ -7,16 +7,12 @@ import {
   useRef,
   useState,
 } from "react";
-import type { TeamTactics } from "../engine";
 import {
   setLineup as applyLineup,
-  setTactics as applyTactics,
-  autoPickUserLineup,
   type Career,
   type CareerError,
   completeMatchday,
   createCareer,
-  type Formation,
   type Lineup,
   type LineupError,
   type MatchdayError,
@@ -46,77 +42,75 @@ import {
   type SlotsResult,
 } from "./save-slots";
 import { useContinueCandidate } from "./use-continue-candidate";
+import { type PlanEdits, usePlanEdits } from "./use-plan-edits";
 import { type TransferActions, useTransferActions } from "./use-transfer-actions";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 export type { ContinueInfo };
 
-export type CareerStore = TransferActions & {
-  /** The running career, or null before one has been started. */
-  career: Career | null;
-  /** Starts a career and replaces any running one. Returns an error for an unknown club. */
-  startCareer: (seed: number, userClubId: string) => CareerError | null;
-  /** Records the user's result, simulates the rest of the round and moves to the next matchday. */
-  completeMatch: (userResult: Result, report?: MatchReport) => MatchdayError | null;
-  /** Replaces the user's lineup. An invalid lineup returns the error and changes nothing. */
-  setLineup: (lineup: Lineup) => { ok: true } | { ok: false; error: LineupError };
-  /** Replaces the user's tactics. */
-  setTactics: (tactics: TeamTactics) => void;
-  /** Auto-picks starters and bench for a formation, keeping the tactics. */
-  autoPickLineup: (formation: Formation) => void;
-  /**
-   * Rolls a finished season over to the next one with `rollOverSeason` (the off-season, the user's
-   * squad on autopilot until the off-season screen lets the user decide, then the new season).
-   * Returns an error while the season is running.
-   */
-  startNextSeason: () => NextSeasonError | null;
-  /** State of the latest autosave. */
-  saveStatus: SaveStatus;
-  /** Time (from the injected clock) of the latest successful autosave, or null. */
-  lastSavedAt: string | null;
-  /** True when a usable save was found on startup and `loadAutosave` can load it. */
-  continueAvailable: boolean;
-  /** Describes the save `loadAutosave` would load, or null. */
-  continueInfo: ContinueInfo | null;
-  /** Loads the save found on startup as the running career. Resolves to false when there is none. */
-  loadAutosave: () => Promise<boolean>;
-  /** Why the save found on startup could not be loaded, or null. */
-  loadError: ContinueError | null;
-  /** Hides the load error so the user can start a new career. */
-  dismissLoadError: () => void;
-  /**
-   * Deletes the unusable save behind `loadError`, then looks again for a save to continue.
-   * Fails (and keeps the error) when the storage refuses or the damaged slot is not known.
-   */
-  discardLoadError: () => Promise<SlotActionResult>;
-  /** False until the first look for a save to continue has finished. */
-  startupChecked: boolean;
-  /** Describes the autosave and the manual slots. Never throws. */
-  listSlots: () => Promise<SlotsResult>;
-  /** Writes the running career into a manual slot with a fresh save time. */
-  saveToSlot: (id: string) => Promise<SlotActionResult>;
-  /** Replaces the running career with the one in the slot. */
-  loadSlot: (id: string) => Promise<SlotActionResult>;
-  /** Removes a slot (also a damaged one). Deleting an empty slot is not an error. */
-  deleteSlot: (id: string) => Promise<SlotActionResult>;
-  /** Hands a slot's stored save to the user as a file. */
-  exportSlot: (id: string) => Promise<SlotActionResult>;
-  /** Hands the running career to the user as a file. */
-  exportCareer: () => SlotActionResult;
-  /** Lets the user pick a file and validates it. It is stored only by `importInto`. */
-  pickImport: () => Promise<ImportPickResult>;
-  /** The validated file waiting for a target slot, or null. */
-  importOffer: ImportOffer | null;
-  /** Why the latest picked file was rejected, or null. */
-  importError: ImportError | null;
-  /** Drops the waiting file and any import error. */
-  cancelImport: () => void;
-  /** Stores the waiting file in a manual slot (the caller has confirmed any overwrite). */
-  importInto: (id: string) => Promise<SlotActionResult>;
-  /** The slot the latest import went into, or null. */
-  lastImportedSlot: string | null;
-};
+export type CareerStore = PlanEdits &
+  TransferActions & {
+    /** The running career, or null before one has been started. */
+    career: Career | null;
+    /** Starts a career and replaces any running one. Returns an error for an unknown club. */
+    startCareer: (seed: number, userClubId: string) => CareerError | null;
+    /** Records the user's result, simulates the rest of the round and moves to the next matchday. */
+    completeMatch: (userResult: Result, report?: MatchReport) => MatchdayError | null;
+    /** Replaces the user's lineup. An invalid lineup returns the error and changes nothing. */
+    setLineup: (lineup: Lineup) => { ok: true } | { ok: false; error: LineupError };
+    /**
+     * Rolls a finished season over to the next one with `rollOverSeason` (the off-season, the user's
+     * squad on autopilot until the off-season screen lets the user decide, then the new season).
+     * Returns an error while the season is running.
+     */
+    startNextSeason: () => NextSeasonError | null;
+    /** State of the latest autosave. */
+    saveStatus: SaveStatus;
+    /** Time (from the injected clock) of the latest successful autosave, or null. */
+    lastSavedAt: string | null;
+    /** True when a usable save was found on startup and `loadAutosave` can load it. */
+    continueAvailable: boolean;
+    /** Describes the save `loadAutosave` would load, or null. */
+    continueInfo: ContinueInfo | null;
+    /** Loads the save found on startup as the running career. Resolves to false when there is none. */
+    loadAutosave: () => Promise<boolean>;
+    /** Why the save found on startup could not be loaded, or null. */
+    loadError: ContinueError | null;
+    /** Hides the load error so the user can start a new career. */
+    dismissLoadError: () => void;
+    /**
+     * Deletes the unusable save behind `loadError`, then looks again for a save to continue.
+     * Fails (and keeps the error) when the storage refuses or the damaged slot is not known.
+     */
+    discardLoadError: () => Promise<SlotActionResult>;
+    /** False until the first look for a save to continue has finished. */
+    startupChecked: boolean;
+    /** Describes the autosave and the manual slots. Never throws. */
+    listSlots: () => Promise<SlotsResult>;
+    /** Writes the running career into a manual slot with a fresh save time. */
+    saveToSlot: (id: string) => Promise<SlotActionResult>;
+    /** Replaces the running career with the one in the slot. */
+    loadSlot: (id: string) => Promise<SlotActionResult>;
+    /** Removes a slot (also a damaged one). Deleting an empty slot is not an error. */
+    deleteSlot: (id: string) => Promise<SlotActionResult>;
+    /** Hands a slot's stored save to the user as a file. */
+    exportSlot: (id: string) => Promise<SlotActionResult>;
+    /** Hands the running career to the user as a file. */
+    exportCareer: () => SlotActionResult;
+    /** Lets the user pick a file and validates it. It is stored only by `importInto`. */
+    pickImport: () => Promise<ImportPickResult>;
+    /** The validated file waiting for a target slot, or null. */
+    importOffer: ImportOffer | null;
+    /** Why the latest picked file was rejected, or null. */
+    importError: ImportError | null;
+    /** Drops the waiting file and any import error. */
+    cancelImport: () => void;
+    /** Stores the waiting file in a manual slot (the caller has confirmed any overwrite). */
+    importInto: (id: string) => Promise<SlotActionResult>;
+    /** The slot the latest import went into, or null. */
+    lastImportedSlot: string | null;
+  };
 
 const clubNameOf = (career: Career): string =>
   career.league.clubs.find((c) => c.id === career.userClubId)?.name ?? career.userClubId;
@@ -216,16 +210,7 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
     },
     [career],
   );
-  const setTactics = useCallback(
-    (tactics: TeamTactics) =>
-      setCareer((current) => (current ? applyTactics(current, tactics) : current)),
-    [],
-  );
-  const autoPickLineup = useCallback(
-    (formation: Formation) =>
-      setCareer((current) => (current ? autoPickUserLineup(current, formation) : current)),
-    [],
-  );
+  const planEdits = usePlanEdits(setCareer);
   const rollOver = useCallback((): NextSeasonError | null => {
     if (!career) return "season-incomplete";
     const outcome = rollOverSeason(career);
@@ -372,8 +357,7 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       startCareer,
       completeMatch,
       setLineup,
-      setTactics,
-      autoPickLineup,
+      ...planEdits,
       startNextSeason: rollOver,
       ...transfers,
       saveStatus,
@@ -403,8 +387,7 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       startCareer,
       completeMatch,
       setLineup,
-      setTactics,
-      autoPickLineup,
+      planEdits,
       rollOver,
       transfers,
       saveStatus,
