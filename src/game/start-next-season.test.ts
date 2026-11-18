@@ -1,3 +1,4 @@
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { acceptOffer } from "./accept-offer";
 import { autoManageUserSquad } from "./auto-manage-squad";
@@ -7,6 +8,7 @@ import { finishSeason } from "./finish-season";
 import { playMatchdays, playSeasons, rolledOver } from "./season-test-helpers";
 import { squadLimits } from "./squad-limits";
 import { startNextSeason } from "./start-next-season";
+import { FREE_AGENT_POOL_CAP } from "./trim-free-agents";
 
 const finished = (career: Career): Career => {
   const result = finishSeason(career);
@@ -185,5 +187,36 @@ describe("startNextSeason", () => {
 
   it("rolls a career over in one step with the test helper", () => {
     expect(rolledOver(playMatchdays(aCareer(), 26)).season.number).toBe(2);
+  });
+
+  it("never leaves more than the cap of free agents, whatever the pool was", () => {
+    const old = offSeason();
+    const aiPlayers = old.league.clubs
+      .filter((c) => c.id !== old.userClubId)
+      .flatMap((c) => c.playerIds);
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 70 }), (extra) => {
+        const moved = new Set(aiPlayers.slice(0, extra));
+        const crowded: Career = {
+          ...old,
+          league: {
+            ...old.league,
+            clubs: old.league.clubs.map((c) => ({
+              ...c,
+              playerIds: c.playerIds.filter((id) => !moved.has(id)),
+            })),
+          },
+          freeAgentIds: [...old.freeAgentIds, ...moved],
+        };
+
+        const career = next(crowded);
+
+        expect(career.freeAgentIds.length).toBeLessThanOrEqual(FREE_AGENT_POOL_CAP);
+        const all = career.league.clubs.flatMap((c) => c.playerIds).concat(career.freeAgentIds);
+        expect(new Set(all).size).toBe(all.length);
+        expect(new Set(all)).toEqual(new Set(career.league.players.map((p) => p.id)));
+      }),
+      { numRuns: 8 },
+    );
   });
 });
