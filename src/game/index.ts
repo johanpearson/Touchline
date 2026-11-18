@@ -170,6 +170,7 @@ export {
   retirePlayers,
 } from "./retire-players";
 export { rollOverSeason } from "./roll-over-season";
+export type { RetiredPlayer, RolloverRecord } from "./rollover-record";
 export type { SeasonError, SeasonSummary, SummaryResult, TopScorer } from "./season-summary";
 export { extendTrail, type SeasonTrail } from "./season-trail";
 export {

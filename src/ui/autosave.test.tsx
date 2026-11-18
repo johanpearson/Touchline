@@ -137,12 +137,21 @@ describe("autosave and continue", () => {
     expect((await store.load("autosave"))?.createdAt).toBe(first.createdAt);
   });
 
-  it("autosaves after starting the next season", async () => {
+  it("autosaves when the off-season opens and again when the next season starts", async () => {
     const { store } = mountApp();
     startCareer();
     for (let i = 0; i < 26; i++) quickSim();
     goTo("#/season-end");
     fireEvent.click(screen.getByTestId("next-season"));
+
+    await waitFor(async () =>
+      expect(savedCareer((await store.load("autosave")) as SaveEnvelope).window).toBe("open"),
+    );
+    for (const button of screen.queryAllByTestId(/^resign-/)) {
+      fireEvent.click(button);
+      fireEvent.click(screen.getByTestId("confirm-resign"));
+    }
+    fireEvent.click(screen.getByTestId("start-next-season"));
 
     await waitFor(async () =>
       expect(savedCareer((await store.load("autosave")) as SaveEnvelope).season.number).toBe(2),

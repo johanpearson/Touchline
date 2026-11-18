@@ -723,3 +723,39 @@ describe("parseCareer and the last development (schema v7, optional)", () => {
     ).toBe("invalid-development");
   });
 });
+
+describe("parseCareer and the last rollover record (schema v7, optional)", () => {
+  const withRecord = (record: unknown): unknown =>
+    mutated((c) => {
+      (c as Record<string, unknown>).lastRollover = record;
+    });
+  const valid = {
+    retired: [{ name: "Old Timer", age: 36, position: "DEF" }],
+    income: 5000,
+    wages: 4200,
+  };
+
+  it("keeps a valid record", () => {
+    const result = parseCareer(withRecord(valid));
+    expect(result.ok && result.career.lastRollover).toEqual(valid);
+  });
+
+  it("leaves it out of a save that has none", () => {
+    const result = parseCareer(roundTrip(aCareer()));
+    expect(result.ok && "lastRollover" in result.career).toBe(false);
+  });
+
+  it("rejects a record that is not an object or has bad money, a bad position or a bad age", () => {
+    for (const bad of [
+      "no",
+      { ...valid, income: 1.5 },
+      { ...valid, wages: -1 },
+      { ...valid, retired: "none" },
+      { ...valid, retired: [{ name: "X", age: 36, position: "ST" }] },
+      { ...valid, retired: [{ name: "X", age: 2, position: "DEF" }] },
+      { ...valid, retired: [{ name: 5, age: 36, position: "DEF" }] },
+    ]) {
+      expect(errorOf(withRecord(bad))).toBe("invalid-rollover");
+    }
+  });
+});

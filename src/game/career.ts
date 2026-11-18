@@ -4,6 +4,7 @@ import type { AttributeChange } from "./develop-player";
 import type { Fixture } from "./generate-fixtures";
 import type { League } from "./league";
 import type { PlayerCondition } from "./player-condition";
+import type { RolloverRecord } from "./rollover-record";
 import type { SeasonSummary } from "./season-summary";
 import type { SquadPlan } from "./squad-plan";
 import type { TransferOffer, TransferWindow } from "./transfer-offer";
@@ -47,6 +48,8 @@ export type Career = {
   offers: TransferOffer[];
   /** The attribute changes of the last yearly development, for the squad screen. Optional and absent until a rollover has developed the players (still schema v7). */
   lastDevelopment?: AttributeChange[];
+  /** What the user's club went through at the last rollover, for the off-season review. Optional (still schema v7). */
+  lastRollover?: RolloverRecord;
 };
 
 export type CareerError = "unknown-club";

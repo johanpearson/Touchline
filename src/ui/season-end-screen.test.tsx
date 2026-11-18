@@ -56,7 +56,7 @@ describe("SeasonEndView", () => {
     expect(screen.getByTestId("champion-card").getAttribute("data-user-champion")).toBe("true");
   });
 
-  it("starts the next season from the button", () => {
+  it("goes on to the off-season from the button", () => {
     const onNext = vi.fn();
     renderEnd(finished(), "en", onNext);
     fireEvent.click(screen.getByTestId("next-season"));

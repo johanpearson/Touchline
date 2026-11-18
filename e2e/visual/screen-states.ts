@@ -622,6 +622,22 @@ register({
   },
 });
 
+// The off-season (#233): after the season end, the review, the contracts to renew and the start button.
+register({
+  name: "off-season",
+  route: "#/new",
+  state: async (page) => {
+    test.setTimeout(180_000);
+    await startCareerAtHub(page);
+    await playMatchdays(page, 26);
+    await page.evaluate(() => {
+      window.location.hash = "#/season-end";
+    });
+    await page.getByTestId("next-season").click();
+    await page.getByTestId("screen-off-season").waitFor();
+  },
+});
+
 // The not-found screen (#272): an unknown route.
 register({
   name: "not-found",

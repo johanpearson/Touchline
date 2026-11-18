@@ -67,6 +67,14 @@ const playMatchToFullTime = () => {
   act(() => vi.advanceTimersByTime(40_000));
 };
 
+/** Re-signs every player whose contract has ended, at the asked wage, so the squad stays whole. */
+const resignEveryone = () => {
+  for (const button of screen.queryAllByTestId(/^resign-/)) {
+    fireEvent.click(button);
+    fireEvent.click(screen.getByTestId("confirm-resign"));
+  }
+};
+
 describe("season flow", () => {
   beforeEach(() => {
     vi.stubGlobal("requestAnimationFrame", () => 0);
@@ -161,7 +169,7 @@ describe("season flow", () => {
     expect(screen.getByTestId("career-hub")).toBeTruthy();
   });
 
-  it("quick-sims a season, shows the season end screen and starts season 2", () => {
+  it("quick-sims a season, shows the season end screen, works the off-season and starts season 2", () => {
     mount();
     for (let i = 0; i < MATCHDAYS; i++) {
       click("quick-sim");
@@ -175,9 +183,34 @@ describe("season flow", () => {
     expect(screen.getByTestId("top-scorers").children.length).toBeGreaterThan(0);
     expect(screen.getByTestId("user-finish").textContent).toMatch(/\d/);
     click("next-season");
+    expect(screen.getByTestId("screen-off-season")).toBeTruthy();
+    resignEveryone();
+    expect(screen.queryByTestId("start-blocked-reason")).toBeNull();
+    click("start-next-season");
     expect(screen.getByTestId("career-hub")).toBeTruthy();
     expect(screen.getByTestId("next-match-matchday").textContent).toContain("1");
     expect(screen.getByTestId("nav-progress").textContent).toContain("2");
+  });
+
+  it("offers the off-season on the hub instead of the match buttons while the window is open", () => {
+    mount();
+    for (let i = 0; i < MATCHDAYS; i++) {
+      click("quick-sim");
+      goTo("#/");
+    }
+    goTo("#/season-end");
+    click("next-season");
+    goTo("#/");
+    expect(screen.getByTestId("to-off-season")).toBeTruthy();
+    expect(screen.queryByTestId("play-match")).toBeNull();
+    expect(screen.queryByTestId("to-season-end")).toBeNull();
+  });
+
+  it("sends #/off-season back to the hub while a season is running", () => {
+    mount();
+    goTo("#/off-season");
+    expect(screen.getByTestId("career-hub")).toBeTruthy();
+    expect(screen.queryByTestId("screen-off-season")).toBeNull();
   });
 
   it("redirects #/match to the hub when the season is complete", () => {

@@ -1,6 +1,6 @@
 import { Trophy } from "lucide-react";
 import { useMemo } from "react";
-import { type Career, summariseSeason } from "../game";
+import { type Career, isWindowOpen, summariseSeason } from "../game";
 import { Button } from "./components/button";
 import { Card } from "./components/card";
 import { cn } from "./components/cn";
@@ -113,7 +113,7 @@ function TopScorers({ career, summary }: { career: Career; summary: Summary }) {
   );
 }
 
-/** The finished season: champion, the user's finish, the final table and the top scorers. */
+/** The finished season (the next button opens the off-season): champion, the user's finish, the final table and the top scorers. */
 export function SeasonEndView({
   career,
   summary,
@@ -160,11 +160,13 @@ export function SeasonEndView({
 }
 
 export function SeasonEndScreen() {
-  const { career, startNextSeason } = useCareer();
+  const { career, finishSeason } = useCareer();
   const result = career ? summariseSeason(career) : null;
   if (!career || !result?.ok) return <Redirect to={{ name: "home" }} />;
+  // A season that was finished before (a save made in the off-season) goes straight on.
   const next = () => {
-    if (startNextSeason() === null) window.location.hash = hrefFor({ name: "home" });
+    const error = isWindowOpen(career) ? null : finishSeason();
+    if (error === null) window.location.hash = hrefFor({ name: "off-season" });
   };
   return <SeasonEndView career={career} summary={result.summary} onNext={next} />;
 }

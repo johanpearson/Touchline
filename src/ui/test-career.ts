@@ -2,6 +2,7 @@ import {
   type Career,
   createCareer,
   extendTrail,
+  finishSeason,
   generateLeague,
   generateOffers,
   releasePlayer,
@@ -63,3 +64,10 @@ export const careerInWindow = (seed = 11, clubIndex = 2): Career => {
 };
 
 const freeAgentCount = (career: Career): number => career.freeAgentIds.length;
+
+/** Test fixture: the first season played to the end and finished, so the off-season window is open. */
+export const careerInOffSeason = (seed = 11, clubIndex = 2): Career => {
+  const result = finishSeason(careerAfter(26, seed, clubIndex));
+  if (!result.ok) throw new Error(result.error);
+  return result.career;
+};

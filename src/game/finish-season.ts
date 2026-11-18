@@ -1,4 +1,6 @@
+import { buildRolloverRecord } from "./build-rollover-record";
 import type { Career } from "./career";
+import type { AttributeChange } from "./develop-player";
 import { developPlayers } from "./develop-players";
 import { generateOffers } from "./generate-offers";
 import { renewAiContracts } from "./renew-ai-contracts";
@@ -17,10 +19,18 @@ export type FinishSeasonResult =
 export const isSeasonFinished = (career: Career): boolean =>
   career.history.some((summary) => summary.seasonNumber === career.season.number);
 
-const developed = (career: Career): Career => ({
-  ...career,
-  league: { ...career.league, players: developPlayers(career).players },
-});
+/** The career with every player aged and developed, and the change list of that development. */
+const developed = (career: Career) => {
+  const development = developPlayers(career);
+  const next: Career = { ...career, league: { ...career.league, players: development.players } };
+  return { next, changes: development.changes };
+};
+
+/** The change list without players who retired straight after. */
+const survivorChanges = (changes: AttributeChange[], retired: Career): AttributeChange[] => {
+  const staying = new Set(retired.league.players.map((p) => p.id));
+  return changes.filter((change) => staying.has(change.playerId));
+};
 
 /**
  * Step one of the rollover (`docs/vision.md`, "Off-season order"): turns a completed season into
@@ -30,7 +40,8 @@ const developed = (career: Career): Career => ({
  * AI clubs renew or release their expiring players, every club gets its youth intake, offers for
  * the user's players are made and the transfer window opens. The user's own expiring contracts
  * stay on the squad so they can be renewed during the window; `startNextSeason` lets the
- * unrenewed ones go. The season itself stays as it is (finished). Runs exactly once per season
+ * unrenewed ones go. The change list of the development (players still in the league) and a
+ * `RolloverRecord` of the user's club are stored in `lastDevelopment` and `lastRollover`, replaced every season. The season itself stays as it is (finished). Runs exactly once per season
  * (`already-finished` afterwards) and is pure and deterministic.
  */
 export const finishSeason = (career: Career): FinishSeasonResult => {
@@ -38,7 +49,16 @@ export const finishSeason = (career: Career): FinishSeasonResult => {
   const summarised = summariseSeason(career);
   if (!summarised.ok) return summarised;
   const stored: Career = { ...career, history: [...career.history, summarised.summary] };
-  const aged = retirePlayers(developed(settleSeasonFinances(stored)));
+  const settled = settleSeasonFinances(stored);
+  const { next, changes } = developed(settled);
+  const aged = retirePlayers(next);
   const staffed = generateYouthIntake(renewAiContracts(aged));
-  return { ok: true, career: generateOffers({ ...staffed, window: "open", offers: [] }) };
+  const recorded: Career = {
+    ...staffed,
+    window: "open",
+    offers: [],
+    lastDevelopment: survivorChanges(changes, aged),
+    lastRollover: buildRolloverRecord(stored, settled, aged),
+  };
+  return { ok: true, career: generateOffers(recorded) };
 };

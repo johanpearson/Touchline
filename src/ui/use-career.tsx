@@ -13,14 +13,18 @@ import {
   type CareerError,
   completeMatchday,
   createCareer,
+  type FinishSeasonError,
+  finishSeason as finishGameSeason,
   type Lineup,
   type LineupError,
   type MatchdayError,
   type MatchReport,
   type NextSeasonError,
   parseCareer,
+  type RenewError,
   type Result,
-  rollOverSeason,
+  renewContract as renewGameContract,
+  startNextSeason as startGameNextSeason,
 } from "../game";
 import { createEnvelope, parseSaveFile, saveFileName, serializeSave } from "../platform";
 import type { FileTransfer, SaveEnvelope, SaveStore } from "../shared";
@@ -60,9 +64,16 @@ export type CareerStore = PlanEdits &
     /** Replaces the user's lineup. An invalid lineup returns the error and changes nothing. */
     setLineup: (lineup: Lineup) => { ok: true } | { ok: false; error: LineupError };
     /**
-     * Rolls a finished season over to the next one with `rollOverSeason` (the off-season, the user's
-     * squad on autopilot until the off-season screen lets the user decide, then the new season).
-     * Returns an error while the season is running.
+     * Ends a completed season: development, retirements, finances, youth and offers, and the
+     * transfer window opens (the off-season). Returns an error while the season is running or when
+     * it was already finished.
+     */
+    finishSeason: () => FinishSeasonError | null;
+    /** Renews the contract of one of the user's players in the off-season. Returns the refusal, or null. */
+    renewContract: (playerId: string, wage: number, seasons: number) => RenewError | null;
+    /**
+     * Starts the next season once the off-season is open. Returns the refusal (`squad-over-limit`
+     * covers a squad outside 18 to 30 players or below a position minimum), or null.
      */
     startNextSeason: () => NextSeasonError | null;
     /** State of the latest autosave. */
@@ -211,9 +222,28 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
     [career],
   );
   const planEdits = usePlanEdits(setCareer);
-  const rollOver = useCallback((): NextSeasonError | null => {
+  const finishSeason = useCallback((): FinishSeasonError | null => {
     if (!career) return "season-incomplete";
-    const outcome = rollOverSeason(career);
+    const outcome = finishGameSeason(career);
+    if (!outcome.ok) return outcome.error;
+    setCareer(outcome.career);
+    persist(outcome.career, "continue");
+    return null;
+  }, [career, persist]);
+  const renewContract = useCallback(
+    (playerId: string, wage: number, seasons: number): RenewError | null => {
+      if (!career) return "unknown-player";
+      const outcome = renewGameContract(career, playerId, wage, seasons);
+      if (!outcome.ok) return outcome.error;
+      setCareer(outcome.career);
+      persist(outcome.career, "continue");
+      return null;
+    },
+    [career, persist],
+  );
+  const startNextSeason = useCallback((): NextSeasonError | null => {
+    if (!career) return "season-incomplete";
+    const outcome = startGameNextSeason(career);
     if (!outcome.ok) return outcome.error;
     setCareer(outcome.career);
     persist(outcome.career, "continue");
@@ -358,7 +388,9 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       completeMatch,
       setLineup,
       ...planEdits,
-      startNextSeason: rollOver,
+      finishSeason,
+      renewContract,
+      startNextSeason,
       ...transfers,
       saveStatus,
       lastSavedAt,
@@ -388,7 +420,9 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       completeMatch,
       setLineup,
       planEdits,
-      rollOver,
+      finishSeason,
+      renewContract,
+      startNextSeason,
       transfers,
       saveStatus,
       lastSavedAt,

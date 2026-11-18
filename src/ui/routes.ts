@@ -6,6 +6,7 @@ export type Route =
   | { name: "match" }
   | { name: "results" }
   | { name: "season-end" }
+  | { name: "off-season" }
   | { name: "saves" }
   | { name: "settings" }
   | { name: "squad" }
@@ -20,6 +21,7 @@ const SIMPLE_NAMES = [
   "match",
   "results",
   "season-end",
+  "off-season",
   "saves",
   "settings",
   "squad",

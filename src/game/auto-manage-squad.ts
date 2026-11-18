@@ -74,8 +74,8 @@ const fillSquad = (career: Career): Career => {
  * the wage budget allows at the player's asking wage for three seasons, lets the others end,
  * releases the weakest surplus above 30 (never below a position minimum) and signs the best free
  * agents of the needed positions until the squad is legal, then re-picks the lineup if a planned
- * player left. A stop-gap until the off-season screen (#233) lets the user decide; also the passive
- * user of the long-run balance test. Pure and deterministic; AI clubs are not touched.
+ * player left. The UI no longer uses it (the off-season screen lets the user decide); it is the
+ * passive user of the long-run balance test. Pure and deterministic; AI clubs are not touched.
  */
 export const autoManageUserSquad = (career: Career): Career => {
   const legal = fillSquad(releaseSurplus(expireContracts(renewExpiring(career))));

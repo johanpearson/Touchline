@@ -12,6 +12,7 @@ import type { MatchScreenProps } from "./match-view";
 import { MatchdayResultsScreen } from "./matchday-results-screen";
 import { NewCareerWizard } from "./new-career/new-career-wizard";
 import { NotFoundScreen } from "./not-found-screen";
+import { OffSeasonScreen } from "./off-season/off-season-screen";
 import { PlayerView } from "./player-screen";
 import { Redirect } from "./redirect";
 import type { Route } from "./routes";
@@ -56,6 +57,7 @@ const CAREER_SCREENS: Partial<Record<Route["name"], ScreenBuilder>> = {
   market: ({ career }) => <MarketScreen career={career} />,
   results: () => <MatchdayResultsScreen />,
   "season-end": () => <SeasonEndScreen />,
+  "off-season": () => <OffSeasonScreen />,
   new: () => <Redirect to={{ name: "home" }} />,
   "new-club": () => <Redirect to={{ name: "home" }} />,
 };
