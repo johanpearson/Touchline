@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   CirclePlay,
   House,
   type LucideIcon,
@@ -19,6 +20,7 @@ export type NavId =
   | "hub"
   | "squad"
   | "tactics"
+  | "market"
   | "match"
   | "league"
   | "club"
@@ -53,6 +55,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     labelKey: "nav.tactics",
     icon: SlidersHorizontal,
     route: () => ({ name: "tactics" }),
+    phone: "more",
+  },
+  {
+    id: "market",
+    labelKey: "nav.market",
+    icon: ArrowLeftRight,
+    route: () => ({ name: "market" }),
     phone: "more",
   },
   {

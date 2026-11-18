@@ -229,6 +229,21 @@ register({
   },
 });
 
+// The transfer market (#232): a new career has the window closed, so buying shows its disabled reason.
+register({
+  name: "market-players",
+  route: "#/new",
+  state: async (page) => {
+    await startCareerAtHub(page);
+    // By hash: the Transfers link sits in the rail, the sidebar or the More sheet depending on width.
+    await page.evaluate(() => {
+      window.location.hash = "#/market";
+    });
+    await page.getByTestId("market-screen").waitFor();
+    await page.getByTestId("market-blocked").waitFor();
+  },
+});
+
 // The player profile (#261): an outfield player and a goalkeeper, opened from the squad table.
 const openPlayerFrom = (position: "FWD" | "GK") => async (page: Page) => {
   await openSquadTable(page);

@@ -68,7 +68,7 @@ describe("app shell on a desktop", () => {
   it("shows the sidebar with a label for every item", () => {
     startCareer();
     const nav = screen.getByRole("navigation", { name: "Main navigation" });
-    for (const id of ["hub", "squad", "tactics", "match", "league", "club", "saves"]) {
+    for (const id of ["hub", "squad", "tactics", "market", "match", "league", "club", "saves"]) {
       expect(within(nav).getByTestId(`nav-${id}`).textContent).not.toBe("");
     }
     expect(screen.getByTestId("app-shell").dataset.mode).toBe("sidebar");

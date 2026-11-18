@@ -30,6 +30,7 @@ describe("buildPaletteItems", () => {
       "Home",
       "Squad",
       "Tactics",
+      "Transfers",
       "Next match",
       "League",
       "My club",

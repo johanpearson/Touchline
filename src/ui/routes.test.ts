@@ -16,6 +16,7 @@ describe("parseRoute", () => {
     expect(parseRoute("#/settings")).toEqual({ name: "settings" });
     expect(parseRoute("#/squad")).toEqual({ name: "squad" });
     expect(parseRoute("#/tactics")).toEqual({ name: "tactics" });
+    expect(parseRoute("#/market")).toEqual({ name: "market" });
     expect(parseRoute("#/new")).toEqual({ name: "new" });
   });
 
@@ -66,6 +67,7 @@ describe("hrefFor", () => {
       { name: "settings" },
       { name: "squad" },
       { name: "tactics" },
+      { name: "market" },
       { name: "new" },
       { name: "new-club" },
       { name: "match" },

@@ -6,6 +6,7 @@ import { CareerHubScreen } from "./career-hub-screen";
 import { ClubView } from "./club-screen";
 import { I18nProvider } from "./i18n-provider";
 import { LeagueScreen } from "./league-screen";
+import { MarketScreen } from "./market/market-screen";
 import { MatchFlowScreen } from "./match-flow-screen";
 import type { MatchScreenProps } from "./match-view";
 import { MatchdayResultsScreen } from "./matchday-results-screen";
@@ -52,6 +53,7 @@ const CAREER_SCREENS: Partial<Record<Route["name"], ScreenBuilder>> = {
   ),
   squad: ({ career }) => <SquadScreen career={career} />,
   tactics: ({ career }) => <TacticsScreen career={career} />,
+  market: ({ career }) => <MarketScreen career={career} />,
   results: () => <MatchdayResultsScreen />,
   "season-end": () => <SeasonEndScreen />,
   new: () => <Redirect to={{ name: "home" }} />,
