@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.8.0](https://github.com/johanpearson/Touchline/compare/v1.7.0...v1.8.0) (2026-11-18)
+
+
+### Features
+
+* **game:** add potential, contracts, finances and minutes to the career model (schema v7) ([#356](https://github.com/johanpearson/Touchline/issues/356)) ([0a6f018](https://github.com/johanpearson/Touchline/commit/0a6f0184ffbe867604691b2d25adfe8278e1a461))
+* **game:** AI clubs use substitutions and shouts ([#367](https://github.com/johanpearson/Touchline/issues/367)) ([06bb96b](https://github.com/johanpearson/Touchline/commit/06bb96b13c71c29c82c923dcbe34e9b3fcf1e17e))
+* **game:** AI squad building, contract renewals and transfer offers ([#362](https://github.com/johanpearson/Touchline/issues/362)) ([ce91371](https://github.com/johanpearson/Touchline/commit/ce913712199c0badf066294e4e2acea52e17b937))
+* **game:** cap the free-agent pool at the rollover ([#373](https://github.com/johanpearson/Touchline/issues/373)) ([5c3ce43](https://github.com/johanpearson/Touchline/commit/5c3ce43f8a1eec259ecadf9978607ac5094d115e)), closes [#365](https://github.com/johanpearson/Touchline/issues/365)
+* **game:** contracts, wages and the club economy at season rollover ([#359](https://github.com/johanpearson/Touchline/issues/359)) ([85bc4fd](https://github.com/johanpearson/Touchline/commit/85bc4fd1417d8a23e2b75e3529fca14218c15221))
+* **game:** run the off-season at the rollover and balance the league over ten seasons ([#366](https://github.com/johanpearson/Touchline/issues/366)) ([4f219cd](https://github.com/johanpearson/Touchline/commit/4f219cdd29d122237d2fe716ff5bf5e21ce9d41e))
+* **game:** track minutes played and develop players once a year ([#358](https://github.com/johanpearson/Touchline/issues/358)) ([0ea6ade](https://github.com/johanpearson/Touchline/commit/0ea6ade924eb2c56ed44d84f04aa4187384d8efd))
+* **game:** transfer market operations: buy, sign free agents, accept offers, release ([#360](https://github.com/johanpearson/Touchline/issues/360)) ([cc26a4b](https://github.com/johanpearson/Touchline/commit/cc26a4bef4c66845bd88b373780175af014b3421))
+* **game:** youth intake and retirement ([#361](https://github.com/johanpearson/Touchline/issues/361)) ([6e44fec](https://github.com/johanpearson/Touchline/commit/6e44fec7a1e5d03806a0329ec28450fd4779fa06))
+* **ui:** off-season screen with season review, contract renewals and next-season gate ([#372](https://github.com/johanpearson/Touchline/issues/372)) ([7628f6a](https://github.com/johanpearson/Touchline/commit/7628f6a0ed1a13986d58c0a611f4174ec3f9aefc))
+* **ui:** show age, potential, contract, value and development in the squad screen ([#364](https://github.com/johanpearson/Touchline/issues/364)) ([723c0e8](https://github.com/johanpearson/Touchline/commit/723c0e8b2400a65b6bf187a662bb896b70bbd16f))
+* **ui:** transfer market screen with free agents, buying and offers ([#371](https://github.com/johanpearson/Touchline/issues/371)) ([58530e6](https://github.com/johanpearson/Touchline/commit/58530e6e6cadf533df5a528505eb61edf909dad4))
+
 ## [1.7.0](https://github.com/johanpearson/Touchline/compare/v1.6.0...v1.7.0) (2026-11-17)
 
 
