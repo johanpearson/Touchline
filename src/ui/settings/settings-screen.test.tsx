@@ -146,4 +146,55 @@ describe("settings screen", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Light" }));
     expect(document.documentElement.dataset.theme).toBe("light");
   });
+
+  describe("table density preview", () => {
+    const previewDensity = () =>
+      screen.getAllByTestId("density-preview")[0]?.getAttribute("data-density");
+
+    it("previews the selected density", () => {
+      mount();
+      expect(previewDensity()).toBe("compact");
+    });
+
+    it("previews an option on hover without choosing it, and goes back on leave", () => {
+      const { density } = mount();
+      const comfortable = screen.getByRole("radio", { name: "Comfortable" });
+      fireEvent.mouseEnter(comfortable);
+      expect(previewDensity()).toBe("comfortable");
+      expect(density.load()).not.toBe("comfortable");
+      fireEvent.mouseLeave(comfortable);
+      expect(previewDensity()).toBe("compact");
+    });
+
+    it("previews an option on focus", () => {
+      mount();
+      const comfortable = screen.getByRole("radio", { name: "Comfortable" });
+      fireEvent.focus(comfortable);
+      expect(previewDensity()).toBe("comfortable");
+      fireEvent.blur(comfortable);
+      expect(previewDensity()).toBe("compact");
+    });
+
+    it("commits the choice on click", () => {
+      const { density } = mount();
+      fireEvent.click(screen.getByRole("radio", { name: "Comfortable" }));
+      expect(density.load()).toBe("comfortable");
+      expect(previewDensity()).toBe("comfortable");
+    });
+
+    it("shows a tiny preview per option and marks the selected one", () => {
+      mount();
+      expect(screen.getByTestId("density-option-compact").className).toContain("border-accent");
+      expect(screen.getByTestId("density-option-comfortable").className).not.toContain(
+        "border-accent",
+      );
+    });
+
+    it("keeps the previews out of the accessibility tree", () => {
+      mount();
+      const group = screen.getByRole("radiogroup", { name: "Table density" });
+      expect(within(group).getAllByRole("radio")).toHaveLength(2);
+      expect(screen.queryAllByRole("table")).toHaveLength(0);
+    });
+  });
 });

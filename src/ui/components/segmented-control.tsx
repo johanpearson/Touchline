@@ -18,6 +18,8 @@ export type SegmentedControlProps<T extends string> = {
   options: readonly SegmentedOption<T>[];
   value: T;
   onValueChange: (value: T) => void;
+  /** Called with an option on hover or focus and with `null` when it ends (a preview, not a choice). */
+  onPreviewChange?: (value: T | null) => void;
   className?: string;
 };
 
@@ -30,6 +32,7 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onValueChange,
+  onPreviewChange,
   className,
   testId,
 }: SegmentedControlProps<T>) {
@@ -76,6 +79,10 @@ export function SegmentedControl<T extends string>({
             disabled={option.disabled}
             tabIndex={index === tabStop ? 0 : -1}
             onClick={() => onValueChange(option.value)}
+            onMouseEnter={() => onPreviewChange?.(option.value)}
+            onMouseLeave={() => onPreviewChange?.(null)}
+            onFocus={() => onPreviewChange?.(option.value)}
+            onBlur={() => onPreviewChange?.(null)}
             onKeyDown={(event) => onKeyDown(event, index)}
             className={cn(
               "min-h-9 min-w-11 cursor-pointer rounded-sm border-0 px-3 text-[13px] font-semibold select-none pointer-coarse:min-h-11",
