@@ -62,17 +62,20 @@ describe("App", () => {
 
   it("starts in English when nothing is saved", () => {
     renderApp();
-    expect(screen.getByText(/Language/)).toBeTruthy();
+    goTo("#/settings");
+    expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeTruthy();
   });
 
   it("starts in the saved locale", () => {
     renderApp("sv");
-    expect(screen.getByText(/Språk/)).toBeTruthy();
+    goTo("#/settings");
+    expect(screen.getByRole("heading", { level: 1, name: "Inställningar" })).toBeTruthy();
   });
 
   it("ignores an unsupported saved locale", () => {
     renderApp("xx");
-    expect(screen.getByText(/Language/)).toBeTruthy();
+    goTo("#/settings");
+    expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeTruthy();
   });
 
   it("switches locale and remembers it in the store", () => {
@@ -87,16 +90,34 @@ describe("App", () => {
         initialSeed={1}
       />,
     );
-    fireEvent.change(screen.getByTestId("locale-switch"), { target: { value: "sv" } });
-    expect(screen.getByText(/Språk/)).toBeTruthy();
+    goTo("#/settings");
+    fireEvent.click(screen.getByRole("radio", { name: "Swedish" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Inställningar" })).toBeTruthy();
     expect(store.load()).toBe("sv");
   });
 
-  it("keeps the locale switch on the career hub", () => {
+  it("has no language control on the career hub", () => {
     renderApp();
     startCareer(leagueFor(11).clubs[0]?.id ?? "");
     expect(screen.getByTestId("career-hub")).toBeTruthy();
-    expect(screen.getByTestId("locale-switch")).toBeTruthy();
+    expect(screen.queryByTestId("locale-switch")).toBeNull();
+  });
+
+  it("has a Settings link and no language control in the new career screens", () => {
+    renderApp();
+    goTo("#/new");
+    expect(screen.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe("#/settings");
+    expect(screen.queryByTestId("locale-switch")).toBeNull();
+    goTo("#/new/club");
+    expect(screen.getByRole("link", { name: "Settings" })).toBeTruthy();
+  });
+
+  it("has the language control in Settings only", () => {
+    renderApp();
+    goTo("#/settings");
+    expect(screen.getByRole("radiogroup", { name: "Language" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Settings" })).toBeNull();
+    expect(screen.queryByTestId("locale-switch")).toBeNull();
   });
 
   it("gives the squad table the density from the density store", () => {
