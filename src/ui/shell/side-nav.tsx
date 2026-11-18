@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { type KeyboardEvent, useEffect, useState } from "react";
 import { cn, IconButton, Tooltip } from "../components";
 import { useI18n } from "../i18n-provider";
-import { LocaleSwitch } from "../locale-switch";
 import { DURATION, EASE, useReducedMotion } from "../motion";
 import { Brand } from "./brand";
 import { NAV_ITEMS } from "./nav-config";
@@ -90,14 +89,6 @@ function RailToggle({ expanded, onToggle }: { expanded: boolean; onToggle: () =>
   );
 }
 
-function NavFooter() {
-  return (
-    <div className="mt-auto flex flex-col gap-2 text-sm text-soft">
-      <LocaleSwitch />
-    </div>
-  );
-}
-
 /** Width in pixels of the icon rail and of the rail expanded to an overlay (w-18, w-60). */
 const RAIL_CLOSED = 72;
 const RAIL_OPEN = 240;
@@ -149,7 +140,6 @@ export function SideNav({ mode }: SideNavProps) {
           {rail ? <RailToggle expanded={expanded} onToggle={toggle} /> : null}
         </div>
         <NavList compact={compact} onNavigate={collapse} />
-        {compact ? null : <NavFooter />}
       </motion.nav>
     </div>
   );

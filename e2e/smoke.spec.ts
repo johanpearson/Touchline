@@ -7,13 +7,16 @@ test.describe("smoke", () => {
     await expect(page.getByTestId("app-title")).toHaveText("Touchline");
   });
 
-  test("switches the language @smoke", async ({ page }) => {
+  test("switches the language from Start to Settings and back @smoke", async ({ page }) => {
     await page.goto("./");
-    await expect(page.getByLabel("Language")).toBeVisible();
+    await expect(page.getByTestId("locale-switch")).toHaveCount(0);
 
-    await page.getByTestId("locale-switch").selectOption("sv");
+    await page.getByTestId("nav-settings").click();
+    await page.getByRole("radio", { name: "Swedish" }).click();
+    await expect(page.getByRole("radiogroup", { name: "Språk" })).toBeVisible();
 
-    await expect(page.getByLabel("Språk")).toBeVisible();
+    await page.goBack();
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Vinn ligan.");
   });
 });
 
@@ -30,9 +33,10 @@ test.describe("blocked storage", () => {
     await page.goto("./");
     await expect(page.getByTestId("app-title")).toHaveText("Touchline");
 
-    await page.getByTestId("locale-switch").selectOption("sv");
+    await page.getByTestId("nav-settings").click();
+    await page.getByRole("radio", { name: "Swedish" }).click();
 
-    await expect(page.getByLabel("Språk")).toBeVisible();
+    await expect(page.getByRole("radiogroup", { name: "Språk" })).toBeVisible();
   });
 });
 
@@ -50,7 +54,7 @@ test.describe("new career", () => {
     await expect(page.getByTestId("career-hub")).toBeVisible();
     await expect(page.getByTestId("hub-club-name")).toHaveText(name);
     await expect(page.getByTestId("nav-club-name")).toHaveText(name);
-    await expect(page.getByTestId("locale-switch")).toBeVisible();
+    await expect(page.getByTestId("locale-switch")).toHaveCount(0);
   });
 });
 

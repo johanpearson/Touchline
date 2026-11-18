@@ -81,9 +81,9 @@ describe("app shell on a desktop", () => {
     expect(screen.getByRole("main")).toBeTruthy();
   });
 
-  it("keeps the language switch reachable", () => {
+  it("has no language control", () => {
     startCareer();
-    expect(screen.getByTestId("locale-switch")).toBeTruthy();
+    expect(screen.queryByTestId("locale-switch")).toBeNull();
   });
 
   it("shows the club identity and a Continue action in the header", () => {
@@ -141,6 +141,7 @@ describe("app shell on a tablet", () => {
   it("shows an icon rail whose items keep their accessible names", () => {
     startCareer();
     expect(screen.getByTestId("app-shell").dataset.mode).toBe("rail");
+    expect(screen.queryByTestId("locale-switch")).toBeNull();
     expect(screen.getByTestId("nav-league").getAttribute("aria-label")).toBe("League");
     expect(screen.getByTestId("nav-league").textContent).toBe("");
   });
@@ -175,16 +176,17 @@ describe("app shell on a phone", () => {
     expect(labels).toEqual(["Home", "Squad", "Next match", "League"]);
     expect(within(nav).getByRole("button", { name: "More" })).toBeTruthy();
     expect(screen.getByTestId("app-shell").dataset.mode).toBe("tabs");
+    expect(screen.queryByTestId("locale-switch")).toBeNull();
   });
 
-  it("lists My club, Saves, Settings and language in the More sheet", () => {
+  it("lists My club, Saves and Settings in the More sheet", () => {
     startCareer();
     expect(screen.queryByTestId("nav-saves")).toBeNull();
     fireEvent.click(screen.getByTestId("nav-more"));
     const sheet = screen.getByRole("dialog", { name: "More" });
     expect(within(sheet).getByTestId("nav-club")).toBeTruthy();
     expect(within(sheet).getByTestId("nav-saves")).toBeTruthy();
-    expect(within(sheet).getByTestId("locale-switch")).toBeTruthy();
+    expect(within(sheet).queryByTestId("locale-switch")).toBeNull();
     expect(within(sheet).getByTestId("nav-settings")).toBeTruthy();
     expect(within(sheet).queryByTestId("theme-switch")).toBeNull();
   });

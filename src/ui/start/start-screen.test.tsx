@@ -111,10 +111,9 @@ describe("start screen", () => {
       expect(screen.getByTestId("hero-artwork").getAttribute("aria-hidden")).toBe("true");
     });
 
-    it("switches language", () => {
+    it("has no language control", () => {
       mountApp(createMemorySaveStore());
-      fireEvent.change(screen.getByTestId("locale-switch"), { target: { value: "sv" } });
-      expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("Vinn ligan.");
+      expect(screen.queryByTestId("locale-switch")).toBeNull();
     });
 
     it("shows the storage warning when saving is unavailable", () => {

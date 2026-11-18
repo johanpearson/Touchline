@@ -1,12 +1,8 @@
 import { Settings } from "lucide-react";
 import { useI18n } from "../i18n-provider";
-import { LocaleSwitch } from "../locale-switch";
 import { hrefFor } from "../routes";
 
-const LABEL = "flex items-center gap-2 text-sm";
-const SELECT = "min-h-11 rounded-md border border-line bg-surface px-2 text-text";
-
-/** Wordmark, language select and the settings link. */
+/** Wordmark and the settings link. */
 export function StartHeader() {
   const { t } = useI18n();
   return (
@@ -18,7 +14,6 @@ export function StartHeader() {
         {t("app.title")}
       </span>
       <div className="ml-auto flex flex-wrap items-center gap-3 text-muted">
-        <LocaleSwitch className={LABEL} selectClassName={SELECT} />
         <a
           data-testid="nav-settings"
           href={hrefFor({ name: "settings" })}
