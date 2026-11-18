@@ -11,6 +11,7 @@ import { playerOverall } from "./player-overall";
 import { simulateFixture } from "./simulate-fixture";
 import { squadLimits } from "./squad-limits";
 import { startNextSeason } from "./start-next-season";
+import { FREE_AGENT_POOL_CAP } from "./trim-free-agents";
 
 // Long-run balance (docs/vision.md, "Long-run balance (M6)"): the league must not drift over ten
 // seasons of growth, decline, retirement, youth and AI squad building, with the user passive (his
@@ -65,6 +66,7 @@ type Snapshot = {
   meanStrength: number;
   gap: number;
   meanAge: number;
+  freeAgents: number;
   illegalClubs: string[];
   emptyLineups: string[];
 };
@@ -84,6 +86,7 @@ const snapshotOf = (career: Career): Snapshot => {
     meanStrength: mean(strengths),
     gap: Math.max(...strengths) - Math.min(...strengths),
     meanAge: mean(squads.flatMap(({ players }) => players.map((p) => p.age))),
+    freeAgents: career.freeAgentIds.length,
     illegalClubs: squads
       .filter(({ club }) => !squadLimits(career, club.id).ok)
       .map((s) => s.club.id),
@@ -132,6 +135,12 @@ describe("ten seasons of development", () => {
       for (const snapshot of run.snapshots) {
         expect(snapshot.illegalClubs).toEqual([]);
         expect(snapshot.emptyLineups).toEqual([]);
+      }
+    });
+
+    it("keeps the free-agent pool within its cap", () => {
+      for (const snapshot of run.snapshots) {
+        expect(snapshot.freeAgents).toBeLessThanOrEqual(FREE_AGENT_POOL_CAP);
       }
     });
 
