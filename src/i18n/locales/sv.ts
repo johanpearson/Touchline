@@ -441,7 +441,8 @@ export const sv = {
   "settings.theme.hint": "Matchplanen ligger alltid på en mörk scen.",
   "settings.theme.group": "Tema",
   "settings.density.title": "Tabelltäthet",
-  "settings.density.hint": "Hur mycket plats tabellraderna får på trupp- och ligasidorna.",
+  "settings.density.hint":
+    "Kompakta rader är smala och ger plats för fler på skärmen; luftiga rader har mer utrymme och är lättare att trycka på.",
   "settings.density.group": "Tabelltäthet",
   "settings.density.compact": "Kompakt",
   "settings.density.comfortable": "Luftig",

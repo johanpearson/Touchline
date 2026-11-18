@@ -436,7 +436,8 @@ export const en = {
   "settings.theme.hint": "The match pitch always sits on a dark stage.",
   "settings.theme.group": "Theme",
   "settings.density.title": "Table density",
-  "settings.density.hint": "How much room table rows get on the squad and league screens.",
+  "settings.density.hint":
+    "Compact rows are slim and fit more on screen; comfortable rows have more room and are easier to tap.",
   "settings.density.group": "Table density",
   "settings.density.compact": "Compact",
   "settings.density.comfortable": "Comfortable",

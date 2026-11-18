@@ -150,7 +150,8 @@ const EDGE = "shadow-[inset_4px_0_0_var(--row-accent,var(--accent))]";
 const FIRST_CELL_EDGE = "[&>:first-child]:shadow-[inset_4px_0_0_var(--row-accent,var(--accent))]";
 const GROUP_TEXT = "text-xs font-semibold tracking-wide text-soft uppercase";
 
-const cellPadding = (density: Density) =>
+/** Row padding per density; the settings preview uses the same classes. */
+export const cellPadding = (density: Density) =>
   density === "comfortable" ? "px-3 py-3.5 min-h-11" : "px-3 py-2";
 
 const groupText = (key: string, groupLabel?: (key: string) => string) =>

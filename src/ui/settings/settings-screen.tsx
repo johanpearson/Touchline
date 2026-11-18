@@ -1,11 +1,12 @@
-import { type ReactNode, useId } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { isLocale, locales } from "../../i18n";
 import { isPreferenceStorageWritable } from "../../platform";
-import { Card, SegmentedControl } from "../components";
+import { Card, cn, SegmentedControl } from "../components";
 import { useMediaQuery } from "../components/use-media-query";
 import { useI18n } from "../i18n-provider";
-import { DENSITIES, isDensity } from "../theme/density";
+import { DENSITIES, type Density, isDensity } from "../theme/density";
 import { useDensity } from "../theme/density-provider";
+import { DensityPreview } from "./density-preview";
 import { ThemeCards } from "./theme-cards";
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
@@ -52,6 +53,7 @@ function LanguageSection() {
 function DensitySection() {
   const { t } = useI18n();
   const { density, setDensity } = useDensity();
+  const [previewed, setPreviewed] = useState<Density | null>(null);
   return (
     <Section title={t("settings.density.title")} hint={t("settings.density.hint")}>
       <SegmentedControl
@@ -61,8 +63,27 @@ function DensitySection() {
         onValueChange={(next) => {
           if (isDensity(next)) setDensity(next);
         }}
+        onPreviewChange={setPreviewed}
         className="self-start"
       />
+      <DensityPreview density={previewed ?? density} className="max-w-[420px]" />
+      <div aria-hidden="true" className="grid max-w-[420px] grid-cols-2 gap-3">
+        {DENSITIES.map((d) => (
+          <figure
+            key={d}
+            data-testid={`density-option-${d}`}
+            className={cn(
+              "m-0 flex flex-col gap-1.5 rounded-lg border p-2",
+              d === density ? "border-accent" : "border-line",
+            )}
+          >
+            <DensityPreview density={d} className="pointer-events-none text-[10px]" />
+            <figcaption className="text-[13px] font-semibold">
+              {t(`settings.density.${d}`)}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
     </Section>
   );
 }

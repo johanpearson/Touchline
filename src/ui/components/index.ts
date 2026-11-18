@@ -5,6 +5,7 @@ export { ChangeFlash } from "./change-flash";
 export { cn } from "./cn";
 export { ConfirmDialog, type ConfirmDialogProps } from "./confirm-dialog";
 export {
+  cellPadding,
   DataTable,
   type DataTableLabels,
   type DataTableProps,
