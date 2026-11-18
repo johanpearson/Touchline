@@ -1,9 +1,15 @@
 import type { Career, Player } from "../../game";
-import { orderedStarters } from "./lineup-model";
+import { orderedStarters, slotRating } from "./lineup-model";
 import { type PitchSlot, pitchSlots } from "./pitch-layout";
 
-export type StarterSlot = PitchSlot & { index: number; player: Player; fitness: number };
-export type BenchSlot = { index: number; player: Player; fitness: number };
+/** `rating` is the effective rating at the slot's position (1..20); `fitness` is the energy, 0 to 100. */
+export type StarterSlot = PitchSlot & {
+  index: number;
+  player: Player;
+  fitness: number;
+  rating: number;
+};
+export type BenchSlot = { index: number; player: Player; fitness: number; rating: number };
 
 const FULL_FITNESS = 100;
 
@@ -16,7 +22,17 @@ export const starterSlots = (career: Career, byId: ReadonlyMap<string, Player>):
   return orderedStarters(career.squadPlan.starters, byId).flatMap((id, index) => {
     const player = byId.get(id);
     const place = layout[index];
-    return player && place ? [{ ...place, index, player, fitness: fitnessOf(career, id) }] : [];
+    return player && place
+      ? [
+          {
+            ...place,
+            index,
+            player,
+            fitness: fitnessOf(career, id),
+            rating: slotRating(player, place.line, career.condition[id]),
+          },
+        ]
+      : [];
   });
 };
 
@@ -24,7 +40,16 @@ export const starterSlots = (career: Career, byId: ReadonlyMap<string, Player>):
 export const benchSlots = (career: Career, byId: ReadonlyMap<string, Player>): BenchSlot[] =>
   career.squadPlan.bench.flatMap((id, index) => {
     const player = byId.get(id);
-    return player ? [{ index, player, fitness: fitnessOf(career, id) }] : [];
+    return player
+      ? [
+          {
+            index,
+            player,
+            fitness: fitnessOf(career, id),
+            rating: slotRating(player, player.position, career.condition[id]),
+          },
+        ]
+      : [];
   });
 
 /** The surname for a label on the pitch: the last word of the name. */

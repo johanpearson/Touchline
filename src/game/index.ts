@@ -151,6 +151,7 @@ export { FIRST_NAMES, LAST_NAMES } from "./player-names";
 export { playerOverall } from "./player-overall";
 export {
   attributesAtPosition,
+  effectiveRating,
   GOALKEEPER_SWAP_PENALTY,
   OUTFIELD_ONE_LINE_PENALTY,
   OUTFIELD_TWO_LINES_PENALTY,

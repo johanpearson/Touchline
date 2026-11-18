@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { aPlayer } from "./game-builders";
 import { playerOverall } from "./player-overall";
 import {
+  effectiveRating,
   GOALKEEPER_SWAP_PENALTY,
   OUTFIELD_ONE_LINE_PENALTY,
   OUTFIELD_TWO_LINES_PENALTY,
@@ -92,5 +93,29 @@ describe("positionRating", () => {
   it("is deterministic", () => {
     const player = evenPlayer("DEF");
     expect(positionRating(player, "FWD")).toBe(positionRating(player, "FWD"));
+  });
+});
+
+describe("effectiveRating", () => {
+  it("equals the position rating of a fully fit player in neutral form", () => {
+    const player = evenPlayer("MID");
+    expect(effectiveRating(player, "MID", { fitness: 100, form: 5 })).toBeCloseTo(12, 10);
+  });
+
+  it("is lower for a tired player and higher for a player in good form", () => {
+    const player = evenPlayer("DEF");
+    const fit = effectiveRating(player, "DEF", { fitness: 100, form: 5 });
+    expect(effectiveRating(player, "DEF", { fitness: 40, form: 5 })).toBeLessThan(fit);
+    expect(effectiveRating(player, "DEF", { fitness: 100, form: 9 })).toBeGreaterThan(fit);
+  });
+
+  it("applies the position penalty on top of fitness and form, as the engine does", () => {
+    const player = evenPlayer("DEF");
+    const condition = { fitness: 60, form: 5 };
+    const own = effectiveRating(player, "DEF", condition);
+    expect(effectiveRating(player, "MID", condition)).toBeCloseTo(
+      own * (1 - OUTFIELD_ONE_LINE_PENALTY),
+      10,
+    );
   });
 });

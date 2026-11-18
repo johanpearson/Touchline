@@ -1,4 +1,5 @@
 import { ATTRIBUTE_NAMES, MIN_ATTRIBUTE, type Player, type PlayerAttributes } from "./player";
+import { effectiveAttributes, type PlayerCondition } from "./player-condition";
 import { overallIn } from "./player-overall";
 import type { PlayerPosition } from "./squad-player";
 
@@ -45,3 +46,17 @@ export const attributesAtPosition = <T extends PlayerAttributes>(
 /** A player's rating, 1..20, at the position played; the own overall at the own position. */
 export const positionRating = (player: Player, played: PlayerPosition): number =>
   overallIn(played, attributesAtPosition(player, player.position, played));
+
+/**
+ * A player's rating, 1..20, as the engine sees it at the position played: attributes scaled by
+ * fitness and form first, then by the position penalty (the order `toEnginePlayers` uses).
+ */
+export const effectiveRating = (
+  player: Player,
+  played: PlayerPosition,
+  condition: PlayerCondition,
+): number =>
+  overallIn(
+    played,
+    attributesAtPosition(effectiveAttributes(player, condition), player.position, played),
+  );

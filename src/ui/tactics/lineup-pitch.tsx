@@ -1,13 +1,11 @@
-import { TriangleAlert } from "lucide-react";
 import type { Kit } from "../../game";
 import { useI18n } from "../i18n-provider";
-import { LOW_FITNESS } from "../plan-rows";
+import { PlayerRatingBadge } from "../player-rating-badge";
 import { KitIcon } from "../shell/kit-icon";
 import { type StarterSlot, surname } from "./slots";
 
 /** Text and lines on the stage use fixed light values (4.5:1 or better on every theme's stage). */
 const STAGE_TEXT = "text-[#e8edf7]";
-const STAGE_MUTED = "text-[#c3cce0]";
 
 function PitchLines() {
   return (
@@ -30,7 +28,7 @@ function PitchLines() {
 }
 
 function SlotButton(props: { slot: StarterSlot; kit: Kit; onPick: (index: number) => void }) {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
   const { slot } = props;
   const role = t(`tactics.role.${slot.role}`);
   return (
@@ -42,6 +40,7 @@ function SlotButton(props: { slot: StarterSlot; kit: Kit; onPick: (index: number
       aria-label={t("tactics.slot.label", {
         role,
         player: slot.player.name,
+        rating: formatNumber(slot.rating, 1),
         fitness: slot.fitness,
       })}
       onClick={() => props.onPick(slot.index)}
@@ -52,12 +51,7 @@ function SlotButton(props: { slot: StarterSlot; kit: Kit; onPick: (index: number
       <span className="max-w-[4.5rem] truncate text-xs font-semibold" title={slot.player.name}>
         {surname(slot.player.name)}
       </span>
-      <span className={`inline-flex items-center gap-0.5 text-xs ${STAGE_MUTED}`}>
-        {slot.fitness < LOW_FITNESS ? (
-          <TriangleAlert aria-hidden="true" className="size-3 text-[#ffd27a]" />
-        ) : null}
-        {slot.fitness}
-      </span>
+      <PlayerRatingBadge rating={slot.rating} fitness={slot.fitness} tone="stage" />
     </button>
   );
 }
