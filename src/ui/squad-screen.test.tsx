@@ -12,6 +12,7 @@ import { App } from "./app";
 import { I18nProvider } from "./i18n-provider";
 import { matchSetupFor } from "./match-setup";
 import { SquadScreen } from "./squad-screen";
+import { careerInOffSeason } from "./test-career";
 import { DensityProvider } from "./theme/density-provider";
 import { CareerProvider } from "./use-career";
 
@@ -309,6 +310,17 @@ describe("squad table: player data, detail panel and finances", () => {
     expect(screen.getByTestId("detail-delta-pace").textContent).toContain("Up +2");
     expect(screen.getByTestId("detail-delta-passing").textContent).toContain("Down −1");
     expect(screen.getByTestId("detail-delta-finishing").textContent).toContain("Unchanged");
+  });
+
+  it("shows the development of the season just finished for a player of the user's club", () => {
+    const career = careerInOffSeason();
+    const club = career.league.clubs.find((c) => c.id === career.userClubId);
+    const change = career.lastDevelopment?.find((c) => club?.playerIds.includes(c.playerId));
+    if (!change) throw new Error("no development for the user's club");
+    renderSquad(career);
+    fireEvent.click(screen.getByTestId(`player-details-${change.playerId}`));
+    const text = screen.getByTestId(`detail-delta-${change.attribute}`).textContent ?? "";
+    expect(text).toContain(change.after > change.before ? "Up" : "Down");
   });
 
   it("shows the club finances without warnings when the club can afford its wages", () => {

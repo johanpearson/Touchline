@@ -3,6 +3,7 @@ import { autoManageUserSquad } from "./auto-manage-squad";
 import type { Career } from "./career";
 import { aCareer, deepFreeze } from "./career-builders";
 import { finishSeason, isSeasonFinished } from "./finish-season";
+import { parseCareer } from "./parse-career";
 import { playMatchdays } from "./season-test-helpers";
 import { startNextSeason } from "./start-next-season";
 import { summariseSeason } from "./summarise-season";
@@ -162,6 +163,14 @@ describe("finishSeason", () => {
     const ids = new Set(career.league.players.map((p) => p.id));
     expect(career.lastDevelopment?.length).toBeGreaterThan(100);
     expect(career.lastDevelopment?.every((change) => ids.has(change.playerId))).toBe(true);
+  });
+
+  it("keeps the stored change list through a save and load", () => {
+    const career = finished(completed());
+
+    const loaded = parseCareer(JSON.parse(JSON.stringify(career)));
+
+    expect(loaded.ok && loaded.career.lastDevelopment).toEqual(career.lastDevelopment);
   });
 
   it("replaces the stored change list every season instead of adding to it", () => {
