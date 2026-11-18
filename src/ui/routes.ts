@@ -108,13 +108,12 @@ const PROFILE_REFERRERS: readonly Route["name"][] = [
   "tactics",
 ];
 
+const validProfileReferrer = (referrer: Route | null | undefined): Route | null =>
+  referrer && PROFILE_REFERRERS.includes(referrer.name) ? referrer : null;
+
 /**
  * The screen the back action leads to: the route's parent, except that a profile goes back to the
  * valid screen it was opened from (`referrer`). Returns `null` for the root.
  */
-export const parentOf = (route: Route, referrer?: Route | null): Route | null => {
-  if (route.name === "player" && referrer && PROFILE_REFERRERS.includes(referrer.name)) {
-    return referrer;
-  }
-  return PARENTS[route.name];
-};
+export const parentOf = (route: Route, referrer?: Route | null): Route | null =>
+  (route.name === "player" ? validProfileReferrer(referrer) : null) ?? PARENTS[route.name];
