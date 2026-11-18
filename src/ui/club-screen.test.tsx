@@ -8,8 +8,8 @@ import {
   generateLeague,
   pickBestEleven,
 } from "../game";
+import { finishSeason } from "../game/finish-season";
 import { playMatchdays } from "../game/season-test-helpers";
-import { startNextSeason } from "../game/start-next-season";
 import { createMemoryDensityStore, createMemoryLocaleStore } from "../platform";
 import { ClubView } from "./club-screen";
 import { I18nProvider } from "./i18n-provider";
@@ -114,7 +114,7 @@ describe("ClubView", () => {
     renderClub(career, career.userClubId);
     expect(screen.queryByTestId("club-history")).toBeNull();
     cleanup();
-    const next = startNextSeason(playMatchdays(career, 26));
+    const next = finishSeason(playMatchdays(career, 26));
     if (!next.ok) throw new Error("next");
     renderClub(next.career, career.userClubId);
     const rows = within(screen.getByTestId("club-history")).getAllByRole("listitem");

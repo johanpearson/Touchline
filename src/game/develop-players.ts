@@ -14,7 +14,7 @@ export type Development = {
  * Ages every player of the league by one year and develops the attributes by age, potential and
  * the season's minutes (`career.minutes`). Pure and deterministic: every player draws from his own
  * stream of `createRng(seed).fork("development-<season>")`, so the order of players does not matter.
- * The career is not changed; `startNextSeason` does not call this yet.
+ * The career is not changed; `finishSeason` applies the result.
  */
 export const developPlayers = (career: Career): Development => {
   const season = createRng(career.seed).fork(`development-${career.season.number}`);

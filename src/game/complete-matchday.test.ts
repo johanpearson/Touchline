@@ -3,6 +3,7 @@ import type { Career } from "./career";
 import { aCareer, deepFreeze } from "./career-builders";
 import { completeMatchday } from "./complete-matchday";
 import { computeTable, type Result } from "./compute-table";
+import { finishSeason } from "./finish-season";
 import { getNextFixture } from "./get-next-fixture";
 import { FITNESS_MAX, FITNESS_MIN, FORM_MAX, FORM_MIN } from "./player-condition";
 import { playMatchdays } from "./season-test-helpers";
@@ -234,16 +235,21 @@ describe("completeMatchday", () => {
       }
     });
 
-    it("resets condition in the next season and keeps the squad plan", () => {
+    it("resets condition in the next season and keeps the formation and tactics", () => {
       const finished = playSeason(aCareer());
-      const next = startNextSeason(finished);
+      const opened = finishSeason(finished);
+      if (!opened.ok) throw new Error(opened.error);
+      const next = startNextSeason(opened.career);
       if (!next.ok) throw new Error(next.error);
 
       expect(Object.values(finished.condition).some((c) => c.fitness < 100)).toBe(true);
       expect(
         Object.values(next.career.condition).every((c) => c.fitness === 100 && c.form === 5),
       ).toBe(true);
-      expect(next.career.squadPlan).toEqual(finished.squadPlan);
+      expect(next.career.squadPlan.formation).toEqual(finished.squadPlan.formation);
+      expect(next.career.squadPlan.tactics).toEqual(finished.squadPlan.tactics);
+      const mine = next.career.league.clubs.find((c) => c.id === next.career.userClubId);
+      for (const id of next.career.squadPlan.starters) expect(mine?.playerIds).toContain(id);
     });
   });
 

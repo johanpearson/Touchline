@@ -19,6 +19,13 @@ describe("the balance groups", () => {
     expect(new Set(grouped).size).toBe(grouped.length);
   });
 
+  it("run the ten-season development suite in the game group and in a fast job of its own", () => {
+    const file = "src/game/development.balance.test.ts";
+    expect(balanceFilesOnDisk).toContain(file);
+    expect(balance.BALANCE_GROUPS.game).toContain(file);
+    expect(balance.FAST_GROUPS["fast-development"]).toEqual([file]);
+  });
+
   it("run the 81 tactic combinations (nine files) and the game suites between three and four jobs", () => {
     const names = Object.keys(balance.BALANCE_GROUPS);
     expect(names.length).toBeGreaterThanOrEqual(3);

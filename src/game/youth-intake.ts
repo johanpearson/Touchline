@@ -1,6 +1,7 @@
 import { createRng, type Rng } from "../engine";
 import type { Career } from "./career";
 import type { Club } from "./club";
+import { generateClubIdentities } from "./generate-club-identities";
 import { initialClubStrengths } from "./generate-league";
 import { generatePlayer } from "./generate-player";
 import { SQUAD_SHAPE, uniqueName } from "./generate-squad";
@@ -17,7 +18,7 @@ export const YOUTH_MAX_AGE = 18;
 /** Seasons a youth contract covers, counted from the next season. */
 export const YOUTH_CONTRACT_SEASONS = 3;
 /** Added to the club's initial strength to get the youth quality, so youth is weaker than the first team. */
-export const YOUTH_QUALITY_OFFSET = -0.25;
+export const YOUTH_QUALITY_OFFSET = -0.35;
 /** Largest seeded shift of a club's youth quality (club level) and of each player (player level). */
 export const YOUTH_CLUB_NOISE = 0.05;
 export const YOUTH_PLAYER_NOISE = 0.04;
@@ -98,6 +99,23 @@ const youthFor = ({ club, squad, strength, season, rng }: YouthRequest) => {
 };
 
 /**
+ * The index of each club in the league as it was generated (identities are a pure function of the
+ * seed), so a club's initial strength never depends on its position in `league.clubs`. A club that
+ * is not a generated one (a hand-built league) falls back to its position in the list.
+ */
+const generationIndexOf = (career: Career): ((club: Club, position: number) => number) => {
+  const generated = generateClubIdentities(
+    career.league.clubs.length,
+    createRng(career.seed).fork("league").fork("identities"),
+  );
+  const ids = generated.ok ? generated.identities.map((identity) => identity.id) : [];
+  return (club, position) => {
+    const index = ids.indexOf(club.id);
+    return index >= 0 ? index : position;
+  };
+};
+
+/**
  * Gives every club three youth players, joining the squad directly on a contract of three
  * seasons from the next one (`season.number + 1`). Positions fill the club's thinnest lines (a
  * missing minimum first, a keeper for a club with only two); quality follows the club's initial
@@ -109,12 +127,13 @@ export const generateYouthIntake = (career: Career): Career => {
   const season = career.season.number;
   const rng = createRng(career.seed).fork(`youth-${season}`);
   const strengths = initialClubStrengths(career.seed, career.league.clubs.length);
-  const joined = career.league.clubs.map((club, index) => {
+  const indexOf = generationIndexOf(career);
+  const joined = career.league.clubs.map((club, position) => {
     const squad = career.league.players.filter((p) => club.playerIds.includes(p.id));
     return youthFor({
       club,
       squad,
-      strength: strengths[index] as number,
+      strength: strengths[indexOf(club, position)] as number,
       season,
       rng: rng.fork(club.id),
     });
