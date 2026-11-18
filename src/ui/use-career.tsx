@@ -9,7 +9,11 @@ import {
 } from "react";
 import type { TeamTactics } from "../engine";
 import {
+  acceptOffer as applyAcceptOffer,
+  buyPlayer as applyBuyPlayer,
   setLineup as applyLineup,
+  releasePlayer as applyReleasePlayer,
+  signFreeAgent as applySignFreeAgent,
   setTactics as applyTactics,
   autoPickUserLineup,
   type Career,
@@ -25,6 +29,8 @@ import {
   parseCareer,
   type Result,
   rollOverSeason,
+  type TransferError,
+  type TransferResult,
 } from "../game";
 import { createEnvelope, parseSaveFile, saveFileName, serializeSave } from "../platform";
 import type { FileTransfer, SaveEnvelope, SaveStore } from "../shared";
@@ -70,6 +76,14 @@ export type CareerStore = {
    * Returns an error while the season is running.
    */
   startNextSeason: () => NextSeasonError | null;
+  /** Buys a player from an AI club (the window must be open). Returns the refusal, or null when done. */
+  buyPlayer: (playerId: string, fee: number, seasons: number) => TransferError | null;
+  /** Signs a free agent at any time. Returns the refusal, or null when done. */
+  signFreeAgent: (playerId: string, wage: number, seasons: number) => TransferError | null;
+  /** Accepts an incoming offer (the window must be open). Returns the refusal, or null when done. */
+  acceptOffer: (offerId: string) => TransferError | null;
+  /** Releases one of the user's players to the free agents. Returns the refusal, or null when done. */
+  releasePlayer: (playerId: string) => TransferError | null;
   /** State of the latest autosave. */
   saveStatus: SaveStatus;
   /** Time (from the injected clock) of the latest successful autosave, or null. */
@@ -234,6 +248,42 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
     return null;
   }, [career, persist]);
 
+  const applyTransfer = useCallback(
+    (outcome: TransferResult): TransferError | null => {
+      if (!outcome.ok) return outcome.error;
+      setCareer(outcome.career);
+      persist(outcome.career, "continue");
+      return null;
+    },
+    [persist],
+  );
+  const buyPlayer = useCallback(
+    (playerId: string, fee: number, seasons: number) =>
+      career ? applyTransfer(applyBuyPlayer(career, playerId, fee, seasons)) : "unknown-player",
+    [career, applyTransfer],
+  );
+  const signFreeAgent = useCallback(
+    (playerId: string, wage: number, seasons: number) =>
+      career
+        ? applyTransfer(applySignFreeAgent(career, playerId, wage, seasons))
+        : "unknown-player",
+    [career, applyTransfer],
+  );
+  const acceptOffer = useCallback(
+    (offerId: string) => {
+      const offer = career?.offers.find((o) => o.id === offerId);
+      return career && offer
+        ? applyTransfer(applyAcceptOffer(career, offer))
+        : ("unknown-offer" as const);
+    },
+    [career, applyTransfer],
+  );
+  const releasePlayer = useCallback(
+    (playerId: string) =>
+      career ? applyTransfer(applyReleasePlayer(career, playerId)) : "unknown-player",
+    [career, applyTransfer],
+  );
+
   const loadAutosave = useCallback(async (): Promise<boolean> => {
     if (!candidate) return false;
     queue.adopt(candidate.envelope);
@@ -372,6 +422,10 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       setTactics,
       autoPickLineup,
       startNextSeason: rollOver,
+      buyPlayer,
+      signFreeAgent,
+      acceptOffer,
+      releasePlayer,
       saveStatus,
       lastSavedAt,
       continueAvailable: candidate !== null,
@@ -402,6 +456,10 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       setTactics,
       autoPickLineup,
       rollOver,
+      buyPlayer,
+      signFreeAgent,
+      acceptOffer,
+      releasePlayer,
       saveStatus,
       lastSavedAt,
       candidate,

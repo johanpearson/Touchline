@@ -10,6 +10,7 @@ export const ROUTE_STATES: Readonly<Record<string, readonly string[]>> = {
   squad: ["squad-default"],
   player: ["player-outfield", "player-goalkeeper"],
   tactics: ["tactics-442", "tactics-picker"],
+  market: ["market-players"],
   league: ["league-mid-season", "league-fixtures-start"],
   club: ["club-other", "club-mine"],
   match: ["pre-match", "match-kickoff", "match-half-time-changes", "match-full-time"],

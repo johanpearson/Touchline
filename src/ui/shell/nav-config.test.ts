@@ -28,7 +28,7 @@ describe("nav config", () => {
   it("reaches every career route that has a screen of its own", () => {
     const reached = NAV_ITEMS.map((item) => navRoute(item, CLUB).name);
     expect(reached).toEqual(
-      expect.arrayContaining(["home", "squad", "tactics", "match", "league", "club"]),
+      expect.arrayContaining(["home", "squad", "tactics", "market", "match", "league", "club"]),
     );
     expect(reached).toContain("saves");
     expect(reached).toContain("settings");
@@ -51,7 +51,13 @@ describe("nav config", () => {
   });
 
   it("lists every other item in the More drawer", () => {
-    expect(moreItems().map((item) => item.id)).toEqual(["tactics", "club", "saves", "settings"]);
+    expect(moreItems().map((item) => item.id)).toEqual([
+      "tactics",
+      "market",
+      "club",
+      "saves",
+      "settings",
+    ]);
   });
 
   it("shows every item either as a phone tab or in More, never both", () => {
@@ -66,6 +72,7 @@ describe("nav config", () => {
         "nav-club",
         "nav-hub",
         "nav-league",
+        "nav-market",
         "nav-match",
         "nav-saves",
         "nav-settings",

@@ -1,4 +1,12 @@
-import { type Career, createCareer, extendTrail, generateLeague, type SeasonTrail } from "../game";
+import {
+  type Career,
+  createCareer,
+  extendTrail,
+  generateLeague,
+  generateOffers,
+  releasePlayer,
+  type SeasonTrail,
+} from "../game";
 
 const must = <T>(value: T | undefined, what: string): T => {
   if (value === undefined) throw new Error(what);
@@ -29,3 +37,29 @@ export const careerAfter = (matchdays: number, seed = 11, clubIndex = 2): Career
 /** The first `count` ids of the user's starting eleven. */
 export const startersOf = (career: Career, count: number): string[] =>
   career.squadPlan.starters.slice(0, count);
+
+const RICH = 1_000_000;
+
+/**
+ * Test fixture: a career with the transfer window open, rich clubs, offers for the user's players
+ * and two released players in the free-agent pool. Built without playing a season.
+ */
+export const careerInWindow = (seed = 11, clubIndex = 2): Career => {
+  const base = careerAfter(0, seed, clubIndex);
+  const finances = Object.fromEntries(
+    base.league.clubs.map((c) => [c.id, { balance: RICH, baseIncome: RICH }]),
+  );
+  const open: Career = { ...base, window: "open", finances };
+  const user = must(
+    open.league.clubs.find((c) => c.id === open.userClubId),
+    "user club",
+  );
+  const spare = user.playerIds.filter((id) => !open.squadPlan.starters.includes(id)).slice(-6);
+  const released = spare.reduce((career, id) => {
+    const outcome = releasePlayer(career, id);
+    return outcome.ok && freeAgentCount(career) < 2 ? outcome.career : career;
+  }, open);
+  return generateOffers(released);
+};
+
+const freeAgentCount = (career: Career): number => career.freeAgentIds.length;

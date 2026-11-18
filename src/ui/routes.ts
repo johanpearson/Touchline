@@ -10,6 +10,7 @@ export type Route =
   | { name: "settings" }
   | { name: "squad" }
   | { name: "tactics" }
+  | { name: "market" }
   | { name: "new" }
   | { name: "new-club" }
   | { name: "not-found" };
@@ -50,6 +51,7 @@ export const parseRoute = (hash: string): Route => {
     head === "settings" ||
     head === "squad" ||
     head === "tactics" ||
+    head === "market" ||
     head === "new"
   )
     return { name: head };

@@ -5,6 +5,7 @@ import type { Locale, Translator } from "../i18n";
 import { Badge, Button, type Column } from "./components";
 import { formatMoney } from "./money-format";
 import { LOW_FITNESS, type PlanStatus } from "./plan-rows";
+import { PotentialStars } from "./potential-stars";
 import { hrefFor } from "./routes";
 import type { SquadRow } from "./squad-rows";
 
@@ -82,24 +83,6 @@ const numberColumn = (
   cell,
 });
 
-/** Filled and empty stars; the text label carries the value for assistive technology. */
-function Stars({ row, ctx }: { row: SquadRow; ctx: SquadTableContext }) {
-  const label = ctx.t("squad.stars", { count: row.potentialStars });
-  return (
-    <span
-      role="img"
-      aria-label={label}
-      title={label}
-      data-testid={`player-potential-${row.player.id}`}
-      data-stars={row.potentialStars}
-      className="tracking-tight text-accent"
-    >
-      {"★".repeat(row.potentialStars)}
-      <span className="text-muted">{"☆".repeat(5 - row.potentialStars)}</span>
-    </span>
-  );
-}
-
 /** The squad table's columns, by priority: 1 player, position, overall, fitness; 2 age, potential, contract, wage, value, minutes, form, status; 3 attributes. */
 export function squadColumns(ctx: SquadTableContext): Column<SquadRow>[] {
   const { t, formatNumber } = ctx;
@@ -140,7 +123,7 @@ export function squadColumns(ctx: SquadTableContext): Column<SquadRow>[] {
       t("squad.col.potential"),
       2,
       (row) => row.potentialStars,
-      (row) => <Stars row={row} ctx={ctx} />,
+      (row) => <PotentialStars playerId={row.player.id} stars={row.potentialStars} t={t} />,
     ),
     numberColumn(
       "overall",
