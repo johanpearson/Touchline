@@ -5,6 +5,7 @@ import { PaletteButton } from "../palette/palette-button";
 import { hrefFor } from "../routes";
 import { SaveStatus } from "../save-status";
 import { useCareer } from "../use-career";
+import { BackButton } from "./back-button";
 import { Brand } from "./brand";
 import { ClubCrest } from "./club-crest";
 import { headerActionFor } from "./header-action";
@@ -68,7 +69,10 @@ export function AppHeader({ showBrand }: { showBrand: boolean }) {
       )}
     >
       {showBrand ? <Brand hidden /> : null}
-      <ClubIdentity career={career} />
+      <div className="flex min-w-0 items-center gap-2">
+        <BackButton hasCareer />
+        <ClubIdentity career={career} />
+      </div>
       <div className="flex shrink-0 items-center gap-3">
         <PaletteButton />
         <SaveStatus />

@@ -78,3 +78,43 @@ export const hrefFor = (route: Exclude<Route, { name: "not-found" }>): string =>
       return `#/${route.name}`;
   }
 };
+
+/** The parent of every route; `null` marks the root (home, which is the start screen without a career). */
+const PARENTS: Record<Route["name"], Route | null> = {
+  home: null,
+  league: { name: "home" },
+  club: { name: "home" },
+  player: { name: "squad" },
+  match: { name: "home" },
+  results: { name: "home" },
+  "season-end": { name: "home" },
+  "off-season": { name: "home" },
+  saves: { name: "home" },
+  settings: { name: "home" },
+  squad: { name: "home" },
+  tactics: { name: "home" },
+  market: { name: "home" },
+  new: { name: "home" },
+  "new-club": { name: "new" },
+  "not-found": { name: "home" },
+};
+
+/** Screens a profile can be opened from, so back returns there instead of to the squad. */
+const PROFILE_REFERRERS: readonly Route["name"][] = [
+  "club",
+  "market",
+  "league",
+  "squad",
+  "tactics",
+];
+
+/**
+ * The screen the back action leads to: the route's parent, except that a profile goes back to the
+ * valid screen it was opened from (`referrer`). Returns `null` for the root.
+ */
+export const parentOf = (route: Route, referrer?: Route | null): Route | null => {
+  if (route.name === "player" && referrer && PROFILE_REFERRERS.includes(referrer.name)) {
+    return referrer;
+  }
+  return PARENTS[route.name];
+};

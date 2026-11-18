@@ -213,3 +213,87 @@ describe("app shell on a phone", () => {
     expect(screen.getByTestId("app-title").textContent).toBe("Touchline");
   });
 });
+
+describe("back action", () => {
+  const widths = [
+    ["desktop", 1440],
+    ["rail", 1024],
+    ["phone", 390],
+  ] as const;
+
+  it.each(widths)(
+    "is hidden on home and leads from a child screen to home (%s)",
+    (_name, width) => {
+      setViewport(width);
+      startCareer();
+      expect(screen.queryByTestId("back-button")).toBeNull();
+      goTo("#/squad");
+      const back = within(screen.getAllByRole("banner")[0] as HTMLElement).getByTestId(
+        "back-button",
+      );
+      expect(back.getAttribute("href")).toBe("#/");
+      expect(back.getAttribute("aria-label")).toBe("Back to Home");
+      expect(back.className).toContain("size-11");
+    },
+  );
+
+  it("is the first focusable control in the header", () => {
+    startCareer();
+    goTo("#/squad");
+    const focusable = within(screen.getAllByRole("banner")[0] as HTMLElement).getAllByRole("link");
+    expect(focusable[0]?.getAttribute("data-testid")).toBe("back-button");
+  });
+
+  it("goes from a player back to the screen it was opened from, else to the squad", () => {
+    startCareer();
+    goTo("#/tactics");
+    act(() => {
+      window.location.hash = "#/player/p-1";
+      window.dispatchEvent(
+        new HashChangeEvent("hashchange", { oldURL: "http://localhost/#/tactics" }),
+      );
+    });
+    expect(screen.getByTestId("back-button").getAttribute("href")).toBe("#/tactics");
+    act(() => {
+      window.location.hash = "#/player/p-2";
+      window.dispatchEvent(
+        new HashChangeEvent("hashchange", { oldURL: "http://localhost/#/player/p-1" }),
+      );
+    });
+    expect(screen.getByTestId("back-button").getAttribute("href")).toBe("#/squad");
+  });
+
+  it("is named in Swedish", () => {
+    setViewport(1440);
+    renderApp("sv");
+    goTo("#/settings");
+    expect(screen.getByTestId("back-button").getAttribute("aria-label")).toBe(
+      "Tillbaka till Start",
+    );
+  });
+
+  it("is in the bare shell, leading from Settings to Start", () => {
+    renderApp();
+    expect(screen.queryByTestId("back-button")).toBeNull();
+    goTo("#/settings");
+    const back = within(screen.getAllByRole("banner")[0] as HTMLElement).getByTestId("back-button");
+    expect(back.getAttribute("href")).toBe("#/");
+    expect(back.getAttribute("aria-label")).toBe("Back to Start");
+  });
+
+  it("leads from the club step of a new career to the first step", () => {
+    renderApp();
+    goTo("#/new");
+    fireEvent.click(screen.getByTestId("choose-club"));
+    goTo("#/new/club");
+    expect(screen.getByTestId("back-button").getAttribute("href")).toBe("#/new");
+  });
+
+  it("ignores Escape on a screen with no panel", () => {
+    startCareer();
+    goTo("#/squad");
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(window.location.hash).toBe("#/squad");
+    expect(screen.getByTestId("squad-screen")).toBeTruthy();
+  });
+});

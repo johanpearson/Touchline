@@ -675,3 +675,6 @@ register({
     await page.locator("[data-tone]").first().waitFor();
   },
 });
+
+// The bare shell header with its back control (#379): Settings opened without a career.
+register({ name: "settings-from-start", route: "#/settings" });

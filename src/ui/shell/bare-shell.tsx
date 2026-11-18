@@ -5,6 +5,7 @@ import { hrefFor } from "../routes";
 import { SaveStatus } from "../save-status";
 import { StorageWarning } from "../storage-warning";
 import { useRoute } from "../use-route";
+import { BackButton } from "./back-button";
 
 export type BareShellProps = { children: ReactNode; storageAvailable: boolean };
 
@@ -15,6 +16,7 @@ export function BareShell({ children, storageAvailable }: BareShellProps) {
   return (
     <main className="app-shell">
       <header className="app-header">
+        <BackButton hasCareer={false} />
         <h1 data-testid="app-title">{t("app.title")}</h1>
         <SaveStatus />
         {onSettings ? null : (
