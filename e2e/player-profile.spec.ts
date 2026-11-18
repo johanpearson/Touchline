@@ -22,7 +22,7 @@ test.describe("player profile", () => {
     await expect(page.getByTestId("player-screen")).toBeVisible();
     await expect(page.getByTestId("player-attr-finishing")).toBeVisible();
 
-    await page.getByTestId("player-back").click();
+    await page.getByTestId("back-button").click();
     await expect(page.getByTestId("squad-screen")).toBeVisible();
   });
 

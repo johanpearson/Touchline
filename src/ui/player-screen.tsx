@@ -1,7 +1,6 @@
 import type { AttributeName, Career } from "../game";
 import { MAX_ATTRIBUTE } from "../game";
 import type { MessageKey } from "../i18n";
-import { currentBackHref } from "./back-link";
 import { Badge, Card } from "./components";
 import { useI18n } from "./i18n-provider";
 import { NotFoundScreen } from "./not-found-screen";
@@ -153,9 +152,6 @@ export function PlayerView({ career, playerId }: { career: Career; playerId: str
   if (!profile) return <NotFoundScreen />;
   return (
     <section data-testid="player-screen" className="flex flex-col gap-4">
-      <a data-testid="player-back" href={currentBackHref()} className="min-h-11 py-2">
-        {t("player.back")}
-      </a>
       <header className="flex flex-col gap-1">
         <h2 data-testid="player-name" className="m-0 font-heading text-3xl text-text">
           {profile.player.name}

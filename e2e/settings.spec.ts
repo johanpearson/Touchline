@@ -47,3 +47,34 @@ test.describe("settings screen", () => {
     expect(overflow).toBeLessThanOrEqual(0);
   });
 });
+
+test.describe("back action", () => {
+  test("goes from Settings back to Start @smoke", async ({ page }) => {
+    await page.goto("./");
+    await page.getByTestId("nav-settings").click();
+    await expect(page.getByTestId("back-button")).toHaveAccessibleName("Back to Start");
+    await page.getByTestId("back-button").click();
+    await expect(page).toHaveURL(/#\/$|\.\/$/);
+    await expect(page.getByTestId("back-button")).toHaveCount(0);
+  });
+
+  test("walks Home, Squad, Player and back, back", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("./#/new");
+    await page.getByTestId("choose-club").click();
+    await page.getByTestId("club-name").first().click();
+    await page.getByTestId("start-career").click();
+    await expect(page.getByTestId("career-hub")).toBeVisible();
+    await expect(page.getByTestId("back-button")).toHaveCount(0);
+
+    await page.evaluate(() => {
+      window.location.hash = "#/squad";
+    });
+    await page.locator('[data-testid^="player-link-"]').first().click();
+    await expect(page.getByTestId("player-screen")).toBeVisible();
+    await page.getByTestId("back-button").click();
+    await expect(page.getByTestId("squad-screen")).toBeVisible();
+    await page.getByTestId("back-button").click();
+    await expect(page.getByTestId("career-hub")).toBeVisible();
+  });
+});

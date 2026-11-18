@@ -163,7 +163,7 @@ test.describe("squad and tactics", () => {
     await page.locator('[data-testid^="profile-link-"]').first().focus();
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("player-screen")).toBeVisible();
-    await page.getByTestId("player-back").click();
+    await page.getByTestId("back-button").click();
     await expect(page).toHaveURL(/#\/tactics/);
   });
 
