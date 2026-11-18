@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import type { PlayerPosition } from "../../game";
-import { Button, DataTable, EmptyState, Input, Select } from "../components";
+import { Button, DataTable, EmptyState } from "../components";
 import { useI18n } from "../i18n-provider";
-import { POSITION_FILTERS } from "../squad-filter";
 import { useDensity } from "../theme/density-provider";
 import { marketColumns, marketTieBreak } from "./market-columns";
-import { ALL_FILTERS, filterMarketRows, limitFromText, type MarketFilter } from "./market-filter";
+import { ALL_FILTERS, filterMarketRows, type MarketFilter } from "./market-filter";
+import { MarketFilterBar } from "./market-filter-bar";
 import type { MarketRow } from "./market-rows";
 
 export type MarketTableProps = {
@@ -54,63 +53,15 @@ export function MarketTable(props: MarketTableProps) {
     [t, formatNumber, locale, buying, blocked, props.onAction],
   );
   const rows = filterMarketRows(props.rows, filter);
-  const positionOptions = POSITION_FILTERS.map((value) => ({
-    value,
-    label: value === "all" ? t("squad.filter.all") : t(`position.${value}`),
-  }));
-  const clubOptions = [
-    { value: "all", label: t("market.filter.allClubs") },
-    ...props.clubs.map((club) => ({ value: club.id, label: club.name })),
-  ];
-
   return (
     <div className="flex flex-col gap-3">
-      <fieldset className="m-0 flex flex-wrap items-end gap-x-4 gap-y-2 border-0 p-0">
-        <legend className="sr-only">{t("market.filter.label")}</legend>
-        <Select
-          label={t("market.filter.position")}
-          value={filter.position}
-          options={positionOptions}
-          onValueChange={(value) => set({ position: value as PlayerPosition | "all" })}
-          className="w-44"
-        />
-        {buying ? (
-          <Select
-            label={t("market.filter.club")}
-            value={filter.clubId}
-            options={clubOptions}
-            onValueChange={(clubId) => set({ clubId })}
-            className="w-52"
-          />
-        ) : null}
-        <Input
-          inputMode="numeric"
-          label={t("market.filter.maxAge")}
-          value={filter.maxAge === null ? "" : String(filter.maxAge)}
-          onChange={(event) => set({ maxAge: limitFromText(event.target.value) })}
-          data-testid="market-filter-age"
-          className="w-32"
-        />
-        <Input
-          inputMode="numeric"
-          label={t("market.filter.maxValue")}
-          value={filter.maxValue === null ? "" : String(filter.maxValue)}
-          onChange={(event) => set({ maxValue: limitFromText(event.target.value) })}
-          data-testid="market-filter-value"
-          className="w-44"
-        />
-        <Input
-          variant="search"
-          label={t("market.search")}
-          value={filter.query}
-          onChange={(event) => set({ query: event.target.value })}
-          data-testid="market-search"
-          className="min-w-56"
-        />
-        <p role="status" className="m-0 text-sm text-muted" data-testid="market-results">
-          {t("market.results", { count: rows.length })}
-        </p>
-      </fieldset>
+      <MarketFilterBar
+        filter={filter}
+        onChange={set}
+        clubs={props.clubs}
+        showClub={buying}
+        count={rows.length}
+      />
       <DataTable
         label={t(buying ? "market.table.players" : "market.table.freeAgents")}
         columns={columns}

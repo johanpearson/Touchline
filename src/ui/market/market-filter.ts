@@ -24,14 +24,14 @@ export const ALL_FILTERS: MarketFilter = {
 /** The rows that pass every filter; an empty filter keeps all rows. */
 export const filterMarketRows = (rows: readonly MarketRow[], filter: MarketFilter): MarketRow[] => {
   const needle = normalizeText(filter.query.trim());
-  return rows.filter(
-    (row) =>
-      (filter.position === "all" || row.player.position === filter.position) &&
-      (filter.clubId === "all" || row.clubId === filter.clubId) &&
-      (filter.maxAge === null || row.player.age <= filter.maxAge) &&
-      (filter.maxValue === null || row.value <= filter.maxValue) &&
-      (needle === "" || normalizeText(row.player.name).includes(needle)),
-  );
+  const checks: ((row: MarketRow) => boolean)[] = [
+    (row) => filter.position === "all" || row.player.position === filter.position,
+    (row) => filter.clubId === "all" || row.clubId === filter.clubId,
+    (row) => filter.maxAge === null || row.player.age <= filter.maxAge,
+    (row) => filter.maxValue === null || row.value <= filter.maxValue,
+    (row) => needle === "" || normalizeText(row.player.name).includes(needle),
+  ];
+  return rows.filter((row) => checks.every((check) => check(row)));
 };
 
 /** Reads a number from an input; empty or invalid text means "no limit". */

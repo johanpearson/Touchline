@@ -25,6 +25,10 @@ export type MarketRow = {
   wage: number;
 };
 
+/** The fee a club asks; a free agent (no club) costs none. */
+const feeOf = (career: Career, playerId: string, clubId: string | null): number | undefined =>
+  clubId === null ? 0 : askingPrice(career, playerId);
+
 const marketRow = (
   career: Career,
   player: Player,
@@ -33,17 +37,18 @@ const marketRow = (
 ): MarketRow | undefined => {
   const value = marketValue(career, player.id);
   const wage = signingWage(career, player.id);
-  const fee = clubId === null ? 0 : askingPrice(career, player.id);
-  if (value === undefined || wage === undefined || fee === undefined) return undefined;
+  const fee = feeOf(career, player.id, clubId);
+  const known = [value, wage, fee].every((amount) => amount !== undefined);
+  if (!known) return undefined;
   return {
     player,
     clubId,
     clubName,
     overall: playerOverall(player),
     potentialStars: potentialStars(player.potential),
-    value,
-    fee,
-    wage,
+    value: value as number,
+    fee: fee as number,
+    wage: wage as number,
   };
 };
 

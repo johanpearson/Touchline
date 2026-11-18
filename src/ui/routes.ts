@@ -15,6 +15,21 @@ export type Route =
   | { name: "new-club" }
   | { name: "not-found" };
 
+const SIMPLE_NAMES = [
+  "league",
+  "match",
+  "results",
+  "season-end",
+  "saves",
+  "settings",
+  "squad",
+  "tactics",
+  "market",
+  "new",
+] as const;
+type SimpleRoute = (typeof SIMPLE_NAMES)[number];
+const SIMPLE_ROUTES: ReadonlySet<string> = new Set(SIMPLE_NAMES);
+
 const NOT_FOUND: Route = { name: "not-found" };
 
 const decode = (part: string): string | null => {
@@ -42,19 +57,7 @@ export const parseRoute = (hash: string): Route => {
   }
   if (head === "new" && arg === "club") return { name: "new-club" };
   if (arg !== undefined) return NOT_FOUND;
-  if (
-    head === "league" ||
-    head === "match" ||
-    head === "results" ||
-    head === "season-end" ||
-    head === "saves" ||
-    head === "settings" ||
-    head === "squad" ||
-    head === "tactics" ||
-    head === "market" ||
-    head === "new"
-  )
-    return { name: head };
+  if (SIMPLE_ROUTES.has(head)) return { name: head as SimpleRoute };
   return NOT_FOUND;
 };
 

@@ -1,9 +1,10 @@
 import { type FormEvent, useState } from "react";
 import type { TransferError } from "../../game";
-import { Button, Dialog, Input } from "../components";
+import { Button, Dialog } from "../components";
 import { useI18n } from "../i18n-provider";
 import { formatMoney } from "../money-format";
 import { DEFAULT_SEASONS, parseWholeNumber, transferErrorKey } from "./market-status";
+import { TransferFields } from "./transfer-fields";
 
 export type TransferDialogProps = {
   /** `buy` asks for a fee, `sign` (a free agent) for a wage. */
@@ -63,22 +64,13 @@ export function TransferDialog(props: TransferDialogProps) {
       }
     >
       <form onSubmit={submit} className="flex flex-col gap-3" noValidate>
-        <Input
-          inputMode="numeric"
-          label={t(buying ? "market.field.fee" : "market.field.wage")}
-          hint={t(buying ? "market.field.fee.hint" : "market.field.wage.hint", {
-            amount: money(props.asked),
-          })}
-          value={amount}
-          onChange={(event) => setAmount(event.target.value)}
-          data-testid={buying ? "fee-input" : "wage-input"}
-        />
-        <Input
-          inputMode="numeric"
-          label={t("market.field.seasons")}
-          value={seasons}
-          onChange={(event) => setSeasons(event.target.value)}
-          data-testid="seasons-input"
+        <TransferFields
+          buying={buying}
+          asked={props.asked}
+          amount={amount}
+          seasons={seasons}
+          onAmount={setAmount}
+          onSeasons={setSeasons}
         />
         {error ? (
           <p role="alert" data-testid="transfer-error" className="m-0 text-bad">
