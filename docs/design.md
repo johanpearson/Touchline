@@ -164,7 +164,7 @@ These are not bugs in either; each is resolved in the issue named.
 3. **Budget on the club card.** The game has no budget before M6. #258 shows an indicative figure derived from the rating rank and marks it as a placeholder, or drops the tile; this needs a decision in review.
 4. **Changes and shouts during the match.** The boards and decisions have Pause, Make changes and touchline shouts. Today changes are possible only at half-time (`docs/vision.md`, "Changes during a match (M5)"), the engine's `applyChange` works at any pause, but `planHalfTime` assumes the half-time moment for minutes. The new rules need a decision (#266). Until then Make changes works at half-time only and shouts are not shown.
 5. **Terrain.** The board draws the momentum terrain as a flat SVG gradient; the game has a three.js height-map terrain and a 2D pitch with 22 players. We keep both and put them on the dark stage.
-6. **Speed labels.** The board shows 1x, 3x, 8x; the game has four speeds (`SPEEDS`, shown as x1, x2, x4, x8). Keep the game's.
+6. **Speed labels.** The board shows 1x, 3x, 8x; the game has four speeds (`SPEEDS`, shown as x1, x2, x4, x8). Superseded by the playback modes in "Playtest decisions (M5d)".
 7. **Extra schemes in the boards.** Welcome and ClubPicker also define "Night pitch" and "Plum" schemes and four accents; only Midnight, Graphite and Light and the amber accent are in scope. The boards also tint the club picker glow with the club colour; kept, as identity only.
 8. **Light theme status colours and focus** fail AA in the boards; corrected above.
 9. **Navigation.** The boards list Tactics and Fixtures as separate screens. Fixtures stay a tab in League; Tactics becomes its own route (`#/tactics`), split out of `#/squad` (#262), because the squad screen is too long.
@@ -215,3 +215,45 @@ Every screen issue names its board (if any) and has acceptance criteria for desk
 - Tailwind v4, Storybook and Radix add dependencies and build time; bundle size is monitored.
 - The coverage and CodeScene Code Health gates apply to new UI code: components need real tests, not only stories.
 - Swedish strings are longer; layouts must not depend on English widths.
+
+## Playtest decisions (M5d, epics #376, #377, #378)
+
+Decided on 2026-11-18 after the first playtest. These bind the M5d issues; where they differ from the text above they win. M5d goes first, then M6a, M6b, M7, M8 and M9 (earliest open milestone by due date).
+
+### Navigation (items 1 and 2)
+- **Language lives in Settings only.** No language control in the sidebar, rail, tab bar, More sheet, bare shell or start header. The start and new-career screens carry a Settings link so a first-time user can still change it before starting. The first-run language still follows the browser language.
+- **Route hierarchy.** `routes.ts` owns one table of parents: home is the root of a career; squad, tactics, league, market, club, saves, settings, results, off-season and season-end are children of home; player is a child of squad unless a valid referrer is known; new-club is a child of new; screens opened from the start screen go back to start. The back target is `parentOf(route, referrer)`, never a page outside the app.
+- **Back action.** Every non-root screen has a back control first in the header (icon button, accessible name "Back" or "Back to <screen>", 44 px target) in the shell and in the bare shell. The browser back button keeps working.
+- **Escape closes panels.** Every dialog, drawer, bottom sheet, the palette and the match panels close on Escape and return focus to their trigger; a screen with no panel ignores Escape.
+
+### Settings: density preview (item 3)
+Each density option shows a small live preview table (header and four rows with real table tokens). Hovering or focusing an option previews it, selecting commits it; row padding animates over `DURATION.base` (instant with reduced motion). The preview is decorative (`aria-hidden`); the hint says in words what changes.
+
+### Match playback director (item 7)
+A presentation layer between the engine event log and the views; the engine is unchanged.
+- Every action has a minimum on-screen duration (a pass at least 0.8 s). Quiet build-up is compressed. Play slows down in and around the box. The clock holds briefly on shots, goals, set pieces, penalties and cards (longer on goals).
+- **Playback modes replace x1 to x8** (the "speed labels" row above no longer applies): **Highlights** (cuts between key moments, about 1.5 to 3 minutes), **Extended** (build-up compressed harder, about 3 to 5 minutes, the default) and **Full match** (everything at readable pace, 6 to 10 minutes for 90 minutes, every key moment at readable speed).
+- The terrain, the 2D pitch, the feed, the stats, the momentum chart and the scoreboard all follow the director's clock. Pause, Space and the stops at half-time and full time stay.
+- The director is pure and unit tested: durations, ordering, no skipped goal, set piece, penalty or card in any mode, and the duration targets over seeded matches.
+
+### Match lock and persistence (item 11)
+- While a match is running, squad and tactics open as **panels over the match screen** (a side drawer on desktop, a sheet on phones). Any other navigation asks for confirmation with **Stay** (default) or **Simulate the rest now** (the deterministic result, recorded as "Continue" does, then the user goes where they asked).
+- Match state (seed, input, timed changes, shouts, playback mode and position) is persisted, so a reload resumes the match paused at the saved position; the pre-match screen only shows when there is no session. Header and navigation say "Resume match". Sessions are not part of saves or exports.
+
+### Changes during a match (item 10)
+Substitutions, formation, tactics and shouts at any stoppage (any pause) through `planChange` and the engine's `applyChange` at the director's current match time, with the #266 limits (5 substitutions, 3 windows plus half-time) shown in the panel, errors in words, and the change shown in the feed. The half-time panel becomes the same editor opened automatically at half-time.
+
+### Energy during a match (item 6)
+Energy drains per minute from work rate, pressing, tempo and role, and low energy lowers performance in the engine (balance tests updated). The lineup panel shows it live next to the rating, and a substitute starts at full energy.
+
+### Momentum chart (item 8)
+A smooth area chart: 30-second buckets with light smoothing, the home side above and the away side below a centre line in the kit colours worn, goal markers on the line, a faint half-time divider, a playhead at the director's time and a text summary.
+
+### Single score (item 9)
+The score is shown once, in the match header. The 2D pitch does not draw it.
+
+### Lineup ratings (item 12)
+Tactics and lineup show each player's rating at the slot's position (effective, as the engine uses it) under the name. Energy is a small secondary indicator with text and shape cues, not colour alone. The same component serves the match lineup panel.
+
+### Later milestones
+M6a Club management (training, scouting, coaching staff, transfer windows, in and out of possession tactics), M6b Leagues and competitions and M9 Atmosphere (audio, cinematics, portraits) are scoped as epics only (#392 to #400); their open questions are in the epics.
