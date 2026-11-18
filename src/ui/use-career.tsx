@@ -13,18 +13,12 @@ import {
   type CareerError,
   completeMatchday,
   createCareer,
-  type FinishSeasonError,
-  finishSeason as finishGameSeason,
   type Lineup,
   type LineupError,
   type MatchdayError,
   type MatchReport,
-  type NextSeasonError,
   parseCareer,
-  type RenewError,
   type Result,
-  renewContract as renewGameContract,
-  startNextSeason as startGameNextSeason,
 } from "../game";
 import { createEnvelope, parseSaveFile, saveFileName, serializeSave } from "../platform";
 import type { FileTransfer, SaveEnvelope, SaveStore } from "../shared";
@@ -47,6 +41,7 @@ import {
 } from "./save-slots";
 import { useContinueCandidate } from "./use-continue-candidate";
 import { type PlanEdits, usePlanEdits } from "./use-plan-edits";
+import { type SeasonActions, useSeasonActions } from "./use-season-actions";
 import { type TransferActions, useTransferActions } from "./use-transfer-actions";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -54,7 +49,8 @@ export type SaveStatus = "idle" | "saving" | "saved" | "error";
 export type { ContinueInfo };
 
 export type CareerStore = PlanEdits &
-  TransferActions & {
+  TransferActions &
+  SeasonActions & {
     /** The running career, or null before one has been started. */
     career: Career | null;
     /** Starts a career and replaces any running one. Returns an error for an unknown club. */
@@ -63,19 +59,6 @@ export type CareerStore = PlanEdits &
     completeMatch: (userResult: Result, report?: MatchReport) => MatchdayError | null;
     /** Replaces the user's lineup. An invalid lineup returns the error and changes nothing. */
     setLineup: (lineup: Lineup) => { ok: true } | { ok: false; error: LineupError };
-    /**
-     * Ends a completed season: development, retirements, finances, youth and offers, and the
-     * transfer window opens (the off-season). Returns an error while the season is running or when
-     * it was already finished.
-     */
-    finishSeason: () => FinishSeasonError | null;
-    /** Renews the contract of one of the user's players in the off-season. Returns the refusal, or null. */
-    renewContract: (playerId: string, wage: number, seasons: number) => RenewError | null;
-    /**
-     * Starts the next season once the off-season is open. Returns the refusal (`squad-over-limit`
-     * covers a squad outside 18 to 30 players or below a position minimum), or null.
-     */
-    startNextSeason: () => NextSeasonError | null;
     /** State of the latest autosave. */
     saveStatus: SaveStatus;
     /** Time (from the injected clock) of the latest successful autosave, or null. */
@@ -222,34 +205,7 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
     [career],
   );
   const planEdits = usePlanEdits(setCareer);
-  const finishSeason = useCallback((): FinishSeasonError | null => {
-    if (!career) return "season-incomplete";
-    const outcome = finishGameSeason(career);
-    if (!outcome.ok) return outcome.error;
-    setCareer(outcome.career);
-    persist(outcome.career, "continue");
-    return null;
-  }, [career, persist]);
-  const renewContract = useCallback(
-    (playerId: string, wage: number, seasons: number): RenewError | null => {
-      if (!career) return "unknown-player";
-      const outcome = renewGameContract(career, playerId, wage, seasons);
-      if (!outcome.ok) return outcome.error;
-      setCareer(outcome.career);
-      persist(outcome.career, "continue");
-      return null;
-    },
-    [career, persist],
-  );
-  const startNextSeason = useCallback((): NextSeasonError | null => {
-    if (!career) return "season-incomplete";
-    const outcome = startGameNextSeason(career);
-    if (!outcome.ok) return outcome.error;
-    setCareer(outcome.career);
-    persist(outcome.career, "continue");
-    return null;
-  }, [career, persist]);
-
+  const seasonActions = useSeasonActions(career, setCareer, persist);
   const transfers = useTransferActions(career, setCareer, persist);
 
   const loadAutosave = useCallback(async (): Promise<boolean> => {
@@ -388,9 +344,7 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       completeMatch,
       setLineup,
       ...planEdits,
-      finishSeason,
-      renewContract,
-      startNextSeason,
+      ...seasonActions,
       ...transfers,
       saveStatus,
       lastSavedAt,
@@ -420,9 +374,7 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       completeMatch,
       setLineup,
       planEdits,
-      finishSeason,
-      renewContract,
-      startNextSeason,
+      seasonActions,
       transfers,
       saveStatus,
       lastSavedAt,

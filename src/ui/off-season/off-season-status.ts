@@ -41,17 +41,22 @@ export const startBlock = (career: Career): StartBlock | null => {
 /** A user's player whose contract ends with the finished season, with what he asks to stay. */
 export type ExpiringRow = { player: Player; overall: number; ask: number; ends: number };
 
+/** The row of a player whose contract has ended, or none. */
+const expiringRow = (career: Career, player: Player): ExpiringRow[] => {
+  const ends = career.contracts[player.id]?.expiresSeason;
+  const ask = askingWage(career, player.id);
+  if (ends === undefined || ask === undefined) return [];
+  return ends <= career.season.number
+    ? [{ player, overall: playerOverall(player), ask, ends }]
+    : [];
+};
+
 /** The user's players whose contract has ended, best first, ties by name. */
 export const expiringPlayers = (career: Career): ExpiringRow[] => {
   const ids = career.league.clubs.find((c) => c.id === career.userClubId)?.playerIds ?? [];
   const rows = career.league.players
     .filter((p) => ids.includes(p.id))
-    .flatMap((player) => {
-      const ends = career.contracts[player.id]?.expiresSeason;
-      const ask = askingWage(career, player.id);
-      if (ends === undefined || ends > career.season.number || ask === undefined) return [];
-      return [{ player, overall: playerOverall(player), ask, ends }];
-    });
+    .flatMap((player) => expiringRow(career, player));
   return rows.sort((a, b) => b.overall - a.overall || (a.player.name < b.player.name ? -1 : 1));
 };
 

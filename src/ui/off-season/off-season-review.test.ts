@@ -1,29 +1,36 @@
 import { describe, expect, it } from "vitest";
 import type { Career } from "../../game";
 import { careerInOffSeason } from "../test-career";
-import { MOVERS_SHOWN, offSeasonReview } from "./off-season-review";
+import { MOVERS_SHOWN, type Mover, offSeasonReview } from "./off-season-review";
 
 const career = careerInOffSeason();
 
 const squadIds = (c: Career): Set<string> =>
   new Set(c.league.clubs.find((club) => club.id === c.userClubId)?.playerIds);
 
-describe("offSeasonReview", () => {
-  it("lists risers by biggest gain first and fallers by biggest loss first, ties by name", () => {
-    const review = offSeasonReview(career);
+/** True when the movers go by size of change (either direction), ties by name. */
+const isOrdered = (movers: readonly Mover[]): boolean =>
+  movers.every((m, i) => {
+    const prev = movers[i - 1];
+    if (!prev) return true;
+    const step = Math.abs(prev.delta) - Math.abs(m.delta);
+    return step > 0 || (step === 0 && prev.player.name < m.player.name);
+  });
 
-    expect(review.risers.every((m) => m.delta > 0)).toBe(true);
-    expect(review.fallers.every((m) => m.delta < 0)).toBe(true);
-    for (const list of [review.risers, review.fallers]) {
-      for (let i = 1; i < list.length; i++) {
-        const [a, b] = [list[i - 1], list[i]];
-        const bigger = Math.abs(a?.delta ?? 0) - Math.abs(b?.delta ?? 0);
-        expect(
-          bigger > 0 || (bigger === 0 && (a?.player.name ?? "") < (b?.player.name ?? "")),
-        ).toBe(true);
-      }
-    }
-    expect(review.risers.length).toBeLessThanOrEqual(MOVERS_SHOWN);
+describe("offSeasonReview", () => {
+  it("lists risers by biggest gain first, ties by name", () => {
+    const { risers } = offSeasonReview(career);
+
+    expect(risers.every((m) => m.delta > 0)).toBe(true);
+    expect(isOrdered(risers)).toBe(true);
+    expect(risers.length).toBeLessThanOrEqual(MOVERS_SHOWN);
+  });
+
+  it("lists fallers by biggest loss first, ties by name", () => {
+    const { fallers } = offSeasonReview(career);
+
+    expect(fallers.every((m) => m.delta < 0)).toBe(true);
+    expect(isOrdered(fallers)).toBe(true);
   });
 
   it("shows only players of the user's squad, with the overall before and after the development", () => {
