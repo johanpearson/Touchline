@@ -65,27 +65,6 @@ type Run = {
 
 type View = { matchTime: number; presented: PresentedState };
 
-/** A run at the start, or, with `at`, at that match time of a match already advanced to it. */
-const createRun = (match: ActionMatch, mode: PlaybackMode, at?: number): Run => {
-  const events = [...match.events];
-  const timeline = buildTimeline(events, mode);
-  const clock =
-    at === undefined
-      ? 0
-      : isPlaying(match.state.period)
-        ? timeline.presentationTimeAt(at)
-        : timeline.duration;
-  return {
-    events,
-    timeline,
-    clock,
-    presented: advancePresented(INITIAL_PRESENTED, events, timeline, {
-      clock,
-      matchTime: timeline.matchTimeAt(clock),
-    }),
-  };
-};
-
 /** Appends what the engine logged since the last call and extends the timeline with it. */
 const pull = (run: Run, match: ActionMatch) => {
   const fresh = match.events.slice(run.events.length);
@@ -101,6 +80,34 @@ const advanceUntil = (run: Run, match: ActionMatch, done: () => boolean) => {
     match.advanceTo(match.state.time + ENGINE_STEP_MATCH_SECONDS);
     pull(run, match);
   }
+};
+
+/**
+ * A run at the start, or, with `at`, at that match time of a match already advanced to it. The
+ * engine is advanced past `at` first, as live play has it (the timeline reaches the lookahead
+ * beyond the clock), because the end of a timeline is provisional until the next action is known.
+ */
+const createRun = (match: ActionMatch, mode: PlaybackMode, at?: number): Run => {
+  const events = [...match.events];
+  const timeline = buildTimeline(events, mode);
+  const run: Run = {
+    events,
+    timeline,
+    clock: 0,
+    presented: advancePresented(INITIAL_PRESENTED, events, timeline, { clock: 0, matchTime: 0 }),
+  };
+  if (at === undefined) return run;
+  const covered = () =>
+    run.timeline.matchEnd >= at &&
+    run.timeline.duration >= run.timeline.presentationTimeAt(at) + LOOKAHEAD_SECONDS;
+  advanceUntil(run, match, covered);
+  run.clock =
+    at < run.timeline.matchEnd ? run.timeline.presentationTimeAt(at) : run.timeline.duration;
+  run.presented = advancePresented(INITIAL_PRESENTED, run.events, run.timeline, {
+    clock: run.clock,
+    matchTime: run.timeline.matchTimeAt(run.clock),
+  });
+  return run;
 };
 
 const viewOf = (run: Run): View => {

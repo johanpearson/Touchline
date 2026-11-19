@@ -28,18 +28,18 @@ export const MIN_DURATION: Record<ActionEventType, number> = {
   periodChange: 0,
 };
 
-/** Distance to the nearest goal (metres) up to which an action is shown at full pace, per mode. */
+/** Distance to the nearest goal (metres) up to which an action is slowed down in front of goal, per mode. */
 export const ACTIVE_DISTANCE: Record<PlaybackMode, number> = {
-  full: 8,
-  extended: 7,
-  highlights: 7,
+  full: 5,
+  extended: 5,
+  highlights: 5,
 };
 
-/** Distance to the nearest goal (metres) from which an action counts as quiet build-up, per mode. */
-export const BUILD_UP_DISTANCE: Record<PlaybackMode, number> = {
-  full: 18,
-  extended: 17,
-  highlights: 17,
+/** Distance to the nearest goal (metres) beyond which quiet play is grouped into beats, per mode. */
+export const BEAT_DISTANCE: Record<PlaybackMode, number> = {
+  full: 5,
+  extended: 5,
+  highlights: 5,
 };
 
 /** Distance to the goal (metres) at which the slow-down in front of goal is complete: right in front of goal; must be below every `ACTIVE_DISTANCE`. */
@@ -48,21 +48,62 @@ export const SLOWDOWN_FULL_DISTANCE = 3;
 /** Extra time near the goal: an action at `SLOWDOWN_FULL_DISTANCE` lasts `1 + NEAR_GOAL_SLOWDOWN` times its minimum. */
 export const NEAR_GOAL_SLOWDOWN = 0.4;
 
-/** Quiet build-up lasts this fraction of its engine duration, but never less than `quietFloor`. */
 type ModeSettings = {
-  quietFraction: number;
-  /** Shortest time, in presentation seconds, of one quiet action. */
-  quietFloor: number;
-  /** Scale on `MIN_DURATION` for actions at full pace. */
+  /** Scale on `MIN_DURATION` for actions that get their own moment. */
   minimumScale: number;
   /** Scale on `HOLDS`. */
   holdScale: number;
 };
 
 export const MODE_SETTINGS: Record<PlaybackMode, ModeSettings> = {
-  full: { quietFraction: 0.02, quietFloor: 0.03, minimumScale: 1, holdScale: 1 },
-  extended: { quietFraction: 0.01, quietFloor: 0.015, minimumScale: 0.45, holdScale: 0.7 },
-  highlights: { quietFraction: 0.01, quietFloor: 0.015, minimumScale: 0.6, holdScale: 0.6 },
+  full: { minimumScale: 1, holdScale: 1 },
+  extended: { minimumScale: 0.45, holdScale: 0.7 },
+  highlights: { minimumScale: 0.6, holdScale: 0.6 },
+};
+
+/**
+ * How a beat (a run of quiet actions) is shown. Its key actions (the first, the last and the longest)
+ * get their own moment at `MIN_DURATION`; the actions between them play through at `pace`
+ * presentation seconds per match second, so the clock runs at one speed inside the beat.
+ */
+type BeatSettings = {
+  /** Presentation seconds per match second for the actions between the key actions. */
+  pace: number;
+  /** Shortest and longest time, in presentation seconds, one beat takes; the key actions always fit. */
+  minDuration: number;
+  maxDuration: number;
+  /** A beat that spans more match seconds than this is split. */
+  maxSpan: number;
+  /** At most this many actions of one beat get their own moment, one per `actionsPerKey` actions in the beat. */
+  keyActions: number;
+  actionsPerKey: number;
+};
+
+export const BEAT_SETTINGS: Record<PlaybackMode, BeatSettings> = {
+  full: {
+    pace: 0.025,
+    minDuration: 1.2,
+    maxDuration: 5,
+    maxSpan: 60,
+    keyActions: 2,
+    actionsPerKey: 4,
+  },
+  extended: {
+    pace: 0.01,
+    minDuration: 0.8,
+    maxDuration: 3,
+    maxSpan: 90,
+    keyActions: 2,
+    actionsPerKey: 4,
+  },
+  highlights: {
+    pace: 0.1,
+    minDuration: 0.8,
+    maxDuration: 2.5,
+    maxSpan: 20,
+    keyActions: 2,
+    actionsPerKey: 4,
+  },
 };
 
 /** Match seconds before a key moment that `highlights` mode still plays, so a chance has a build-up. */

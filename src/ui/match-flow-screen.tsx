@@ -11,6 +11,7 @@ import {
   type Result,
   resumeMatch,
   sessionIssue,
+  userReportWithEnergy,
 } from "../game";
 import { useToast } from "./components";
 import { useI18n } from "./i18n-provider";
@@ -107,7 +108,10 @@ function PlayMatch({
     plan: (changes) => planHalfTime(career, fixture, changes),
   };
 
-  const finish = ({ score, scorers, engineVersion }: FinishedMatch, report?: MatchReport) => {
+  const finish = (
+    { score, scorers, engineVersion, energy }: FinishedMatch,
+    report?: MatchReport,
+  ) => {
     const result: Result = {
       fixtureId: fixture.id,
       homeClubId: fixture.homeClubId,
@@ -118,7 +122,8 @@ function PlayMatch({
       scorers,
     };
     endSession();
-    if (completeMatch(result, report) === null) window.location.hash = hrefFor({ name: "results" });
+    if (completeMatch(result, userReportWithEnergy(career, report, energy)) === null)
+      window.location.hash = hrefFor({ name: "results" });
   };
 
   if (failed) return null;

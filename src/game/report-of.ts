@@ -18,12 +18,15 @@ export const reportOf = (
   const live = liveSquadAfter(plan, changes.substitutions, () => "MID");
   const minutes: Record<string, number> = {};
   const fatigue: Record<string, number> = {};
+  const mentalityFatigue: Record<string, number> = {};
   for (const { id } of squadPlayers) {
     minutes[id] = minutesOnPitch(id, plan, live);
     const from = plan.starters.includes(id) ? 0 : (live.cameOn[id] ?? 0);
     const to = from + minutes[id];
     const tired = shoutFatigue(base, changes.shouts, from, to);
     if (tired > 0) fatigue[id] = tired;
+    const mentality = shoutFatigue(base, changes.shouts, from, to, false);
+    if (mentality > 0) mentalityFatigue[id] = mentality;
   }
-  return { minutes, fatigue };
+  return { minutes, fatigue, mentalityFatigue };
 };
