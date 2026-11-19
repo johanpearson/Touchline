@@ -16,8 +16,47 @@ export type MatchReport = {
   minutes: Record<string, number>;
   /** Extra fitness lost per player id beyond the minutes (touchline shouts); absent means none. */
   fatigue?: Record<string, number>;
+  /**
+   * Energy (0 to 100) each player ended the match with, from the engine (`ActionMatchState.energy`);
+   * absent means not recorded. A player with an entry is drained by the energy spent instead of the
+   * minutes played.
+   */
+  energy?: Record<string, number>;
+  /**
+   * The part of `fatigue` the engine's energy does not already charge (the mentality levels of the
+   * shouts; pressing and tempo change the energy drain). Used instead of `fatigue` for a player with an
+   * entry in `energy`, so a shout is never counted twice.
+   */
+  mentalityFatigue?: Record<string, number>;
   /** What the user's opponent played in this match (substitutions and shouts of the AI club). */
   opponent?: MatchReport;
+};
+
+/** `report` with the energy of `players` taken from `energy` (the engine's per-id map); players not in it keep no entry. */
+export const withEnergy = (
+  report: MatchReport,
+  energy: Readonly<Record<string, number>>,
+  players: readonly { id: string }[],
+): MatchReport => ({
+  ...report,
+  energy: Object.fromEntries(
+    players.flatMap(({ id }) => (energy[id] === undefined ? [] : [[id, energy[id]]])),
+  ),
+});
+
+/**
+ * The user's report of a finished match with the energy the players ended with. Without a `report`
+ * (no changes were made) the starters count as having played 90 minutes.
+ */
+export const userReportWithEnergy = (
+  career: Career,
+  report: MatchReport | undefined,
+  energy: Readonly<Record<string, number>>,
+): MatchReport => {
+  const base = report ?? { minutes: fullMatch(career.squadPlan.starters) };
+  const club = career.league.clubs.find((c) => c.id === career.userClubId);
+  const players = (club?.playerIds ?? []).map((id) => ({ id }));
+  return withEnergy(base, energy, players);
 };
 
 /** The reports of the AI clubs of a round by club id; a club without one plays its auto-picked 4-4-2 for 90 minutes. */
@@ -72,13 +111,13 @@ export const updateConditionAfterMatchday = (
     const minutes = minutesOf(career, club.id, report, aiReports);
     for (const id of club.playerIds) {
       const before = career.condition[id] ?? initialCondition();
-      const extraFatigue = (club.id === career.userClubId ? report : aiReports[club.id])?.fatigue?.[
-        id
-      ];
+      const own = club.id === career.userClubId ? report : aiReports[club.id];
+      const energy = own?.energy?.[id];
       const played = applyMatchToCondition(before, {
         minutes: minutes[id] ?? 0,
         outcome,
-        extraFatigue,
+        extraFatigue: energy === undefined ? own?.fatigue?.[id] : own?.mentalityFatigue?.[id],
+        energy,
       });
       next[id] = recoverCondition(played);
     }

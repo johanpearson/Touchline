@@ -6,6 +6,7 @@ import {
   type MatchReport,
   planHalfTime,
   type Result,
+  userReportWithEnergy,
 } from "../game";
 import { type MatchSetup, matchSetupFor } from "./match-setup";
 import {
@@ -34,7 +35,10 @@ function PlayMatch({ career, fixture, setup, createRenderer, tickMs }: PlayProps
     plan: (changes) => planHalfTime(career, fixture, changes),
   };
 
-  const finish = ({ score, scorers, engineVersion }: FinishedMatch, report?: MatchReport) => {
+  const finish = (
+    { score, scorers, engineVersion, energy }: FinishedMatch,
+    report?: MatchReport,
+  ) => {
     const result: Result = {
       fixtureId: fixture.id,
       homeClubId: fixture.homeClubId,
@@ -44,7 +48,8 @@ function PlayMatch({ career, fixture, setup, createRenderer, tickMs }: PlayProps
       engineVersion,
       scorers,
     };
-    if (completeMatch(result, report) === null) window.location.hash = hrefFor({ name: "results" });
+    if (completeMatch(result, userReportWithEnergy(career, report, energy)) === null)
+      window.location.hash = hrefFor({ name: "results" });
   };
 
   return (

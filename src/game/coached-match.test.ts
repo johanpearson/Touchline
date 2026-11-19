@@ -52,6 +52,21 @@ describe("createCoachedMatch", () => {
     }
   });
 
+  it("reports the energy every AI player who played ended the match with", () => {
+    const match = createCoachedMatch(career, aiFixture, { detail: "fast" });
+    match.advanceTo(END);
+    match.resume();
+    match.advanceTo(END);
+
+    for (const report of Object.values(match.aiReports())) {
+      const played = Object.entries(report.minutes).filter(([, minutes]) => minutes > 0);
+      expect(played.length).toBeGreaterThanOrEqual(11);
+      for (const [id] of played) {
+        expect(report.energy?.[id]).toBe(match.state.energy[id]);
+      }
+    }
+  });
+
   it("coaches only the AI side of the user's fixture", () => {
     const match = createCoachedMatch(career, userFixture, { detail: "fast" });
     match.advanceTo(END);

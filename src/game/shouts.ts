@@ -92,11 +92,16 @@ const levelsUp = (levels: readonly string[], from: string, to: string): number =
   Math.max(0, levels.indexOf(to) - levels.indexOf(from));
 
 /** Fatigue points per minute while `kind` is on top of `base` (only higher mentality and pressing tire). */
-export const shoutFatiguePerMinute = (base: TeamTactics, kind: ShoutKind): number => {
+export const shoutFatiguePerMinute = (
+  base: TeamTactics,
+  kind: ShoutKind,
+  /** Count the pressing levels too (false: mentality only, because the engine's energy charges pressing). */
+  includePressing = true,
+): number => {
   const after = applyShout(base, kind);
   const levels =
     levelsUp(MENTALITY, base.mentality, after.mentality) +
-    levelsUp(PRESSING, base.pressing, after.pressing);
+    (includePressing ? levelsUp(PRESSING, base.pressing, after.pressing) : 0);
   return levels * SHOUT_FATIGUE_PER_LEVEL_MINUTE;
 };
 
@@ -109,10 +114,12 @@ export const shoutFatigue = (
   shouts: readonly ShoutRecord[],
   from: number,
   to: number,
+  includePressing = true,
 ): number =>
   shouts.reduce(
     (total, shout) =>
       total +
-      overlap(from, to, shout.minute, endOf(shout)) * shoutFatiguePerMinute(base, shout.kind),
+      overlap(from, to, shout.minute, endOf(shout)) *
+        shoutFatiguePerMinute(base, shout.kind, includePressing),
     0,
   );

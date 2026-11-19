@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { aCareer, deepFreeze } from "./career-builders";
 import type { Result } from "./compute-table";
-import { updateConditionAfterMatchday } from "./update-condition";
+import { ENERGY_SPENT_PER_MATCH } from "./player-condition";
+import { updateConditionAfterMatchday, userReportWithEnergy } from "./update-condition";
 
 const careerAndResults = () => {
   const career = aCareer();
@@ -102,6 +103,49 @@ describe("updateConditionAfterMatchday", () => {
     expect(condition[first]?.fitness).toBe(100 - 12 + 12 * 0.25);
   });
 
+  it("drains by the energy spent when the report records it, not by the minutes", () => {
+    const { career, round } = careerAndResults();
+    const results = round.map((f) => resultFor(f, 1, 1));
+    const [first] = career.squadPlan.starters as [string];
+    const spent = ENERGY_SPENT_PER_MATCH * 2;
+
+    const condition = updateConditionAfterMatchday(career, results, {
+      minutes: { [first]: 90 },
+      energy: { [first]: 100 - spent },
+    });
+
+    expect(condition[first]?.fitness).toBe(100 - 20 + 20 * 0.25);
+  });
+
+  it("counts a shout once: with energy only the mentality part of the fatigue is added", () => {
+    const { career, round } = careerAndResults();
+    const results = round.map((f) => resultFor(f, 1, 1));
+    const [first] = career.squadPlan.starters as [string];
+
+    const condition = updateConditionAfterMatchday(career, results, {
+      minutes: { [first]: 90 },
+      energy: { [first]: 100 - ENERGY_SPENT_PER_MATCH },
+      fatigue: { [first]: 3 },
+      mentalityFatigue: { [first]: 1 },
+    });
+
+    expect(condition[first]?.fitness).toBe(100 - 11 + 11 * 0.25);
+  });
+
+  it("keeps the minutes-based drain for a player without a recorded energy", () => {
+    const { career, round } = careerAndResults();
+    const results = round.map((f) => resultFor(f, 1, 1));
+    const [first, second] = career.squadPlan.starters as [string, string];
+
+    const condition = updateConditionAfterMatchday(career, results, {
+      minutes: { [first]: 90, [second]: 90 },
+      energy: { [first]: 100 - ENERGY_SPENT_PER_MATCH },
+      fatigue: { [second]: 2 },
+    });
+
+    expect(condition[second]?.fitness).toBe(100 - 12 + 12 * 0.25);
+  });
+
   it("treats AI starters as having played 90 minutes", () => {
     const { career, round } = careerAndResults();
     const results = round.map((f) => resultFor(f, 1, 1));
@@ -125,5 +169,37 @@ describe("updateConditionAfterMatchday", () => {
     );
 
     expect(frozen).toEqual(career);
+  });
+});
+
+describe("userReportWithEnergy", () => {
+  it("gives the starters 90 minutes and the energy of the user's players when there is no report", () => {
+    const career = aCareer();
+    const [first] = career.squadPlan.starters as [string];
+
+    const report = userReportWithEnergy(career, undefined, {
+      [first]: 61,
+      "other-club-player": 30,
+    });
+
+    expect(report.minutes[first]).toBe(90);
+    expect(report.energy).toEqual({ [first]: 61 });
+  });
+
+  it("keeps the minutes and fatigue of an existing report", () => {
+    const career = aCareer();
+    const [first] = career.squadPlan.starters as [string];
+
+    const report = userReportWithEnergy(
+      career,
+      { minutes: { [first]: 62 }, fatigue: { [first]: 1 } },
+      { [first]: 70 },
+    );
+
+    expect(report).toEqual({
+      minutes: { [first]: 62 },
+      fatigue: { [first]: 1 },
+      energy: { [first]: 70 },
+    });
   });
 });

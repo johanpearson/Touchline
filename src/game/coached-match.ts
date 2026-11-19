@@ -17,14 +17,14 @@ import { reportOf } from "./report-of";
 import { tacticsAtMinute } from "./shouts";
 import { clubSquad } from "./squad-plan";
 import { toEnginePlayers } from "./to-engine-players";
-import type { MatchReport } from "./update-condition";
+import { type MatchReport, withEnergy } from "./update-condition";
 
 /** The engine's options and, for tests that play one fixture many times, another seed than `matchSeed`. */
 export type CoachedMatchOptions = ActionMatchOptions & { seed?: number };
 
 /** An action match in which every AI club substitutes and shouts at the same fixed moments. */
 export type CoachedMatch = ActionMatch & {
-  /** Minutes and shout fatigue of each AI side so far, as if the match ended at 90 minutes. */
+  /** Minutes, shout fatigue and the energy so far of each AI side, as if the match ended at 90 minutes. */
   aiReports: () => Partial<Record<Side, MatchReport>>;
 };
 
@@ -147,7 +147,10 @@ export const createCoachedMatch = (
     },
     aiReports: () =>
       Object.fromEntries(
-        coaches.map((c) => [c.side, reportOf(c.plan, c.squad, c.changes, AI_TACTICS)]),
+        coaches.map((c) => [
+          c.side,
+          withEnergy(reportOf(c.plan, c.squad, c.changes, AI_TACTICS), match.state.energy, c.squad),
+        ]),
       ),
   };
 };

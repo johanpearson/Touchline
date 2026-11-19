@@ -15,8 +15,13 @@ export type MatchAppearance = {
   minutes: number;
   /** Result of the player's team. */
   outcome: MatchOutcome;
-  /** Extra fitness lost beyond the minutes played, for example from touchline shouts. */
+  /** Extra fitness lost beyond the minutes (or the energy) spent, for example from touchline shouts. */
   extraFatigue?: number;
+  /**
+   * Engine energy (0 to 100) the player ended the match with. When present the drain follows the
+   * energy spent instead of the minutes played; absent means not recorded.
+   */
+  energy?: number;
 };
 
 export const FITNESS_MIN = 0;
@@ -28,6 +33,14 @@ export const FORM_START = 5;
 export const FITNESS_MATCH_MINUTES = 90;
 /** Fitness lost by playing a full match. */
 export const FITNESS_DRAIN_PER_MATCH = 10;
+/**
+ * Engine energy a neutral outfield player spends in a full match (`BASE_DRAIN` 0.45 x 90 minutes,
+ * about 40 to 45 for a defender, midfielder or forward). Spending this much costs
+ * `FITNESS_DRAIN_PER_MATCH` fitness; spending more or less scales the drain in proportion.
+ */
+export const ENERGY_SPENT_PER_MATCH = 42;
+/** Energy a player starts a match with (the engine's `ENERGY_START`). */
+export const ENERGY_START = 100;
 /** Share of the missing fitness regained after every matchday. */
 export const FITNESS_RECOVERY_RATE = 0.25;
 /** Minutes a player needs for the result to change their form. */
@@ -54,14 +67,23 @@ const formChange = (appearance: MatchAppearance): number => {
   return 0;
 };
 
+/** Fitness lost by the match itself: the energy spent when recorded, else proportional to minutes. */
+const baseDrain = ({ minutes, energy }: MatchAppearance): number => {
+  if (energy !== undefined) {
+    const spent = clamp(ENERGY_START - energy, 0, ENERGY_START);
+    return (FITNESS_DRAIN_PER_MATCH * spent) / ENERGY_SPENT_PER_MATCH;
+  }
+  return (
+    (FITNESS_DRAIN_PER_MATCH * clamp(minutes, 0, FITNESS_MATCH_MINUTES)) / FITNESS_MATCH_MINUTES
+  );
+};
+
 /** Condition after a match: fitness drains with minutes played, form follows the result. */
 export const applyMatchToCondition = (
   condition: PlayerCondition,
   appearance: MatchAppearance,
 ): PlayerCondition => {
-  const minutes = clamp(appearance.minutes, 0, FITNESS_MATCH_MINUTES);
-  const drain =
-    (FITNESS_DRAIN_PER_MATCH * minutes) / FITNESS_MATCH_MINUTES + (appearance.extraFatigue ?? 0);
+  const drain = baseDrain(appearance) + (appearance.extraFatigue ?? 0);
   return {
     fitness: clamp(condition.fitness - drain, FITNESS_MIN, FITNESS_MAX),
     form: clamp(condition.form + formChange(appearance), FORM_MIN, FORM_MAX),
