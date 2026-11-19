@@ -67,13 +67,16 @@ function DensitySection() {
         className="self-start"
       />
       <DensityPreview density={previewed ?? density} className="max-w-[420px]" />
-      <div aria-hidden="true" className="grid max-w-[420px] grid-cols-2 gap-3">
+      <div
+        aria-hidden="true"
+        className="grid max-w-[420px] grid-cols-[repeat(2,minmax(0,1fr))] gap-3"
+      >
         {DENSITIES.map((d) => (
           <figure
             key={d}
             data-testid={`density-option-${d}`}
             className={cn(
-              "m-0 flex flex-col gap-1.5 rounded-lg border p-2",
+              "m-0 flex min-w-0 flex-col gap-1.5 overflow-hidden rounded-lg border p-2",
               d === density ? "border-accent" : "border-line",
             )}
           >

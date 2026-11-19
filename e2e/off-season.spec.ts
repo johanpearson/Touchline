@@ -88,7 +88,8 @@ test.describe("off-season", () => {
     // The balance is shown rounded to 0.1M, so the difference is the fee within one rounding step.
     const spent = balanceBefore - (await balanceOf(page));
     expect(Math.abs(spent - fee)).toBeLessThanOrEqual(100);
-    expect(spent).toBeGreaterThan(0);
+    // A fee below one rounding step can leave the displayed balance unchanged.
+    if (fee >= 100) expect(spent).toBeGreaterThan(0);
 
     // Sign a free agent.
     await page.getByTestId("market-tab-free-agents").click();

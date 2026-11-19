@@ -194,7 +194,7 @@ test.describe("squad and tactics", () => {
     const chosen = (after ?? "").split(", ")[1] ?? "";
     await expect(page.getByTestId("pitch-slot-1")).toHaveAttribute(
       "aria-label",
-      new RegExp(`^[^,]+, ${chosen}, fitness`),
+      new RegExp(`^[^,]+, ${chosen}, rating [\\d.]+, fitness`),
     );
   });
 });
