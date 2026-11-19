@@ -105,6 +105,23 @@ export type { Lineup, LineupError, LineupResult } from "./lineup";
 export { BENCH_SIZE, validateLineup } from "./lineup";
 export type { SubstitutionRecord } from "./live-squad";
 export { matchInputFor, matchSeed } from "./match-input-for";
+export type {
+  MatchSession,
+  MatchSessionError,
+  MatchSessionIdentity,
+  MatchSessionIssue,
+  MatchSessionMode,
+  ParseMatchSessionResult,
+} from "./match-session";
+export {
+  careerOfSession,
+  fingerprintOf,
+  identityOf,
+  isSessionOfCareer,
+  MATCH_SESSION_VERSION,
+  parseMatchSession,
+  sessionIssue,
+} from "./match-session";
 export type { CareerParseError, CareerParseResult } from "./parse-career";
 export { parseCareer } from "./parse-career";
 export { pickBestEleven } from "./pick-best-eleven";
@@ -162,6 +179,8 @@ export { releasePlayer } from "./release-player";
 export { AI_RENEW_BEST_COUNT, AI_RENEW_MAX_AGE, renewAiContracts } from "./renew-ai-contracts";
 export type { RenewError, RenewResult } from "./renew-contract";
 export { askingWage, renewContract } from "./renew-contract";
+export type { ResumeMatchResult } from "./resume-match";
+export { resumeMatch } from "./resume-match";
 export {
   RETIREMENT_CERTAIN_AGE,
   RETIREMENT_CHANCE_STEP,

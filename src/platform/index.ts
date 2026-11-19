@@ -1,4 +1,8 @@
 export {
+  createBrowserMatchSessionStore,
+  MATCH_SESSION_STORAGE_KEY,
+} from "./browser-match-session-store";
+export {
   createBrowserDensityStore,
   createMemoryDensityStore,
   DENSITY_STORAGE_KEY,
@@ -6,6 +10,8 @@ export {
 export type { MemoryFileTransfer } from "./file-transfer";
 export { createBrowserFileTransfer, createMemoryFileTransfer } from "./file-transfer";
 export { createBrowserLocaleStore, createMemoryLocaleStore } from "./locale-store";
+export type { MatchSessionLoad, MatchSessionStore } from "./match-session-store";
+export { createMemoryMatchSessionStore } from "./memory-match-session-store";
 export { isPreferenceStorageWritable } from "./preferences-storage";
 export type { ReadEnvelopeResult } from "./save/codec";
 export { createEnvelope, readEnvelope, updateEnvelope } from "./save/codec";
