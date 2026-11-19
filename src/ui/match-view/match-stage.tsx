@@ -1,4 +1,4 @@
-import type { ActionEvent, ActionMatchState, PerSide, ZoneEvent } from "../../engine";
+import type { ActionEvent, PerSide, ZoneEvent } from "../../engine";
 import { useI18n } from "../i18n-provider";
 import { ClassicPitch } from "./classic-pitch";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
@@ -11,7 +11,6 @@ export type MatchStageProps = {
   /** Text alternative of the canvas, with the live summary. */
   label: string;
   colours: PerSide<string>;
-  score: ActionMatchState["score"];
   matchTime: number;
   terrainEvents: readonly ZoneEvent[];
   createRenderer?: TerrainRendererFactory;
@@ -28,7 +27,6 @@ export function MatchStage({
   view,
   label,
   colours,
-  score,
   matchTime,
   terrainEvents,
   createRenderer,
@@ -51,7 +49,6 @@ export function MatchStage({
         <ClassicPitch
           events={pitch.events}
           matchTime={matchTime}
-          score={score}
           homeColour={colours.home}
           awayColour={colours.away}
           showChain={showChain}

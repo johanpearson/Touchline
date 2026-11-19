@@ -120,7 +120,6 @@ export function MatchLayout({
           view={view}
           label={stageLabel}
           colours={colours}
-          score={score}
           matchTime={matchTime}
           terrainEvents={terrainEvents}
           createRenderer={createRenderer}

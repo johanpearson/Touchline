@@ -9,7 +9,6 @@ export type PitchRendererOptions = {
 /** What the 2D pitch draws at one moment. */
 export type PitchFrame = {
   snapshot: PositionSnapshot;
-  score: { home: number; away: number };
   /** The recent passing chain of the team in possession, oldest link first. */
   chain?: { team: Side; links: readonly ChainLink[] };
   /** Set while a set piece is being set up: the taker's snapshot slot and a short label. */
