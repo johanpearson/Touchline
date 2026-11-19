@@ -34,6 +34,8 @@ export type ActionSideAverages = {
 export type ActionBalanceSummary = {
   matches: number;
   goalsPerMatch: number;
+  /** Share of all goals scored from minute 75 on (added time included). */
+  lateGoalShare: number;
   shotsPerMatch: number;
   xgPerMatch: number;
   passesPerMatch: number;
@@ -49,6 +51,9 @@ export type ActionBalanceSummary = {
   awayWinRate: number;
   perSide: PerSide<ActionSideAverages>;
 };
+
+/** The last 15 minutes of a match start here, in match seconds. */
+export const LATE_GOAL_SECONDS = 75 * 60;
 
 const PLAY_ON = 1_000_000;
 const SIDES: readonly Side[] = ["home", "away"];
@@ -134,10 +139,14 @@ export const simulateActionBalance = (
   const totals: PerSide<Totals> = { home: emptyTotals(), away: emptyTotals() };
   let homeWins = 0;
   let draws = 0;
+  let lateGoals = 0;
   for (let i = 0; i < matches; i++) {
     const match = playFastMatch(input, baseSeed + i);
     const metrics = matchMetrics(match.events);
     const { home, away } = match.state.score;
+    lateGoals += match.events.filter(
+      (e) => e.type === "shot" && e.outcome === "goal" && e.time >= LATE_GOAL_SECONDS,
+    ).length;
     for (const side of SIDES) {
       totals[side].goals += match.state.score[side];
       for (const key of COUNT_KEYS) totals[side][key] += metrics[key][side];
@@ -155,6 +164,7 @@ export const simulateActionBalance = (
   return {
     matches,
     goalsPerMatch: both("goals"),
+    lateGoalShare: lateGoals / Math.max(1, totals.home.goals + totals.away.goals),
     shotsPerMatch: both("shots"),
     xgPerMatch: both("xg"),
     passesPerMatch: both("passes"),

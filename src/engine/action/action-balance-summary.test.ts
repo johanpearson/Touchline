@@ -3,6 +3,7 @@ import {
   type ActionBalanceSummary,
   type ActionSideAverages,
   formatBalanceTable,
+  LATE_GOAL_SECONDS,
   simulateActionBalance,
 } from "./action-balance";
 import { matchMetrics } from "./action-balance-metrics";
@@ -40,6 +41,20 @@ describe("simulateActionBalance against an independent replay", () => {
     );
     expect(summary.goalsPerMatch).toBeCloseTo(
       mean((i) => (replays[i]?.state.score.home ?? 0) + (replays[i]?.state.score.away ?? 0)),
+      9,
+    );
+  });
+
+  it("reports the share of goals scored in the last 15 minutes", () => {
+    const replays = playAll();
+    const late = (match: (typeof replays)[number]) =>
+      match.events.filter(
+        (e) => e.type === "shot" && e.outcome === "goal" && e.time >= LATE_GOAL_SECONDS,
+      ).length;
+    const goals = replays.reduce((n, m) => n + m.state.score.home + m.state.score.away, 0);
+
+    expect(summarise().lateGoalShare).toBeCloseTo(
+      replays.reduce((n, m) => n + late(m), 0) / goals,
       9,
     );
   });
@@ -141,6 +156,7 @@ describe("formatBalanceTable", () => {
   const summary: ActionBalanceSummary = {
     matches: 40,
     goalsPerMatch: 0,
+    lateGoalShare: 0,
     shotsPerMatch: 0,
     xgPerMatch: 0,
     passesPerMatch: 0,

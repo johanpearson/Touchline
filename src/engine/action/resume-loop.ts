@@ -1,6 +1,7 @@
 import type { Side } from "../match-state";
 import { actInLoop } from "./act-in-loop";
 import { changePeriod } from "./change-period";
+import { restartEnergyClock } from "./energy-state";
 import { HALF_SECONDS } from "./loop-constants";
 import type { LoopContext, LoopState } from "./loop-state";
 import { kickoffPlay } from "./play-action";
@@ -21,6 +22,7 @@ export const resumeLoop = (
   if (state.period !== "halfTime") throw new Error(`Cannot resume from ${state.period}`);
   const kickingOff = {
     ...state,
+    energy: restartEnergyClock(state.energy, state.time),
     play: kickoffPlay(otherSide(firstKickoff), state.play.score, state.play.fouls),
   };
   const secondHalf = changePeriod(kickingOff, state.time, "secondHalf", context);

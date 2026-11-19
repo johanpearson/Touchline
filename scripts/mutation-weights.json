@@ -14,6 +14,8 @@
     "src/engine/action/attribute-rating.ts": 2,
     "src/engine/action/build-options.ts": 76.9,
     "src/engine/action/change-loop.ts": 3.6,
+    "src/engine/action/energy.ts": 2,
+    "src/engine/action/energy-state.ts": 3,
     "src/engine/action/change-period.ts": 1.9,
     "src/engine/action/choose-option.ts": 2,
     "src/engine/action/create-action-match.ts": 3.9,

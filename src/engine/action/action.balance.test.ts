@@ -13,12 +13,15 @@ describe("action engine balance: two average teams", () => {
   beforeAll(() => {
     s = simulateActionBalance(aMatchInput().build(), MATCHES, BASE_SEED);
     console.info(`\n${formatBalanceTable("v2: average vs average", s)}\n`);
+    console.info(`Late goal share (minute 75 on): ${(s.lateGoalShare * 100).toFixed(1)}%`);
   }, 300_000);
 
   it("simulates at least 1000 matches", () => {
     expect(s.matches).toBeGreaterThanOrEqual(1000);
   });
   it("scores 2.4 to 3.0 goals per match", () => between(s.goalsPerMatch, 2.4, 3.0));
+  it("scores 15% to 25% of its goals in the last 15 minutes", () =>
+    between(s.lateGoalShare, 0.15, 0.25));
   it("takes 20 to 30 shots per match", () => between(s.shotsPerMatch, 20, 30));
   it("plays 800 to 1100 passes per match", () => between(s.passesPerMatch, 800, 1100));
   it("completes 75% to 88% of passes", () => between(s.passCompletion, 0.75, 0.88));

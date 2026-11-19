@@ -1,6 +1,7 @@
 import type { Side } from "../match-state";
 import { createRng } from "../rng";
 import { actInLoop } from "./act-in-loop";
+import { EVERYONE_TIRES, initialEnergy } from "./energy-state";
 import {
   FIRST_HALF_ADDED_MINUTES,
   HALF_SECONDS,
@@ -27,7 +28,12 @@ export type StartedLoop = {
  * Forking does not consume the parent stream, so no stream depends on another. `withSnapshots` false
  * is the fast path: no snapshots and no presentation stream.
  */
-export const startLoop = (input: MatchInput, seed: number, withSnapshots: boolean): StartedLoop => {
+export const startLoop = (
+  input: MatchInput,
+  seed: number,
+  withSnapshots: boolean,
+  energyPenalty: Readonly<Record<Side, boolean>> = EVERYONE_TIRES,
+): StartedLoop => {
   const root = createRng(seed);
   const sim = root.fork("action-sim");
   const presentation = withSnapshots ? root.fork("action-presentation") : undefined;
@@ -45,6 +51,7 @@ export const startLoop = (input: MatchInput, seed: number, withSnapshots: boolea
     time: 0,
     periodEnd: firstHalfEnd,
     play: kickoffPlay(firstKickoff, { home: 0, away: 0 }, { home: 0, away: 0 }),
+    energy: initialEnergy(input, energyPenalty),
     nextActionAt: 0,
   };
   return { state: actInLoop(initial, 0, context), context, firstKickoff, secondHalfAdded };

@@ -1,3 +1,4 @@
+import { drainEnergyTo } from "./energy-state";
 import { limitEventSnapshot } from "./limit-event-snapshot";
 import type { LoopContext, LoopState } from "./loop-state";
 import { playAction } from "./play-action";
@@ -10,8 +11,9 @@ const round1 = (value: number): number => Math.round(value * 10) / 10;
  */
 export const actInLoop = (state: LoopState, at: number, context: LoopContext): LoopState => {
   const { events } = context;
+  const energy = drainEnergyTo(state.energy, state.input, at);
   const result = playAction({
-    input: state.input,
+    input: energy.effective,
     play: state.play,
     time: at,
     period: state.period,
@@ -22,5 +24,5 @@ export const actInLoop = (state: LoopState, at: number, context: LoopContext): L
   if (result.replacedPrevious !== undefined) events[events.length - 1] = result.replacedPrevious;
   for (const event of result.events)
     events.push(limitEventSnapshot(event, events.at(-1), state.input));
-  return { ...state, play: result.play, nextActionAt: round1(at + result.duration) };
+  return { ...state, energy, play: result.play, nextActionAt: round1(at + result.duration) };
 };

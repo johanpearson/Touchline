@@ -1,5 +1,6 @@
 import type { ActionMatchChange } from "./action-match";
 import { applyChangeToInput } from "./apply-change-to-input";
+import { drainEnergyTo, withInput } from "./energy-state";
 import type { LoopState } from "./loop-state";
 import type { MatchInputValidation } from "./validate-match-input";
 
@@ -23,5 +24,11 @@ export const changeLoop = (state: LoopState, change: ActionMatchChange): LoopCha
   if (state.period === "fullTime") return { result: { ok: true }, state, recorded: false };
   const applied = applyChangeToInput(state.input, change);
   if (!applied.ok) return { result: applied, state, recorded: false };
-  return { result: { ok: true }, state: { ...state, input: applied.input }, recorded: true };
+  const drained = drainEnergyTo(state.energy, state.input, state.time);
+  const energy = withInput(drained, applied.input);
+  return {
+    result: { ok: true },
+    state: { ...state, input: applied.input, energy },
+    recorded: true,
+  };
 };

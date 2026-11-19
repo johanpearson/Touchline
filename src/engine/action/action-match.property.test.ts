@@ -212,6 +212,28 @@ describe("action engine properties", () => {
     );
   });
 
+  it("keeps energy within 0 to 100 and never raises it as the match goes on", () => {
+    forAll(
+      arbRun,
+      (run) => {
+        const [input, seed] = run;
+        const match = createActionMatch(input, seed, { detail: "fast" });
+        let previous = match.state.energy;
+        for (const at of [900, 1800, FIRST_HALF_LIMIT]) {
+          match.advanceTo(at);
+          const now = match.state.energy;
+          for (const [id, level] of Object.entries(previous)) {
+            expect(now[id]).toBeLessThanOrEqual(level);
+          }
+          expect(Object.values(now).every((e) => e >= 0 && e <= 100)).toBe(true);
+          previous = now;
+        }
+        return true;
+      },
+      WHOLE_MATCH_RUNS,
+    );
+  });
+
   it("gives the same log in fast detail as in full detail, minus the snapshots", () => {
     forAll(
       arbRun,

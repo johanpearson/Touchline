@@ -1,3 +1,4 @@
+import type { Side } from "../match-state";
 import type { ActionMatch, ActionMatchOptions, TimedActionMatchChange } from "./action-match";
 import { advanceLoop } from "./advance-loop";
 import { changeLoop } from "./change-loop";
@@ -5,6 +6,11 @@ import { matchStateOf } from "./loop-state";
 import type { MatchInput } from "./match-input";
 import { resumeLoop } from "./resume-loop";
 import { startLoop } from "./start-loop";
+
+const penaltySides = (option: boolean | Side): Record<Side, boolean> =>
+  typeof option === "boolean"
+    ? { home: option, away: option }
+    : { home: option === "home", away: option === "away" };
 
 /**
  * Creates a deterministic action-engine match. Simulation draws from `fork("action-sim")`, snapshot
@@ -28,7 +34,12 @@ export const createActionMatch = (
     context,
     firstKickoff,
     secondHalfAdded,
-  } = startLoop(initialInput, seed, (options.detail ?? "full") === "full");
+  } = startLoop(
+    initialInput,
+    seed,
+    (options.detail ?? "full") === "full",
+    penaltySides(options.energyPenalty ?? true),
+  );
   let state = first;
   const changes: TimedActionMatchChange[] = [];
 

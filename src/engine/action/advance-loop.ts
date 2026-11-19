@@ -1,5 +1,6 @@
 import { actInLoop } from "./act-in-loop";
 import { changePeriod } from "./change-period";
+import { drainEnergyTo } from "./energy-state";
 import { isPlaying, type LoopContext, type LoopState } from "./loop-state";
 
 /**
@@ -22,7 +23,11 @@ export const advanceLoop = (state: LoopState, seconds: number, context: LoopCont
   while (actionIsDue(current.nextActionAt, target, current.periodEnd)) {
     current = actInLoop(current, current.nextActionAt, context);
   }
-  current = { ...current, time: Math.max(current.time, target) };
+  current = {
+    ...current,
+    time: Math.max(current.time, target),
+    energy: drainEnergyTo(current.energy, current.input, target),
+  };
   if (target !== current.periodEnd) return current;
   return changePeriod(
     current,
