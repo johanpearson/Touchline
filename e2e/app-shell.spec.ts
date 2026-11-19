@@ -91,8 +91,8 @@ test.describe("app shell keyboard and focus", () => {
     await expect(page.getByRole("button", { name: "Skip to content" })).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(page.getByTestId("nav-hub")).toBeFocused();
-    // The other six items up to Saves, then Settings, then the search button.
-    for (let i = 0; i < 6; i += 1) await page.keyboard.press("Tab");
+    // Squad, Tactics, Market, Match, League, Club, then Saves, Settings and the search button.
+    for (let i = 0; i < 7; i += 1) await page.keyboard.press("Tab");
     await expect(page.getByTestId("nav-saves")).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(page.getByTestId("nav-settings")).toBeFocused();
