@@ -55,6 +55,8 @@ export type MatchLayoutProps = {
   onContinue?: () => void;
   /** When given, a back link to the hub appears; it asks before calling this. */
   onLeave?: () => void;
+  /** A restored match that has not been started again yet: the pause button says "Resume". */
+  awaitingResume?: boolean;
 };
 
 /** The panels of the match screen; `MatchScreen` feeds it. */
@@ -70,6 +72,7 @@ export function MatchLayout({
   playerIds,
   lines,
   playback,
+  awaitingResume,
   createRenderer,
   pitch,
   halfTimeEditor,
@@ -129,6 +132,7 @@ export function MatchLayout({
         />
         <MatchControls
           paused={paused}
+          awaitingResume={awaitingResume}
           mode={playback.mode}
           view={view}
           showChain={showChain}

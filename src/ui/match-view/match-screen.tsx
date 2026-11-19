@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { generateActionCommentary } from "../../commentary";
 import type {
   ActionEvent,
@@ -25,6 +25,7 @@ import { FullTimeReport } from "./full-time-report";
 import type { AppliedHalfTimePlan, HalfTimeEditor } from "./half-time-panel";
 import { LineupsPanel } from "./lineups-panel";
 import { MatchLayout } from "./match-layout";
+import type { MatchProgress, ProgressMoment, RestoredMatch } from "./match-progress";
 import { goalsOf } from "./match-result";
 import { PlayerRatings } from "./player-ratings";
 import { buildRatingRows } from "./ratings-table";
@@ -66,6 +67,13 @@ export type MatchScreenProps = {
    * engine version and, if the user made changes at half-time, the report of minutes played.
    */
   onContinue?: (finished: FinishedMatch, report?: MatchReport) => void;
+  /**
+   * A match rebuilt from a saved session: `createMatch` returns it already advanced to the saved
+   * position, and the screen shows it paused there.
+   */
+  restored?: RestoredMatch;
+  /** Called with what is needed to resume the match: on every change and, while it runs, often. */
+  onProgress?: (progress: MatchProgress, moment: ProgressMoment) => void;
   /** When given, the scoreboard has a back link to the hub that asks first and then calls this. */
   onLeave?: () => void;
 };
@@ -86,20 +94,44 @@ export function MatchScreen({
   createPitchRenderer,
   tickMs,
   halfTimeEditor,
+  restored,
+  onProgress,
   onContinue,
   onLeave,
 }: MatchScreenProps) {
   const { locale } = useI18n();
   const [match] = useState(() => createMatch?.() ?? createActionMatch(input, seed));
-  const { matchTime, state, events, eventCount, resume, ...playback } = useMatchPlayback(
+  const {
+    matchTime,
+    state,
+    events,
+    eventCount,
+    resume,
+    userChanges,
+    userChangeCount,
+    ...playback
+  } = useMatchPlayback(
     match,
     tickMs,
+    restored && { matchTime: restored.matchTime, mode: restored.mode, changes: restored.changes },
   );
   // Space and the arrow keys belong to the match while it runs; Ctrl+K waits until it is paused.
   useSuspendPaletteShortcut(
     !playback.paused && (state.period === "firstHalf" || state.period === "secondHalf"),
   );
-  const [report, setReport] = useState<MatchReport | undefined>();
+  const [report, setReport] = useState<MatchReport | undefined>(restored?.report);
+  const [awaitingResume, setAwaitingResume] = useState(restored !== undefined);
+  useProgressReports({
+    onProgress,
+    progress: {
+      changes: userChanges,
+      mode: playback.mode,
+      report,
+      position: { matchTime, period: state.period },
+    },
+    changeCount: userChangeCount,
+    paused: playback.paused,
+  });
   const startSecondHalf = (plan?: AppliedHalfTimePlan) => {
     setReport(plan?.report);
     resume(plan?.change);
@@ -156,7 +188,14 @@ export function MatchScreen({
       stats={actionStats}
       playerIds={played}
       lines={lines}
-      playback={playback}
+      playback={{
+        ...playback,
+        setPaused: (paused) => {
+          if (!paused) setAwaitingResume(false);
+          playback.setPaused(paused);
+        },
+      }}
+      awaitingResume={awaitingResume}
       createRenderer={createRenderer}
       pitch={{ events, createRenderer: createPitchRenderer }}
       halfTimeEditor={halfTimeEditor}
@@ -201,6 +240,34 @@ export function MatchScreen({
     />
   );
 }
+
+type ProgressReports = {
+  onProgress?: MatchScreenProps["onProgress"];
+  progress: MatchProgress;
+  changeCount: number;
+  paused: boolean;
+};
+
+/**
+ * Reports the progress: at once when the user pauses or plays, changes the mode or a change is
+ * applied, or the period changes (and on mount), and on every clock tick for the writer to throttle.
+ * The latest progress is reported once more when the screen goes away.
+ */
+const useProgressReports = ({ onProgress, progress, changeCount, paused }: ProgressReports) => {
+  const latest = useRef(progress);
+  latest.current = progress;
+  const report = useRef(onProgress);
+  report.current = onProgress;
+  const { period, matchTime } = progress.position;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: these are the moments that count
+  useEffect(
+    () => report.current?.(latest.current, "now"),
+    [changeCount, paused, progress.mode, progress.report, period],
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: every clock tick offers the position
+  useEffect(() => report.current?.(latest.current, "tick"), [matchTime]);
+  useEffect(() => () => report.current?.(latest.current, "now"), []);
+};
 
 /** The user's report with what the AI opponent played; the user's report is absent when nothing was changed. */
 const withOpponent = (

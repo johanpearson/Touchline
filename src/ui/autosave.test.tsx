@@ -13,7 +13,9 @@ import { generateLeague, parseCareer } from "../game";
 import {
   createMemoryFileTransfer,
   createMemoryLocaleStore,
+  createMemoryMatchSessionStore,
   createMemorySaveStore,
+  type MatchSessionStore,
 } from "../platform";
 import type { SaveEnvelope, SaveStore } from "../shared";
 import { App } from "./app";
@@ -36,6 +38,7 @@ const aClock = () => {
 
 type Options = {
   store?: SaveStore;
+  matchSessionStore?: MatchSessionStore;
   locale?: string;
   storageAvailable?: boolean;
   now?: () => string;
@@ -43,6 +46,7 @@ type Options = {
 
 const mountApp = ({
   store = createMemorySaveStore(),
+  matchSessionStore,
   locale,
   storageAvailable,
   now,
@@ -52,6 +56,7 @@ const mountApp = ({
       createRenderer={createRenderer}
       localeStore={createMemoryLocaleStore(locale)}
       saveStore={store}
+      matchSessionStore={matchSessionStore}
       fileTransfer={createMemoryFileTransfer()}
       now={now ?? aClock()}
       storageAvailable={storageAvailable}
@@ -108,6 +113,7 @@ describe("autosave and continue", () => {
   });
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -264,23 +270,31 @@ describe("autosave and continue", () => {
     await waitFor(() => expect(screen.getByTestId("save-status").textContent).toMatch(/Sparad/));
   });
 
-  it("restarts a match from kickoff after a reload and records nothing", async () => {
+  it("resumes a match paused after a reload and records nothing", async () => {
     const store = createMemorySaveStore();
-    const first = mountApp({ store });
+    const matchSessionStore = createMemoryMatchSessionStore();
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
+    const first = mountApp({ store, matchSessionStore });
     startCareer();
     await autosaved(store);
     goTo("#/match");
     fireEvent.click(screen.getByTestId("kick-off"));
-    expect(screen.getByTestId("match-screen")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("mode-highlights"));
+    act(() => vi.advanceTimersByTime(8_000));
+    const clock = screen.getByTestId("clock").textContent;
+    expect(clock).not.toBe("0’");
     first.unmount();
     goTo("#/");
 
-    mountApp({ store });
+    mountApp({ store, matchSessionStore });
     fireEvent.click(await screen.findByTestId("continue-career"));
+    await screen.findByTestId("career-hub");
     goTo("#/match");
-    fireEvent.click(screen.getByTestId("kick-off"));
 
-    expect(screen.getByTestId("clock").textContent).toBe("0’");
+    expect(screen.queryByTestId("pre-match")).toBeNull();
+    expect(await screen.findByTestId("match-screen")).toBeTruthy();
+    expect(screen.getByTestId("clock").textContent).toBe(clock);
+    expect(screen.getByTestId("pause-toggle").textContent).toBe("Resume");
     expect(savedCareer(await autosaved(store)).season.results).toEqual([]);
   });
 });

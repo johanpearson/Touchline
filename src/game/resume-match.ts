@@ -1,8 +1,8 @@
 import type { ActionMatch } from "../engine";
 import type { MatchSession } from "./match-session";
 
-export type ResumeMatchResult =
-  | { ok: true; match: ActionMatch }
+export type ResumeMatchResult<M extends ActionMatch = ActionMatch> =
+  | { ok: true; match: M }
   | { ok: false; error: "invalid-change" };
 
 /**
@@ -24,10 +24,10 @@ const advanceThroughHalfTime = (match: ActionMatch, time: number) => {
  * one saved after it is resumed. `createMatch` makes the match as it was first made, so the AI
  * club's own decisions come back by themselves.
  */
-export const resumeMatch = (
+export const resumeMatch = <M extends ActionMatch>(
   session: Pick<MatchSession, "changes" | "position">,
-  createMatch: () => ActionMatch,
-): ResumeMatchResult => {
+  createMatch: () => M,
+): ResumeMatchResult<M> => {
   const match = createMatch();
   for (const { time, change } of session.changes) {
     advanceThroughHalfTime(match, time);

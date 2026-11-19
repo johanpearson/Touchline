@@ -22,6 +22,21 @@ describe("headerActionFor", () => {
     expect(headerActionFor(newCareer())).toEqual({ kind: "continue", route: { name: "match" } });
   });
 
+  it("resumes the match in progress instead of continuing", () => {
+    expect(headerActionFor(newCareer(), true)).toEqual({
+      kind: "resume-match",
+      route: { name: "match" },
+    });
+  });
+
+  it("ignores a match in progress when no fixture remains", () => {
+    const career = newCareer();
+    const lastMatchday = Math.max(...career.season.fixtures.map((f) => f.matchday));
+    expect(headerActionFor(playMatchdays(career, lastMatchday), true)?.kind).toBe(
+      "season-complete",
+    );
+  });
+
   it("offers the season summary once every matchday is played", () => {
     const career = newCareer();
     const lastMatchday = Math.max(...career.season.fixtures.map((f) => f.matchday));

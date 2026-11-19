@@ -10,6 +10,7 @@ import type { Fixture } from "./generate-fixtures";
 import { isInt, isNonNegativeNumber, isRecord, isString, type Rec } from "./json-guards";
 import { matchInputFor, matchSeed } from "./match-input-for";
 import type { SquadPlan } from "./squad-plan";
+import type { MatchReport } from "./update-condition";
 
 /** The version of the stored match session. Every later change to its shape bumps this. */
 export const MATCH_SESSION_VERSION = 1;
@@ -41,6 +42,8 @@ export type MatchSession = {
   /** The user's changes with the engine time they were applied at; the AI's are made by the coach. */
   changes: TimedActionMatchChange[];
   mode: MatchSessionMode;
+  /** Minutes and shout fatigue of the user's side when changes were made at half-time. */
+  report?: MatchReport;
   /** What the user saw: the match time at the director's clock and the period then. */
   position: { matchTime: number; period: Period };
 };
@@ -118,7 +121,13 @@ export const sessionIssue = (
   if (session.season !== career.season.number || session.fixtureId !== fixture.id) {
     return "other-fixture";
   }
-  const now = identityOf(careerOfSession(career, session), fixture);
+  let now: MatchSessionIdentity;
+  try {
+    now = identityOf(careerOfSession(career, session), fixture);
+  } catch {
+    // The kickoff plan names a player the club no longer has.
+    return "squad-changed";
+  }
   if (session.engineVersion !== now.engineVersion) return "engine-version";
   if (session.seed !== now.seed || session.inputKey !== now.inputKey) return "squad-changed";
   return null;
@@ -156,6 +165,7 @@ const hasShape = (value: Rec): boolean =>
   isString(value.inputKey) &&
   Array.isArray(value.changes) &&
   value.changes.every(isTimedChange) &&
+  (value.report === undefined || isRecord(value.report)) &&
   isString(value.mode) &&
   MODES.includes(value.mode) &&
   isPosition(value.position);

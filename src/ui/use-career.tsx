@@ -31,6 +31,7 @@ import {
   type ImportPickResult,
   importErrorFor,
 } from "./import-save";
+import { useMatchSessions } from "./match-session-provider";
 import {
   isKnownSlot,
   isManualSlot,
@@ -140,6 +141,10 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
   const [importError, setImportError] = useState<ImportError | null>(null);
   const [lastImportedSlot, setLastImportedSlot] = useState<string | null>(null);
 
+  // A match in progress belongs to one career: starting or loading another one ends it. Continuing
+  // the autosave found on startup (`loadAutosave`) keeps it, so a reload does not lose the match.
+  const { clear: clearMatchSession } = useMatchSessions();
+
   const nowRef = useRef(now);
   nowRef.current = now;
   const queue = useMemo(() => createAutosaveQueue(saveStore, () => nowRef.current()), [saveStore]);
@@ -176,11 +181,12 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       const result = createCareer({ seed, userClubId });
       if (!result.ok) return result.error;
       clearCandidate();
+      clearMatchSession();
       setCareer(result.career);
       persist(result.career, "new");
       return null;
     },
-    [persist, clearCandidate],
+    [persist, clearCandidate, clearMatchSession],
   );
   const completeMatch = useCallback(
     (userResult: Result, report?: MatchReport): MatchdayError | null => {
@@ -238,13 +244,14 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
         if (read.kind !== "found") return { ok: false, error: read.kind };
         queue.adopt(read.envelope);
         clearCandidate();
+        clearMatchSession();
         setCareer(read.career);
         return { ok: true };
       } catch {
         return { ok: false, error: "store" };
       }
     },
-    [saveStore, queue, clearCandidate],
+    [saveStore, queue, clearCandidate, clearMatchSession],
   );
   const deleteSlot = useCallback(
     async (id: string): Promise<SlotActionResult> => {

@@ -1,6 +1,11 @@
 import type { ReactNode } from "react";
 import type { Career } from "../game";
-import { createMemoryDensityStore, createMemoryThemeStore } from "../platform";
+import {
+  createMemoryDensityStore,
+  createMemoryMatchSessionStore,
+  createMemoryThemeStore,
+  type MatchSessionStore,
+} from "../platform";
 import type { DensityStore, FileTransfer, LocaleStore, SaveStore, ThemeStore } from "../shared";
 import { CareerHubScreen } from "./career-hub-screen";
 import { ClubView } from "./club-screen";
@@ -8,6 +13,7 @@ import { I18nProvider } from "./i18n-provider";
 import { LeagueScreen } from "./league-screen";
 import { MarketScreen } from "./market/market-screen";
 import { MatchFlowScreen } from "./match-flow-screen";
+import { MatchSessionProvider } from "./match-session-provider";
 import type { MatchScreenProps } from "./match-view";
 import { MatchdayResultsScreen } from "./matchday-results-screen";
 import { NewCareerWizard } from "./new-career/new-career-wizard";
@@ -106,6 +112,8 @@ export type AppProps = {
   themeStore?: ThemeStore;
   /** Remembers the table density. Defaults to an in-memory store (no persistence). */
   densityStore?: DensityStore;
+  /** Where the match in progress is kept. Defaults to an in-memory store (lost on reload). */
+  matchSessionStore?: MatchSessionStore;
   /** Where autosaves are written. The composition root passes IndexedDB, or memory as a fallback. */
   saveStore: SaveStore;
   /** Downloads and file picking for save export and import. */
@@ -120,11 +128,13 @@ export type AppProps = {
 
 const fallbackThemeStore = createMemoryThemeStore();
 const fallbackDensityStore = createMemoryDensityStore();
+const fallbackMatchSessionStore = createMemoryMatchSessionStore();
 
 export function App({
   localeStore,
   themeStore,
   densityStore,
+  matchSessionStore,
   saveStore,
   fileTransfer,
   now,
@@ -137,17 +147,19 @@ export function App({
     <I18nProvider store={localeStore}>
       <ThemeProvider store={themeStore ?? fallbackThemeStore}>
         <DensityProvider store={densityStore ?? fallbackDensityStore}>
-          <CareerProvider saveStore={saveStore} now={now} fileTransfer={fileTransfer}>
-            <Toasts>
-              <Shell
-                createRenderer={createRenderer}
-                tickMs={tickMs}
-                initialSeed={initialSeed}
-                storageAvailable={storageAvailable}
-                now={now}
-              />
-            </Toasts>
-          </CareerProvider>
+          <MatchSessionProvider store={matchSessionStore ?? fallbackMatchSessionStore}>
+            <CareerProvider saveStore={saveStore} now={now} fileTransfer={fileTransfer}>
+              <Toasts>
+                <Shell
+                  createRenderer={createRenderer}
+                  tickMs={tickMs}
+                  initialSeed={initialSeed}
+                  storageAvailable={storageAvailable}
+                  now={now}
+                />
+              </Toasts>
+            </CareerProvider>
+          </MatchSessionProvider>
         </DensityProvider>
       </ThemeProvider>
     </I18nProvider>

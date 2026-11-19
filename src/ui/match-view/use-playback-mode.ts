@@ -30,9 +30,14 @@ const write = (mode: PlaybackMode) => {
   }
 };
 
-/** The chosen playback mode, remembered across matches and reloads; Extended is the default. */
-export const usePlaybackModeChoice = (): [PlaybackMode, (mode: PlaybackMode) => void] => {
-  const [mode, setMode] = useState<PlaybackMode>(read);
+/**
+ * The chosen playback mode, remembered across matches and reloads; Extended is the default.
+ * `initial` (a resumed match's mode) is used instead of the remembered one until the user chooses.
+ */
+export const usePlaybackModeChoice = (
+  initial?: PlaybackMode,
+): [PlaybackMode, (mode: PlaybackMode) => void] => {
+  const [mode, setMode] = useState<PlaybackMode>(() => initial ?? read());
   const choose = (next: PlaybackMode) => {
     setMode(next);
     write(next);
