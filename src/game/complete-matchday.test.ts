@@ -258,12 +258,18 @@ describe("completeMatchday", () => {
     const fixture = getNextFixture(tired.season, tired.userClubId) as NonNullable<
       ReturnType<typeof getNextFixture>
     >;
-    const aiFixture = tired.season.fixtures.find(
+    const aiFixtures = tired.season.fixtures.filter(
       (f) =>
         f.matchday === tired.season.currentMatchday &&
         f.homeClubId !== tired.userClubId &&
         f.awayClubId !== tired.userClubId,
-    ) as typeof fixture;
+    ) as (typeof fixture)[];
+    /** The first AI match of the round in which the home club substitutes (energy and score decide who does). */
+    const aiFixture = (aiFixtures.find((f) =>
+      Object.values(playFixture(tired, f).aiReports[f.homeClubId]?.minutes ?? {}).some(
+        (m) => m > 0 && m < 90,
+      ),
+    ) ?? aiFixtures[0]) as typeof fixture;
 
     it("adds the minutes an AI club's substitutes and substituted players played to the season", () => {
       const { aiReports } = playFixture(tired, aiFixture);
