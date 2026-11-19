@@ -43,7 +43,6 @@ describe("ClassicPitch", () => {
   const props = {
     events: [carry(10, 20), carry(20, 40)],
     matchTime: 15,
-    score: { home: 1, away: 0 },
     homeColour: "#f00",
     awayColour: "#00f",
     label: "Pitch",
@@ -58,7 +57,7 @@ describe("ClassicPitch", () => {
   };
   const runFrame = () => act(() => frames.at(-1)?.(0));
 
-  it("draws the interpolated snapshot and the score each frame", () => {
+  it("draws the interpolated snapshot each frame", () => {
     const { renderer, factory } = fakeRenderer();
     render(<ClassicPitch {...props} createRenderer={factory} />);
     runFrame();
@@ -68,7 +67,7 @@ describe("ClassicPitch", () => {
     });
     const frame = vi.mocked(renderer.render).mock.calls[0]?.[0];
     expect(frame?.snapshot.ball).toEqual({ x: 30, y: 34 });
-    expect(frame?.score).toEqual({ home: 1, away: 0 });
+    expect(frame).not.toHaveProperty("score");
   });
 
   it("follows the match time without recreating the renderer", () => {

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ActionEvent, ActionMatchState, SetPieceEvent } from "../../engine";
+import type { ActionEvent, SetPieceEvent } from "../../engine";
 import { createCanvasPitchRenderer } from "./canvas-pitch-renderer";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import { interpolateSnapshot } from "./interpolate-snapshot";
@@ -14,7 +14,6 @@ export type ClassicPitchProps = {
   events: readonly ActionEvent[];
   /** Match time in seconds to show. */
   matchTime: number;
-  score: ActionMatchState["score"];
   homeColour: string;
   awayColour: string;
   /** Whether the passing chain is drawn. */
@@ -30,7 +29,6 @@ export type ClassicPitchProps = {
 export function ClassicPitch({
   events,
   matchTime,
-  score,
   homeColour,
   awayColour,
   showChain = true,
@@ -39,8 +37,8 @@ export function ClassicPitch({
   label,
 }: ClassicPitchProps) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const latest = useRef({ events, matchTime, score, showChain, setPieceLabels });
-  latest.current = { events, matchTime, score, showChain, setPieceLabels };
+  const latest = useRef({ events, matchTime, showChain, setPieceLabels });
+  latest.current = { events, matchTime, showChain, setPieceLabels };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -52,13 +50,12 @@ export function ClassicPitch({
     resize();
     let frameId = 0;
     const loop = () => {
-      const { events: log, matchTime: time, score: current, ...shown } = latest.current;
+      const { events: log, matchTime: time, ...shown } = latest.current;
       const snapshot = interpolateSnapshot(log, time);
       if (snapshot) {
         const setPiece = activeSetPiece(log, time);
         renderer.render({
           snapshot,
-          score: current,
           chain: shown.showChain
             ? chainLines(log, time, CHAIN_WINDOW_SECONDS, snapshot)
             : undefined,

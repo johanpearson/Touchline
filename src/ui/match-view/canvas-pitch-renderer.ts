@@ -81,7 +81,7 @@ const drawSetPiece = (ctx: CanvasRenderingContext2D, layout: Layout, frame: Pitc
   ctx.font = "bold 10px sans-serif";
 };
 
-/** The default renderer: the pitch, both teams, the ball and the score, on one canvas 2D element. */
+/** The default renderer: the pitch, both teams, the ball, on one canvas 2D element. */
 export const createCanvasPitchRenderer: PitchRendererFactory = (host, options) => {
   const canvas = document.createElement("canvas");
   canvas.style.width = "100%";
@@ -129,9 +129,6 @@ export const createCanvasPitchRenderer: PitchRendererFactory = (host, options) =
     ctx.fill();
     ctx.strokeStyle = "#000";
     ctx.stroke();
-    ctx.font = "bold 14px sans-serif";
-    ctx.fillStyle = "#fff";
-    ctx.fillText(`${frame.score.home} – ${frame.score.away}`, width / 2, MARGIN / 2 + 4);
   };
 
   return {
