@@ -8,7 +8,13 @@ const aWriter = () => {
     (value) => written.push(value),
     () => time,
   );
-  return { writer, written, at: (ms: number) => void (time = ms) };
+  return {
+    writer,
+    written,
+    at: (ms: number) => {
+      time = ms;
+    },
+  };
 };
 
 describe("createSessionWriter", () => {

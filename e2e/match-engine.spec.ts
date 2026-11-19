@@ -1,6 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { expect, type Page, test } from "@playwright/test";
-import { chooseMode, freezeClock, playUntilVisible, unfreezeClock } from "./match-clock";
+import {
+  advanceClock,
+  chooseMode,
+  freezeClock,
+  playUntilVisible,
+  unfreezeClock,
+} from "./match-clock";
 
 const CLUBS = 14;
 
@@ -113,5 +119,61 @@ test.describe("match engine", () => {
     await page.getByTestId("load-slot-2").click();
     await expect(page.getByTestId("career-hub")).toBeVisible();
     expect(await tableRows(page)).toEqual(table);
+  });
+});
+
+test.describe("match in progress", () => {
+  test("a reload mid-match resumes it paused and finishes with the final score of an uninterrupted run", async ({
+    browser,
+  }) => {
+    test.setTimeout(180_000);
+    const SEED = "424242";
+
+    /** Starts a career with a fixed seed and club, kicks off in Highlights and returns the page. */
+    const kickOff = async (page: Page) => {
+      await page.goto(`./#/new`);
+      await page.getByTestId("choose-club").click();
+      await page.locator("details summary").click();
+      await page.getByTestId("seed-input").fill(SEED);
+      await page.getByTestId("club-name").first().click();
+      await page.getByTestId("start-career").click();
+      await expect(page.getByTestId("career-hub")).toBeVisible();
+      await page.getByTestId("play-match").click();
+      await freezeClock(page);
+      await page.getByTestId("kick-off").click();
+      await chooseMode(page, "highlights");
+    };
+    const toFullTime = async (page: Page) => {
+      await playUntilVisible(page, page.getByTestId("half-time"));
+      await page.getByTestId("start-second-half").click();
+      await playUntilVisible(page, page.getByTestId("continue"));
+      return page.getByTestId("score").textContent();
+    };
+
+    const control = await (await browser.newContext()).newPage();
+    await kickOff(control);
+    const expected = await toFullTime(control);
+
+    const page = await (await browser.newContext()).newPage();
+    await kickOff(page);
+    await advanceClock(page, 40_000);
+    const minute = await page.getByTestId("clock").textContent();
+    await page.getByTestId("pause-toggle").click();
+    await expect(page.getByTestId("pause-toggle")).toHaveText("Play");
+    await unfreezeClock(page);
+    await page.reload();
+    await page.getByTestId("continue-career").click();
+    await expect(page.getByTestId("career-hub")).toBeVisible();
+    await expect(page.getByTestId("header-action")).toHaveText("Resume match");
+    await freezeClock(page);
+    await page.getByTestId("header-action").click();
+
+    await expect(page.getByTestId("pre-match")).toHaveCount(0);
+    await expect(page.getByTestId("match-screen")).toBeVisible();
+    await expect(page.getByTestId("clock")).toHaveText(minute ?? "");
+    await expect(page.getByTestId("pause-toggle")).toHaveText("Resume");
+
+    await page.getByTestId("pause-toggle").click();
+    expect(await toFullTime(page)).toBe(expected);
   });
 });

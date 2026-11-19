@@ -46,12 +46,8 @@ function useSessionWriting(career: Career, fixture: Fixture, resumed: MatchSessi
   const over = useRef(false);
   const sessionsRef = useRef(sessions);
   sessionsRef.current = sessions;
-  const identity = useMemo(
-    () => (resumed ? null : identityOf(career, fixture)),
-    // A match from kickoff is identified once, by the plan it kicked off with.
-    // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-    [],
-  );
+  // A match from kickoff is identified once, by the plan it kicked off with.
+  const [identity] = useState(() => (resumed ? null : identityOf(career, fixture)));
   const writer = useMemo(
     () =>
       createSessionWriter<MatchSession>(
@@ -186,11 +182,15 @@ function Flow({ career, fixture, stored, sessions, createRenderer, tickMs }: Flo
   const discarded = first.discarded || dropped;
 
   // A session that cannot be resumed is dropped with a note; the pre-match screen shows.
+  const noted = useRef(false);
+  const refused = sessions.refused !== null;
   useEffect(() => {
-    if (!discarded && !sessions.refused) return;
-    toast({ title: t("toast.matchSession.title"), description: t("toast.matchSession.text") });
+    if (!discarded && !refused) return;
     sessions.clear();
-  }, [discarded, sessions, toast, t]);
+    if (noted.current) return;
+    noted.current = true;
+    toast({ title: t("toast.matchSession.title"), description: t("toast.matchSession.text") });
+  }, [discarded, refused, sessions, toast, t]);
 
   // The match is played with the plan it kicked off with, which the loaded career may not hold yet.
   const mustAdoptPlan = session !== null && !holdsPlanOf(career, session);

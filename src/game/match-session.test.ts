@@ -80,6 +80,15 @@ describe("sessionIssue", () => {
     expect(sessionIssue(aSession({ engineVersion: 1 }), career, fixture)).toBe("engine-version");
   });
 
+  it("names a squad that no longer has a player of the kickoff plan, without throwing", () => {
+    const starter = career.squadPlan.starters[0] as string;
+    const sold = {
+      ...career,
+      league: { ...career.league, players: career.league.players.filter((p) => p.id !== starter) },
+    };
+    expect(sessionIssue(aSession(), sold, fixture)).toBe("squad-changed");
+  });
+
   it("names a changed squad", () => {
     const starter = career.squadPlan.starters[0] as string;
     const tired = {

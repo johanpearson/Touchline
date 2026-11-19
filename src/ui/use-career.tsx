@@ -193,11 +193,13 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       if (!career) return "season-complete";
       const outcome = completeMatchday(career, userResult, report);
       if (!outcome.ok) return outcome.error;
+      // However the result was recorded (played or quick-simmed), the match in progress is over.
+      clearMatchSession();
       setCareer(outcome.career);
       persist(outcome.career, "continue");
       return null;
     },
-    [career, persist],
+    [career, persist, clearMatchSession],
   );
   // Plan edits are not saved on their own; the next autosave (matchday, new season) carries them.
   const setLineup = useCallback(
