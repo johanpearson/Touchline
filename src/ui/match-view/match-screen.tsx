@@ -38,6 +38,8 @@ export type FinishedMatch = {
   /** Player ids of the scorers in the order the goals were scored. */
   scorers: string[];
   engineVersion: EngineVersion;
+  /** Energy (0 to 100) each player who played ended the match with. */
+  energy: Readonly<Record<string, number>>;
 };
 
 export type MatchScreenProps = {
@@ -194,6 +196,7 @@ export function MatchScreen({
               score: state.score,
               scorers: goalScorersOf(events),
               engineVersion: input.engineVersion,
+              energy: match.state.energy,
             },
             withOpponent(report, match, userSide),
           ))

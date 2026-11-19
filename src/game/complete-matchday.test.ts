@@ -5,7 +5,13 @@ import { completeMatchday } from "./complete-matchday";
 import { computeTable, type Result } from "./compute-table";
 import { finishSeason } from "./finish-season";
 import { getNextFixture } from "./get-next-fixture";
-import { FITNESS_MAX, FITNESS_MIN, FORM_MAX, FORM_MIN } from "./player-condition";
+import {
+  ENERGY_SPENT_PER_MATCH,
+  FITNESS_MAX,
+  FITNESS_MIN,
+  FORM_MAX,
+  FORM_MIN,
+} from "./player-condition";
 import { playMatchdays } from "./season-test-helpers";
 import { playFixture, simulateFixture } from "./simulate-fixture";
 import { startNextSeason } from "./start-next-season";
@@ -284,18 +290,19 @@ describe("completeMatchday", () => {
       expect(Object.values(expected).some((m) => m > 0 && m < 90)).toBe(true);
     });
 
-    it("drains fitness in proportion to the minutes an AI player played", () => {
-      const { aiReports } = playFixture(tired, aiFixture);
-      const minutes = aiReports[aiFixture.homeClubId]?.minutes ?? {};
-      const partial = Object.entries(minutes).find(([, m]) => m > 0 && m < 90);
+    it("drains fitness by the energy an AI player spent, plus the mentality part of his shout fatigue", () => {
+      const report = playFixture(tired, aiFixture).aiReports[aiFixture.homeClubId];
+      const partial = Object.entries(report?.minutes ?? {}).find(([, m]) => m > 0 && m < 90);
       if (!partial) throw new Error("no partial minutes");
-      const [id, played] = partial;
+      const [id] = partial;
+      const energy = report?.energy?.[id];
+      if (energy === undefined) throw new Error("no energy recorded");
 
       const next = complete(tired);
 
-      const extra = aiReports[aiFixture.homeClubId]?.fatigue?.[id] ?? 0;
+      const extra = report?.mentalityFatigue?.[id] ?? 0;
       const before = tired.condition[id]?.fitness ?? 100;
-      const drained = before - (10 * played) / 90 - extra;
+      const drained = before - (10 * (100 - energy)) / ENERGY_SPENT_PER_MATCH - extra;
       expect(next.condition[id]?.fitness).toBeCloseTo(drained + (100 - drained) * 0.25, 6);
     });
 

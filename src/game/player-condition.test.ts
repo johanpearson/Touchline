@@ -3,6 +3,7 @@ import { aCondition, aPlayer } from "./game-builders";
 import { ATTRIBUTE_NAMES } from "./player";
 import {
   applyMatchToCondition,
+  ENERGY_SPENT_PER_MATCH,
   effectiveAttributes,
   FITNESS_DRAIN_PER_MATCH,
   FITNESS_RECOVERY_RATE,
@@ -126,6 +127,49 @@ describe("applyMatchToCondition", () => {
   it("clamps minutes above 90 to a full match", () => {
     const result = applyMatchToCondition(initialCondition(), { minutes: 120, outcome: "draw" });
     expect(result.fitness).toBe(100 - FITNESS_DRAIN_PER_MATCH);
+  });
+});
+
+describe("applyMatchToCondition with recorded energy", () => {
+  const rested = () => aCondition().withFitness(100).withForm(5).build();
+
+  it("costs the full-match drain for a neutral outfield player's energy spent", () => {
+    const after = applyMatchToCondition(rested(), {
+      minutes: 90,
+      outcome: "draw",
+      energy: 100 - ENERGY_SPENT_PER_MATCH,
+    });
+
+    expect(after.fitness).toBeCloseTo(100 - FITNESS_DRAIN_PER_MATCH, 10);
+  });
+
+  it("drains a player who spent little energy (a goalkeeper) less than the minutes would", () => {
+    const after = applyMatchToCondition(rested(), { minutes: 90, outcome: "draw", energy: 88 });
+
+    expect(after.fitness).toBeGreaterThan(100 - FITNESS_DRAIN_PER_MATCH);
+  });
+
+  it("drains a player who spent more energy than average more", () => {
+    const after = applyMatchToCondition(rested(), { minutes: 90, outcome: "draw", energy: 40 });
+
+    expect(after.fitness).toBeLessThan(100 - FITNESS_DRAIN_PER_MATCH);
+  });
+
+  it("does not drain a player who kept full energy even with minutes recorded", () => {
+    const after = applyMatchToCondition(rested(), { minutes: 90, outcome: "draw", energy: 100 });
+
+    expect(after.fitness).toBe(100);
+  });
+
+  it("adds the extra fatigue on top of the energy drain", () => {
+    const after = applyMatchToCondition(rested(), {
+      minutes: 90,
+      outcome: "draw",
+      energy: 100,
+      extraFatigue: 2,
+    });
+
+    expect(after.fitness).toBe(98);
   });
 });
 

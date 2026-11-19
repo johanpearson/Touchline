@@ -214,6 +214,7 @@ export type { TransferError, TransferResult } from "./transfer-result";
 export { isWindowOpen } from "./transfer-window";
 export { FREE_AGENT_POOL_CAP, trimFreeAgents } from "./trim-free-agents";
 export type { AiReports, MatchReport } from "./update-condition";
+export { userReportWithEnergy } from "./update-condition";
 export { useActionEngine } from "./use-action-engine";
 export { WAGE_BUDGET_SHARE, wageBill, wageBudget } from "./wage-budget";
 export {
