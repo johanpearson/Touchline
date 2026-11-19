@@ -49,7 +49,7 @@ const createRun = (match: ActionMatch, mode: PlaybackMode): Run => {
     events,
     timeline,
     clock: 0,
-    presented: advancePresented(INITIAL_PRESENTED, events, timeline, 0, 0),
+    presented: advancePresented(INITIAL_PRESENTED, events, timeline, { clock: 0, matchTime: 0 }),
   };
 };
 
@@ -72,7 +72,10 @@ const advanceUntil = (run: Run, match: ActionMatch, done: () => boolean) => {
 
 const viewOf = (run: Run): View => {
   const matchTime = run.timeline.matchTimeAt(run.clock);
-  run.presented = advancePresented(run.presented, run.events, run.timeline, matchTime, run.clock);
+  run.presented = advancePresented(run.presented, run.events, run.timeline, {
+    clock: run.clock,
+    matchTime,
+  });
   return { matchTime, presented: run.presented };
 };
 

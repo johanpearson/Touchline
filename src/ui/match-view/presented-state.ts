@@ -14,6 +14,9 @@ export const INITIAL_PRESENTED: PresentedState = {
   score: { home: 0, away: 0 },
 };
 
+/** Where the director's clock is: presentation seconds played and the match time they map to. */
+export type ClockPosition = { clock: number; matchTime: number };
+
 /** The presentation time at which the actions before the log entry `index` are over. */
 const presentedAfter = (timeline: Timeline, index: number): number => {
   for (let i = timeline.segments.length - 1; i >= 0; i -= 1) {
@@ -32,15 +35,14 @@ const reached = (
   event: ActionEvent,
   index: number,
   timeline: Timeline,
-  matchTime: number,
-  clock: number,
+  at: ClockPosition,
 ): boolean =>
   event.type === "periodChange"
-    ? clock >= presentedAfter(timeline, index)
-    : event.time <= matchTime;
+    ? at.clock >= presentedAfter(timeline, index)
+    : event.time <= at.matchTime;
 
 /**
- * The state after `previous` once the clock moved to `clock` (match time `matchTime`). The views only
+ * The state after `previous` once the clock moved to `at`. The views only
  * ever see this, never the engine's own score or period, which are ahead by the lookahead. Events are
  * presented in log order and never taken back.
  */
@@ -48,14 +50,13 @@ export const advancePresented = (
   previous: PresentedState,
   events: readonly ActionEvent[],
   timeline: Timeline,
-  matchTime: number,
-  clock: number,
+  at: ClockPosition,
 ): PresentedState => {
   let { eventCount, period } = previous;
   const score = { ...previous.score };
   for (;;) {
     const event = events[eventCount];
-    if (!event || !reached(event, eventCount, timeline, matchTime, clock)) break;
+    if (!event || !reached(event, eventCount, timeline, at)) break;
     period = event.period;
     if (event.type === "shot" && event.outcome === "goal") score[event.team] += 1;
     eventCount += 1;
