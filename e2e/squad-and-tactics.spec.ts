@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { chooseMode, freezeClock, playUntilVisible, unfreezeClock } from "./match-clock";
 
 const LINES = ["goalkeeping", "defence", "midfield", "attack", "overall"] as const;
 
@@ -109,9 +110,10 @@ test.describe("squad and tactics", () => {
 
     await page.getByTestId("nav-hub").click();
     await page.getByTestId("play-match").click();
+    await freezeClock(page);
     await page.getByTestId("kick-off").click();
-    await page.getByTestId("speed-4").click();
-    await expect(page.getByTestId("half-time")).toBeVisible({ timeout: 30_000 });
+    await chooseMode(page, "highlights");
+    await playUntilVisible(page, page.getByTestId("half-time"));
     await page.getByTestId("make-changes").click();
     await page.getByTestId("sub-add").click();
     const subOff = await pickFirst(page);
@@ -121,7 +123,9 @@ test.describe("squad and tactics", () => {
       .getByRole("radio", { name: "Attacking", exact: true })
       .click();
     await page.getByTestId("start-second-half").click();
-    await expect(page.getByTestId("period")).toHaveText("Full time", { timeout: 60_000 });
+    await playUntilVisible(page, page.getByTestId("continue"));
+    await expect(page.getByTestId("period")).toHaveText("Full time");
+    await unfreezeClock(page);
     const score = await page.getByTestId("score").textContent();
     await page.getByTestId("continue").click();
     await expect(page.getByTestId("matchday-results")).toBeVisible();

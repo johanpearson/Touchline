@@ -15,6 +15,7 @@ describe("match layout", () => {
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "setTimeout", "performance"] });
     window.sessionStorage.clear();
+    window.localStorage.clear();
   });
   afterEach(() => {
     cleanup();
@@ -55,7 +56,7 @@ describe("match layout", () => {
     it("lists a live rating for every player in the lineups", () => {
       installBrowserStubs();
       mount();
-      play(20_000);
+      play(150_000);
       fireEvent.click(screen.getByTestId("lineups-open"));
       for (const row of screen.getAllByTestId(/^lineup-row-/)) {
         expect(row.textContent).toMatch(/\d[.,]\d$/);
@@ -109,12 +110,12 @@ describe("match layout", () => {
       expect(screen.getByTestId("pause-toggle").getAttribute("aria-keyshortcuts")).toBe("Space");
     });
 
-    it("exposes the view and speed as radio groups with a single tab stop", () => {
+    it("exposes the view and mode as radio groups with a single tab stop", () => {
       mount();
       const radios = screen.getAllByRole("radio");
       expect(radios.filter((r) => r.getAttribute("tabindex") === "0")).toHaveLength(2);
-      fireEvent.keyDown(screen.getByTestId("speed-2"), { key: "ArrowRight" });
-      expect(screen.getByTestId("speed-3").getAttribute("aria-checked")).toBe("true");
+      fireEvent.keyDown(screen.getByTestId("mode-extended"), { key: "ArrowRight" });
+      expect(screen.getByTestId("mode-full").getAttribute("aria-checked")).toBe("true");
     });
   });
 
@@ -187,7 +188,7 @@ describe("match layout", () => {
 
     it("highlights the scoreboard and announces the goal, then clears it", () => {
       mount();
-      fireEvent.click(screen.getByTestId("speed-4"));
+      fireEvent.click(screen.getByTestId("mode-highlights"));
       let announced = "";
       for (let i = 0; i < 400 && !announced; i++) {
         play(1000);

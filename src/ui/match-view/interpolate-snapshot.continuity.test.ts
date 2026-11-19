@@ -1,16 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { createActionMatch } from "../../engine";
 import { anActionMatchSetup } from "./action-match-fixture";
+import { buildTimeline, PLAYBACK_MODES } from "./director";
 import { interpolateSnapshot } from "./interpolate-snapshot";
-import { SPEEDS } from "./playback";
 
 /**
- * The fastest a player may move on screen between two frames, in metres per match second, outside
- * snaps. Real players sprint at about 10 m/s; the engine caps its snapshots at that pace
+ * The fastest a player may move on screen between two frames of the director's presentation, in
+ * metres per match second, outside snaps. Real players sprint at about 10 m/s; the engine caps its snapshots at that pace
  * (`MAX_SNAPSHOT_SPEED`), so this allows a small margin for interpolation only.
  */
 const MAX_PLAYER_SPEED = 12;
-const FRAME_SECONDS = 1 / 60;
+const FRAME_SECONDS = 1 / 30;
+/** Positions are compared at least this many match seconds apart, so a tiny step cannot inflate a speed. */
+const MIN_STEP = 0.5;
 
 const playFullMatch = (seed: number) => {
   const { setup } = anActionMatchSetup(seed);
@@ -47,20 +49,26 @@ describe("interpolateSnapshot playback", () => {
     expect(snapTimes.length).toBeGreaterThan(0);
   });
 
-  it.each(SPEEDS)("moves players continuously at %s match seconds per second", (speed) => {
-    const step = speed * FRAME_SECONDS;
+  it.each(PLAYBACK_MODES)("moves players continuously in %s mode", (mode) => {
+    const timeline = buildTimeline(events, mode);
     let fastest = 0;
+    let previousTime = 0;
     let previous = interpolateSnapshot(events, 0);
-    for (let time = step; time < match.state.time; time += step) {
+    for (let p = FRAME_SECONDS; p < timeline.duration; p += FRAME_SECONDS) {
+      const time = timeline.matchTimeAt(p);
+      const step = time - previousTime;
+      // A hold keeps the clock still: nothing moves in match time.
+      if (step < MIN_STEP) continue;
       const current = interpolateSnapshot(events, time);
-      if (previous && current && !hasSnapIn(snapTimes, time - step, time)) {
-        current.players.forEach((p, i) => {
+      if (previous && current && !hasSnapIn(snapTimes, previousTime, time)) {
+        current.players.forEach((point, i) => {
           const from = previous?.players[i];
-          const moved = Math.hypot(p.x - (from?.x ?? p.x), p.y - (from?.y ?? p.y)) / step;
-          if (moved > fastest) fastest = moved;
+          const moved = Math.hypot(point.x - (from?.x ?? point.x), point.y - (from?.y ?? point.y));
+          if (moved / step > fastest) fastest = moved / step;
         });
       }
       previous = current;
+      previousTime = time;
     }
     expect(fastest).toBeLessThanOrEqual(MAX_PLAYER_SPEED);
   });

@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { freezeClock, playUntilVisible, unfreezeClock } from "./match-clock";
 
 // Keyboard-only flows (#272): every step moves focus with Tab and acts with Enter or Space. A control that cannot
 // be reached this way fails the test, which a click or a programmatic focus would not show.
@@ -51,14 +52,15 @@ test.describe("keyboard only", () => {
     test.setTimeout(120_000);
     await startCareerWithKeyboard(page);
     await press(page, "play-match");
+    await freezeClock(page);
     await press(page, "kick-off");
-    // The speed control is a radio group: Tab reaches the selected speed, the arrow keys choose another.
-    await tabTo(page, /^speed-/);
-    // The default is the second speed, so two presses reach the fourth.
-    await page.keyboard.press("ArrowRight");
-    await page.keyboard.press("ArrowRight");
-    await expect(page.getByTestId("speed-4")).toBeChecked();
-    await expect(page.getByTestId("half-time")).toBeVisible({ timeout: 60_000 });
+    // The mode control is a radio group: Tab reaches the selected mode, the arrow keys choose another.
+    await tabTo(page, /^mode-/);
+    // The default is Extended, the middle mode, so one press back reaches Highlights.
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.getByTestId("mode-highlights")).toBeChecked();
+    await playUntilVisible(page, page.getByTestId("half-time"));
+    await unfreezeClock(page);
     await press(page, "make-changes");
     await press(page, "sub-add");
     await press(page, /^pick-/);

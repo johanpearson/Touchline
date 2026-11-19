@@ -2,29 +2,29 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { SegmentedControl, type SegmentedOption } from "./segmented-control";
 
-const SPEEDS: SegmentedOption<string>[] = [
-  { value: "x1", label: "x1" },
-  { value: "x2", label: "x2" },
-  { value: "x4", label: "x4" },
-  { value: "x8", label: "x8" },
+const SIZES: SegmentedOption<string>[] = [
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+  { value: "large", label: "Large" },
+  { value: "huge", label: "Huge" },
 ];
 
 const meta = {
   title: "Components/SegmentedControl",
   tags: ["i18n-wide"],
   component: SegmentedControl<string>,
-  args: { label: "Speed", options: SPEEDS, value: "x1", onValueChange: () => {} },
+  args: { label: "Size", options: SIZES, value: "small", onValueChange: () => {} },
 } satisfies Meta<typeof SegmentedControl<string>>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 function Stateful(args: Story["args"]) {
-  const [value, setValue] = useState(args?.value ?? "x1");
+  const [value, setValue] = useState(args?.value ?? "small");
   return (
     <SegmentedControl
-      label={args?.label ?? "Speed"}
-      options={args?.options ?? SPEEDS}
+      label={args?.label ?? "Size"}
+      options={args?.options ?? SIZES}
       value={value}
       onValueChange={setValue}
     />
@@ -46,7 +46,7 @@ export const View: Story = {
 };
 
 export const WithDisabledOption: Story = {
-  args: { options: SPEEDS.map((o) => (o.value === "x4" ? { ...o, disabled: true } : o)) },
+  args: { options: SIZES.map((o) => (o.value === "large" ? { ...o, disabled: true } : o)) },
   render: (args) => <Stateful {...args} />,
 };
 
@@ -55,6 +55,20 @@ export const Focused: Story = {
   play: ({ canvasElement }) => {
     canvasElement.querySelector<HTMLElement>("[role='radio'][tabindex='0']")?.focus();
   },
+};
+
+/** The playback mode control of the match screen: a label with a second, smaller line. */
+export const WithDescriptions: Story = {
+  args: {
+    label: "Playback mode",
+    value: "extended",
+    options: [
+      { value: "highlights", label: "Highlights", description: "about 2 minutes" },
+      { value: "extended", label: "Extended", description: "about 4 minutes" },
+      { value: "full", label: "Full match", description: "about 8 minutes" },
+    ],
+  },
+  render: (args) => <Stateful {...args} />,
 };
 
 /** Long Swedish labels widen the segments; the group wraps on a narrow screen instead of clipping. */

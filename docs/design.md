@@ -105,7 +105,7 @@ Compact density by default (8 px row padding), comfortable (14 px) as a setting.
 
 - **Wide screens:** the pitch with momentum and controls on the left; stats and commentary stacked in a side panel on the right; lineups one click away.
 - **Small screens:** the panel becomes tabs (Stats, Feed, Lineups) under the pitch.
-- **Controls:** Pause, Make changes, two or three touchline shouts, view switch (Terrain/2D), speed. Today only Pause, the view switch and speed exist, and changes are possible only at half-time. Make changes at any pause and the shouts need a game-rules decision first (#266); the layout reserves their place.
+- **Controls:** Pause, Make changes, two or three touchline shouts, view switch (Terrain/2D), playback mode (Highlights, Extended, Full match; each with its typical length, "about 2 minutes" and so on, default Extended, remembered). Today only Pause, the view switch and the playback mode exist, and changes are possible only at half-time. Make changes at any pause and the shouts need a game-rules decision first (#266); the layout reserves their place.
 - The match visuals keep the three.js momentum terrain and the classic 2D pitch (the board draws a flat SVG for the terrain, a simplification).
 
 ## Quality
@@ -164,7 +164,7 @@ These are not bugs in either; each is resolved in the issue named.
 3. **Budget on the club card.** The game has no budget before M6. #258 shows an indicative figure derived from the rating rank and marks it as a placeholder, or drops the tile; this needs a decision in review.
 4. **Changes and shouts during the match.** The boards and decisions have Pause, Make changes and touchline shouts. Today changes are possible only at half-time (`docs/vision.md`, "Changes during a match (M5)"), the engine's `applyChange` works at any pause, but `planHalfTime` assumes the half-time moment for minutes. The new rules need a decision (#266). Until then Make changes works at half-time only and shouts are not shown.
 5. **Terrain.** The board draws the momentum terrain as a flat SVG gradient; the game has a three.js height-map terrain and a 2D pitch with 22 players. We keep both and put them on the dark stage.
-6. **Speed labels.** The board shows 1x, 3x, 8x; the game has four speeds (`SPEEDS`, shown as x1, x2, x4, x8). Superseded by the playback modes in "Playtest decisions (M5d)".
+6. **Speed labels.** The board shows 1x, 3x, 8x; the game had four speeds (x1, x2, x4, x8). Superseded by the playback modes in "Playtest decisions (M5d)".
 7. **Extra schemes in the boards.** Welcome and ClubPicker also define "Night pitch" and "Plum" schemes and four accents; only Midnight, Graphite and Light and the amber accent are in scope. The boards also tint the club picker glow with the club colour; kept, as identity only.
 8. **Light theme status colours and focus** fail AA in the boards; corrected above.
 9. **Navigation.** The boards list Tactics and Fixtures as separate screens. Fixtures stay a tab in League; Tactics becomes its own route (`#/tactics`), split out of `#/squad` (#262), because the squad screen is too long.
@@ -233,7 +233,7 @@ Each density option shows a small live preview table (header and four rows with 
 ### Match playback director (item 7)
 A presentation layer between the engine event log and the views; the engine is unchanged.
 - Every action has a minimum on-screen duration (a pass at least 0.8 s). Quiet build-up is compressed. Play slows down in and around the box. The clock holds briefly on shots, goals, set pieces, penalties and cards (longer on goals).
-- **Playback modes replace x1 to x8** (the "speed labels" row above no longer applies): **Highlights** (cuts between key moments, about 1.5 to 3 minutes), **Extended** (build-up compressed harder, about 3 to 5 minutes, the default) and **Full match** (everything at readable pace, 6 to 10 minutes for 90 minutes, every key moment at readable speed).
+- **Playback modes replace x1 to x8** (the "speed labels" row above no longer applies; built in #387 as a three-option segmented control under the stage, switchable mid-match without a jump): **Highlights** (cuts between key moments, about 1.5 to 3 minutes), **Extended** (build-up compressed harder, about 3 to 5 minutes, the default) and **Full match** (everything at readable pace, 6 to 10 minutes for 90 minutes, every key moment at readable speed).
 - The terrain, the 2D pitch, the feed, the stats, the momentum chart and the scoreboard all follow the director's clock. Pause, Space and the stops at half-time and full time stay.
 - The director is pure and unit tested: durations, ordering, no skipped goal, set piece, penalty or card in any mode, and the duration targets over seeded matches.
 

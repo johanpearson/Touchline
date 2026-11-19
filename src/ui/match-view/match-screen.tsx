@@ -71,8 +71,8 @@ export type MatchScreenProps = {
 };
 
 /**
- * The match screen: terrain or 2D pitch, scoreboard, momentum chart, stats panel, feed and speed
- * controls. The match is created once from `input` and `seed`; give the component a new `key` to
+ * The match screen: terrain or 2D pitch, scoreboard, momentum chart, stats panel, feed and playback
+ * mode controls. The match is created once from `input` and `seed`; give the component a new `key` to
  * start another.
  */
 export function MatchScreen({
@@ -141,7 +141,7 @@ export function MatchScreen({
   const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   const lines = useMemo(
-    () => generateActionCommentary(events, { locale, names, players }, seed),
+    () => generateActionCommentary(events.slice(0, eventCount), { locale, names, players }, seed),
     [eventCount, locale, names, players, seed],
   );
   return (
