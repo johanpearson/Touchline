@@ -1,4 +1,11 @@
 import { expect, type Page, test } from "@playwright/test";
+import {
+  advanceClock,
+  chooseMode,
+  freezeClock,
+  playUntilVisible,
+  unfreezeClock,
+} from "./match-clock";
 
 test.describe("smoke", () => {
   test("loads the app and shows the title @smoke", async ({ page }) => {
@@ -75,30 +82,44 @@ test.describe("league screen", () => {
   });
 });
 
-const startMatch = async (page: Page) => {
+/** Kicks off a match; `frozen` stops the page timers first so the test moves the match clock by hand. */
+const startMatch = async (page: Page, { frozen = false }: { frozen?: boolean } = {}) => {
   await page.goto("./#/new");
   await page.getByTestId("choose-club").click();
   await page.getByTestId("club-name").first().click();
   await page.getByTestId("start-career").click();
   await page.getByTestId("play-match").click();
+  if (frozen) await freezeClock(page);
   await page.getByTestId("kick-off").click();
 };
 
 test.describe("match screen", () => {
   test("shows the scoreboard, stats and feed, and the clock runs", async ({ page }) => {
-    await startMatch(page);
+    await startMatch(page, { frozen: true });
 
     await expect(page.getByTestId("scoreboard")).toBeVisible();
     await expect(page.getByTestId("stats-panel")).toBeVisible();
     await expect(page.getByTestId("momentum-chart")).toBeVisible();
-    await expect(page.getByTestId("clock")).not.toHaveText("0’", { timeout: 10_000 });
+    await advanceClock(page, 30_000);
+    await expect(page.getByTestId("clock")).not.toHaveText("0’");
   });
 
-  test("pauses the clock and changes the speed", async ({ page }) => {
+  test("starts in Extended mode and plays the first minutes of a Full match", async ({ page }) => {
+    await startMatch(page, { frozen: true });
+
+    await expect(page.getByTestId("mode-extended")).toHaveAttribute("aria-checked", "true");
+    await chooseMode(page, "full");
+    await expect(page.getByTestId("mode-full")).toHaveAttribute("aria-checked", "true");
+    await advanceClock(page, 60_000);
+    await expect(page.getByTestId("clock")).not.toHaveText("0’");
+    await expect(page.getByTestId("period")).toHaveText("First half");
+  });
+
+  test("pauses the clock and changes the playback mode", async ({ page }) => {
     await startMatch(page);
 
-    await page.getByTestId("speed-4").click();
-    await expect(page.getByTestId("speed-4")).toHaveAttribute("aria-checked", "true");
+    await page.getByTestId("mode-highlights").click();
+    await expect(page.getByTestId("mode-highlights")).toHaveAttribute("aria-checked", "true");
     await page.getByTestId("pause-toggle").click();
     const frozen = await page.getByTestId("clock").textContent();
     await page.waitForTimeout(500);
@@ -107,15 +128,17 @@ test.describe("match screen", () => {
 });
 
 test.describe("half-time", () => {
-  test("plays to half-time, resumes and reaches full time", async ({ page }) => {
-    await startMatch(page);
+  test("plays a Highlights match to half-time, resumes and reaches full time", async ({ page }) => {
+    await startMatch(page, { frozen: true });
 
-    await page.getByTestId("speed-4").click();
-    await expect(page.getByTestId("half-time")).toBeVisible({ timeout: 30_000 });
+    await chooseMode(page, "highlights");
+    await playUntilVisible(page, page.getByTestId("half-time"));
     await expect(page.getByTestId("half-time-score")).toBeVisible();
     await page.getByTestId("start-second-half").click();
     await expect(page.getByTestId("half-time")).toBeHidden();
-    await expect(page.getByTestId("period")).toHaveText("Full time", { timeout: 60_000 });
+    await playUntilVisible(page, page.getByTestId("full-time-report"));
+    await unfreezeClock(page);
+    await expect(page.getByTestId("period")).toHaveText("Full time");
   });
 });
 

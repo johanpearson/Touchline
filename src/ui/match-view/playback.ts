@@ -1,12 +1,8 @@
-/** Match seconds that pass per real second, slowest first. The labels shown are ×1, ×2, ×4, ×8. */
-export const SPEEDS = [30, 60, 120, 240] as const;
+/**
+ * How far ahead of the presentation clock the timeline must reach, in presentation seconds. The
+ * engine is advanced until the timeline covers this much, so the next moments are always known.
+ */
+export const LOOKAHEAD_SECONDS = 4;
 
-export type Speed = (typeof SPEEDS)[number];
-
-/** The match time after `wallSeconds` of real time at `speed` (match seconds per real second). */
-export const advanceClock = (
-  matchTime: number,
-  wallSeconds: number,
-  speed: number,
-  paused: boolean,
-): number => (paused ? matchTime : matchTime + wallSeconds * speed);
+/** Match seconds the engine is advanced per step while the timeline is filled up to the lookahead. */
+export const ENGINE_STEP_MATCH_SECONDS = 20;

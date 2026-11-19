@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { expect, type Page, test } from "@playwright/test";
+import { chooseMode, freezeClock, playUntilVisible, unfreezeClock } from "./match-clock";
 
 const CLUBS = 14;
 
@@ -42,8 +43,9 @@ test.describe("match engine", () => {
     await startCareer(page);
 
     await page.getByTestId("play-match").click();
+    await freezeClock(page);
     await page.getByTestId("kick-off").click();
-    await page.getByTestId("speed-4").click();
+    await chooseMode(page, "highlights");
 
     await expect(page.getByTestId("view-toggle")).toBeVisible();
     await page.getByTestId("view-pitch").click();
@@ -57,7 +59,7 @@ test.describe("match engine", () => {
     await page.getByTestId("view-momentum").click();
     await expect(page.getByTestId("classic-pitch")).toHaveCount(0);
 
-    await expect(page.getByTestId("half-time")).toBeVisible({ timeout: 60_000 });
+    await playUntilVisible(page, page.getByTestId("half-time"));
     await page.getByTestId("make-changes").click();
     await page.getByTestId("sub-add").click();
     await page
@@ -71,7 +73,9 @@ test.describe("match engine", () => {
     await page.getByTestId("tactic-mentality").getByRole("radio", { name: "Attacking" }).click();
     await page.getByTestId("start-second-half").click();
 
-    await expect(page.getByTestId("period")).toHaveText("Full time", { timeout: 90_000 });
+    await playUntilVisible(page, page.getByTestId("continue"));
+    await unfreezeClock(page);
+    await expect(page.getByTestId("period")).toHaveText("Full time");
     await expect(page.getByTestId("player-ratings")).toBeVisible();
     await expect(page.getByTestId("player-of-the-match")).toBeVisible();
     const score = await page.getByTestId("score").textContent();

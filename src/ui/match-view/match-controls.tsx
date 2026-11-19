@@ -3,19 +3,19 @@ import { Button } from "../components/button";
 import { SegmentedControl } from "../components/segmented-control";
 import { Tooltip } from "../components/tooltip";
 import { useI18n } from "../i18n-provider";
-import { SPEEDS } from "./playback";
+import { MODE_TARGET_MINUTES, PLAYBACK_MODES, type PlaybackMode } from "./director";
 import type { MatchView } from "./use-view-choice";
 
 export type MatchControlsProps = {
   paused: boolean;
-  speed: number;
+  mode: PlaybackMode;
   view: MatchView;
   /** Whether the 2D pitch passing chain is drawn; the toggle shows only in the 2D view. */
   showChain: boolean;
   /** "Make changes" works only at half-time until in-match changes exist (#266). */
   canMakeChanges: boolean;
   onPausedChange: (paused: boolean) => void;
-  onSpeedChange: (speed: number) => void;
+  onModeChange: (mode: PlaybackMode) => void;
   onViewChange: (view: MatchView) => void;
   onChainChange: (show: boolean) => void;
   onMakeChanges: () => void;
@@ -23,8 +23,14 @@ export type MatchControlsProps = {
 
 const HINT_ID = "make-changes-hint";
 
+/** The middle of the mode's target range, rounded: "about 2 minutes". */
+const typicalMinutes = (mode: PlaybackMode): number => {
+  const { min, max } = MODE_TARGET_MINUTES[mode];
+  return Math.round((min + max) / 2);
+};
+
 /**
- * The control row under the stage: Pause, Make changes, view switch, speed. The place after
+ * The control row under the stage: Pause, Make changes, view switch, playback mode. The place after
  * "Make changes" is reserved for the touchline shouts (#266); nothing is rendered for them yet.
  */
 export function MatchControls(props: MatchControlsProps) {
@@ -86,13 +92,15 @@ export function MatchControls(props: MatchControlsProps) {
         </Button>
       )}
       <SegmentedControl
-        label={t("controls.speedLabel")}
-        value={String(props.speed)}
-        onValueChange={(value) => props.onSpeedChange(Number(value))}
-        options={SPEEDS.map((value, index) => ({
-          value: String(value),
-          label: `×${2 ** index}`,
-          testId: `speed-${index + 1}`,
+        label={t("controls.modeLabel")}
+        testId="mode-toggle"
+        value={props.mode}
+        onValueChange={props.onModeChange}
+        options={PLAYBACK_MODES.map((mode) => ({
+          value: mode,
+          label: t(`controls.mode.${mode}`),
+          description: t("controls.mode.minutes", { count: typicalMinutes(mode) }),
+          testId: `mode-${mode}`,
         }))}
       />
     </fieldset>

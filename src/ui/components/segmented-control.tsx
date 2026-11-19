@@ -6,6 +6,8 @@ export type SegmentedOption<T extends string> = {
   value: T;
   label: string;
   disabled?: boolean;
+  /** A second, smaller line under the label. */
+  description?: string;
   /** `data-testid` of this option's button. */
   testId?: string;
 };
@@ -85,7 +87,7 @@ export function SegmentedControl<T extends string>({
             onBlur={() => onPreviewChange?.(null)}
             onKeyDown={(event) => onKeyDown(event, index)}
             className={cn(
-              "min-h-9 min-w-11 cursor-pointer rounded-sm border-0 px-3 text-[13px] font-semibold select-none pointer-coarse:min-h-11",
+              "min-h-9 min-w-11 cursor-pointer rounded-sm border-0 px-3 py-1 text-[13px] font-semibold select-none pointer-coarse:min-h-11",
               "transition-colors duration-150",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
               "disabled:cursor-not-allowed disabled:opacity-50",
@@ -94,7 +96,16 @@ export function SegmentedControl<T extends string>({
                 : "bg-transparent text-soft hover:bg-raised hover:text-text",
             )}
           >
-            {option.label}
+            {option.description ? (
+              <>
+                <span className="block">{option.label}</span>
+                <span className="block text-[11px] font-normal opacity-80">
+                  {option.description}
+                </span>
+              </>
+            ) : (
+              option.label
+            )}
           </button>
         );
       })}

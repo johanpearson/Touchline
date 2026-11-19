@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { advanceClock, playUntilVisible, unfreezeClock } from "../match-clock";
 import type { VisualScreenState } from "./visual-screen";
 
 const APP = "http://localhost:4174/Touchline/";
@@ -490,7 +491,7 @@ register({
   state: async (page) => {
     test.setTimeout(120_000);
     await openMatch(page, { frozen: true });
-    await page.getByTestId("speed-4").click();
+    await page.getByTestId("mode-highlights").click();
     // The playback clock only moves when the test moves the page clock, in steps of a fixed size, so
     // the pause lands on the same minute on every run. A goal in the first half, or half-time when
     // there was none: both are settled states.
@@ -501,20 +502,8 @@ register({
             document.querySelector("[data-testid='half-time']"),
         ),
       );
-    for (let step = 0; step < 400 && !(await settled()); step++) {
-      await page.clock.runFor(250);
-      // Let React render what the ticks published: its scheduler uses a MessageChannel, which the page
-      // clock does not fake, so a round trip through one queues behind its render.
-      for (let flush = 0; flush < 2; flush++) {
-        await page.evaluate(
-          () =>
-            new Promise<void>((resolve) => {
-              const channel = new MessageChannel();
-              channel.port1.onmessage = () => resolve();
-              channel.port2.postMessage(null);
-            }),
-        );
-      }
+    for (let step = 0; step < 800 && !(await settled()); step++) {
+      await advanceClock(page, 250);
     }
     expect(await settled()).toBe(true);
     await pauseFrozen(page);
@@ -527,15 +516,17 @@ register({
   mask: TERRAIN,
   state: async (page) => {
     test.setTimeout(180_000);
-    await openMatch(page);
-    await page.getByTestId("speed-4").click();
-    // Half-time stops the match; the second half starts from its panel.
+    await openMatch(page, { frozen: true });
+    await page.getByTestId("mode-highlights").click();
+    // Half-time stops the match; the second half starts from its panel. The page clock is moved by hand
+    // so the match always ends on the same frame.
     // By DOM click: on a phone the bottom tab bar can cover the half-time panel.
-    await page.getByTestId("start-second-half").waitFor({ timeout: 60_000 });
+    await playUntilVisible(page, page.getByTestId("start-second-half"));
     await page
       .getByTestId("start-second-half")
       .evaluate((button) => (button as HTMLButtonElement).click());
-    await page.getByTestId("player-ratings").waitFor({ timeout: 60_000 });
+    await playUntilVisible(page, page.getByTestId("player-ratings"));
+    await unfreezeClock(page);
   },
 });
 
@@ -547,9 +538,10 @@ register({
   mask: TERRAIN,
   state: async (page) => {
     test.setTimeout(180_000);
-    await openMatch(page);
-    await page.getByTestId("speed-4").click();
-    await page.getByTestId("half-time").waitFor({ timeout: 60_000 });
+    await openMatch(page, { frozen: true });
+    await page.getByTestId("mode-highlights").click();
+    await playUntilVisible(page, page.getByTestId("half-time"));
+    await unfreezeClock(page);
     await page
       .getByTestId("make-changes")
       .evaluate((button) => (button as HTMLButtonElement).click());

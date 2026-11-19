@@ -5,6 +5,13 @@ export type PlaybackMode = "highlights" | "extended" | "full";
 
 export const PLAYBACK_MODES: readonly PlaybackMode[] = ["highlights", "extended", "full"];
 
+/** The presentation minutes a whole match takes in each mode; the controls describe the modes from these. */
+export const MODE_TARGET_MINUTES: Record<PlaybackMode, { min: number; max: number }> = {
+  highlights: { min: 1.5, max: 3 },
+  extended: { min: 3, max: 5 },
+  full: { min: 6, max: 10 },
+};
+
 /**
  * The shortest time, in presentation seconds, an action that is shown at full pace stays on screen in
  * `full` mode (a pass at least 0.8 s). Other modes multiply it by `MODE_SETTINGS[mode].minimumScale`.
