@@ -1,6 +1,7 @@
 import type { Career } from "../../game";
 import { Button, cn } from "../components";
 import { useI18n } from "../i18n-provider";
+import { useMatchInProgress } from "../match-session-provider";
 import { PaletteButton } from "../palette/palette-button";
 import { hrefFor } from "../routes";
 import { SaveStatus } from "../save-status";
@@ -41,13 +42,14 @@ function ClubIdentity({ career }: { career: Career }) {
 
 const HEADER_LABELS = {
   continue: "save.continue",
+  "resume-match": "match.resumeMatch",
   "season-complete": "hub.seasonComplete",
   "off-season": "offSeason.hub.open",
 } as const;
 
 function HeaderAction({ career }: { career: Career }) {
   const { t } = useI18n();
-  const action = headerActionFor(career);
+  const action = headerActionFor(career, useMatchInProgress(career));
   if (!action) return null;
   return (
     <Button asChild variant="primary" className="shrink-0">

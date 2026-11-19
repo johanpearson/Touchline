@@ -154,4 +154,68 @@ describe("useMatchPlayback", () => {
     expect(match.changes).toHaveLength(1);
     expect(match.state.period).toBe("secondHalf");
   });
+
+  describe("restored from a session", () => {
+    const restoredAt = (matchTime: number) => {
+      const original = actionMatch();
+      const { result: running } = renderHook(() => useMatchPlayback(original, 1000));
+      for (let i = 0; i < 200 && running.current.matchTime < matchTime; i++) play(1);
+      const saved = running.current.matchTime;
+      const resumed = actionMatch();
+      resumed.advanceTo(saved);
+      const { result } = renderHook(() =>
+        useMatchPlayback(resumed, 1000, { matchTime: saved, mode: "extended", changes: [] }),
+      );
+      return { running: running.current, result, saved };
+    };
+
+    it("starts paused at the saved match time with the same score and event count", () => {
+      const { running, result, saved } = restoredAt(600);
+      expect(result.current.paused).toBe(true);
+      expect(result.current.matchTime).toBeCloseTo(saved, 3);
+      expect(result.current.eventCount).toBe(running.eventCount);
+      expect(result.current.state).toEqual(running.state);
+      play(10);
+      expect(result.current.matchTime).toBeCloseTo(saved, 3);
+    });
+
+    it("plays on from the saved time once started", () => {
+      const { result, saved } = restoredAt(600);
+      act(() => result.current.setPaused(false));
+      play(20);
+      expect(result.current.matchTime).toBeGreaterThan(saved + 1);
+    });
+
+    it("uses the saved mode instead of the remembered one", () => {
+      window.localStorage.setItem("touchline.playback-mode", "full");
+      const match = actionMatch();
+      match.advanceTo(300);
+      const { result } = renderHook(() =>
+        useMatchPlayback(match, 1000, { matchTime: 300, mode: "highlights", changes: [] }),
+      );
+      expect(result.current.mode).toBe("highlights");
+    });
+
+    it("keeps the restored changes and adds the half-time change at the engine time it was made", () => {
+      const match = actionMatch();
+      const { result } = renderHook(() => useMatchPlayback(match, 1000));
+      playToHalfTime(result);
+      const halfTime = match.state.time;
+      const change = {
+        side: "home" as const,
+        tactics: { ...NEUTRAL_TACTICS, tempo: "fast" as const },
+      };
+      act(() => result.current.resume(change));
+      expect(result.current.userChanges).toEqual([{ time: halfTime, change }]);
+      expect(result.current.userChangeCount).toBe(1);
+    });
+
+    it("does not record a change the engine rejects", () => {
+      const match = actionMatch();
+      const { result } = renderHook(() => useMatchPlayback(match, 1000));
+      playToHalfTime(result);
+      act(() => result.current.resume({ side: "home", lineup: [] }));
+      expect(result.current.userChanges).toEqual([]);
+    });
+  });
 });

@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import type { ActionEvent, ActionMatch, ActionMatchChange, Period, Side } from "../../engine";
+import type {
+  ActionEvent,
+  ActionMatch,
+  ActionMatchChange,
+  Period,
+  Side,
+  TimedActionMatchChange,
+} from "../../engine";
 import { buildTimeline, extendTimeline, type PlaybackMode, type Timeline } from "./director";
 import { ENGINE_STEP_MATCH_SECONDS, LOOKAHEAD_SECONDS } from "./playback";
 import { advancePresented, INITIAL_PRESENTED, type PresentedState } from "./presented-state";
@@ -9,6 +16,16 @@ const DEFAULT_TICK_MS = 100;
 
 /** What the match screen shows of the state: the score and period at the director's clock. */
 export type PresentedMatchState = { period: Period; score: Record<Side, number> };
+
+/**
+ * Where a resumed match stands: the match is already advanced to `matchTime` and shows paused;
+ * `changes` are the user's changes it was rebuilt with.
+ */
+export type RestoredPlayback = {
+  matchTime: number;
+  mode: PlaybackMode;
+  changes: readonly TimedActionMatchChange[];
+};
 
 export type MatchPlayback = {
   /** The match time at the presentation clock; every view follows this and nothing else. */
@@ -27,6 +44,12 @@ export type MatchPlayback = {
   setMode: (mode: PlaybackMode) => void;
   /** Starts the second half, applying the user's change first; only valid at half-time. */
   resume: (change?: ActionMatchChange) => void;
+  /**
+   * The changes the user applied with `resume`, with the engine time they were applied at (the
+   * AI's own changes are not in it). Appended to in place; `userChangeCount` tells when it grew.
+   */
+  userChanges: readonly TimedActionMatchChange[];
+  userChangeCount: number;
 };
 
 const isPlaying = (period: Period): boolean => period === "firstHalf" || period === "secondHalf";
@@ -41,17 +64,6 @@ type Run = {
 };
 
 type View = { matchTime: number; presented: PresentedState };
-
-const createRun = (match: ActionMatch, mode: PlaybackMode): Run => {
-  const events = [...match.events];
-  const timeline = buildTimeline(events, mode);
-  return {
-    events,
-    timeline,
-    clock: 0,
-    presented: advancePresented(INITIAL_PRESENTED, events, timeline, { clock: 0, matchTime: 0 }),
-  };
-};
 
 /** Appends what the engine logged since the last call and extends the timeline with it. */
 const pull = (run: Run, match: ActionMatch) => {
@@ -68,6 +80,34 @@ const advanceUntil = (run: Run, match: ActionMatch, done: () => boolean) => {
     match.advanceTo(match.state.time + ENGINE_STEP_MATCH_SECONDS);
     pull(run, match);
   }
+};
+
+/**
+ * A run at the start, or, with `at`, at that match time of a match already advanced to it. The
+ * engine is advanced past `at` first, as live play has it (the timeline reaches the lookahead
+ * beyond the clock), because the end of a timeline is provisional until the next action is known.
+ */
+const createRun = (match: ActionMatch, mode: PlaybackMode, at?: number): Run => {
+  const events = [...match.events];
+  const timeline = buildTimeline(events, mode);
+  const run: Run = {
+    events,
+    timeline,
+    clock: 0,
+    presented: advancePresented(INITIAL_PRESENTED, events, timeline, { clock: 0, matchTime: 0 }),
+  };
+  if (at === undefined) return run;
+  const covered = () =>
+    run.timeline.matchEnd >= at &&
+    run.timeline.duration >= run.timeline.presentationTimeAt(at) + LOOKAHEAD_SECONDS;
+  advanceUntil(run, match, covered);
+  run.clock =
+    at < run.timeline.matchEnd ? run.timeline.presentationTimeAt(at) : run.timeline.duration;
+  run.presented = advancePresented(INITIAL_PRESENTED, run.events, run.timeline, {
+    clock: run.clock,
+    matchTime: run.timeline.matchTimeAt(run.clock),
+  });
+  return run;
 };
 
 const viewOf = (run: Run): View => {
@@ -89,11 +129,14 @@ const viewOf = (run: Run): View => {
 export const useMatchPlayback = (
   match: ActionMatch,
   tickMs: number = DEFAULT_TICK_MS,
+  restored?: RestoredPlayback,
 ): MatchPlayback => {
-  const [paused, setPaused] = useState(false);
-  const [mode, chooseMode] = usePlaybackModeChoice();
+  const [paused, setPaused] = useState(restored !== undefined);
+  const [mode, chooseMode] = usePlaybackModeChoice(restored?.mode);
+  const userChangesRef = useRef<TimedActionMatchChange[]>([...(restored?.changes ?? [])]);
+  const [userChangeCount, setUserChangeCount] = useState(userChangesRef.current.length);
   const runRef = useRef<Run | null>(null);
-  runRef.current ??= createRun(match, mode);
+  runRef.current ??= createRun(match, mode, restored?.matchTime);
   const run = runRef.current;
   const [view, setView] = useState<View>(() => viewOf(run));
 
@@ -128,7 +171,13 @@ export const useMatchPlayback = (
 
   const resume = (change?: ActionMatchChange) => {
     if (match.state.period !== "halfTime") return;
-    if (change) match.applyChange(change);
+    if (change) {
+      const time = match.state.time;
+      if (match.applyChange(change).ok) {
+        userChangesRef.current.push({ time, change });
+        setUserChangeCount(userChangesRef.current.length);
+      }
+    }
     match.resume();
     pull(run, match);
     setView(viewOf(run));
@@ -144,5 +193,7 @@ export const useMatchPlayback = (
     setPaused,
     setMode,
     resume,
+    userChanges: userChangesRef.current,
+    userChangeCount,
   };
 };

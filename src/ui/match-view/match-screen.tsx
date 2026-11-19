@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { generateActionCommentary } from "../../commentary";
 import type {
   ActionEvent,
@@ -9,28 +9,25 @@ import type {
   PerSide,
   Side,
 } from "../../engine";
-import {
-  computeActionStats,
-  createActionMatch,
-  createZoneEventAdapter,
-  playerRatings,
-  type ZoneEvent,
-} from "../../engine";
+import { computeActionStats, createActionMatch, playerRatings } from "../../engine";
 import { type CoachedMatch, goalScorersOf, type MatchReport } from "../../game";
 import { useI18n } from "../i18n-provider";
 import { useSuspendPaletteShortcut } from "../palette/palette-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import { FullTimeReport } from "./full-time-report";
-import type { AppliedHalfTimePlan, HalfTimeEditor } from "./half-time-panel";
+import type { HalfTimeEditor } from "./half-time-panel";
 import { LineupsPanel } from "./lineups-panel";
 import { MatchLayout } from "./match-layout";
+import type { MatchProgress, ProgressMoment, RestoredMatch } from "./match-progress";
 import { goalsOf } from "./match-result";
 import { PlayerRatings } from "./player-ratings";
 import { buildRatingRows } from "./ratings-table";
 import { terrainEvents } from "./terrain-events";
 import type { TerrainRendererFactory } from "./terrain-renderer";
 import { useMatchPlayback } from "./use-match-playback";
+import { useMatchProgress } from "./use-match-progress";
+import { useZoneEvents } from "./use-zone-events";
 
 /** What `onContinue` gets at full time. */
 export type FinishedMatch = {
@@ -68,6 +65,13 @@ export type MatchScreenProps = {
    * engine version and, if the user made changes at half-time, the report of minutes played.
    */
   onContinue?: (finished: FinishedMatch, report?: MatchReport) => void;
+  /**
+   * A match rebuilt from a saved session: `createMatch` returns it already advanced to the saved
+   * position, and the screen shows it paused there.
+   */
+  restored?: RestoredMatch;
+  /** Called with what is needed to resume the match: on every change and, while it runs, often. */
+  onProgress?: (progress: MatchProgress, moment: ProgressMoment) => void;
   /** When given, the scoreboard has a back link to the hub that asks first and then calls this. */
   onLeave?: () => void;
 };
@@ -88,45 +92,38 @@ export function MatchScreen({
   createPitchRenderer,
   tickMs,
   halfTimeEditor,
+  restored,
+  onProgress,
   onContinue,
   onLeave,
 }: MatchScreenProps) {
   const { locale } = useI18n();
   const [match] = useState(() => createMatch?.() ?? createActionMatch(input, seed));
-  const { matchTime, state, events, eventCount, resume, ...playback } = useMatchPlayback(
+  const {
+    matchTime,
+    state,
+    events,
+    eventCount,
+    resume,
+    userChanges,
+    userChangeCount,
+    ...playback
+  } = useMatchPlayback(
     match,
     tickMs,
+    restored && { matchTime: restored.matchTime, mode: restored.mode, changes: restored.changes },
   );
   // Space and the arrow keys belong to the match while it runs; Ctrl+K waits until it is paused.
   useSuspendPaletteShortcut(
     !playback.paused && (state.period === "firstHalf" || state.period === "secondHalf"),
   );
-  const [report, setReport] = useState<MatchReport | undefined>();
-  const startSecondHalf = (plan?: AppliedHalfTimePlan) => {
-    setReport(plan?.report);
-    resume(plan?.change);
-  };
-  // The terrain, the momentum chart and the stats only ever see the adapted events.
-  // `events` is appended to in place; `eventCount` tells when it grew, so only the new tail is
-  // adapted and appended to one growing zone-event list.
-  const adapted = useRef<
-    | {
-        adapter: ReturnType<typeof createZoneEventAdapter>;
-        consumed: number;
-        zone: ZoneEvent[];
-      }
-    | undefined
-  >(undefined);
-  adapted.current ??= { adapter: createZoneEventAdapter(), consumed: 0, zone: [] };
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  const zoneEvents = useMemo(() => {
-    const kept = adapted.current;
-    if (!kept) return [];
-    kept.zone.push(...kept.adapter.push(events.slice(kept.consumed, eventCount)));
-    kept.consumed = eventCount;
-    // A cheap copy of references, so memoised children see a new array when the log grew.
-    return kept.zone.slice();
-  }, [eventCount]);
+  const { report, awaitingResume, startSecondHalf, setPaused } = useMatchProgress({
+    restored,
+    onProgress,
+    playback: { ...playback, matchTime, period: state.period, userChanges, userChangeCount },
+    resume,
+  });
+  const zoneEvents = useZoneEvents(events, eventCount);
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   const actionStats = useMemo(() => computeActionStats(events, matchTime), [eventCount, matchTime]);
   const fullTime = state.period === "fullTime";
@@ -158,7 +155,8 @@ export function MatchScreen({
       stats={actionStats}
       playerIds={played}
       lines={lines}
-      playback={playback}
+      playback={{ ...playback, setPaused }}
+      awaitingResume={awaitingResume}
       createRenderer={createRenderer}
       pitch={{ events, createRenderer: createPitchRenderer }}
       halfTimeEditor={halfTimeEditor}

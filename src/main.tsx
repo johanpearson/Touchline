@@ -4,6 +4,7 @@ import {
   createBrowserDensityStore,
   createBrowserFileTransfer,
   createBrowserLocaleStore,
+  createBrowserMatchSessionStore,
   createBrowserThemeStore,
   createIndexedDbSaveStore,
   createMemorySaveStore,
@@ -25,6 +26,7 @@ async function start() {
         localeStore={createBrowserLocaleStore()}
         themeStore={createBrowserThemeStore()}
         densityStore={createBrowserDensityStore()}
+        matchSessionStore={createBrowserMatchSessionStore()}
         saveStore={storageAvailable ? createIndexedDbSaveStore() : createMemorySaveStore()}
         fileTransfer={createBrowserFileTransfer()}
         storageAvailable={storageAvailable}

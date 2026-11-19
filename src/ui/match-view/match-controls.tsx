@@ -8,6 +8,8 @@ import type { MatchView } from "./use-view-choice";
 
 export type MatchControlsProps = {
   paused: boolean;
+  /** True while a match restored after a reload waits to be started: the button says "Resume". */
+  awaitingResume?: boolean;
   mode: PlaybackMode;
   view: MatchView;
   /** Whether the 2D pitch passing chain is drawn; the toggle shows only in the 2D view. */
@@ -35,7 +37,7 @@ const typicalMinutes = (mode: PlaybackMode): number => {
  */
 export function MatchControls(props: MatchControlsProps) {
   const { t } = useI18n();
-  const { paused, canMakeChanges } = props;
+  const { paused, canMakeChanges, awaitingResume } = props;
   const PauseIcon = paused ? Play : Pause;
   return (
     <fieldset
@@ -51,7 +53,7 @@ export function MatchControls(props: MatchControlsProps) {
           onClick={() => props.onPausedChange(!paused)}
         >
           <PauseIcon aria-hidden="true" className="size-4" />
-          {paused ? t("controls.play") : t("controls.pause")}
+          {paused ? t(awaitingResume ? "controls.resume" : "controls.play") : t("controls.pause")}
         </Button>
       </Tooltip>
       <Tooltip content={canMakeChanges ? t("halfTime.title") : t("controls.changesHint")}>

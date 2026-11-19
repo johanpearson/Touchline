@@ -153,14 +153,21 @@ describe("season flow", () => {
     }
   });
 
-  it("restarts the match from kickoff after leaving it", () => {
+  it("resumes the match paused where it was after leaving it", () => {
     mount();
     startMatch();
     fireEvent.click(screen.getByTestId("mode-highlights"));
     act(() => vi.advanceTimersByTime(5_000));
+    const clock = screen.getByTestId("clock").textContent;
+    expect(clock).not.toBe("0’");
     goTo("#/");
-    startMatch();
-    expect(screen.getByTestId("clock").textContent).toBe("0’");
+    expect(screen.getByTestId("header-action").textContent).toBe("Resume match");
+    click("play-match");
+    expect(screen.queryByTestId("pre-match")).toBeNull();
+    expect(screen.getByTestId("clock").textContent).toBe(clock);
+    expect(screen.getByTestId("pause-toggle").textContent).toBe("Resume");
+    act(() => vi.advanceTimersByTime(3_000));
+    expect(screen.getByTestId("clock").textContent).toBe(clock);
   });
 
   it("redirects #/match and #/results to the hub when there is nothing to show", () => {
