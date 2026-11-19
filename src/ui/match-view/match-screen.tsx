@@ -196,7 +196,7 @@ export function MatchScreen({
               score: state.score,
               scorers: goalScorersOf(events),
               engineVersion: input.engineVersion,
-              energy: state.energy,
+              energy: match.state.energy,
             },
             withOpponent(report, match, userSide),
           ))
