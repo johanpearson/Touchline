@@ -43,7 +43,8 @@ export const sv = {
   "fullTime.goalsLabel": "Mål av {team}",
   "chart.title": "Momentum",
   "chart.label":
-    "Momentumdiagram: staplar ovanför linjen visar hemmalagets tryck, staplar under visar bortalagets",
+    "Momentumdiagram: ytan ovanför linjen visar hemmalagets tryck, ytan under visar bortalagets",
+  "chart.goals": "Mål: {list}",
   "feed.title": "Kommentarer",
   "controls.label": "Matchkontroller",
   "controls.pause": "Pausa",
