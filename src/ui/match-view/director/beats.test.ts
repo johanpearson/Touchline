@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ActionEvent } from "../../../engine";
-import { BEAT_SETTINGS, MIN_DURATION, PLAYBACK_MODES } from "./constants";
+import { BEAT_SETTINGS, MIN_DURATION, PLAYBACK_MODES, type PlaybackMode } from "./constants";
 import {
   aFoul,
   aPass,
@@ -27,6 +27,17 @@ const beatDuration = (segments: readonly Segment[], beat: number | undefined) =>
   plays(segments)
     .filter((s) => s.beat === beat)
     .reduce((sum, s) => sum + seconds(s), 0);
+
+const definedBeats = (segments: readonly Segment[]): number[] =>
+  [...beatsOf(segments)].filter((beat): beat is number => beat !== undefined);
+
+const expectBeatWithinLimits = (segments: readonly Segment[], beat: number, mode: PlaybackMode) => {
+  const { minDuration, maxDuration } = BEAT_SETTINGS[mode];
+  const duration = beatDuration(segments, beat);
+  const size = plays(segments).filter((s) => s.beat === beat).length;
+  if (size > 1) expect(duration, `${mode} beat ${beat}`).toBeGreaterThanOrEqual(minDuration - 1e-9);
+  expect(duration, `${mode} beat ${beat}`).toBeLessThanOrEqual(maxDuration + 1e-9);
+};
 
 describe("beats", () => {
   it("groups a quiet run of passes into one beat", () => {
@@ -87,17 +98,9 @@ describe("beats", () => {
 
   it("gives every beat between the minimum and maximum duration of its mode", () => {
     for (const mode of PLAYBACK_MODES) {
-      const { minDuration, maxDuration } = BEAT_SETTINGS[mode];
       for (const seed of SEEDS.slice(0, 4)) {
         const { segments } = buildTimeline(seededMatchEvents(seed), mode);
-        for (const beat of beatsOf(segments)) {
-          if (beat === undefined) continue;
-          const duration = beatDuration(segments, beat);
-          const size = plays(segments).filter((s) => s.beat === beat).length;
-          if (size > 1)
-            expect(duration, `${mode} beat ${beat}`).toBeGreaterThanOrEqual(minDuration - 1e-9);
-          expect(duration, `${mode} beat ${beat}`).toBeLessThanOrEqual(maxDuration + 1e-9);
-        }
+        for (const beat of definedBeats(segments)) expectBeatWithinLimits(segments, beat, mode);
       }
     }
   });
