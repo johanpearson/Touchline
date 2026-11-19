@@ -24,6 +24,9 @@ describe("matchStateOf", () => {
       ball: state.play.ball,
       score: { home: 0, away: 0 },
       fouls: { home: 0, away: 0 },
+      energy: Object.fromEntries(
+        [...state.input.home.starters, ...state.input.away.starters].map((p) => [p.id, 100]),
+      ),
     });
   });
 

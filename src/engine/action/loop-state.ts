@@ -2,6 +2,7 @@ import type { Period } from "../match-state";
 import type { Rng } from "../rng";
 import type { ActionEvent } from "./action-event";
 import type { ActionMatchState } from "./action-match";
+import { type EnergyState, energyOf } from "./energy-state";
 import type { MatchInput } from "./match-input";
 import type { PlayState } from "./play-state";
 
@@ -18,6 +19,8 @@ export type LoopState = {
   /** When the current period ends, added time included. */
   readonly periodEnd: number;
   readonly play: PlayState;
+  /** Energy of the players on the pitch and the input the engine acts on because of it. */
+  readonly energy: EnergyState;
   /** The time of the next action. */
   readonly nextActionAt: number;
 };
@@ -43,4 +46,5 @@ export const matchStateOf = (state: LoopState): ActionMatchState => ({
   ball: state.play.ball,
   score: { ...state.play.score },
   fouls: { ...state.play.fouls },
+  energy: energyOf(state.energy, state.input),
 });

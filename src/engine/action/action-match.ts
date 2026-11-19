@@ -16,6 +16,12 @@ export type ActionMatchState = {
   score: Record<Side, number>;
   /** Fouls committed by each side so far. */
   fouls: Record<Side, number>;
+  /**
+   * Energy (0 to 100) by player id of everyone on the pitch, and of players already substituted off
+   * (frozen at the value they left with). A player who has not played is not listed. Drained once per
+   * whole match minute played; half-time costs nothing.
+   */
+  energy: Readonly<Record<string, number>>;
 };
 
 /** New starters (a substitution) and/or new tactics for one side, applied from the next action. */
@@ -37,7 +43,15 @@ export type TimedActionMatchChange = {
 export type MatchDetail = "full" | "fast";
 
 /** Options of `createActionMatch`. */
-export type ActionMatchOptions = { detail?: MatchDetail };
+export type ActionMatchOptions = {
+  detail?: MatchDetail;
+  /**
+   * Whether low energy lowers performance: `true` for both sides (the default), `false` for neither,
+   * or one side to let only that side tire. Energy is always tracked and reported; without the
+   * penalty a player plays at the attributes he started with. For tests and balance comparisons.
+   */
+  energyPenalty?: boolean | Side;
+};
 
 /** A running action-engine simulation. Same control methods as the zone engine's `Match`. */
 export type ActionMatch = {
