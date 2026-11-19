@@ -140,33 +140,37 @@ const keyMomentAhead = (pending: readonly ActionEvent[], from: number): boolean 
   return undefined;
 };
 
-const segmentsOf = (
-  event: ActionEvent,
-  index: number,
-  next: ActionEvent,
-  mode: PlaybackMode,
-  start: number,
-  highlight: boolean,
-): readonly Segment[] => {
+type Placement = {
+  event: ActionEvent;
+  index: number;
+  next: ActionEvent;
+  mode: PlaybackMode;
+  start: number;
+  /** False in highlights outside a key moment's lead-in: the span is cut. */
+  shown: boolean;
+};
+
+/** Builds the contiguous segments of one action, from presentation time `start`. */
+const segmentsOf = ({ event, index, next, mode, start, shown }: Placement): readonly Segment[] => {
   const segments: Segment[] = [];
-  let at = start;
   const add = (kind: SegmentKind, seconds: number, matchStart: number, matchEnd: number) => {
+    const presentationStart = segments.at(-1)?.presentationEnd ?? start;
+    const presentationEnd = presentationStart + seconds;
     segments.push({
       kind,
       eventIndex: index,
-      presentationStart: at,
-      presentationEnd: at + seconds,
+      presentationStart,
+      presentationEnd,
       matchStart,
       matchEnd,
     });
-    at += seconds;
   };
-  const key = holdFor(event);
-  const scale = MODE_SETTINGS[mode].holdScale;
-  if (!highlight) {
+  if (!shown) {
     add("cut", 0, event.time, next.time);
     return segments;
   }
+  const key = holdFor(event);
+  const scale = MODE_SETTINGS[mode].holdScale;
   if (key) add("hold", key.before * scale, event.time, event.time);
   const atPace = mode === "highlights" || key !== undefined;
   add("play", playDuration(event, next.time - event.time, mode, atPace), event.time, next.time);
@@ -176,30 +180,32 @@ const segmentsOf = (
 
 type Step = { state: State; done: boolean };
 
+const advance = (state: State, fresh: readonly Segment[], matchEnd: number): State => ({
+  ...state,
+  segments: [...state.segments, ...fresh],
+  duration: fresh.at(-1)?.presentationEnd ?? state.duration,
+  matchEnd,
+  pending: state.pending.slice(1),
+  committed: state.committed + 1,
+});
+
+/** Whether the first pending event is shown (always, except in highlights outside a key moment's lead-in); undefined when unknown yet. */
+const isShown = (state: State, event: ActionEvent): boolean | undefined => {
+  if (state.mode !== "highlights" || isKeyMoment(event)) return true;
+  return keyMomentAhead(state.pending, 0);
+};
+
 const commitNext = (state: State): Step => {
   const [event, next] = state.pending;
   if (!event) return { state, done: true };
-  const rest = state.pending.slice(1);
-  if (event.type === "periodChange") {
-    return { state: { ...state, pending: rest, committed: state.committed + 1 }, done: false };
-  }
+  if (event.type === "periodChange")
+    return { state: advance(state, [], state.matchEnd), done: false };
   if (!next) return { state, done: true };
-  const ahead = state.mode === "highlights" ? keyMomentAhead(state.pending, 0) : true;
-  if (ahead === undefined) return { state, done: true };
-  const highlight = state.mode !== "highlights" || ahead || isKeyMoment(event);
-  const fresh = segmentsOf(event, state.committed, next, state.mode, state.duration, highlight);
-  const last = fresh.at(-1);
-  return {
-    done: false,
-    state: {
-      ...state,
-      segments: [...state.segments, ...fresh],
-      duration: last ? last.presentationEnd : state.duration,
-      matchEnd: next.time,
-      pending: rest,
-      committed: state.committed + 1,
-    },
-  };
+  const shown = isShown(state, event);
+  if (shown === undefined) return { state, done: true };
+  const { mode, duration: start, committed: index } = state;
+  const fresh = segmentsOf({ event, index, next, mode, start, shown });
+  return { state: advance(state, fresh, next.time), done: false };
 };
 
 const commitAll = (initial: State): State => {

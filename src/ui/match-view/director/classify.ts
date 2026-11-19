@@ -1,14 +1,34 @@
-import { type ActionEvent, PITCH_LENGTH, PITCH_WIDTH, type Point } from "../../../engine";
+import {
+  type ActionEvent,
+  type ActionShotEvent,
+  PITCH_LENGTH,
+  PITCH_WIDTH,
+  type Point,
+  type SetPieceVariant,
+} from "../../../engine";
 import { HOLDS, type Hold } from "./constants";
+
+const SET_PIECE_HOLDS: Partial<Record<SetPieceVariant, Hold>> = {
+  corner: HOLDS.corner,
+  freeKick: HOLDS.freeKick,
+  penalty: HOLDS.penalty,
+};
+
+const shotHold = (event: ActionShotEvent): Hold =>
+  event.outcome === "goal" ? HOLDS.goal : HOLDS.shot;
 
 /** The hold around `event`, or undefined when it is not a key moment. Engine events have no cards; a penalty foul stands in. */
 export const holdFor = (event: ActionEvent): Hold | undefined => {
-  if (event.type === "shot") return event.outcome === "goal" ? HOLDS.goal : HOLDS.shot;
-  if (event.type === "foul") return event.outcome === "penalty" ? HOLDS.penaltyFoul : undefined;
-  if (event.type !== "setPiece") return undefined;
-  if (event.variant === "corner") return HOLDS.corner;
-  if (event.variant === "freeKick") return HOLDS.freeKick;
-  return event.variant === "penalty" ? HOLDS.penalty : undefined;
+  switch (event.type) {
+    case "shot":
+      return shotHold(event);
+    case "foul":
+      return event.outcome === "penalty" ? HOLDS.penaltyFoul : undefined;
+    case "setPiece":
+      return SET_PIECE_HOLDS[event.variant];
+    default:
+      return undefined;
+  }
 };
 
 /** Key moments are never skipped in any mode: shots, goals, corners, free kicks, penalties and penalty fouls. */
