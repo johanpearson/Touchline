@@ -20,7 +20,7 @@ import {
 } from "./director-test-support";
 import { buildTimeline, extendTimeline, type Segment } from "./timeline";
 
-const closeToGoal = { x: 98, y: 34 };
+const closeToGoal = { x: 102, y: 34 };
 const farFromGoals = { x: 52.5, y: 34 };
 
 const playOf = (segments: readonly Segment[], eventIndex: number) =>
@@ -47,10 +47,11 @@ describe("buildTimeline", () => {
     expect(MIN_DURATION.pass).toBe(0.8);
   });
 
-  it("compresses quiet build-up far from both goals to a fraction of the engine time", () => {
+  it("compresses the quiet actions between the key actions of a beat to a fraction of the engine time", () => {
     const { segments, duration } = buildTimeline(log(...quietRun(20)), "full");
     expect(duration).toBeLessThan((20 * 3) / 4);
-    expect(length(playOf(segments, 0))).toBeLessThan(MIN_DURATION.pass);
+    const between = segments.find((s) => s.kind === "play" && !s.moment);
+    expect(length(between)).toBeLessThan(MIN_DURATION.pass);
   });
 
   it("slows play down as the ball gets close to a goal", () => {
@@ -61,9 +62,8 @@ describe("buildTimeline", () => {
           0,
         ),
       );
-    expect(at(52.5)).toBeLessThan(at(105 - ACTIVE_DISTANCE.full + 2));
-    expect(at(105 - ACTIVE_DISTANCE.full + 2)).toBeLessThan(at(105 - 4));
-    expect(at(95)).toBeLessThanOrEqual(at(98));
+    expect(at(105 - ACTIVE_DISTANCE.full + 0.5)).toBeLessThan(at(105 - 3));
+    expect(at(105 - 1)).toBeCloseTo(at(105 - 3), 9);
   });
 
   it("holds the clock before and after a shot and longer after a goal", () => {
@@ -223,8 +223,8 @@ describe("extendTimeline", () => {
     }
   });
 
-  it("waits for the next event before committing the last one", () => {
-    const [first, rest] = split(quietRun(6), 3);
+  it("waits for the end of a beat before committing it", () => {
+    const [first, rest] = split(log(...quietRun(6)), 3);
     const partial = buildTimeline(first, "full");
     expect(partial.segments.some((s) => s.eventIndex === 2)).toBe(false);
     const extended = extendTimeline(partial, rest);

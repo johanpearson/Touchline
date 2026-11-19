@@ -232,7 +232,7 @@ Each density option shows a small live preview table (header and four rows with 
 
 ### Match playback director (item 7)
 A presentation layer between the engine event log and the views; the engine is unchanged.
-- Every action has a minimum on-screen duration (a pass at least 0.8 s). Quiet build-up is compressed. Play slows down in and around the box. The clock holds briefly on shots, goals, set pieces, penalties and cards (longer on goals).
+- Every action has a minimum on-screen duration (a pass at least 0.8 s). Quiet build-up is grouped into beats: a few key passes at a readable pace and the rest played through at one speed. Play slows down in and around the box. The clock holds briefly on shots, goals, set pieces, penalties and cards (longer on goals).
 - **Playback modes replace x1 to x8** (the "speed labels" row above no longer applies; built in #387 as a three-option segmented control under the stage, switchable mid-match without a jump): **Highlights** (cuts between key moments, about 1.5 to 3 minutes), **Extended** (build-up compressed harder, about 3 to 5 minutes, the default) and **Full match** (everything at readable pace, 6 to 10 minutes for 90 minutes, every key moment at readable speed).
 - The terrain, the 2D pitch, the feed, the stats, the momentum chart and the scoreboard all follow the director's clock. Pause, Space and the stops at half-time and full time stay.
 - The director is pure and unit tested: durations, ordering, no skipped goal, set piece, penalty or card in any mode, and the duration targets over seeded matches.

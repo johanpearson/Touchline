@@ -6,7 +6,7 @@ import {
   type Point,
   type SetPieceVariant,
 } from "../../../engine";
-import { HOLDS, type Hold } from "./constants";
+import { BEAT_DISTANCE, HOLDS, type Hold, type PlaybackMode } from "./constants";
 
 const SET_PIECE_HOLDS: Partial<Record<SetPieceVariant, Hold>> = {
   corner: HOLDS.corner,
@@ -42,3 +42,16 @@ const distanceToNearestGoal = (point: Point): number => {
 /** Metres from the nearest goal centre to either end of the action. */
 export const goalDistance = (event: ActionEvent): number =>
   Math.min(distanceToNearestGoal(event.from), distanceToNearestGoal(event.to));
+
+/**
+ * Whether `event` is quiet play that belongs in a beat: not a key moment, foul, kick-off or period
+ * change, and further than `BEAT_DISTANCE` from either goal. A turnover far from goal stays inside the
+ * beat (it is one phase of contested play); a shot, set piece, foul, period change or the ball reaching
+ * the active zone ends it.
+ */
+export const isBeatAction = (event: ActionEvent, mode: PlaybackMode): boolean => {
+  if (event.type === "periodChange" || event.type === "foul" || isKeyMoment(event)) return false;
+  if (event.type === "setPiece" && event.variant === "kickoff") return false;
+  if (event.type === "setPiece" && event.variant === "goalKick") return true;
+  return goalDistance(event) > BEAT_DISTANCE[mode];
+};
