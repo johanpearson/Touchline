@@ -42,7 +42,8 @@ export const en = {
   "fullTime.goalsLabel": "Goals scored by {team}",
   "chart.title": "Momentum",
   "chart.label":
-    "Momentum chart: bars above the line show home pressure, bars below show away pressure",
+    "Momentum chart: the area above the line shows home pressure, the area below shows away pressure",
+  "chart.goals": "Goals: {list}",
   "feed.title": "Commentary",
   "controls.label": "Match controls",
   "controls.pause": "Pause",

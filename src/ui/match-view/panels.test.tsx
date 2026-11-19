@@ -70,14 +70,79 @@ describe("Scoreboard", () => {
 describe("MomentumChart", () => {
   afterEach(cleanup);
 
-  it("draws home pressure and away pressure as separate bars in the team colours", () => {
+  it("draws home pressure and away pressure as separate areas in the team colours", () => {
     const events = [event({ time: 10, team: "home" }), event({ time: 400, team: "away" })];
     inLocale(<MomentumChart events={events} matchTime={600} homeColour="#f00" awayColour="#00f" />);
     const chart = screen.getByTestId("momentum-chart");
-    const home = chart.querySelector('rect[data-side="home"]');
-    const away = chart.querySelector('rect[data-side="away"]');
-    expect(home?.getAttribute("fill")).toBe("#f00");
-    expect(away?.getAttribute("fill")).toBe("#00f");
+    expect(
+      chart.querySelector('g[data-side="home"] path[fill="none"]')?.getAttribute("stroke"),
+    ).toBe("#f00");
+    expect(
+      chart.querySelector('g[data-side="away"] path[fill="none"]')?.getAttribute("stroke"),
+    ).toBe("#00f");
+  });
+
+  it("marks each goal that has been scored on the centre line in the scorer's colour", () => {
+    const events = [
+      event({ time: 600, team: "home", type: "goal", xg: 0.3 } as Partial<ZoneEvent> & {
+        time: number;
+      }),
+      event({ time: 1800, team: "away", type: "goal", xg: 0.2 } as Partial<ZoneEvent> & {
+        time: number;
+      }),
+      event({ time: 4000, team: "home", type: "goal", xg: 0.2 } as Partial<ZoneEvent> & {
+        time: number;
+      }),
+    ];
+    inLocale(
+      <MomentumChart events={events} matchTime={2400} homeColour="#f00" awayColour="#00f" />,
+    );
+    const markers = screen.getAllByTestId("momentum-goal");
+    expect(markers.map((m) => m.getAttribute("fill"))).toEqual(["#f00", "#00f"]);
+    expect(markers.map((m) => m.getAttribute("data-side"))).toEqual(["home", "away"]);
+  });
+
+  it("names the minute of every goal in the accessible description", () => {
+    const events = [
+      event({ time: 600, team: "home", type: "goal", xg: 0.3 } as Partial<ZoneEvent> & {
+        time: number;
+      }),
+    ];
+    inLocale(
+      <MomentumChart
+        events={events}
+        matchTime={1200}
+        homeColour="#f00"
+        awayColour="#00f"
+        names={{ home: "Kvarnby", away: "Västerås" }}
+      />,
+    );
+    expect(screen.getByTestId("momentum-chart").getAttribute("aria-label")).toContain(
+      "Goals: 10’ Kvarnby",
+    );
+  });
+
+  it("describes the chart in Swedish", () => {
+    inLocale(
+      <MomentumChart events={[]} matchTime={600} homeColour="#f00" awayColour="#00f" />,
+      "sv",
+    );
+    expect(screen.getByRole("img", { name: /Momentumdiagram/ })).toBeTruthy();
+  });
+
+  it("moves the playhead with the match time and draws only what has been played", () => {
+    const events = [event({ time: 10, team: "home" })];
+    const { rerender } = inLocale(
+      <MomentumChart events={events} matchTime={0} homeColour="#f00" awayColour="#00f" />,
+    );
+    const x = () => Number(screen.getByTestId("momentum-playhead").getAttribute("x1"));
+    expect(x()).toBe(0);
+    rerender(
+      <I18nProvider store={createMemoryLocaleStore("en")}>
+        <MomentumChart events={events} matchTime={2700} homeColour="#f00" awayColour="#00f" />
+      </I18nProvider>,
+    );
+    expect(x()).toBe(150);
   });
 
   it("has an accessible description", () => {
