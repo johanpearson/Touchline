@@ -24,9 +24,12 @@ export const MAX_ENERGY_PENALTY = 0.3;
 /** The penalty grows with the square of the energy spent, so it stays small until about half is gone. */
 export const ENERGY_PENALTY_EXPONENT = 2;
 
-/** Drain factor of a work rate of 0 (a work rate of 10 gives 1, a work rate of 20 gives `1 + WORK_RATE_DRAIN_SPREAD / 2`). */
-const WORK_RATE_DRAIN_BASE = 0.6;
-const WORK_RATE_DRAIN_SPREAD = 0.8;
+/**
+ * Drain factor of a player by work rate: `WORK_RATE_DRAIN_BASE` at 0, 1 at 10, 1.2 at 20. Kept gentle: a
+ * steeper slope made hard-working (usually stronger) squads tire most and flattened the league.
+ */
+const WORK_RATE_DRAIN_BASE = 0.8;
+const WORK_RATE_DRAIN_SPREAD = 0.4;
 
 const PRESSING_DRAIN: Record<Pressing, number> = { low: 0.9, medium: 1, high: 1.2 };
 const TEMPO_DRAIN: Record<Tempo, number> = { slow: 0.92, normal: 1, fast: 1.12 };
