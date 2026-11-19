@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { chooseMode, freezeClock, playUntilVisible, unfreezeClock } from "./match-clock";
 import { quickSimToSeasonEnd, resignExpiredPlayers } from "./off-season-helpers";
 
 const CLUBS = 14;
@@ -12,11 +13,14 @@ test.describe("season flow", () => {
     await page.getByTestId("start-career").click();
 
     await page.getByTestId("play-match").click();
+    await freezeClock(page);
     await page.getByTestId("kick-off").click();
-    await page.getByTestId("speed-4").click();
-    await expect(page.getByTestId("half-time")).toBeVisible({ timeout: 30_000 });
+    await chooseMode(page, "highlights");
+    await playUntilVisible(page, page.getByTestId("half-time"));
     await page.getByTestId("start-second-half").click();
-    await expect(page.getByTestId("period")).toHaveText("Full time", { timeout: 60_000 });
+    await playUntilVisible(page, page.getByTestId("continue"));
+    await expect(page.getByTestId("period")).toHaveText("Full time");
+    await unfreezeClock(page);
     const score = await page.getByTestId("score").textContent();
     await page.getByTestId("continue").click();
 

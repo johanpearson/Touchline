@@ -4,6 +4,7 @@ import type { ActionEvent, ActionMatchState, ActionStats, PerSide, ZoneEvent } f
 import { Button } from "../components/button";
 import { useI18n } from "../i18n-provider";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
+import type { PlaybackMode } from "./director";
 import { type AppliedHalfTimePlan, type HalfTimeEditor, HalfTimePanel } from "./half-time-panel";
 import { LeaveMatchButton } from "./leave-match-button";
 import { MatchControls } from "./match-controls";
@@ -35,9 +36,9 @@ export type MatchLayoutProps = {
   lines: readonly CommentaryLine[];
   playback: {
     paused: boolean;
-    speed: number;
+    mode: PlaybackMode;
     setPaused: (paused: boolean) => void;
-    setSpeed: (speed: number) => void;
+    setMode: (mode: PlaybackMode) => void;
   };
   createRenderer?: TerrainRendererFactory;
   /** The action log and renderer of the 2D pitch. */
@@ -128,12 +129,12 @@ export function MatchLayout({
         />
         <MatchControls
           paused={paused}
-          speed={playback.speed}
+          mode={playback.mode}
           view={view}
           showChain={showChain}
           canMakeChanges={halfTime && Boolean(halfTimeEditor)}
           onPausedChange={setPaused}
-          onSpeedChange={playback.setSpeed}
+          onModeChange={playback.setMode}
           onViewChange={setView}
           onChainChange={setShowChain}
           onMakeChanges={makeChanges}

@@ -258,12 +258,12 @@ describe("MatchControls", () => {
     inLocale(
       <MatchControls
         paused={false}
-        speed={60}
+        mode="extended"
         view="momentum"
         showChain
         canMakeChanges={false}
         onPausedChange={() => {}}
-        onSpeedChange={() => {}}
+        onModeChange={() => {}}
         onViewChange={() => {}}
         onChainChange={() => {}}
         onMakeChanges={() => {}}
@@ -285,12 +285,25 @@ describe("MatchControls", () => {
     expect(screen.getByTestId("pause-toggle").textContent).toBe("Spela");
   });
 
-  it("marks the current speed and reports a chosen one", () => {
-    const speeds: number[] = [];
-    controls({ onSpeedChange: (s) => speeds.push(s) });
-    expect(screen.getByTestId("speed-2").getAttribute("aria-checked")).toBe("true");
-    fireEvent.click(screen.getByTestId("speed-4"));
-    expect(speeds).toEqual([240]);
+  it("offers Highlights, Extended and Full match with a description each", () => {
+    controls();
+    expect(screen.getByTestId("mode-highlights").textContent).toBe("Highlightsabout 2 minutes");
+    expect(screen.getByTestId("mode-extended").textContent).toBe("Extendedabout 4 minutes");
+    expect(screen.getByTestId("mode-full").textContent).toBe("Full matchabout 8 minutes");
+  });
+
+  it("marks the current mode and reports a chosen one", () => {
+    const modes: string[] = [];
+    controls({ onModeChange: (m) => modes.push(m) });
+    expect(screen.getByTestId("mode-extended").getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getByTestId("mode-full"));
+    expect(modes).toEqual(["full"]);
+  });
+
+  it("labels the modes in Swedish", () => {
+    controls({}, "sv");
+    expect(screen.getByTestId("mode-highlights").textContent).toBe("Höjdpunktercirka 2 minuter");
+    expect(screen.getByTestId("mode-full").textContent).toBe("Hela matchencirka 8 minuter");
   });
 
   it("switches the view and shows the passing chain toggle only on the 2D pitch", () => {

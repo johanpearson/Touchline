@@ -22,6 +22,7 @@ describe("MatchScreen", () => {
     vi.stubGlobal("requestAnimationFrame", () => 0);
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
+    window.localStorage.clear();
   });
   afterEach(() => {
     cleanup();
@@ -65,16 +66,25 @@ describe("MatchScreen", () => {
     expect(clockText()).not.toBe(paused);
   });
 
-  it("runs faster at a higher speed", () => {
+  it("plays a match through in less time in Highlights than in Full match", () => {
     mountAction();
-    fireEvent.click(screen.getByTestId("speed-1"));
-    play(5000);
-    expect(clockText()).toBe("2’");
+    fireEvent.click(screen.getByTestId("mode-highlights"));
+    play(20_000);
+    const highlights = Number.parseInt(clockText() ?? "0", 10);
     cleanup();
     mountAction();
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(5000);
-    expect(clockText()).toBe("20’");
+    fireEvent.click(screen.getByTestId("mode-full"));
+    play(20_000);
+    expect(highlights).toBeGreaterThan(Number.parseInt(clockText() ?? "0", 10));
+  });
+
+  it("starts in Extended mode and remembers a chosen mode for the next match", () => {
+    mountAction();
+    expect(screen.getByTestId("mode-extended").getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getByTestId("mode-full"));
+    cleanup();
+    mountAction();
+    expect(screen.getByTestId("mode-full").getAttribute("aria-checked")).toBe("true");
   });
 
   it("passes no report when nothing changed at half-time", () => {
@@ -95,10 +105,10 @@ describe("MatchScreen", () => {
       halfTimeEditor: editor as any,
       onContinue,
     });
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(20_000);
+    fireEvent.click(screen.getByTestId("mode-highlights"));
+    play(150_000);
     fireEvent.click(screen.getByTestId("start-second-half"));
-    play(40_000);
+    play(150_000);
     fireEvent.click(screen.getByTestId("continue"));
     expect(onContinue).toHaveBeenCalledWith(
       expect.objectContaining({ engineVersion: 2 }),
@@ -109,10 +119,10 @@ describe("MatchScreen", () => {
   it("hands over the scorer of every goal with the final score", () => {
     const onContinue = vi.fn();
     mountAction({ onContinue });
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(20_000);
+    fireEvent.click(screen.getByTestId("mode-highlights"));
+    play(150_000);
     fireEvent.click(screen.getByTestId("start-second-half"));
-    play(40_000);
+    play(150_000);
     fireEvent.click(screen.getByTestId("continue"));
     const [finished] = onContinue.mock.calls[0] as [
       { score: { home: number; away: number }; scorers: string[] },
@@ -143,7 +153,7 @@ describe("MatchScreen", () => {
       expect(screen.getByTestId("classic-pitch")).toBeTruthy();
       expect(screen.queryByTestId("momentum-terrain")).toBeNull();
       expect(screen.getByTestId("scoreboard")).toBeTruthy();
-      expect(screen.getByTestId("speed-1")).toBeTruthy();
+      expect(screen.getByTestId("mode-extended")).toBeTruthy();
       expect(screen.getByTestId("feed")).toBeTruthy();
     });
 
@@ -198,30 +208,30 @@ describe("MatchScreen", () => {
 
   it("fills the stats panel from the adapted events and the feed with player commentary", () => {
     mountAction();
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(20_000);
+    fireEvent.click(screen.getByTestId("mode-highlights"));
+    play(150_000);
     expect(screen.getByTestId("stat-possession").textContent).toMatch(/\d/);
     expect(screen.getAllByTestId("feed-line").length).toBeGreaterThan(0);
   });
 
   it("stops at half-time, starts the second half and plays on to full time", () => {
     mountAction();
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(20_000);
+    fireEvent.click(screen.getByTestId("mode-highlights"));
+    play(150_000);
     expect(screen.getByTestId("period").textContent).toBe("Half-time");
     expect(screen.getByTestId("half-time-score")).toBeTruthy();
     fireEvent.click(screen.getByTestId("start-second-half"));
     expect(screen.getByTestId("period").textContent).toBe("Second half");
-    play(40_000);
+    play(150_000);
     expect(screen.getByTestId("period").textContent).toBe("Full time");
   });
 
   it("shows the score as goals are scored", () => {
     mountAction();
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(20_000);
+    fireEvent.click(screen.getByTestId("mode-highlights"));
+    play(150_000);
     fireEvent.click(screen.getByTestId("start-second-half"));
-    play(40_000);
+    play(150_000);
     const [home, away] = (screen.getByTestId("score").textContent ?? "").split(" – ").map(Number);
     expect((home ?? -1) >= 0 && (away ?? -1) >= 0).toBe(true);
   });
@@ -252,15 +262,15 @@ describe("MatchScreen", () => {
       onContinue,
     });
     expect(fixture).toBeTruthy();
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(20_000);
+    fireEvent.click(screen.getByTestId("mode-highlights"));
+    play(150_000);
     fireEvent.click(screen.getByTestId("make-changes"));
     fireEvent.click(screen.getByTestId("sub-add"));
     const off = career.squadPlan.starters.find((id) => replacementOf(id));
     fireEvent.click(screen.getByTestId(`pick-${off}`));
     fireEvent.click(screen.getByTestId(`pick-${replacementOf(off ?? "")}`));
     fireEvent.click(screen.getByTestId("start-second-half"));
-    play(40_000);
+    play(150_000);
     fireEvent.click(screen.getByTestId("continue"));
     expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ engineVersion: 2 }), {
       minutes: { [starter]: 45 },
@@ -294,10 +304,10 @@ describe("MatchScreen", () => {
       </I18nProvider>,
     );
     expect(screen.queryByTestId("player-ratings")).toBeNull();
-    fireEvent.click(screen.getByTestId("speed-4"));
-    play(20_000);
+    fireEvent.click(screen.getByTestId("mode-highlights"));
+    play(150_000);
     fireEvent.click(screen.getByTestId("start-second-half"));
-    play(40_000);
+    play(150_000);
     const table = screen.getByTestId("player-ratings");
     const rows = within(table).getAllByTestId(/^rating-row-/);
     expect(rows).toHaveLength(22);

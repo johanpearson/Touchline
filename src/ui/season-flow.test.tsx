@@ -61,10 +61,10 @@ const startMatch = () => {
 
 const playMatchToFullTime = () => {
   startMatch();
-  fireEvent.click(screen.getByTestId("speed-4"));
-  act(() => vi.advanceTimersByTime(40_000));
+  fireEvent.click(screen.getByTestId("mode-highlights"));
+  act(() => vi.advanceTimersByTime(150_000));
   fireEvent.click(screen.getByTestId("start-second-half"));
-  act(() => vi.advanceTimersByTime(40_000));
+  act(() => vi.advanceTimersByTime(150_000));
 };
 
 /** Re-signs every player whose contract has ended, at the asked wage, so the squad stays whole. */
@@ -156,7 +156,7 @@ describe("season flow", () => {
   it("restarts the match from kickoff after leaving it", () => {
     mount();
     startMatch();
-    fireEvent.click(screen.getByTestId("speed-4"));
+    fireEvent.click(screen.getByTestId("mode-highlights"));
     act(() => vi.advanceTimersByTime(5_000));
     goTo("#/");
     startMatch();
@@ -232,8 +232,8 @@ describe("season flow", () => {
   it("records minutes from a half-time substitution in fitness after the match", () => {
     mount();
     startMatch();
-    fireEvent.click(screen.getByTestId("speed-4"));
-    act(() => vi.advanceTimersByTime(40_000));
+    fireEvent.click(screen.getByTestId("mode-highlights"));
+    act(() => vi.advanceTimersByTime(150_000));
     fireEvent.click(screen.getByTestId("make-changes"));
     const ids = screen
       .getAllByTestId(/^half-time-fitness-/)
@@ -246,7 +246,7 @@ describe("season flow", () => {
     const on = onButton.dataset.testid?.slice("pick-".length) ?? "";
     fireEvent.click(onButton);
     fireEvent.click(screen.getByTestId("start-second-half"));
-    act(() => vi.advanceTimersByTime(40_000));
+    act(() => vi.advanceTimersByTime(150_000));
     click("continue");
     goTo("#/squad");
     const fitness = (id: string) => Number(screen.getByTestId(`plan-fitness-${id}`).textContent);
