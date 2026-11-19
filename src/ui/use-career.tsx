@@ -141,10 +141,7 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
   const [importError, setImportError] = useState<ImportError | null>(null);
   const [lastImportedSlot, setLastImportedSlot] = useState<string | null>(null);
 
-  // A match in progress belongs to one career: starting or loading another one ends it. Continuing
-  // the autosave found on startup (`loadAutosave`) keeps it, so a reload does not lose the match.
   const { clear: clearMatchSession } = useMatchSessions();
-
   const nowRef = useRef(now);
   nowRef.current = now;
   const queue = useMemo(() => createAutosaveQueue(saveStore, () => nowRef.current()), [saveStore]);
@@ -193,7 +190,6 @@ export function CareerProvider({ children, saveStore, now, fileTransfer }: Caree
       if (!career) return "season-complete";
       const outcome = completeMatchday(career, userResult, report);
       if (!outcome.ok) return outcome.error;
-      // However the result was recorded (played or quick-simmed), the match in progress is over.
       clearMatchSession();
       setCareer(outcome.career);
       persist(outcome.career, "continue");

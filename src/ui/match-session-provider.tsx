@@ -1,5 +1,6 @@
 import {
   createContext,
+  type MutableRefObject,
   type ReactNode,
   useCallback,
   useContext,
@@ -58,6 +59,32 @@ const sameMatch = (a: MatchSession | null, b: MatchSession | null): boolean =>
     a.season === b.season &&
     a.fixtureId === b.fixtureId);
 
+/** Reads the store once; a refused session is cleared from it, and the reason kept for a toast. */
+const useStoredSession = (
+  store: MatchSessionStore,
+  latest: MutableRefObject<MatchSession | null>,
+) => {
+  const [state, setState] = useState<State>({ initial: null, session: null, refused: null });
+  useEffect(() => {
+    let cancelled = false;
+    store.load().then(
+      (loaded) => {
+        if (cancelled) return;
+        if (loaded.kind === "refused") void store.clear().catch(() => undefined);
+        const found = loaded.kind === "found" ? loaded.session : null;
+        if (found) latest.current = found;
+        const refused = loaded.kind === "refused" ? loaded.error : null;
+        setState({ initial: found, session: found, refused });
+      },
+      () => undefined,
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [store, latest]);
+  return [state, setState] as const;
+};
+
 /**
  * Keeps the match in progress, one at most, behind the `MatchSessionStore`. Without a provider the
  * app behaves as if no store existed: nothing is kept.
@@ -69,29 +96,8 @@ export function MatchSessionProvider({
   store: MatchSessionStore;
   children: ReactNode;
 }) {
-  const [state, setState] = useState<State>({ initial: null, session: null, refused: null });
   const latest = useRef<MatchSession | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    store.load().then(
-      (loaded) => {
-        if (cancelled) return;
-        if (loaded.kind === "found") latest.current = loaded.session;
-        if (loaded.kind === "refused") void store.clear().catch(() => undefined);
-        const found = loaded.kind === "found" ? loaded.session : null;
-        setState({
-          initial: found,
-          session: found,
-          refused: loaded.kind === "refused" ? loaded.error : null,
-        });
-      },
-      () => undefined,
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [store]);
+  const [state, setState] = useStoredSession(store, latest);
 
   const save = useCallback(
     (session: MatchSession) => {
@@ -99,25 +105,16 @@ export function MatchSessionProvider({
       void store.save(session).catch(() => undefined);
       setState((s) => (sameMatch(s.session, session) ? s : { ...s, session }));
     },
-    [store],
+    [store, setState],
   );
   const clear = useCallback(() => {
     latest.current = null;
     void store.clear().catch(() => undefined);
-    setState((s) =>
-      s.session === null && s.refused === null ? s : { ...s, session: null, refused: null },
-    );
-  }, [store]);
+    setState((s) => (s.session || s.refused ? { ...s, session: null, refused: null } : s));
+  }, [store, setState]);
 
   const value = useMemo<MatchSessions>(
-    () => ({
-      initial: state.initial,
-      session: state.session,
-      latest: () => latest.current,
-      refused: state.refused,
-      save,
-      clear,
-    }),
+    () => ({ ...state, latest: () => latest.current, save, clear }),
     [state, save, clear],
   );
   return <MatchSessionContext.Provider value={value}>{children}</MatchSessionContext.Provider>;
@@ -130,6 +127,7 @@ export function useMatchSessions(): MatchSessions {
 /** Whether a match of the career's next fixture is in progress. Cheap, so the header and nav can ask. */
 export function useMatchInProgress(career: Career | null): boolean {
   const { session } = useMatchSessions();
-  if (!career || !session || !isSessionOfCareer(session, career)) return false;
-  return getNextFixture(career.season, career.userClubId)?.id === session.fixtureId;
+  if (!career || !session) return false;
+  const next = getNextFixture(career.season, career.userClubId);
+  return isSessionOfCareer(session, career) && next?.id === session.fixtureId;
 }

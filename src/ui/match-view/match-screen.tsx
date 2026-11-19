@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { generateActionCommentary } from "../../commentary";
 import type {
   ActionEvent,
@@ -9,20 +9,14 @@ import type {
   PerSide,
   Side,
 } from "../../engine";
-import {
-  computeActionStats,
-  createActionMatch,
-  createZoneEventAdapter,
-  playerRatings,
-  type ZoneEvent,
-} from "../../engine";
+import { computeActionStats, createActionMatch, playerRatings } from "../../engine";
 import { type CoachedMatch, goalScorersOf, type MatchReport } from "../../game";
 import { useI18n } from "../i18n-provider";
 import { useSuspendPaletteShortcut } from "../palette/palette-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import { FullTimeReport } from "./full-time-report";
-import type { AppliedHalfTimePlan, HalfTimeEditor } from "./half-time-panel";
+import type { HalfTimeEditor } from "./half-time-panel";
 import { LineupsPanel } from "./lineups-panel";
 import { MatchLayout } from "./match-layout";
 import type { MatchProgress, ProgressMoment, RestoredMatch } from "./match-progress";
@@ -32,6 +26,8 @@ import { buildRatingRows } from "./ratings-table";
 import { terrainEvents } from "./terrain-events";
 import type { TerrainRendererFactory } from "./terrain-renderer";
 import { useMatchPlayback } from "./use-match-playback";
+import { useMatchProgress } from "./use-match-progress";
+import { useZoneEvents } from "./use-zone-events";
 
 /** What `onContinue` gets at full time. */
 export type FinishedMatch = {
@@ -119,44 +115,13 @@ export function MatchScreen({
   useSuspendPaletteShortcut(
     !playback.paused && (state.period === "firstHalf" || state.period === "secondHalf"),
   );
-  const [report, setReport] = useState<MatchReport | undefined>(restored?.report);
-  const [awaitingResume, setAwaitingResume] = useState(restored !== undefined);
-  useProgressReports({
+  const { report, awaitingResume, startSecondHalf, setPaused } = useMatchProgress({
+    restored,
     onProgress,
-    progress: {
-      changes: userChanges,
-      mode: playback.mode,
-      report,
-      position: { matchTime, period: state.period },
-    },
-    changeCount: userChangeCount,
-    paused: playback.paused,
+    playback: { ...playback, matchTime, period: state.period, userChanges, userChangeCount },
+    resume,
   });
-  const startSecondHalf = (plan?: AppliedHalfTimePlan) => {
-    setReport(plan?.report);
-    resume(plan?.change);
-  };
-  // The terrain, the momentum chart and the stats only ever see the adapted events.
-  // `events` is appended to in place; `eventCount` tells when it grew, so only the new tail is
-  // adapted and appended to one growing zone-event list.
-  const adapted = useRef<
-    | {
-        adapter: ReturnType<typeof createZoneEventAdapter>;
-        consumed: number;
-        zone: ZoneEvent[];
-      }
-    | undefined
-  >(undefined);
-  adapted.current ??= { adapter: createZoneEventAdapter(), consumed: 0, zone: [] };
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  const zoneEvents = useMemo(() => {
-    const kept = adapted.current;
-    if (!kept) return [];
-    kept.zone.push(...kept.adapter.push(events.slice(kept.consumed, eventCount)));
-    kept.consumed = eventCount;
-    // A cheap copy of references, so memoised children see a new array when the log grew.
-    return kept.zone.slice();
-  }, [eventCount]);
+  const zoneEvents = useZoneEvents(events, eventCount);
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   const actionStats = useMemo(() => computeActionStats(events, matchTime), [eventCount, matchTime]);
   const fullTime = state.period === "fullTime";
@@ -188,13 +153,7 @@ export function MatchScreen({
       stats={actionStats}
       playerIds={played}
       lines={lines}
-      playback={{
-        ...playback,
-        setPaused: (paused) => {
-          if (!paused) setAwaitingResume(false);
-          playback.setPaused(paused);
-        },
-      }}
+      playback={{ ...playback, setPaused }}
       awaitingResume={awaitingResume}
       createRenderer={createRenderer}
       pitch={{ events, createRenderer: createPitchRenderer }}
@@ -240,34 +199,6 @@ export function MatchScreen({
     />
   );
 }
-
-type ProgressReports = {
-  onProgress?: MatchScreenProps["onProgress"];
-  progress: MatchProgress;
-  changeCount: number;
-  paused: boolean;
-};
-
-/**
- * Reports the progress: at once when the user pauses or plays, changes the mode or a change is
- * applied, or the period changes (and on mount), and on every clock tick for the writer to throttle.
- * The latest progress is reported once more when the screen goes away.
- */
-const useProgressReports = ({ onProgress, progress, changeCount, paused }: ProgressReports) => {
-  const latest = useRef(progress);
-  latest.current = progress;
-  const report = useRef(onProgress);
-  report.current = onProgress;
-  const { period, matchTime } = progress.position;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: these are the moments that count
-  useEffect(
-    () => report.current?.(latest.current, "now"),
-    [changeCount, paused, progress.mode, progress.report, period],
-  );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: every clock tick offers the position
-  useEffect(() => report.current?.(latest.current, "tick"), [matchTime]);
-  useEffect(() => () => report.current?.(latest.current, "now"), []);
-};
 
 /** The user's report with what the AI opponent played; the user's report is absent when nothing was changed. */
 const withOpponent = (
