@@ -433,6 +433,9 @@ export const sv = {
   "toast.matchSession.title": "Den sparade matchen återupptogs inte",
   "toast.matchSession.text":
     "Matchen som pågick passar inte längre den här karriären, så den börjar om från förmatchskärmen.",
+  "toast.matchSessionSave.title": "Matchen kan inte sparas",
+  "toast.matchSessionSave.text":
+    "Webbläsaren nekade att lagra matchen som pågår, så den kan inte återupptas efter en omladdning.",
   "toast.dismiss": "Stäng",
   "toast.region": "Aviseringar (F8)",
   "toast.autosaveFailed.title": "Autosparningen misslyckades",

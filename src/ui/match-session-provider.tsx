@@ -27,7 +27,9 @@ export type MatchSessions = {
   latest: () => MatchSession | null;
   /** Why the store refused what it held on startup (it has been cleared), or null. */
   refused: MatchSessionError | null;
-  /** Writes the session. A failing storage is ignored: the match is then not resumable. */
+  /** Whether the latest write of the session was refused by the storage, so the match is not resumable. */
+  writeFailed: boolean;
+  /** Writes the session. A failing storage never blocks play; it only sets `writeFailed`. */
   save: (session: MatchSession) => void;
   /** Deletes the session, when the result is recorded or another career is loaded. */
   clear: () => void;
@@ -38,6 +40,7 @@ const NO_SESSIONS: MatchSessions = {
   session: null,
   latest: () => null,
   refused: null,
+  writeFailed: false,
   save: () => undefined,
   clear: () => undefined,
 };
@@ -98,24 +101,36 @@ export function MatchSessionProvider({
 }) {
   const latest = useRef<MatchSession | null>(null);
   const [state, setState] = useStoredSession(store, latest);
+  const [writeFailed, setWriteFailed] = useState(false);
+  const writes = useRef(0);
 
   const save = useCallback(
     (session: MatchSession) => {
       latest.current = session;
-      void store.save(session).catch(() => undefined);
+      const write = ++writes.current;
+      // Only the latest write counts, so a slow older write cannot overrule a newer one.
+      const settle = (failed: boolean) => {
+        if (write === writes.current) setWriteFailed(failed);
+      };
+      store.save(session).then(
+        () => settle(false),
+        () => settle(true),
+      );
       setState((s) => (sameMatch(s.session, session) ? s : { ...s, session }));
     },
     [store, setState],
   );
   const clear = useCallback(() => {
     latest.current = null;
+    writes.current++;
+    setWriteFailed(false);
     void store.clear().catch(() => undefined);
     setState((s) => (s.session || s.refused ? { ...s, session: null, refused: null } : s));
   }, [store, setState]);
 
   const value = useMemo<MatchSessions>(
-    () => ({ ...state, latest: () => latest.current, save, clear }),
-    [state, save, clear],
+    () => ({ ...state, writeFailed, latest: () => latest.current, save, clear }),
+    [state, writeFailed, save, clear],
   );
   return <MatchSessionContext.Provider value={value}>{children}</MatchSessionContext.Provider>;
 }
