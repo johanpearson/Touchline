@@ -103,7 +103,7 @@ export {
 } from "./line-ratings";
 export type { Lineup, LineupError, LineupResult } from "./lineup";
 export { BENCH_SIZE, validateLineup } from "./lineup";
-export type { LiveSquad, SubstitutionRecord } from "./live-squad";
+export type { FormationRecord, LiveSquad, SubstitutionRecord } from "./live-squad";
 export { liveSquadAfter } from "./live-squad";
 export type { MatchEdit, ReplayedEdits } from "./match-edits";
 export { replayMatchEdits } from "./match-edits";
@@ -139,6 +139,7 @@ export type {
 } from "./plan-change";
 export {
   EMPTY_MATCH_CHANGES,
+  formationInForce,
   HALF_TIME_MINUTE,
   MAX_SUBSTITUTION_WINDOWS,
   MAX_SUBSTITUTIONS,

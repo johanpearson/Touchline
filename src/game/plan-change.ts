@@ -6,8 +6,10 @@ import {
   MAX_SUBSTITUTIONS,
   type SubstitutionError,
 } from "./check-substitutions";
+import { FORMATIONS, type Formation } from "./formation";
+import { formationShape } from "./formation-shape";
 import type { Fixture } from "./generate-fixtures";
-import { liveSquadAfter, type SubstitutionRecord } from "./live-squad";
+import { type FormationRecord, liveSquadAfter, type SubstitutionRecord } from "./live-squad";
 import { FITNESS_MATCH_MINUTES } from "./player-condition";
 import { reportOf } from "./report-of";
 import {
@@ -31,18 +33,22 @@ export const HALF_TIME_MINUTE = FITNESS_MATCH_MINUTES / 2;
 export type MatchChanges = {
   substitutions: readonly SubstitutionRecord[];
   shouts: readonly ShoutRecord[];
+  /** Formation changes made, in order; the saved plan's formation is in force when absent or empty. */
+  formations?: readonly FormationRecord[];
   /** The tactics the user last set; the saved plan's when absent. Shouts act on top of them. */
   tactics?: TeamTactics;
 };
 
 export const EMPTY_MATCH_CHANGES: MatchChanges = { substitutions: [], shouts: [] };
 
-/** One request: substitutions, new base tactics and/or a shout, all at the same moment. */
+/** One request: substitutions, a new formation, new base tactics and/or a shout, all at the same moment. */
 export type MatchChange = {
   /** The match minute of the change (0 up to the end). */
   minute: number;
   substitutions?: readonly { off: string; on: string }[];
   tactics?: TeamTactics;
+  /** A new formation: the eleven are re-placed in its lines, nobody leaves the pitch. */
+  formation?: Formation;
   shout?: ShoutKind;
   /** True for the half-time window (it does not count as one of the three windows). */
   halfTime?: boolean;
@@ -51,6 +57,7 @@ export type MatchChange = {
 export type PlanChangeError =
   | "minute-out-of-range"
   | "change-in-the-past"
+  | "unknown-formation"
   | SubstitutionError
   | ShoutError;
 
@@ -82,6 +89,28 @@ const checkMoment = (minute: number, changes: MatchChanges): PlanChangeError | u
     0,
   );
   return minute < last ? "change-in-the-past" : undefined;
+};
+
+/** The formation in force after `formations`, from the kickoff `plan` formation. */
+export const formationInForce = (
+  planned: Formation,
+  formations: readonly FormationRecord[] | undefined,
+): Formation => formations?.at(-1)?.formation ?? planned;
+
+const formationRecordsOf = (
+  previous: MatchChanges,
+  change: MatchChange,
+  planned: Formation,
+): readonly FormationRecord[] | undefined => {
+  const { formation } = change;
+  if (formation === undefined || formation === formationInForce(planned, previous.formations)) {
+    return previous.formations;
+  }
+  const substitutionsBefore = previous.substitutions.length + (change.substitutions?.length ?? 0);
+  return [
+    ...(previous.formations ?? []),
+    { minute: change.minute, formation, substitutionsBefore },
+  ];
 };
 
 const recordsOf = (
@@ -131,6 +160,9 @@ export const planChange = (
   });
   if (subError) return fail(subError);
 
+  if (change.formation !== undefined && !FORMATIONS.includes(change.formation)) {
+    return fail("unknown-formation");
+  }
   const base = change.tactics ?? previous.tactics ?? career.squadPlan.tactics;
   const shoutError = change.shout && checkShout(base, previous.shouts, change.shout, atMinute);
   if (shoutError) return fail(shoutError);
@@ -142,9 +174,15 @@ export const planChange = (
       : previous.shouts,
     tactics: change.tactics ?? previous.tactics,
   };
-  const live = liveSquadAfter(career.squadPlan, changes.substitutions, natural);
+  const formations = formationRecordsOf(previous, change, career.squadPlan.formation);
+  if (formations) changes.formations = formations;
+  const live = liveSquadAfter(career.squadPlan, changes.substitutions, natural, formations);
   const lineup = toEnginePlayers(
-    { formation: career.squadPlan.formation, starters: live.starters, bench: live.bench },
+    {
+      formation: formationInForce(career.squadPlan.formation, formations),
+      starters: live.starters,
+      bench: live.bench,
+    },
     squad,
     career.condition,
     live.played,
@@ -152,7 +190,12 @@ export const planChange = (
   const tactics = { ...tacticsAtMinute(base, changes.shouts, atMinute) };
   return {
     ok: true,
-    change: { side, lineup, tactics },
+    change: {
+      side,
+      lineup,
+      tactics,
+      ...(change.formation === undefined ? {} : { formation: formationShape(change.formation) }),
+    },
     report: reportOf(career.squadPlan, squad, changes, base),
     changes,
   };

@@ -39,6 +39,20 @@ describe("replayMatchEdits", () => {
     expect(replayMatchEdits(career, fixture, edits)).toEqual(plannedOneByOne(edits));
   });
 
+  it("replays a formation change to the same state as planning it one by one", () => {
+    const withFormation: MatchEdit[] = [
+      { time: 3000, minute: 50, formation: "3-4-3" },
+      { time: 4000, minute: 66, substitutions: [{ off: off1, on: on1 }] },
+    ];
+
+    const replayed = replayMatchEdits(career, fixture, withFormation);
+
+    expect(replayed).toEqual(plannedOneByOne(withFormation));
+    expect(replayed?.changes.formations).toEqual([
+      { minute: 50, formation: "3-4-3", substitutionsBefore: 0 },
+    ]);
+  });
+
   it("counts the minutes from the minute of each edit", () => {
     const report = replayMatchEdits(career, fixture, edits)?.report;
     expect(report?.minutes[off1]).toBe(62);

@@ -167,6 +167,29 @@ describe("drafts", () => {
     expect(changeOf(editor, { subs: [], tactics: wider }).tactics).toEqual(wider);
   });
 
+  it("asks for a new formation only when it differs from the one in force", () => {
+    const editor = editorFor();
+    expect(editor.formation).toBe(career.squadPlan.formation);
+    const other = editor.formation === "3-4-3" ? "4-4-2" : "3-4-3";
+    expect(changeOf(editor, { ...freshDraft(editor), formation: editor.formation }).formation).toBe(
+      undefined,
+    );
+    expect(changeOf(editor, { ...freshDraft(editor), formation: other }).formation).toBe(other);
+    expect(hasPending(editor, { ...freshDraft(editor), formation: other })).toBe(true);
+    expect(hasPending(editor, { ...freshDraft(editor), formation: editor.formation })).toBe(false);
+  });
+
+  it("gives the formation in force after a formation change, and keeps the pitch in its lines", () => {
+    const first = editorFor();
+    const state = stateAfter(first, { ...freshDraft(first), formation: "3-4-3" });
+
+    const later = editorFor(state, { minute: 70 });
+
+    expect(later.formation).toBe("3-4-3");
+    const lines = (p: string) => later.starters.filter((id) => positionOn(later, id) === p).length;
+    expect([lines("DEF"), lines("MID"), lines("FWD")]).toEqual([3, 4, 3]);
+  });
+
   it("plans a valid draft with the minutes the rules give", () => {
     const editor = editorFor(EMPTY_MATCH_CHANGES, { minute: 62 });
     const planned = editor.plan({ subs: [{ off: off1, on: on1 }], tactics: editor.tactics });

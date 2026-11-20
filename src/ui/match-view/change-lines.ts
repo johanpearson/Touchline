@@ -39,8 +39,8 @@ const tacticsChange = (
     .join(", ");
 
 /**
- * The feed lines for the user's changes: one line per substitution, one when tactics changed and one
- * for a shout, all at the engine time of the change. A change that only brings the tactics up to
+ * The feed lines for the user's changes: one line per substitution, one when tactics changed, one for
+ * a new formation and one for a shout, all at the engine time of the change. A change that only brings the tactics up to
  * date (the end of a shout) gives no line.
  */
 export const changeLines = (
@@ -62,6 +62,9 @@ export const changeLines = (
       const changed = tacticsChange(t, tactics, edit.tactics);
       tactics = edit.tactics;
       if (changed) line(edit.time, t("feed.change.tactics", { changes: changed }));
+    }
+    if (edit.formation) {
+      line(edit.time, t("feed.change.formation", { formation: edit.formation }));
     }
     if (edit.shout) line(edit.time, t("feed.change.shout", { shout: t(SHOUT_LABELS[edit.shout]) }));
   }

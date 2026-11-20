@@ -1,4 +1,6 @@
+import type { Formation } from "./formation";
 import type { Lineup } from "./lineup";
+import { placeEleven } from "./place-eleven";
 import { FITNESS_MATCH_MINUTES } from "./player-condition";
 import type { PlayerPosition } from "./squad-player";
 
@@ -8,6 +10,16 @@ export type SubstitutionRecord = {
   halfTime: boolean;
   off: string;
   on: string;
+};
+
+/**
+ * A formation change made at a match minute, after `substitutionsBefore` substitutions had been made
+ * (so the order against substitutions at the same minute is kept).
+ */
+export type FormationRecord = {
+  minute: number;
+  formation: Formation;
+  substitutionsBefore: number;
 };
 
 /** Who is on the pitch and on the bench after a list of substitutions, and how long everyone played. */
@@ -27,13 +39,15 @@ const replace = (ids: readonly string[], from: string, to: string): string[] =>
   ids.map((id) => (id === from ? to : id));
 
 /**
- * Replays `substitutions` (in order) on the saved squad plan. `naturalPosition` gives the own position of
- * a player, used for starters that never changed place.
+ * Replays `substitutions` (in order) on the saved squad plan, with the `formations` changes in between
+ * (each `placeEleven`s the eleven then on the pitch in its lines). `naturalPosition` gives the own
+ * position of a player, used for starters that never changed place.
  */
 export const liveSquadAfter = (
   plan: Lineup,
   substitutions: readonly SubstitutionRecord[],
   naturalPosition: (id: string) => PlayerPosition,
+  formations: readonly FormationRecord[] = [],
 ): LiveSquad => {
   const squad: LiveSquad = {
     starters: [...plan.starters],
@@ -42,13 +56,24 @@ export const liveSquadAfter = (
     cameOn: {},
     wentOff: {},
   };
-  for (const { off, on, minute } of substitutions) {
+  const place = (formation: Formation) => {
+    const current = (id: string) => squad.played[id] ?? naturalPosition(id);
+    Object.assign(squad.played, placeEleven(squad.starters, formation, current, naturalPosition));
+  };
+  const placeDue = (substitutionsDone: number) => {
+    for (const record of formations) {
+      if (record.substitutionsBefore === substitutionsDone) place(record.formation);
+    }
+  };
+  substitutions.forEach(({ off, on, minute }, index) => {
+    placeDue(index);
     squad.played[on] = squad.played[off] ?? naturalPosition(off);
     squad.starters = replace(squad.starters, off, on);
     squad.bench = squad.bench.filter((id) => id !== on);
     squad.cameOn[on] = minute;
     squad.wentOff[off] = minute;
-  }
+  });
+  placeDue(substitutions.length);
   return squad;
 };
 

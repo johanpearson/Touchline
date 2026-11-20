@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { createActionMatch, NEUTRAL_TACTICS } from "../engine";
 import type { Career } from "./career";
 import { aCareer, deepFreeze } from "./career-builders";
+import { FORMATION_SHAPE, type Formation } from "./formation";
+import { formationShape } from "./formation-shape";
 import type { Fixture } from "./generate-fixtures";
 import { matchInputFor, matchSeed } from "./match-input-for";
 import {
@@ -346,5 +348,107 @@ describe("planChange minutes (property)", () => {
       }),
       { numRuns: 100 },
     );
+  });
+});
+
+describe("planChange formation", () => {
+  const countsOf = (lineup: readonly { position: PlayerPosition }[] | undefined) => {
+    const count = (p: PlayerPosition) => lineup?.filter((x) => x.position === p).length;
+    return [count("GK"), count("DEF"), count("MID"), count("FWD")];
+  };
+
+  it("re-places the eleven in the new formation's lines and carries its counts to the engine", () => {
+    const career = aCareer();
+    const to = career.squadPlan.formation === "3-4-3" ? "4-4-2" : "3-4-3";
+
+    const { change } = planned(career, 60, { formation: to });
+
+    expect(change.formation).toEqual(formationShape(to));
+    expect(countsOf(change.lineup)).toEqual([
+      1,
+      FORMATION_SHAPE[to].DEF,
+      FORMATION_SHAPE[to].MID,
+      FORMATION_SHAPE[to].FWD,
+    ]);
+    expect(change.lineup).toHaveLength(11);
+  });
+
+  it("rates each player at the position he plays in the new formation", () => {
+    const career = aCareer();
+    const before = planned(career, 60, {}).change.lineup ?? [];
+
+    const { change } = planned(career, 60, { formation: "3-4-3" });
+
+    const moved = (change.lineup ?? []).filter(
+      (p) => p.position !== before.find((b) => b.id === p.id)?.position,
+    );
+    expect(moved.length).toBeGreaterThan(0);
+    for (const player of moved) {
+      const was = before.find((b) => b.id === player.id);
+      expect(player.attributes.passing).toBeLessThan(was?.attributes.passing ?? 0);
+    }
+  });
+
+  it("keeps the minutes of every player: nobody leaves the pitch", () => {
+    const career = aCareer();
+    const plain = planned(career, 60, {}).report;
+
+    const { report } = planned(career, 60, { formation: "5-3-2" });
+
+    expect(report.minutes).toEqual(plain.minutes);
+  });
+
+  it("refuses an unknown formation with a named error", () => {
+    const career = aCareer();
+
+    expect(error(career, 60, { formation: "9-1-0" as Formation })).toBe("unknown-formation");
+  });
+
+  it("fills any formation when the keeper was replaced by an outfielder: he plays in goal", () => {
+    const career = aCareer();
+    const { starters, bench } = career.squadPlan;
+    const keeper = starters.find((id) => positionOf(career, id) === "GK") as string;
+    const outfielder = bench.find((id) => positionOf(career, id) !== "GK") as string;
+    const swapped = planned(career, 30, { substitutions: [{ off: keeper, on: outfielder }] });
+
+    const { change } = planned(career, 60, { formation: "5-3-2" }, swapped.changes);
+
+    expect(countsOf(change.lineup)).toEqual([1, 5, 3, 2]);
+  });
+
+  it("keeps the formation for later substitutions", () => {
+    const career = aCareer();
+    const one = planned(career, 50, { formation: "3-4-3" });
+    const [swap] = pairs(career, 1) as [{ off: string; on: string }];
+
+    const two = planned(career, 70, { substitutions: [swap] }, one.changes);
+
+    expect(countsOf(two.change.lineup)).toEqual([1, 3, 4, 3]);
+    expect(two.change.formation).toBeUndefined();
+  });
+
+  it("does not record a change to the formation already in force", () => {
+    const career = aCareer();
+
+    const { changes } = planned(career, 50, { formation: career.squadPlan.formation });
+
+    expect(changes.formations ?? []).toEqual([]);
+  });
+
+  it("is accepted by the engine and plays on from the next action", () => {
+    const career = aCareer();
+    const fixture = userFixtureOf(career);
+    const result = planned(career, 60, { formation: "3-4-3" });
+    const match = createActionMatch(matchInputFor(career, fixture), matchSeed(career, fixture), {
+      detail: "fast",
+    });
+    match.advanceTo(3600);
+
+    expect(match.applyChange(result.change)).toEqual({ ok: true });
+    match.advanceTo(4000);
+    match.resume();
+    match.advanceTo(9000);
+
+    expect(match.state.period).toBe("fullTime");
   });
 });

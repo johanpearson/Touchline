@@ -89,3 +89,60 @@ describe("applyChangeToInput lineups and tactics", () => {
     expect(result.ok && result.input.away.tactics).toBe(input.away.tactics);
   });
 });
+
+describe("applyChangeToInput formations", () => {
+  const input = aMatchInput().build();
+  const home = input.home;
+  const positionsFor = (defenders: number, midfielders: number, forwards: number) =>
+    [
+      "GK",
+      ...Array<"DEF">(defenders).fill("DEF"),
+      ...Array<"MID">(midfielders).fill("MID"),
+      ...Array<"FWD">(forwards).fill("FWD"),
+    ] as const;
+  const reshaped = (shape: readonly ("GK" | "DEF" | "MID" | "FWD")[]) =>
+    home.starters.map((p, i) => ({ ...p, position: shape[i] ?? p.position }));
+
+  it("takes a lineup in the new formation and records the formation on the sheet", () => {
+    const formation = { defenders: 3, midfielders: 4, forwards: 3 };
+    const lineup = reshaped(positionsFor(3, 4, 3));
+
+    const result = applyChangeToInput(input, { side: "home", lineup, formation });
+
+    expect(result.ok && result.input.home.formation).toEqual(formation);
+    expect(result.ok && result.input.home.starters).toEqual(lineup);
+  });
+
+  it("rejects a lineup that does not fit the new formation", () => {
+    const formation = { defenders: 3, midfielders: 4, forwards: 3 };
+
+    const result = applyChangeToInput(input, { side: "home", lineup: home.starters, formation });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.map((e) => e.code)).toContain("lineMismatch");
+  });
+
+  it("rejects a formation whose lines do not add up to ten", () => {
+    const formation = { defenders: 4, midfielders: 4, forwards: 3 };
+
+    const result = applyChangeToInput(input, { side: "home", lineup: home.starters, formation });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.map((e) => e.code)).toContain("formationCount");
+  });
+
+  it("refuses a new formation without a lineup, since the starters would no longer fit", () => {
+    const formation = { defenders: 3, midfielders: 4, forwards: 3 };
+
+    const result = applyChangeToInput(input, { side: "home", formation });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.map((e) => e.code)).toContain("lineMismatch");
+  });
+
+  it("keeps the old formation when a change brings none", () => {
+    const result = applyChangeToInput(input, { side: "home", lineup: home.starters });
+
+    expect(result.ok && result.input.home.formation).toBe(home.formation);
+  });
+});

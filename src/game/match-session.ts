@@ -146,7 +146,8 @@ const isChange = (value: unknown): value is ActionMatchChange =>
   isRecord(value) &&
   (value.side === "home" || value.side === "away") &&
   (value.lineup === undefined || Array.isArray(value.lineup)) &&
-  (value.tactics === undefined || isRecord(value.tactics));
+  (value.tactics === undefined || isRecord(value.tactics)) &&
+  (value.formation === undefined || isRecord(value.formation));
 
 const isTimedChange = (value: unknown): value is TimedActionMatchChange =>
   isRecord(value) && isNonNegativeNumber(value.time) && isChange(value.change);

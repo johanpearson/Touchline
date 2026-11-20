@@ -16,6 +16,13 @@ describe("changeLines", () => {
     expect(changeLines([], context())).toEqual([]);
   });
 
+  it("writes a formation line for a formation change, in either language", () => {
+    const edits = [{ time: 3720, minute: 62, formation: "4-3-3" as const }];
+
+    expect(changeLines(edits, context())[0]?.text).toBe("Formation changed: 4-3-3");
+    expect(changeLines(edits, context("sv"))[0]?.text).toBe("Formation ändrad: 4-3-3");
+  });
+
   it("writes a substitution line at the time of the change, for the user's side", () => {
     const lines = changeLines(
       [{ time: 3720, minute: 62, substitutions: [{ off: "b", on: "l" }] }],

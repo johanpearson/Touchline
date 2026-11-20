@@ -3,6 +3,7 @@ import { type PlayerPosition, SHOUT_KINDS, type ShoutKind } from "../../game";
 import type { MessageKey } from "../../i18n";
 import { Button } from "../components/button";
 import { useI18n } from "../i18n-provider";
+import { FormationPicker } from "../tactics/formation-controls";
 import { TacticControls } from "../tactics/tactic-controls";
 import {
   type ChangeDraft,
@@ -187,6 +188,7 @@ const blockedReason = (editor: ChangesEditor, pending: number): MessageKey | nul
 /** Substitution flow, squad lists, shouts and tactics of the "Make changes" sheet. */
 export function HalfTimeChanges(props: HalfTimeChangesProps) {
   const { editor, pending, onPendingChange } = props;
+  const { t } = useI18n();
   const [picking, setPicking] = useState<Picking>(null);
   const { subs } = pending;
   const offId = picking?.off ?? null;
@@ -236,6 +238,15 @@ export function HalfTimeChanges(props: HalfTimeChangesProps) {
         pickable={(id) => replacements.includes(id) && offId !== null}
         onPick={pickOn}
       />
+      <section className="flex flex-col gap-2" data-testid="formation-section">
+        <h4 className="m-0 text-sm font-semibold uppercase tracking-wide text-soft">
+          {t("squad.formation")}
+        </h4>
+        <FormationPicker
+          formation={pending.formation ?? editor.formation}
+          onPick={(formation) => change({ ...pending, formation })}
+        />
+      </section>
       <Shouts editor={editor} draft={pending} onShout={(shout) => change({ ...pending, shout })} />
       <TacticControls
         tactics={pending.tactics}

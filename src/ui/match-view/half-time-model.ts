@@ -5,6 +5,7 @@ import {
   checkShout,
   effectiveAttributes,
   FORM_START,
+  type Formation,
   MAX_SUBSTITUTION_WINDOWS,
   MAX_SUBSTITUTIONS,
   type MatchChange,
@@ -38,6 +39,8 @@ export type ChangesBase = {
   condition: Readonly<Record<string, PlayerCondition>>;
   /** The position each substitute who came on plays; everyone else plays their own. */
   played: Readonly<Record<string, PlayerPosition>>;
+  /** The formation in force (the saved plan's, or what the user last set). */
+  formation: Formation;
   /** The base tactics in force (the saved plan's, or what the user last set). */
   tactics: TeamTactics;
   /** What has been changed so far; the rules count substitutions, windows and shouts from it. */
@@ -67,13 +70,22 @@ export const editorAt = (
 ): ChangesEditor => ({
   ...base,
   ...moment,
-  plan: (draft) => base.plan(changeOf({ ...moment, tactics: base.tactics }, draft)),
+  plan: (draft) =>
+    base.plan(changeOf({ ...moment, tactics: base.tactics, formation: base.formation }, draft)),
 });
 
 export type Substitution = { off: string; on: string };
 
-/** What the sheet has collected: substitutions in the order they were made, tactics and a shout. */
-export type ChangeDraft = { subs: Substitution[]; tactics: TeamTactics; shout?: ShoutKind };
+/**
+ * What the sheet has collected: substitutions in the order they were made, tactics, a shout and a
+ * formation (absent, or the one in force, when it is not changed).
+ */
+export type ChangeDraft = {
+  subs: Substitution[];
+  tactics: TeamTactics;
+  shout?: ShoutKind;
+  formation?: Formation;
+};
 
 /** A change the rules accepted, with the request it came from (for the session and the feed). */
 export type PlannedEditorChange = Extract<PlanChangeResult, { ok: true }> & {
@@ -92,18 +104,25 @@ export const freshDraft = (editor: ChangesEditor): ChangeDraft => ({
   tactics: editor.tactics,
 });
 
+const formationChanged = (editor: Pick<ChangesEditor, "formation">, draft: ChangeDraft): boolean =>
+  draft.formation !== undefined && draft.formation !== editor.formation;
+
 export const hasPending = (editor: ChangesEditor, draft: ChangeDraft): boolean =>
-  draft.subs.length > 0 || draft.shout !== undefined || !sameTactics(draft.tactics, editor.tactics);
+  draft.subs.length > 0 ||
+  draft.shout !== undefined ||
+  formationChanged(editor, draft) ||
+  !sameTactics(draft.tactics, editor.tactics);
 
 /** The request `planChange` takes for a draft at the editor's minute. */
 export const changeOf = (
-  editor: Pick<ChangesEditor, "minute" | "halfTime" | "tactics">,
+  editor: Pick<ChangesEditor, "minute" | "halfTime" | "tactics" | "formation">,
   draft: ChangeDraft,
 ): MatchChange => ({
   minute: editor.minute,
   halfTime: editor.halfTime,
   substitutions: draft.subs,
   ...(sameTactics(draft.tactics, editor.tactics) ? {} : { tactics: draft.tactics }),
+  ...(formationChanged(editor, draft) ? { formation: draft.formation } : {}),
   ...(draft.shout ? { shout: draft.shout } : {}),
 });
 
@@ -198,4 +217,5 @@ export const ERROR_KEYS: Record<PlanChangeError, MessageKey> = {
   "shout-active": "changes.error.shoutActive",
   "shout-cooling-down": "changes.error.shoutCoolingDown",
   "shout-no-effect": "changes.error.shoutNoEffect",
+  "unknown-formation": "changes.error.unknownFormation",
 };

@@ -3,6 +3,7 @@ import type { TeamTactics } from "../tactics";
 import type { ActionEvent } from "./action-event";
 import type { EnginePlayer } from "./engine-player";
 import type { Point } from "./pitch-metres";
+import type { FormationCounts } from "./team-sheet";
 import type { MatchInputValidation } from "./validate-match-input";
 
 /** The state of an action match after the last `advanceTo` call. */
@@ -24,10 +25,14 @@ export type ActionMatchState = {
   energy: Readonly<Record<string, number>>;
 };
 
-/** New starters (a substitution) and/or new tactics for one side, applied from the next action. */
+/**
+ * New starters (a substitution or a new formation) and/or new tactics for one side, applied from the
+ * next action. A `formation` needs a `lineup` in that formation's lines.
+ */
 export type ActionMatchChange = {
   side: Side;
   lineup?: readonly EnginePlayer[];
+  formation?: FormationCounts;
   tactics?: TeamTactics;
 };
 
@@ -65,7 +70,8 @@ export type ActionMatch = {
    *
    * Expected errors come back as `{ ok: false, errors }` and leave the match untouched: a lineup
    * that is not 11 players with one goalkeeper and the side's formation lines, has an attribute
-   * out of range, or reuses a player id (within the lineup or from the other side).
+   * out of range, or reuses a player id (within the lineup or from the other side). With a `formation`
+   * the lineup must fit its lines instead, and the side plays in that formation from then on.
    * Throws `RangeError` for programmer errors: a `side` that is not "home" or "away".
    * The substituted-in players are removed from the bench.
    */

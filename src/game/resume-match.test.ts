@@ -192,6 +192,41 @@ describe("resumeMatch with changes made in play", () => {
   });
 });
 
+describe("resumeMatch with a formation change", () => {
+  const planned = planChange(career, fixture, { minute: 55, formation: "3-4-3" });
+  if (!planned.ok) throw new Error(planned.error);
+
+  const whole = (() => {
+    const match = create();
+    match.advanceTo(END);
+    match.resume();
+    match.advanceTo(55 * 60);
+    match.applyChange(planned.change);
+    match.advanceTo(END);
+    return { match, time: 55 * 60 };
+  })();
+
+  it("replays the same log after a reload before and after the change", () => {
+    for (const matchTime of [whole.time - 200, whole.time + 200]) {
+      const changes: TimedActionMatchChange[] = [{ time: whole.time, change: planned.change }];
+      const session: MatchSession = {
+        ...identityOf(career, fixture),
+        mode: "extended",
+        changes: changes.filter((c) => c.time <= matchTime),
+        position: { matchTime, period: "secondHalf" },
+      };
+      const result = resumeMatch(session, create);
+      if (!result.ok) throw new Error("expected a match");
+      if (matchTime < whole.time) {
+        result.match.advanceTo(whole.time);
+        result.match.applyChange(planned.change);
+      }
+      result.match.advanceTo(END);
+      expect(result.match.events).toEqual(whole.match.events);
+    }
+  });
+});
+
 describe("playToFullTime", () => {
   const plain = (): ActionMatch => {
     const match = create();
