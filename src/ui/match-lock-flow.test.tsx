@@ -153,6 +153,8 @@ describe("the match is locked while it is on", () => {
   it("opens squad and tactics as read-only panels without changing the address", async () => {
     await mountMatch();
 
+    // A click focuses the link in a browser; jsdom needs to be told.
+    screen.getByTestId("nav-squad").focus();
     fireEvent.click(screen.getByTestId("nav-squad"));
     await settle();
     expect(screen.getByTestId("match-panel-squad")).toBeTruthy();
@@ -162,6 +164,7 @@ describe("the match is locked while it is on", () => {
 
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     await waitFor(() => expect(screen.queryByTestId("match-panel-squad")).toBeNull());
+    expect(document.activeElement).toBe(screen.getByTestId("nav-squad"));
 
     fireEvent.click(screen.getByTestId("nav-tactics"));
     await settle();
@@ -177,6 +180,28 @@ describe("the match is locked while it is on", () => {
     await goTo("#/league");
     await screen.findByTestId("screen-league");
     expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
+  it("goes to the hub without asking when the user continues a career from the start screen on the match address", async () => {
+    const saveStore = createMemorySaveStore();
+    await saveStore.save("autosave", createEnvelope(career, now));
+    await goTo("#/match");
+    render(
+      <App
+        createRenderer={createRenderer}
+        localeStore={createMemoryLocaleStore()}
+        saveStore={saveStore}
+        matchSessionStore={createMemoryMatchSessionStore(JSON.stringify(aSession()))}
+        fileTransfer={createMemoryFileTransfer()}
+        now={now}
+        initialSeed={1}
+        tickMs={1000}
+      />,
+    );
+    fireEvent.click(await screen.findByTestId("continue-career"));
+    await screen.findByTestId("career-hub");
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(screen.getByTestId("header-action").textContent).toBe("Resume match");
   });
 
   it("is free on the pre-match screen, where no match is on yet", async () => {

@@ -560,6 +560,32 @@ register({
   },
 });
 
+// The match lock (#389): the question asked when the user leaves a match in progress, and the
+// read-only squad panel over the match.
+register({
+  name: "match-leave-dialog",
+  route: "#/new",
+  mask: TERRAIN,
+  state: async (page) => {
+    await openMatch(page, { frozen: true });
+    await pauseFrozen(page);
+    await page.getByTestId("nav-league").evaluate((link) => (link as HTMLAnchorElement).click());
+    await page.getByRole("alertdialog").waitFor();
+  },
+});
+
+register({
+  name: "match-squad-panel",
+  route: "#/new",
+  mask: TERRAIN,
+  state: async (page) => {
+    await openMatch(page, { frozen: true });
+    await pauseFrozen(page);
+    await page.getByTestId("nav-squad").evaluate((link) => (link as HTMLAnchorElement).click());
+    await page.getByTestId("match-panel-squad").waitFor();
+  },
+});
+
 register({
   name: "match-2d-pitch",
   route: "#/new",

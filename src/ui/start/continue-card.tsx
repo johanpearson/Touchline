@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, Card, Skeleton } from "../components";
 import type { ContinueError } from "../find-continue-candidate";
 import { useI18n } from "../i18n-provider";
+import { navigateUnguarded } from "../navigation-guard";
 import { hrefFor } from "../routes";
 import { KitIcon } from "../shell/kit-icon";
 import { type ContinueInfo, useCareer } from "../use-career";
@@ -30,7 +31,7 @@ export function ContinueCard({ info, nowIso }: { info: ContinueInfo; nowIso: str
   const { loadAutosave } = useCareer();
 
   const resume = async () => {
-    if (await loadAutosave()) window.location.hash = hrefFor({ name: "home" });
+    if (await loadAutosave()) navigateUnguarded(hrefFor({ name: "home" }));
   };
 
   return (

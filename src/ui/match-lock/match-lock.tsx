@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { Route } from "../routes";
@@ -19,6 +20,8 @@ export type MatchLock = {
   panel: MatchPanel | null;
   openPanel: (panel: MatchPanel) => void;
   closePanel: () => void;
+  /** Gives focus back to what had it when the panel opened, or to the page if that is gone. */
+  restoreFocus: () => void;
   /** Called by the match screen while the match runs. */
   setLocked: (locked: boolean) => void;
 };
@@ -28,6 +31,7 @@ const NOT_LOCKED: MatchLock = {
   panel: null,
   openPanel: () => undefined,
   closePanel: () => undefined,
+  restoreFocus: () => undefined,
   setLocked: () => undefined,
 };
 
@@ -37,14 +41,25 @@ const MatchLockContext = createContext<MatchLock>(NOT_LOCKED);
 export function MatchLockProvider({ children }: { children: ReactNode }) {
   const [locked, setLockedState] = useState(false);
   const [panel, setPanel] = useState<MatchPanel | null>(null);
+  const opener = useRef<Element | null>(null);
   const setLocked = useCallback((next: boolean) => {
     setLockedState(next);
     if (!next) setPanel(null);
   }, []);
   const closePanel = useCallback(() => setPanel(null), []);
+  const openPanel = useCallback((next: MatchPanel) => {
+    opener.current = document.activeElement;
+    setPanel(next);
+  }, []);
+  const restoreFocus = useCallback(() => {
+    const target = opener.current;
+    opener.current = null;
+    if (target instanceof HTMLElement && target.isConnected) target.focus();
+    else document.getElementById("main")?.focus();
+  }, []);
   const value = useMemo<MatchLock>(
-    () => ({ locked, panel, openPanel: setPanel, closePanel, setLocked }),
-    [locked, panel, closePanel, setLocked],
+    () => ({ locked, panel, openPanel, closePanel, restoreFocus, setLocked }),
+    [locked, panel, openPanel, closePanel, restoreFocus, setLocked],
   );
   return <MatchLockContext.Provider value={value}>{children}</MatchLockContext.Provider>;
 }
