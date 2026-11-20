@@ -72,10 +72,19 @@ test.describe("app shell layouts", () => {
     await page.addInitScript(() => window.localStorage.setItem("touchline.locale", "sv"));
     await startCareer(page);
 
-    const clipped = await page
-      .getByTestId("career-nav")
-      .locator("a span:last-child")
-      .evaluateAll((els) => els.filter((el) => el.scrollWidth > el.clientWidth).length);
+    const labels = page.getByTestId("career-nav").locator("a span:last-child");
+    await expect(labels.first()).toBeVisible();
+    // Measure only once the web fonts are loaded and the layout has had two frames to settle.
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+    });
+
+    const clipped = await labels.evaluateAll(
+      (els) => els.filter((el) => el.scrollWidth > el.clientWidth).length,
+    );
     expect(clipped).toBe(0);
   });
 });
