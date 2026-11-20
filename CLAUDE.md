@@ -59,6 +59,8 @@ git show origin/nightly-status:status.json
 
 Never push directly to `main`. Never disable, skip or weaken tests or CI checks to get green. If a check is wrong, fix it in its own PR with an explanation.
 
+**Shortcut:** `/next` (`.claude/skills/next/SKILL.md`) picks the next unblocked `agent-ready` issue by milestone and priority and develops it, or breaks down the next epic first. It also renames the session after the work.
+
 ## Architecture rules (enforced in CI)
 
 - `src/engine` is **pure TypeScript**: no DOM, no browser APIs, no `Math.random`, no `Date.now`/`new Date()`, no imports from other `src/` modules except `src/shared`. All randomness comes from the seeded RNG passed in.
