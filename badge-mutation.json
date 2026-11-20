@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
   "label": "mutation",
-  "message": "mutation failed",
-  "color": "red"
+  "message": "95.0%",
+  "color": "brightgreen"
 }
