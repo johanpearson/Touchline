@@ -1,21 +1,28 @@
-import type { TeamTactics } from "../../engine";
+import { energyFactor, type TeamTactics } from "../../engine";
 import {
+  ATTRIBUTE_NAMES,
+  attributesAtPosition,
   checkShout,
-  effectiveRating,
+  effectiveAttributes,
+  FORM_START,
   type Formation,
   MAX_SUBSTITUTION_WINDOWS,
   MAX_SUBSTITUTIONS,
   type MatchChange,
   type MatchChanges,
+  overallIn,
   type PlanChangeError,
   type PlanChangeResult,
   type Player,
+  type PlayerAttributes,
   type PlayerCondition,
   type PlayerPosition,
   type ShoutError,
   type ShoutKind,
 } from "../../game";
 import type { MessageKey } from "../../i18n";
+
+const FULL_ENERGY = 100;
 
 /**
  * What the owner of the match knows about the user's side: who is on the pitch and on the bench now,
@@ -47,7 +54,7 @@ export type ChangesSource = (previous: MatchChanges) => ChangesBase;
 
 /** What the changes sheet needs: the base plus the moment of the change and the live energy. */
 export type ChangesEditor = Omit<ChangesBase, "plan"> & {
-  /** Live energy (0 to 100) of everyone who has played; the condition's fitness for the rest. */
+  /** Live energy (0 to 100) of everyone who has played; everyone else is fully rested. */
   energy: Readonly<Record<string, number>>;
   /** The match minute the change is made at (45 at half-time). */
   minute: number;
@@ -126,19 +133,34 @@ export const playerOf = (editor: ChangesEditor, id: string): Player | undefined 
 export const positionOn = (editor: ChangesEditor, id: string): PlayerPosition =>
   editor.played[id] ?? playerOf(editor, id)?.position ?? "MID";
 
-/** Energy shown for `id`: the live value if he has played, else the fitness he started with. */
+/**
+ * Energy shown for `id`: the live value if he has played, else full (a substitute is fully rested;
+ * his kickoff fitness already acts through the attributes). The same figure the lineups panel shows.
+ */
 export const energyOf = (editor: ChangesEditor, id: string): number =>
-  Math.round(editor.energy[id] ?? editor.condition[id]?.fitness ?? 100);
+  Math.round(editor.energy[id] ?? FULL_ENERGY);
 
 /**
- * The rating (1 to 20) `id` has playing `position` at his current energy: the figure the engine
- * uses. Form comes from the condition.
+ * The rating (1 to 20) `id` has playing `position` at his current energy: the figure the lineups
+ * panel shows and the engine uses. The kickoff condition (fitness and form) and the position penalty
+ * shape the attributes first; the live energy then scales them the way the engine does.
  */
 export const ratingAt = (editor: ChangesEditor, id: string, position: PlayerPosition): number => {
   const player = playerOf(editor, id);
   if (!player) return 0;
-  const condition = editor.condition[id] ?? { fitness: 100, form: 5 };
-  return effectiveRating(player, position, { ...condition, fitness: energyOf(editor, id) });
+  const condition = editor.condition[id] ?? { fitness: FULL_ENERGY, form: FORM_START };
+  const attributes = attributesAtPosition(
+    effectiveAttributes(player, condition),
+    player.position,
+    position,
+  );
+  const factor = energyFactor(editor.energy[id] ?? FULL_ENERGY);
+  return overallIn(
+    position,
+    Object.fromEntries(
+      ATTRIBUTE_NAMES.map((name) => [name, attributes[name] * factor]),
+    ) as PlayerAttributes,
+  );
 };
 
 /** Bench players who can replace any pitch player: all of them except those in another pending change. */
