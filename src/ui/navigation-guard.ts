@@ -22,6 +22,48 @@ let allowed: string | null = null;
 /** The address the app last showed; a blocked change goes back to it. */
 let shownUrl = "";
 
+/**
+ * Every entry the app shows is numbered in its history state, so a blocked change can tell a push
+ * (a link, no number yet) from Back or Forward (a numbered entry) and how far the cursor moved.
+ */
+let shownIndex = 0;
+
+/** Set while the cursor travels back onto the shown entry; the change that lands there is not news. */
+let returning = false;
+
+const indexOfState = (state: unknown): number | undefined => {
+  if (typeof state !== "object" || state === null || !("touchlineIndex" in state)) return undefined;
+  return typeof state.touchlineIndex === "number" ? state.touchlineIndex : undefined;
+};
+
+const stateWithIndex = (index: number): unknown => {
+  const state = window.history.state;
+  const rest = typeof state === "object" && state !== null ? state : {};
+  return { ...rest, touchlineIndex: index };
+};
+
+/** Numbers the entry the app now shows (a new one continues after the last shown). */
+const markShown = () => {
+  shownIndex = indexOfState(window.history.state) ?? shownIndex + 1;
+  window.history.replaceState(stateWithIndex(shownIndex), "");
+};
+
+/** Puts the cursor and the address back on the entry the app shows, as if the change never came. */
+const undoChange = () => {
+  const index = indexOfState(window.history.state);
+  if (index === undefined) {
+    // A push added an entry: show the right address at once, then step back onto the shown entry
+    // so the history holds no duplicate of it (the step finishes later, and without a route change).
+    window.history.replaceState(window.history.state, "", shownUrl);
+    window.history.back();
+  } else if (index !== shownIndex) {
+    returning = true;
+    window.history.go(shownIndex - index);
+  } else {
+    window.history.replaceState(window.history.state, "", shownUrl);
+  }
+};
+
 const blockingGuard = (): NavigationGuard | undefined =>
   [...guards].reverse().find((guard) => guard.active());
 
@@ -29,17 +71,22 @@ const onHashChange = () => {
   const url = window.location.href;
   // A change already dealt with (a blocked one, or the second event for one change) is not asked again.
   const changed = url !== shownUrl;
+  if (!changed && returning) {
+    // The step back onto the shown entry that undoes a blocked Back or Forward.
+    returning = false;
+    return;
+  }
   const target = window.location.hash;
   const unguarded = changed && allowed === target;
   if (unguarded) allowed = null;
   const guard = changed && !unguarded ? blockingGuard() : undefined;
   if (guard) {
-    // Replaces the entry the change made, so the address bar and the history show the match again.
-    window.history.replaceState(window.history.state, "", shownUrl);
+    undoChange();
     guard.onBlocked(target);
     return;
   }
   shownUrl = url;
+  markShown();
   for (const listener of [...listeners]) listener();
 };
 
@@ -47,6 +94,8 @@ const attach = () => {
   if (attached) return;
   attached = true;
   shownUrl = window.location.href;
+  shownIndex = indexOfState(window.history.state) ?? 0;
+  markShown();
   window.addEventListener("hashchange", onHashChange);
 };
 
