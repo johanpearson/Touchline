@@ -14,6 +14,13 @@ import { toPhases } from "./to-phases";
 
 const at = (time: number, x = 50) => ({ time, from: { x: 40, y: 34 }, to: { x, y: 34 } });
 
+/** `count` completed passes by `team` at one-second intervals from `start`. */
+const passes = (team: "home" | "away", count: number, start: number, period?: "secondHalf") =>
+  Array.from({ length: count }, (_, i) => ({
+    ...pass(team, `${team}${i}`, `${team}${i + 1}`, "complete", at(start + i)),
+    ...(period ? { period } : {}),
+  }));
+
 describe("toPhases", () => {
   it("returns no phases for an empty log", () => {
     expect(toPhases([])).toEqual([]);
@@ -26,9 +33,7 @@ describe("toPhases", () => {
       pass("home", "h2", "h3", "complete", at(3)),
       pass("home", "h3", "h4", "intercepted", at(4)),
       interception("away", "a1", at(4.5)),
-      pass("away", "a1", "a2", "complete", at(6)),
-      pass("away", "a2", "a3", "complete", at(8)),
-      pass("away", "a3", "a4", "complete", at(9)),
+      ...passes("away", 3, 6),
     ]);
 
     expect(phases.map((p) => [p.team, p.actions, p.outcome])).toEqual([
@@ -101,13 +106,9 @@ describe("toPhases", () => {
 
   it("never lets a phase cross a period", () => {
     const phases = toPhases([
-      pass("home", "h1", "h2", "complete", at(1)),
-      pass("home", "h2", "h3", "complete", at(2)),
-      pass("home", "h3", "h4", "complete", at(3)),
+      ...passes("home", 3, 1),
       periodChange(2700, "halfTime"),
-      { ...pass("home", "h1", "h2", "complete", at(2701)), period: "secondHalf" },
-      { ...pass("home", "h2", "h3", "complete", at(2702)), period: "secondHalf" },
-      { ...pass("home", "h3", "h4", "complete", at(2703)), period: "secondHalf" },
+      ...passes("home", 3, 2701, "secondHalf"),
     ]);
 
     expect(phases.map((p) => [p.period, p.actions, p.outcome])).toEqual([
@@ -139,10 +140,7 @@ describe("toPhases", () => {
       pass("home", "h3", "h4", "intercepted", at(3)),
       interception("away", "a1", at(4)),
       pass("away", "a1", "a2", "intercepted", at(5)),
-      pass("home", "h4", "h5", "complete", at(6)),
-      pass("home", "h5", "h6", "complete", at(7)),
-      pass("home", "h6", "h7", "complete", at(8)),
-      pass("home", "h7", "h8", "complete", at(9)),
+      ...passes("home", 4, 6),
     ]);
 
     expect(phases.map((p) => [p.team, p.actions])).toEqual([
@@ -153,20 +151,32 @@ describe("toPhases", () => {
 
   it("merges a short quiet phase into the previous phase when the next one is the other side's", () => {
     const phases = toPhases([
-      pass("home", "h1", "h2", "complete", at(1)),
-      pass("home", "h2", "h3", "complete", at(2)),
-      pass("home", "h3", "h4", "complete", at(3)),
+      ...passes("home", 3, 1),
       foul("home", "h4", "a1", at(4)),
       setPiece("home", "h4", "freeKick", at(10)),
       pass("home", "h4", "h5", "intercepted", at(11)),
-      pass("away", "a1", "a2", "complete", at(12)),
-      pass("away", "a2", "a3", "complete", at(13)),
-      pass("away", "a3", "a4", "complete", at(14)),
+      ...passes("away", 3, 12),
     ]);
 
     expect(phases.map((p) => [p.team, p.actions])).toEqual([
       ["home", [0, 1, 2, 3, 4, 5]],
       ["away", [6, 7, 8]],
+    ]);
+  });
+
+  it("never adds actions after a phase that ended in a shot", () => {
+    const phases = toPhases([
+      ...passes("home", 2, 1),
+      shot("home", "h3", "saved", 0.3, "gk", at(3, 95)),
+      setPiece("home", "h3", "corner", at(10)),
+      pass("home", "h3", "h4", "intercepted", at(11)),
+      ...passes("away", 3, 12),
+    ]);
+
+    expect(phases.map((p) => [p.team, p.actions, p.outcome])).toEqual([
+      ["home", [0, 1, 2], "shot"],
+      ["home", [3, 4], "turnover"],
+      ["away", [5, 6, 7], "periodEnd"],
     ]);
   });
 

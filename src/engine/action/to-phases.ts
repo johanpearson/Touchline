@@ -61,7 +61,7 @@ const endingOf = (event: ActionEvent, team: Side): PhaseOutcome | undefined => {
   return undefined;
 };
 
-const joins = (open: Raw | undefined, event: ActionEvent): open is Raw => {
+const joins = (open: Raw | undefined, event: ActionEvent): boolean => {
   if (!open || open.period !== event.period || event.type === "periodChange") return false;
   return event.type === "foul" || ownerOf(event) === open.team;
 };
@@ -69,21 +69,31 @@ const joins = (open: Raw | undefined, event: ActionEvent): open is Raw => {
 const lastKind = (event: ActionEvent | undefined): PhaseOutcome =>
   event?.type === "setPiece" ? "setPiece" : "periodEnd";
 
+const startPhase = (event: ActionEvent): Raw => ({
+  team: ownerOf(event),
+  period: event.period,
+  indices: [],
+  outcome: "periodEnd",
+});
+
+/** Adds `event` (log position `index`) to `phase` and returns how the possession ends there, if it does. */
+const addAction = (phase: Raw, event: ActionEvent, index: number): PhaseOutcome | undefined => {
+  phase.indices.push(index);
+  const ending = event.type === "periodChange" ? undefined : endingOf(event, phase.team);
+  phase.outcome = ending ?? lastKind(event);
+  return ending;
+};
+
 const groupActions = (events: readonly ActionEvent[]): Raw[] => {
   const phases: Raw[] = [];
   let open: Raw | undefined;
   events.forEach((event, index) => {
-    const target = joins(open, event)
-      ? open
-      : { team: ownerOf(event), period: event.period, indices: [], outcome: "periodEnd" as const };
-    if (target !== open) {
+    if (!joins(open, event)) {
       if (open && open.period === event.period) open.outcome = "turnover";
-      phases.push(target);
+      open = startPhase(event);
+      phases.push(open);
     }
-    target.indices.push(index);
-    const ending = event.type === "periodChange" ? undefined : endingOf(event, target.team);
-    target.outcome = ending ?? lastKind(event);
-    open = ending ? undefined : target;
+    if (addAction(open as Raw, event, index)) open = undefined;
   });
   return phases;
 };
@@ -128,6 +138,9 @@ const isMergeable = (log: readonly ActionEvent[], raw: Raw): boolean =>
   raw.outcome !== "shot" &&
   raw.indices.every((i) => log[i]?.type !== "periodChange");
 
+/** A phase that ended in a shot or a goal ends there; nothing is added after it. */
+const isExtendable = (raw: Raw): boolean => raw.outcome !== "goal" && raw.outcome !== "shot";
+
 const sameSpell = (a: Raw, b: Raw): boolean => a.team === b.team && a.period === b.period;
 
 /** A short phase between two phases of the same side: the ball was only briefly contested. */
@@ -138,39 +151,46 @@ const isSandwiched = (before: Raw | undefined, phase: Raw, after: Raw | undefine
   before.team !== phase.team &&
   before.period === phase.period;
 
+type Merge = "keep" | "foldBack" | "foldBackKeepOutcome" | "foldForward";
+
+const mergeKind = (
+  log: readonly ActionEvent[],
+  previous: Raw | undefined,
+  current: Raw,
+  next: Raw | undefined,
+): Merge => {
+  if (!isMergeable(log, current)) return "keep";
+  const extendable = previous && isExtendable(previous) ? previous : undefined;
+  if (extendable && isSandwiched(extendable, current, next)) return "foldBackKeepOutcome";
+  if (next && sameSpell(current, next)) return "foldForward";
+  if (extendable && sameSpell(extendable, current)) return "foldBack";
+  return "keep";
+};
+
+const join = (first: Raw, second: Raw, outcome: PhaseOutcome): Raw => ({
+  ...first,
+  indices: [...first.indices, ...second.indices],
+  outcome,
+});
+
 /**
  * Folds each short, quiet phase into a neighbour, so the count of phases stays in the range a person
- * can follow: into the phases around it when the other side held the ball only briefly between two
+ * can follow: into the earlier phase when the other side held the ball only briefly between two
  * spells of one side, otherwise into the next phase of the same side, else into the previous one.
  */
 const mergeShort = (log: readonly ActionEvent[], phases: readonly Raw[]): Raw[] => {
   const merged: Raw[] = [];
   let carried: Raw | undefined;
   phases.forEach((phase, index) => {
-    const current: Raw = carried
-      ? { ...phase, indices: [...carried.indices, ...phase.indices] }
-      : phase;
-    carried = undefined;
+    const current = carried ? join(carried, phase, phase.outcome) : phase;
     const previous = merged[merged.length - 1];
-    const next = phases[index + 1];
-    if (!isMergeable(log, current)) {
-      merged.push(current);
-    } else if (previous && isSandwiched(previous, current, next)) {
-      merged[merged.length - 1] = {
-        ...previous,
-        indices: [...previous.indices, ...current.indices],
-      };
-    } else if (next && sameSpell(current, next)) {
-      carried = current;
-    } else if (previous && sameSpell(previous, current)) {
-      merged[merged.length - 1] = {
-        ...previous,
-        indices: [...previous.indices, ...current.indices],
-        outcome: current.outcome,
-      };
-    } else {
-      merged.push(current);
-    }
+    const kind = mergeKind(log, previous, current, phases[index + 1]);
+    carried = kind === "foldForward" ? current : undefined;
+    if (previous && kind === "foldBackKeepOutcome")
+      merged.splice(-1, 1, join(previous, current, previous.outcome));
+    if (previous && kind === "foldBack")
+      merged.splice(-1, 1, join(previous, current, current.outcome));
+    if (kind === "keep") merged.push(current);
   });
   return merged;
 };
