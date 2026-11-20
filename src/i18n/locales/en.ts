@@ -116,6 +116,7 @@ export const en = {
   "changes.noSubstitutionsLeft": "No substitutions left.",
   "changes.noWindowLeft": "All substitution windows are used.",
   "changes.playsAs": "as {position}",
+  "changes.mark.moved": "Moved",
   "changes.shouts": "Touchline shouts",
   "changes.shoutBlocked.active": "A shout is already in force.",
   "changes.shoutBlocked.coolingDown": "Wait before the next shout.",

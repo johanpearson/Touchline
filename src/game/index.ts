@@ -129,6 +129,7 @@ export type { CareerParseError, CareerParseResult } from "./parse-career";
 export { parseCareer } from "./parse-career";
 export { pickBestEleven } from "./pick-best-eleven";
 export { pickGoalScorers } from "./pick-goal-scorers";
+export { placeEleven } from "./place-eleven";
 export type {
   MatchChange,
   MatchChanges,

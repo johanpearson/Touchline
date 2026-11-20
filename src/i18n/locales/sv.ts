@@ -118,6 +118,7 @@ export const sv = {
   "changes.noSubstitutionsLeft": "Inga byten kvar.",
   "changes.noWindowLeft": "Alla bytesfönster är använda.",
   "changes.playsAs": "som {position}",
+  "changes.mark.moved": "Flyttad",
   "changes.shouts": "Tillrop från sidlinjen",
   "changes.shoutBlocked.active": "Ett tillrop gäller redan.",
   "changes.shoutBlocked.coolingDown": "Vänta med nästa tillrop.",

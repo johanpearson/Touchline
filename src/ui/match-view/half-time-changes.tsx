@@ -11,6 +11,7 @@ import {
   noWindowLeft,
   playerOf,
   positionOn,
+  previewPositions,
   replacementsFor,
   type Substitution,
   shoutBlock,
@@ -205,6 +206,10 @@ export function HalfTimeChanges(props: HalfTimeChangesProps) {
   const marks = marksOf(subs);
   const blocked = blockedReason(editor, subs.length);
   const onPitch = (id: string): PlayerPosition => positionOn(editor, id);
+  // Where everyone would play once the pending formation (and substitutions) are applied.
+  const preview = previewPositions(editor, pending);
+  const previewed = (id: string): PlayerPosition => preview[id] ?? onPitch(id);
+  const own = (id: string): PlayerPosition => playerOf(editor, id)?.position ?? "MID";
   const target: PlayerPosition | null = offId === null ? null : onPitch(offId);
   return (
     <div className="flex flex-col gap-5" data-testid="half-time-changes">
@@ -224,7 +229,8 @@ export function HalfTimeChanges(props: HalfTimeChangesProps) {
         title="squad.starters"
         ids={editor.starters}
         marks={marks}
-        positionOf={onPitch}
+        positionOf={previewed}
+        moved={(id) => previewed(id) !== onPitch(id)}
         pickable={(id) => picking?.off === null && starterCanGoOff(editor, id, subs)}
         onPick={(id) => setPicking({ off: id })}
       />
@@ -233,8 +239,8 @@ export function HalfTimeChanges(props: HalfTimeChangesProps) {
         title="squad.bench"
         ids={editor.bench}
         marks={marks}
-        positionOf={(id) => target ?? playerOf(editor, id)?.position ?? "MID"}
-        asPosition={(id) => target !== null && target !== playerOf(editor, id)?.position}
+        positionOf={(id) => target ?? preview[id] ?? own(id)}
+        asPosition={(id) => (target ?? preview[id] ?? own(id)) !== own(id)}
         pickable={(id) => replacements.includes(id) && offId !== null}
         onPick={pickOn}
       />

@@ -278,6 +278,54 @@ describe("HalfTimePanel changes", () => {
     expect(onResume.mock.calls[0]?.[0].request.formation).toBe(other);
   });
 
+  describe("formation preview", () => {
+    const otherFormation = career.squadPlan.formation === "3-4-3" ? "4-4-2" : "3-4-3";
+    const chooseFormation = (formation: string) =>
+      fireEvent.click(
+        within(screen.getByTestId("formation")).getByRole("radio", { name: formation }),
+      );
+    const starterRows = () =>
+      career.squadPlan.starters.map((id) => screen.getByTestId(`row-position-${id}`).textContent);
+    const movedStarters = () =>
+      career.squadPlan.starters.filter((id) => screen.queryByTestId(`row-moved-${id}`));
+
+    it("shows the positions in force until another formation is chosen", () => {
+      mountEditor();
+      expect(movedStarters()).toEqual([]);
+      const before = starterRows();
+      chooseFormation(otherFormation);
+      expect(movedStarters().length).toBeGreaterThan(0);
+      expect(starterRows()).not.toEqual(before);
+    });
+
+    it("marks the moved players with their new position and returns to the positions in force", () => {
+      mountEditor();
+      const before = starterRows();
+      chooseFormation(otherFormation);
+      const [moved] = movedStarters() as [string];
+      expect(screen.getByTestId(`row-moved-${moved}`).textContent).toBe("Moved");
+      chooseFormation(career.squadPlan.formation);
+      expect(movedStarters()).toEqual([]);
+      expect(starterRows()).toEqual(before);
+    });
+
+    it("previews together with a pending substitution", () => {
+      mountEditor();
+      const { off, on } = swap();
+      makeSub({ off, on });
+      chooseFormation(otherFormation);
+      expect(screen.getByTestId(`row-position-${on}`)).toBeDefined();
+      expect(screen.getByTestId(`row-position-${off}`)).toBeDefined();
+    });
+
+    it("says moved in Swedish", () => {
+      mountEditor(vi.fn(), "sv");
+      chooseFormation(otherFormation);
+      const [moved] = movedStarters() as [string];
+      expect(screen.getByTestId(`row-moved-${moved}`).textContent).toBe("Flyttad");
+    });
+  });
+
   it("shows the error with its cause, announced, and does not resume", () => {
     const rejecting: ChangesEditor = {
       ...editor,
