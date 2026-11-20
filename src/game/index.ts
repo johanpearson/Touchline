@@ -168,7 +168,7 @@ export {
   recoverCondition,
 } from "./player-condition";
 export { FIRST_NAMES, LAST_NAMES } from "./player-names";
-export { playerOverall } from "./player-overall";
+export { overallIn, playerOverall } from "./player-overall";
 export {
   attributesAtPosition,
   effectiveRating,

@@ -44,6 +44,27 @@ describe("useMatchPlayback", () => {
     expect(result.current.matchTime).toBeGreaterThan(0);
   });
 
+  it("shows the energy at the clock, never the engine's energy from the lookahead", () => {
+    const match = actionMatch();
+    const { result } = renderHook(() => useMatchPlayback(match, 1000));
+    play(60);
+    const engine = match.state.energy;
+    expect(Object.keys(result.current.energy).length).toBeGreaterThan(0);
+    for (const [id, level] of Object.entries(result.current.energy)) {
+      expect(level).toBeGreaterThanOrEqual(engine[id] ?? 0);
+    }
+  });
+
+  it("ends with the engine's end-of-match energy at full time", () => {
+    const match = actionMatch();
+    const { result } = renderHook(() => useMatchPlayback(match, 1000));
+    playToHalfTime(result);
+    act(() => result.current.resume());
+    for (let i = 0; i < 600 && result.current.state.period !== "fullTime"; i++) play(1);
+    expect(result.current.state.period).toBe("fullTime");
+    expect(result.current.energy).toEqual(match.state.energy);
+  });
+
   it("starts in Extended mode", () => {
     const { result } = renderHook(() => useMatchPlayback(actionMatch(), 1000));
     expect(result.current.mode).toBe("extended");

@@ -58,6 +58,13 @@ export function PlayerRatings({ rows, teamNames }: PlayerRatingsProps) {
       stat("keyPasses", 2),
       stat("shots", 2),
       {
+        id: "energy",
+        header: t("ratings.energy"),
+        priority: 2,
+        align: "end",
+        cell: (row) => formatNumber(row.energy, 0),
+      },
+      {
         id: "xg",
         header: t("ratings.xg"),
         priority: 3,

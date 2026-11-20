@@ -27,6 +27,8 @@ import { PlayerRatings } from "./player-ratings";
 import { buildRatingRows } from "./ratings-table";
 import { terrainEvents } from "./terrain-events";
 import type { TerrainRendererFactory } from "./terrain-renderer";
+import { TiredAnnouncer } from "./tired-announcer";
+import { useLineupRows } from "./use-lineup-rows";
 import { useMatchLeave } from "./use-match-leave";
 import { useMatchPlayback } from "./use-match-playback";
 import { useUserChanges } from "./use-user-changes";
@@ -130,12 +132,22 @@ export function MatchScreen({
       eventCount,
       matchTime,
       period: state.period,
+      energy: playback.energy,
     });
+  const lineupRows = useLineupRows({
+    input,
+    changes: match.changes,
+    events,
+    eventCount,
+    matchTime,
+    energy: playback.energy,
+    stats: actionStats,
+    names: players,
+  });
   const changes = useUserChanges({
     changesSource,
     restored,
     onProgress,
-    match,
     input,
     players,
     userSide,
@@ -169,18 +181,7 @@ export function MatchScreen({
         onChange={changes.apply}
         changeTimes={changes.changeTimes}
         statsPanel={<ActionStatsPanel stats={actionStats} playerIds={played} colours={colours} />}
-        lineupsPanel={
-          <LineupsPanel
-            events={events}
-            eventCount={eventCount}
-            matchTime={matchTime}
-            played={played}
-            names={players}
-            teamNames={names}
-            colours={colours}
-            userSide={userSide}
-          />
-        }
+        lineupsPanel={<LineupsPanel rows={lineupRows} teamNames={names} colours={colours} />}
         onLeave={onLeave}
         fullTimePanel={
           <FullTimePanel
@@ -193,6 +194,7 @@ export function MatchScreen({
           onContinue && (() => onContinue(...finishedWith(match, input, report, userSide)))
         }
       />
+      <TiredAnnouncer rows={lineupRows[userSide]} />
       <LeaveMatchPrompt
         target={leave.target}
         names={names}
@@ -256,11 +258,14 @@ type MatchViewDataInput = {
   eventCount: number;
   matchTime: number;
   period: ActionMatchState["period"];
+  /** The energy at the clock; at full time, what each player ended the match with. */
+  energy: Readonly<Record<string, number>>;
 };
 
 /** Everything the match layout shows that is derived from the event log, memoised on what changes it. */
 const useMatchViewData = (data: MatchViewDataInput) => {
-  const { input, seed, match, players, userSide, events, eventCount, matchTime, period } = data;
+  const { input, seed, match, players, userSide, events, eventCount, matchTime, period, energy } =
+    data;
   const { locale } = useI18n();
   const zoneEvents = useZoneEvents(events, eventCount);
   // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place
@@ -273,6 +278,7 @@ const useMatchViewData = (data: MatchViewDataInput) => {
     period,
     players,
     userSide,
+    energy,
   });
   const shown = useMemo(() => terrainEvents(zoneEvents, period), [zoneEvents, period]);
   const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
@@ -292,6 +298,7 @@ type FullTimeDataInput = {
   period: ActionMatchState["period"];
   players: Readonly<Record<string, string>>;
   userSide: Side;
+  energy: Readonly<Record<string, number>>;
 };
 
 /** Who played, the rating rows and the goals; the last two are empty until the match is over. */
@@ -303,12 +310,13 @@ const useFullTimeData = ({
   period,
   players,
   userSide,
+  energy,
 }: FullTimeDataInput) => {
   const fullTime = period === "fullTime";
   // Starters plus everyone brought on by an applied change; read once the match is over.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `match.changes` is mutated in place
   const played = useMemo(() => playedIds(input, match.changes), [input, period]);
-  const ratingRows = useFinalRatings({ events, fullTime, played, players, userSide });
+  const ratingRows = useFinalRatings({ events, fullTime, played, players, userSide, energy });
   // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place and only read at full time
   const goals = useMemo(
     () => (fullTime ? goalsOf(events, zoneEvents, players) : []),
@@ -323,10 +331,18 @@ type FinalRatingsInput = {
   played: PerSide<string[]>;
   players: Readonly<Record<string, string>>;
   userSide: Side;
+  energy: Readonly<Record<string, number>>;
 };
 
 /** The full-time rating rows; empty until the match is over. */
-const useFinalRatings = ({ events, fullTime, played, players, userSide }: FinalRatingsInput) =>
+const useFinalRatings = ({
+  events,
+  fullTime,
+  played,
+  players,
+  userSide,
+  energy,
+}: FinalRatingsInput) =>
   // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place and only read at full time
   useMemo(
     () =>
@@ -340,7 +356,8 @@ const useFinalRatings = ({ events, fullTime, played, players, userSide }: FinalR
             played,
             names: players,
             userSide,
+            energy,
           })
         : [],
-    [fullTime, played, players, userSide],
+    [fullTime, played, players, userSide, energy],
   );

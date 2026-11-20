@@ -377,6 +377,59 @@ describe("MatchScreen", () => {
     });
   });
 
+  describe("live energy in the lineups", () => {
+    const energyOf = (id: string): number =>
+      Number(
+        screen.getByTestId(`lineup-row-${id}`).querySelector('[data-testid="fitness-value"]')
+          ?.textContent,
+      );
+
+    it("lowers a player's energy as the match goes on, at the clock", () => {
+      const { career } = mountWithChanges();
+      const starter = career.squadPlan.starters[3] ?? "";
+      fireEvent.click(screen.getByTestId("lineups-open"));
+      expect(energyOf(starter)).toBe(100);
+      fireEvent.click(screen.getByTestId("mode-full"));
+      play(60_000);
+      const early = energyOf(starter);
+      play(120_000);
+      expect(early).toBeLessThanOrEqual(100);
+      expect(energyOf(starter)).toBeLessThan(early);
+    });
+
+    it("moves a substituted-off player to the end, greyed, and brings the substitute on at full energy", () => {
+      const { career } = mountWithChanges();
+      fireEvent.click(screen.getByTestId("mode-highlights"));
+      play(150_000);
+      fireEvent.click(screen.getByTestId("make-changes"));
+      const { off, on } = substitute(career);
+      fireEvent.click(screen.getByTestId("start-second-half"));
+      play(1000);
+      fireEvent.click(screen.getByTestId("lineups-open"));
+      expect(screen.getByTestId(`lineup-row-${on}`).getAttribute("data-status")).toBe("pitch");
+      expect(screen.getByTestId(`lineup-row-${off}`).getAttribute("data-status")).toBe("off");
+      expect(energyOf(on)).toBeGreaterThanOrEqual(99);
+      expect(energyOf(off)).toBeLessThan(energyOf(on));
+      const side = screen.getByTestId(`lineup-row-${off}`).parentElement;
+      expect(side?.lastElementChild).toBe(screen.getByTestId(`lineup-row-${off}`));
+    });
+
+    it("shows at full time the energy the engine ended with, in the lineups and the report", () => {
+      const onContinue = vi.fn();
+      mountAction({ onContinue });
+      fireEvent.click(screen.getByTestId("mode-highlights"));
+      play(150_000);
+      fireEvent.click(screen.getByTestId("start-second-half"));
+      play(150_000);
+      fireEvent.click(screen.getByTestId("lineups-open"));
+      fireEvent.click(screen.getByTestId("continue"));
+      const [finished] = onContinue.mock.calls[0] as [{ energy: Record<string, number> }];
+      const [id, level] = Object.entries(finished.energy)[0] ?? ["", 0];
+      expect(energyOf(id)).toBe(Math.round(level));
+      expect(screen.getByTestId(`rating-row-${id}`)).toBeTruthy();
+    });
+  });
+
   it("shows the stats rows of the action engine", () => {
     mountAction();
     for (const id of [
