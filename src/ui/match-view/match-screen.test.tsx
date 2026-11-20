@@ -360,6 +360,8 @@ describe("MatchScreen", () => {
       expect(edits[0].shout).toBe("pushUp");
       expect(edits[1].shout).toBeUndefined();
       expect(edits[1].minute).toBeGreaterThanOrEqual(edits[0].minute + 10);
+      // The empty change that ends the shout is not drawn as a change.
+      expect(screen.getAllByTestId("momentum-change")).toHaveLength(1);
     });
 
     it("offers no changes after full time and says so", () => {

@@ -181,7 +181,7 @@ export function MatchScreen({
         pitch={{ events, createRenderer: createPitchRenderer }}
         editor={editor}
         onChange={apply}
-        changeTimes={edits.map((edit) => edit.time)}
+        changeTimes={edits.filter(isVisibleChange).map((edit) => edit.time)}
         statsPanel={<ActionStatsPanel stats={actionStats} playerIds={played} colours={colours} />}
         lineupsPanel={
           <LineupsPanel
@@ -226,6 +226,10 @@ export function MatchScreen({
     </>
   );
 }
+
+/** An edit the user asked for, as opposed to the empty one that puts the tactics back when a shout ends. */
+const isVisibleChange = (edit: MatchEdit): boolean =>
+  (edit.substitutions?.length ?? 0) > 0 || edit.tactics !== undefined || edit.shout !== undefined;
 
 type ChangeLinesInput = {
   commentary: readonly CommentaryLine[];
