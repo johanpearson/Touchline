@@ -429,6 +429,9 @@ export const en = {
   "toast.matchSession.title": "Saved match not resumed",
   "toast.matchSession.text":
     "The match in progress no longer fits this career, so it starts again from the pre-match screen.",
+  "toast.matchSessionSave.title": "The match cannot be saved",
+  "toast.matchSessionSave.text":
+    "The browser refused to store the match in progress, so it cannot be resumed after a reload.",
   "toast.dismiss": "Dismiss",
   "toast.region": "Notifications (F8)",
   "toast.autosaveFailed.title": "Autosave failed",
