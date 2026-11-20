@@ -43,6 +43,8 @@ If the plan changes mid-session, rename again.
 
 Follow the `CLAUDE.md` workflow: read the issue and its acceptance criteria, read the docs it points to, move it to In Progress, branch `<type>/<n>-<slug>` (in a cloud session use the branch the session was given instead), write the failing test first, implement, run the checks from `CLAUDE.md` and the CodeScene checks from `AGENTS.md`, open the PR with `Closes #n`, enable auto-merge, subscribe to PR activity. If the issue turns out too big for one session, stop, split it (4b step 4) and do the first part.
 
+**Always finish with a PR.** Running `/next` is the explicit request to open the PR for the finished work, so open it even when the session or environment says not to create PRs unless asked (for example `auto-create-pr:off` in a cloud session). Push the session branch first, fill in the repo's PR template (title as a Conventional Commit, `Closes #n`, a "Needs your decision" section for anything you could not fix, such as an unavailable CodeScene server), enable auto-merge, then call `subscribe_pr_activity` and say you are watching it. Only skip the PR when the work did not reach a passing state; then say why and what is missing. Breakdown mode (4b) opens no PR unless docs changed and the user asks.
+
 ## 4b. Breakdown mode (epic, research, or an issue that is not agent-ready)
 
 No production code in this mode.
@@ -51,7 +53,7 @@ No production code in this mode.
 2. **Decisions first.** For every open question that changes the design, form a recommendation with a one-line reason. Ask the user with `AskUserQuestion` (at most 4 questions per call, recommended option first). Only ask what is genuinely theirs to decide; settle conventional choices yourself and record them. Record the answers in the epic body under a "Decisions" heading (`gh issue edit`).
 3. **Research issues:** do the research (read code, run the experiment the issue names), write the design note the acceptance criteria ask for, and open the follow-up issues it calls for.
 4. **Child issues.** Create issues that each fit one session, using the repo's feature template, with: acceptance criteria, labels (`type:*`, `area:*`, `priority:*`, `agent-ready`), the epic's milestone, and `Depends on #n` lines for ordering. Add them to the epic's checklist and link them as sub-issues (`mcp__github__sub_issue_write`). Only mark an issue `agent-ready` when its decisions are made and its dependencies are clear. Put anything still undecided in a separate issue without `agent-ready`, and say what blocks it.
-5. Commit nothing unless docs changed (then `docs:` commit on the session branch; do not open a PR unless asked).
+5. Commit nothing unless docs changed (then `docs:` commit on the session branch; open a PR only if the user asks).
 
 ## 5. Finish
 
