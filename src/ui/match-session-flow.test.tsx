@@ -17,6 +17,7 @@ import {
   getNextFixture,
   identityOf,
   type MatchSession,
+  planChange,
 } from "../game";
 import {
   createEnvelope,
@@ -143,6 +144,71 @@ describe("resuming a match from its session", () => {
 
     await waitFor(() => expect(screen.getByTestId("matchday-results")).toBeTruthy());
     expect(await matchSessionStore.load()).toEqual({ kind: "none" });
+  });
+
+  /** A substitution at minute 10, as the session stores it: the engine change, the request and the report. */
+  const withSubstitution = () => {
+    const off = career.squadPlan.starters[1] as string;
+    const on = career.squadPlan.bench[0] as string;
+    const request = { minute: 10, substitutions: [{ off, on }] };
+    const planned = planChange(career, fixture, request);
+    if (!planned.ok) throw new Error(planned.error);
+    const session = aSession({
+      changes: [{ time: 605, change: planned.change }],
+      edits: [{ ...request, time: 605 }],
+      report: planned.report,
+      position: { matchTime: 630, period: "firstHalf" },
+    });
+    return { session, off, on };
+  };
+
+  it("restores a substitution made in play: the feed line, the chart marker and the rules left", async () => {
+    const { session, off, on } = withSubstitution();
+    await mountWith(session);
+    goTo("#/match");
+
+    expect(screen.getAllByTestId("feed-line").map((l) => l.textContent)).toContainEqual(
+      expect.stringMatching(/Substitution: .* on for /),
+    );
+    expect(screen.getAllByTestId("momentum-change")).toHaveLength(1);
+    fireEvent.click(screen.getByTestId("make-changes"));
+    expect(screen.getByTestId("sub-count").textContent).toBe("4 substitutions left");
+    expect(screen.getByTestId("window-count").textContent).toBe(
+      "2 substitution windows left besides half-time",
+    );
+    expect(screen.queryByTestId(`half-time-row-${off}`)).toBeNull();
+    expect(screen.getByTestId(`half-time-row-${on}`)).toBeTruthy();
+  });
+
+  it("writes a change made while paused to the session with what was asked for", async () => {
+    const { matchSessionStore } = await mountWith(aSession());
+    goTo("#/match");
+    fireEvent.click(screen.getByTestId("make-changes"));
+    fireEvent.click(screen.getByTestId("shout-pushUp"));
+    fireEvent.click(screen.getByTestId("apply-changes"));
+
+    await waitFor(async () => {
+      const loaded = await matchSessionStore.load();
+      expect(loaded.kind).toBe("found");
+      if (loaded.kind !== "found") return;
+      expect(loaded.session.changes).toHaveLength(1);
+      expect(loaded.session.edits).toEqual([
+        expect.objectContaining({ minute: 10, shout: "pushUp", halfTime: false }),
+      ]);
+      expect(loaded.session.report?.minutes).toBeDefined();
+    });
+  });
+
+  it("drops a session whose edits no longer fit the career", async () => {
+    const { session } = withSubstitution();
+    const stale = {
+      ...session,
+      edits: [{ time: 605, minute: 10, substitutions: [{ off: "nobody", on: "nobody-else" }] }],
+    };
+    const { matchSessionStore } = await mountWith(stale);
+    goTo("#/match");
+    expect(await screen.findByTestId("pre-match")).toBeTruthy();
+    await waitFor(async () => expect(await matchSessionStore.load()).toEqual({ kind: "none" }));
   });
 
   it("plays the match with the plan it kicked off with when the loaded career holds an older one", async () => {

@@ -7,19 +7,19 @@ import {
   identityOf,
   type MatchReport,
   type MatchSession,
-  planHalfTime,
   type Result,
+  replayMatchEdits,
   resumeMatch,
   sessionIssue,
   userReportWithEnergy,
 } from "../game";
 import { useToast } from "./components";
 import { useI18n } from "./i18n-provider";
+import { changesSourceFor } from "./match-changes-source";
 import { type MatchSessions, useMatchSessions } from "./match-session-provider";
 import { type MatchSetup, matchSetupFor } from "./match-setup";
 import {
   type FinishedMatch,
-  type HalfTimeEditor,
   MatchScreen,
   type MatchScreenProps,
   type SimulatedRest,
@@ -70,6 +70,7 @@ function useSessionWriting(career: Career, fixture: Fixture, resumed: MatchSessi
       ...base,
       ...rest,
       changes: [...progress.changes],
+      edits: [...progress.edits],
       ...(report ? { report } : {}),
     };
     if (!report) delete session.report;
@@ -97,19 +98,15 @@ function PlayMatch({
   const [restoredMatch] = useState(() =>
     resumed ? resumeMatch(resumed, setup.createMatch) : null,
   );
-  const failed = restoredMatch?.ok === false;
+  // What the user has changed so far, rebuilt from the session's edits.
+  const [replayed] = useState(() =>
+    resumed ? replayMatchEdits(career, fixture, resumed.edits ?? []) : null,
+  );
+  const failed = restoredMatch?.ok === false || (resumed !== null && replayed === null);
   useEffect(() => {
     if (failed) onResumeFailed();
   }, [failed, onResumeFailed]);
-  const club = career.league.clubs.find((c) => c.id === career.userClubId);
-  const editor: HalfTimeEditor = {
-    players: career.league.players.filter((p) => club?.playerIds.includes(p.id)),
-    starters: career.squadPlan.starters,
-    bench: career.squadPlan.bench,
-    condition: career.condition,
-    tactics: career.squadPlan.tactics,
-    plan: (changes) => planHalfTime(career, fixture, changes),
-  };
+  const changesSource = useMemo(() => changesSourceFor(career, fixture), [career, fixture]);
 
   /** Records the result and deletes the session; null when the career took it. */
   const record = (
@@ -157,13 +154,15 @@ function PlayMatch({
       userSide={userSide}
       createRenderer={createRenderer}
       tickMs={tickMs}
-      halfTimeEditor={editor}
+      changesSource={changesSource}
       restored={
-        restored
+        restored && replayed
           ? {
               matchTime: restored.position.matchTime,
               mode: restored.mode,
               changes: restored.changes,
+              edits: restored.edits ?? [],
+              rules: replayed.changes,
               report: restored.report,
             }
           : undefined

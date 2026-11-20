@@ -560,6 +560,36 @@ register({
   },
 });
 
+// In-match changes (#390): paused in the first half with the "Make changes" sheet open, one pending
+// substitution and a shout chosen. The page clock moves in one fixed step, so the minute is the same
+// on every run.
+register({
+  name: "match-changes-paused",
+  route: "#/new",
+  mask: TERRAIN,
+  state: async (page) => {
+    test.setTimeout(120_000);
+    await openMatch(page, { frozen: true });
+    await page.getByTestId("mode-highlights").click();
+    await advanceClock(page, 20_000);
+    await pauseFrozen(page);
+    await page
+      .getByTestId("make-changes")
+      .evaluate((button) => (button as HTMLButtonElement).click());
+    await page.getByTestId("sub-add").click();
+    await page
+      .getByTestId(/^pick-/)
+      .first()
+      .click();
+    await page
+      .getByTestId(/^pick-/)
+      .first()
+      .click();
+    await page.getByTestId("shout-pushUp").click();
+    await page.getByTestId("sub-off-0").waitFor();
+  },
+});
+
 // The match lock (#389): the question asked when the user leaves a match in progress, and the
 // read-only squad panel over the match.
 register({

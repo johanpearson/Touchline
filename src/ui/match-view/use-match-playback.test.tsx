@@ -155,6 +155,63 @@ describe("useMatchPlayback", () => {
     expect(match.state.period).toBe("secondHalf");
   });
 
+  describe("applyChange", () => {
+    const fast = { side: "home", tactics: { ...NEUTRAL_TACTICS, tempo: "fast" } } as const;
+
+    it("applies a change while the match is on and records it at the engine time", () => {
+      const match = actionMatch();
+      const { result } = renderHook(() => useMatchPlayback(match, 1000));
+      play(10);
+      act(() => result.current.setPaused(true));
+      const time = match.state.time;
+      let applied: number | undefined;
+      act(() => {
+        applied = result.current.applyChange(fast);
+      });
+      expect(applied).toBe(time);
+      expect(match.changes).toEqual([{ time, change: fast }]);
+      expect(result.current.userChanges).toEqual([{ time, change: fast }]);
+      expect(result.current.userChangeCount).toBe(1);
+    });
+
+    it("keeps the match at half-time when a change is applied there", () => {
+      const match = actionMatch();
+      const { result } = renderHook(() => useMatchPlayback(match, 1000));
+      act(() => result.current.setMode("highlights"));
+      playToHalfTime(result);
+      act(() => {
+        result.current.applyChange(fast);
+      });
+      expect(match.state.period).toBe("halfTime");
+      expect(result.current.userChangeCount).toBe(1);
+    });
+
+    it("refuses a change at full time", () => {
+      const match = actionMatch();
+      match.advanceTo(1_000_000);
+      match.resume();
+      match.advanceTo(1_000_000);
+      const { result } = renderHook(() => useMatchPlayback(match, 1000));
+      let applied: number | undefined = 1;
+      act(() => {
+        applied = result.current.applyChange(fast);
+      });
+      expect(applied).toBeUndefined();
+      expect(result.current.userChangeCount).toBe(0);
+    });
+
+    it("refuses a change the engine rejects without recording it", () => {
+      const match = actionMatch();
+      const { result } = renderHook(() => useMatchPlayback(match, 1000));
+      let applied: number | undefined = 1;
+      act(() => {
+        applied = result.current.applyChange({ side: "home", lineup: [] });
+      });
+      expect(applied).toBeUndefined();
+      expect(result.current.userChanges).toEqual([]);
+    });
+  });
+
   describe("restored from a session", () => {
     const restoredAt = (matchTime: number) => {
       const original = actionMatch();

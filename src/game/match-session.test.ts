@@ -35,6 +35,18 @@ describe("parseMatchSession", () => {
     expect(parseMatchSession(JSON.parse(JSON.stringify(session)))).toEqual({ ok: true, session });
   });
 
+  it("reads the edits the user made", () => {
+    const session = aSession({ edits: [{ time: 3720, minute: 62, shout: "pushUp" }] });
+    expect(parseMatchSession(JSON.parse(JSON.stringify(session)))).toEqual({ ok: true, session });
+  });
+
+  it("refuses a session of the first version, which kept no edits", () => {
+    expect(parseMatchSession({ ...aSession(), schemaVersion: 1 })).toEqual({
+      ok: false,
+      error: "unknown-version",
+    });
+  });
+
   it("refuses another schema version", () => {
     const other = { ...aSession(), schemaVersion: MATCH_SESSION_VERSION + 1 };
     expect(parseMatchSession(other)).toEqual({ ok: false, error: "unknown-version" });
@@ -48,6 +60,7 @@ describe("parseMatchSession", () => {
     ["an unknown mode", { ...aSession(), mode: "turbo" }],
     ["an unknown period", { ...aSession(), position: { matchTime: 1, period: "extraTime" } }],
     ["a negative match time", { ...aSession(), position: { matchTime: -1, period: "firstHalf" } }],
+    ["a malformed edit", { ...aSession(), edits: [{ minute: 3 }] }],
     ["a malformed change", { ...aSession(), changes: [{ time: 1, change: { side: "left" } }] }],
   ])("refuses a damaged session: %s", (_name, value) => {
     expect(parseMatchSession(value)).toEqual({ ok: false, error: "corrupt" });

@@ -22,3 +22,15 @@ export const formatMatchMinute = (time: number, events: readonly ZoneEvent[]): s
   const minute = HALF_MINUTES + Math.floor((time - halfTime) / SECONDS_PER_MINUTE);
   return withAddedTime(minute, 2 * HALF_MINUTES);
 };
+
+/**
+ * The match minute (whole minutes, as the rules count them) at a match time in seconds: the first
+ * half stops at 45 whatever its added time, and the second half counts on from 45.
+ */
+export const matchMinuteOf = (time: number, events: readonly ZoneEvent[]): number => {
+  const halfTime = halfTimeOf(events);
+  if (halfTime === undefined || time < halfTime) {
+    return Math.min(HALF_MINUTES, Math.floor(time / SECONDS_PER_MINUTE));
+  }
+  return HALF_MINUTES + Math.floor((time - halfTime) / SECONDS_PER_MINUTE);
+};

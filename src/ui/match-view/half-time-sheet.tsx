@@ -1,67 +1,65 @@
 import { useState } from "react";
-import type { HalfTimeError } from "../../game";
-import type { MessageKey } from "../../i18n";
+import type { PlanChangeError } from "../../game";
 import { Button } from "../components/button";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import { Drawer } from "../components/drawer";
 import { useI18n } from "../i18n-provider";
+import { HalfTimeChanges } from "./half-time-changes";
 import {
-  type AppliedHalfTimePlan,
-  HalfTimeChanges,
+  type ChangeDraft,
+  type ChangesEditor,
+  changeOf,
+  ERROR_KEYS,
+  freshDraft,
   hasPending,
-  type PendingChanges,
-} from "./half-time-changes";
-import { type HalfTimeEditor, sameTactics } from "./half-time-model";
-
-const ERROR_KEYS: Record<HalfTimeError, MessageKey> = {
-  "too-many-substitutions": "halfTime.error.tooManySubstitutions",
-  "player-not-on-pitch": "halfTime.error.playerNotOnPitch",
-  "player-not-on-bench": "halfTime.error.playerNotOnBench",
-  "position-mismatch": "halfTime.error.positionMismatch",
-  "duplicate-substitution": "halfTime.error.duplicateSubstitution",
-};
+  type PlannedEditorChange,
+} from "./half-time-model";
 
 export type HalfTimeSheetProps = {
-  editor: HalfTimeEditor;
+  editor: ChangesEditor;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onResume: (plan?: AppliedHalfTimePlan) => void;
+  /**
+   * Called with the validated change. At half-time "Start second half" calls it with no change when
+   * nothing was edited; elsewhere "Apply changes" is only enabled with something to apply.
+   */
+  onApply: (plan?: PlannedEditorChange) => void;
   /** Starting state, for stories and visual tests. */
-  initial?: { pending?: PendingChanges; error?: HalfTimeError };
+  initial?: { pending?: ChangeDraft; error?: PlanChangeError };
 };
 
 /**
- * "Make changes" at half-time: a side drawer on desktop and a full-height bottom sheet on phones.
- * Closing with pending changes asks first. "Start second half" sits in a sticky bar that comes second
- * in tab order, right after the close button, although it is drawn at the bottom.
+ * "Make changes" at a stoppage: a side drawer on desktop and a full-height bottom sheet on phones.
+ * Closing with pending changes asks first. The action button ("Start second half" at half-time,
+ * "Apply changes" otherwise) sits in a sticky bar that comes second in tab order, right after the
+ * close button, although it is drawn at the bottom.
  */
 export function HalfTimeSheet({
   editor,
   open,
   onOpenChange,
-  onResume,
+  onApply,
   initial,
 }: HalfTimeSheetProps) {
   const { t } = useI18n();
-  const fresh = (): PendingChanges => ({ subs: [], tactics: editor.tactics });
-  const [pending, setPending] = useState(initial?.pending ?? fresh());
-  const [error, setError] = useState<HalfTimeError | null>(initial?.error ?? null);
+  const [pending, setPending] = useState(initial?.pending ?? freshDraft(editor));
+  const [error, setError] = useState<PlanChangeError | null>(initial?.error ?? null);
   const [confirming, setConfirming] = useState(false);
+  const changed = hasPending(editor, pending);
 
   const close = () => {
-    setPending(fresh());
+    setPending(freshDraft(editor));
     setError(null);
     setConfirming(false);
     onOpenChange(false);
   };
-  const requestClose = () => (hasPending(editor, pending) ? setConfirming(true) : close());
-  const start = () => {
-    if (pending.subs.length === 0 && sameTactics(pending.tactics, editor.tactics)) {
-      return onResume(undefined);
-    }
-    const plan = editor.plan({ substitutions: pending.subs, tactics: pending.tactics });
+  const requestClose = () => (changed ? setConfirming(true) : close());
+  const apply = () => {
+    if (!changed) return onApply(undefined);
+    const plan = editor.plan(pending);
     if (!plan.ok) return setError(plan.error);
-    onResume(plan);
+    setPending(freshDraft(editor));
+    onApply({ ...plan, request: changeOf(editor, pending) });
   };
   return (
     <>
@@ -69,7 +67,7 @@ export function HalfTimeSheet({
         open={open}
         onOpenChange={(next) => (next ? onOpenChange(true) : requestClose())}
         title={t("controls.changes")}
-        description={t("halfTime.changes")}
+        description={t(editor.halfTime ? "halfTime.changes" : "changes.description")}
         closeLabel={t("halfTime.close")}
         focusTitle
         className="max-sm:h-dvh max-sm:max-h-none max-sm:rounded-none max-sm:border-t-0 sm:w-[28rem]"
@@ -83,8 +81,14 @@ export function HalfTimeSheet({
               {t(ERROR_KEYS[error])}
             </p>
           ) : null}
-          <Button variant="primary" size="lg" data-testid="start-second-half" onClick={start}>
-            {t("halfTime.start")}
+          <Button
+            variant="primary"
+            size="lg"
+            data-testid={editor.halfTime ? "start-second-half" : "apply-changes"}
+            disabled={!editor.halfTime && !changed}
+            onClick={apply}
+          >
+            {t(editor.halfTime ? "halfTime.start" : "changes.apply")}
           </Button>
         </div>
         <HalfTimeChanges

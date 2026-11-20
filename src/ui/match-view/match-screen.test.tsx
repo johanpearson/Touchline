@@ -1,8 +1,8 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { NEUTRAL_TACTICS } from "../../engine";
 import { createMemoryLocaleStore } from "../../platform";
 import { I18nProvider } from "../i18n-provider";
+import { changesSourceFor } from "../match-changes-source";
 import { matchSetupFor } from "../match-setup";
 import { anActionMatchSetup } from "./action-match-fixture";
 import { MatchScreen, type MatchScreenProps } from "./match-screen";
@@ -31,7 +31,9 @@ describe("MatchScreen", () => {
   });
 
   const mountAction = (
-    props: Partial<Pick<MatchScreenProps, "halfTimeEditor" | "onContinue">> = {},
+    props: Partial<
+      Pick<MatchScreenProps, "changesSource" | "onContinue" | "userSide" | "onProgress">
+    > = {},
     locale = "en",
   ) => {
     const { setup } = anActionMatchSetup();
@@ -87,24 +89,16 @@ describe("MatchScreen", () => {
     expect(screen.getByTestId("mode-full").getAttribute("aria-checked")).toBe("true");
   });
 
+  /** A match screen with changes, for the user's side of the fixture. */
+  const mountWithChanges = (onContinue = vi.fn()) => {
+    const { career, fixture } = anActionMatchSetup();
+    const userSide = fixture.homeClubId === career.userClubId ? "home" : "away";
+    mountAction({ changesSource: changesSourceFor(career, fixture), userSide, onContinue });
+    return { career, onContinue };
+  };
+
   it("passes no report when nothing changed at half-time", () => {
-    const onContinue = vi.fn();
-    const { career } = anActionMatchSetup();
-    const editor = {
-      players: career.league.players,
-      starters: career.squadPlan.starters,
-      bench: career.squadPlan.bench,
-      condition: {},
-      tactics: career.squadPlan.tactics,
-      plan: () => {
-        throw new Error("no plan expected");
-      },
-    };
-    mountAction({
-      // biome-ignore lint/suspicious/noExplicitAny: a minimal fake editor for this test
-      halfTimeEditor: editor as any,
-      onContinue,
-    });
+    const { onContinue } = mountWithChanges();
     fireEvent.click(screen.getByTestId("mode-highlights"));
     play(150_000);
     fireEvent.click(screen.getByTestId("start-second-half"));
@@ -236,45 +230,150 @@ describe("MatchScreen", () => {
     expect((home ?? -1) >= 0 && (away ?? -1) >= 0).toBe(true);
   });
 
-  it("applies the half-time plan and reports the engine version", () => {
-    const onContinue = vi.fn();
-    const { career, fixture } = anActionMatchSetup();
-    const starter = career.squadPlan.starters[0] ?? "";
-    const positionOf = (id: string) => career.league.players.find((p) => p.id === id)?.position;
-    const replacementOf = (id: string) =>
-      career.squadPlan.bench.find((b) => positionOf(b) === positionOf(id));
-    const editor = {
-      players: career.league.players,
-      starters: career.squadPlan.starters,
-      bench: career.squadPlan.bench,
-      condition: {},
-      tactics: career.squadPlan.tactics,
-      plan: () => ({
-        ok: true as const,
-        change: { side: "home" as const, tactics: NEUTRAL_TACTICS },
-        report: { minutes: { [starter]: 45 } },
-        lineupAfter: career.squadPlan,
-      }),
-    };
-    mountAction({
-      // biome-ignore lint/suspicious/noExplicitAny: a minimal fake editor for this test
-      halfTimeEditor: editor as any,
-      onContinue,
-    });
-    expect(fixture).toBeTruthy();
+  /** Substitutes the second starter for the first bench player in the open sheet. */
+  const substitute = (career: { squadPlan: { starters: string[]; bench: string[] } }) => {
+    const off = career.squadPlan.starters[1] ?? "";
+    const on = career.squadPlan.bench[0] ?? "";
+    fireEvent.click(screen.getByTestId("sub-add"));
+    fireEvent.click(screen.getByTestId(`pick-${off}`));
+    fireEvent.click(screen.getByTestId(`pick-${on}`));
+    return { off, on };
+  };
+
+  it("applies the half-time plan and reports minutes and the engine version", () => {
+    const { career, onContinue } = mountWithChanges();
     fireEvent.click(screen.getByTestId("mode-highlights"));
     play(150_000);
     fireEvent.click(screen.getByTestId("make-changes"));
-    fireEvent.click(screen.getByTestId("sub-add"));
-    const off = career.squadPlan.starters.find((id) => replacementOf(id));
-    fireEvent.click(screen.getByTestId(`pick-${off}`));
-    fireEvent.click(screen.getByTestId(`pick-${replacementOf(off ?? "")}`));
+    const { off, on } = substitute(career);
     fireEvent.click(screen.getByTestId("start-second-half"));
     play(150_000);
     fireEvent.click(screen.getByTestId("continue"));
-    expect(onContinue).toHaveBeenCalledWith(expect.objectContaining({ engineVersion: 2 }), {
-      minutes: { [starter]: 45 },
-      opponent: expect.objectContaining({ minutes: expect.any(Object) }),
+    const report = onContinue.mock.calls[0]?.[1];
+    expect(onContinue.mock.calls[0]?.[0]).toMatchObject({ engineVersion: 2 });
+    expect(report.minutes[off]).toBe(45);
+    expect(report.minutes[on]).toBe(45);
+    expect(report.opponent.minutes).toEqual(expect.any(Object));
+  });
+
+  describe("changes while the match is paused", () => {
+    /** Plays on second by second until a feed line matches; the line shows when the clock reaches the change. */
+    const feedShows = (pattern: RegExp): boolean => {
+      for (let i = 0; i < 30; i++) {
+        const lines = screen.getAllByTestId("feed-line").map((l) => l.textContent ?? "");
+        if (lines.some((line) => pattern.test(line))) return true;
+        play(1000);
+      }
+      return false;
+    };
+
+    /** Plays into the second half, pauses and opens the changes sheet. */
+    const pauseInSecondHalf = () => {
+      fireEvent.click(screen.getByTestId("mode-highlights"));
+      play(150_000);
+      fireEvent.click(screen.getByTestId("start-second-half"));
+      play(40_000);
+      fireEvent.click(screen.getByTestId("pause-toggle"));
+    };
+
+    it("keeps Make changes disabled while the match runs, with the reason", () => {
+      mountWithChanges();
+      play(10_000);
+      const button = screen.getByTestId("make-changes");
+      expect(button.getAttribute("aria-disabled")).toBe("true");
+      const hint = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+      expect(hint?.textContent).toBe("Pause the match to make changes.");
+    });
+
+    it("enables Make changes when paused and applies a substitution at that minute", () => {
+      const { career, onContinue } = mountWithChanges();
+      pauseInSecondHalf();
+      expect(screen.getByTestId("make-changes").getAttribute("aria-disabled")).toBeNull();
+      fireEvent.click(screen.getByTestId("make-changes"));
+      expect(screen.getByTestId("window-count").textContent).toBe(
+        "3 substitution windows left besides half-time",
+      );
+      const { off, on } = substitute(career);
+      fireEvent.click(screen.getByTestId("apply-changes"));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      fireEvent.click(screen.getByTestId("pause-toggle"));
+      expect(feedShows(/Substitution: .* on for /)).toBe(true);
+      expect(screen.getAllByTestId("momentum-change")).toHaveLength(1);
+      play(150_000);
+      fireEvent.click(screen.getByTestId("continue"));
+      const { minutes } = onContinue.mock.calls[0]?.[1] ?? { minutes: {} };
+      expect(minutes[off]).toBeGreaterThan(45);
+      expect(minutes[off]).toBeLessThan(90);
+      expect(minutes[off] + minutes[on]).toBe(90);
+    });
+
+    it("keeps Apply changes disabled until something is changed", () => {
+      mountWithChanges();
+      pauseInSecondHalf();
+      fireEvent.click(screen.getByTestId("make-changes"));
+      expect((screen.getByTestId("apply-changes") as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it("applies new tactics and a shout while paused and writes them in the feed", () => {
+      mountWithChanges();
+      pauseInSecondHalf();
+      fireEvent.click(screen.getByTestId("make-changes"));
+      fireEvent.click(screen.getByTestId("shout-pushUp"));
+      fireEvent.click(
+        within(screen.getByTestId("tactic-pressing")).getByRole("radio", { name: "High" }),
+      );
+      fireEvent.click(screen.getByTestId("apply-changes"));
+      fireEvent.click(screen.getByTestId("pause-toggle"));
+      expect(feedShows(/Shout: Push up/)).toBe(true);
+      expect(feedShows(/Tactics changed: Pressing: High/)).toBe(true);
+    });
+
+    it("says why a second shout cannot be given right after the first", () => {
+      mountWithChanges();
+      pauseInSecondHalf();
+      fireEvent.click(screen.getByTestId("make-changes"));
+      fireEvent.click(screen.getByTestId("shout-pushUp"));
+      fireEvent.click(screen.getByTestId("apply-changes"));
+      fireEvent.click(screen.getByTestId("make-changes"));
+      expect(screen.getByTestId("shout-holdShape").getAttribute("aria-disabled")).toBe("true");
+      expect(screen.getAllByText("A shout is already in force.").length).toBeGreaterThan(0);
+    });
+
+    it("puts the base tactics back with an empty change when a shout runs out", () => {
+      const onProgress = vi.fn();
+      const { career, fixture } = anActionMatchSetup();
+      mountAction({
+        changesSource: changesSourceFor(career, fixture),
+        userSide: fixture.homeClubId === career.userClubId ? "home" : "away",
+        onProgress,
+      } as Partial<MatchScreenProps>);
+      fireEvent.click(screen.getByTestId("mode-highlights"));
+      play(20_000);
+      fireEvent.click(screen.getByTestId("pause-toggle"));
+      fireEvent.click(screen.getByTestId("make-changes"));
+      fireEvent.click(screen.getByTestId("shout-pushUp"));
+      fireEvent.click(screen.getByTestId("apply-changes"));
+      fireEvent.click(screen.getByTestId("pause-toggle"));
+      play(60_000);
+      const edits = onProgress.mock.calls.at(-1)?.[0].edits;
+      expect(edits).toHaveLength(2);
+      expect(edits[0].shout).toBe("pushUp");
+      expect(edits[1].shout).toBeUndefined();
+      expect(edits[1].minute).toBeGreaterThanOrEqual(edits[0].minute + 10);
+      // The empty change that ends the shout is not drawn as a change.
+      expect(screen.getAllByTestId("momentum-change")).toHaveLength(1);
+    });
+
+    it("offers no changes after full time and says so", () => {
+      mountWithChanges();
+      fireEvent.click(screen.getByTestId("mode-highlights"));
+      play(150_000);
+      fireEvent.click(screen.getByTestId("start-second-half"));
+      play(150_000);
+      const button = screen.getByTestId("make-changes");
+      expect(button.getAttribute("aria-disabled")).toBe("true");
+      const hint = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+      expect(hint?.textContent).toBe("The match is over.");
     });
   });
 

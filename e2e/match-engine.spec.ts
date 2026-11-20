@@ -129,6 +129,63 @@ test.describe("match engine", () => {
   });
 });
 
+test.describe("changes in play", () => {
+  test("substitutes and changes tactics while paused at about minute 60 and sees the line-up in the full-time report", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await startCareer(page);
+    await page.getByTestId("play-match").click();
+    await freezeClock(page);
+    await page.getByTestId("kick-off").click();
+    await chooseMode(page, "highlights");
+    await playUntilVisible(page, page.getByTestId("half-time"));
+    await page.getByTestId("start-second-half").click();
+
+    const minuteOf = async () =>
+      Number(((await page.getByTestId("clock").textContent()) ?? "").match(/^\d+/)?.[0]);
+    for (let step = 0; step < 100 && (await minuteOf()) < 60; step++) {
+      await advanceClock(page, 2000);
+    }
+    expect(await minuteOf()).toBeGreaterThanOrEqual(60);
+    await page.getByTestId("pause-toggle").click();
+    await page.getByTestId("make-changes").click();
+    await page.getByTestId("sub-add").click();
+    const off = (
+      (await page
+        .getByTestId(/^pick-/)
+        .first()
+        .getAttribute("data-testid")) ?? ""
+    ).slice("pick-".length);
+    await page
+      .getByTestId(/^pick-/)
+      .first()
+      .click();
+    const on = (
+      (await page
+        .getByTestId(/^pick-/)
+        .first()
+        .getAttribute("data-testid")) ?? ""
+    ).slice("pick-".length);
+    await page
+      .getByTestId(/^pick-/)
+      .first()
+      .click();
+    await page.getByTestId("tactic-mentality").getByRole("radio", { name: "Attacking" }).click();
+    await page.getByTestId("apply-changes").click();
+    await expect(page.getByTestId("half-time-actions")).toHaveCount(0);
+
+    await page.getByTestId("pause-toggle").click();
+    await playUntilVisible(page, page.getByTestId("continue"));
+    await expect(page.getByTestId("period")).toHaveText("Full time");
+    await expect(page.getByTestId("momentum-change")).toHaveCount(1);
+    await expect(page.getByTestId(`rating-row-${off}`)).toBeVisible();
+    await expect(page.getByTestId(`rating-row-${on}`)).toBeVisible();
+    await page.getByTestId("continue").click();
+    await expect(page.getByTestId("matchday-results")).toBeVisible();
+  });
+});
+
 test.describe("match in progress", () => {
   test("a reload mid-match resumes it paused and finishes with the final score of an uninterrupted run", async ({
     browser,

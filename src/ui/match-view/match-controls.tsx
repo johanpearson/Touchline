@@ -1,4 +1,5 @@
 import { Pause, Play, Route, SquarePen } from "lucide-react";
+import type { MessageKey } from "../../i18n";
 import { Button } from "../components/button";
 import { SegmentedControl } from "../components/segmented-control";
 import { Tooltip } from "../components/tooltip";
@@ -14,8 +15,10 @@ export type MatchControlsProps = {
   view: MatchView;
   /** Whether the 2D pitch passing chain is drawn; the toggle shows only in the 2D view. */
   showChain: boolean;
-  /** "Make changes" works only at half-time until in-match changes exist (#266). */
+  /** "Make changes" works while the match is paused and at half-time, not at full time. */
   canMakeChanges: boolean;
+  /** Why changes cannot be made now; shown in the tooltip and read out. */
+  changesHint: MessageKey;
   onPausedChange: (paused: boolean) => void;
   onModeChange: (mode: PlaybackMode) => void;
   onViewChange: (view: MatchView) => void;
@@ -56,7 +59,7 @@ export function MatchControls(props: MatchControlsProps) {
           {paused ? t(awaitingResume ? "controls.resume" : "controls.play") : t("controls.pause")}
         </Button>
       </Tooltip>
-      <Tooltip content={canMakeChanges ? t("halfTime.title") : t("controls.changesHint")}>
+      <Tooltip content={canMakeChanges ? t("changes.description") : t(props.changesHint)}>
         <Button
           data-testid="make-changes"
           aria-disabled={!canMakeChanges || undefined}
@@ -69,7 +72,7 @@ export function MatchControls(props: MatchControlsProps) {
       </Tooltip>
       {!canMakeChanges && (
         <span id={HINT_ID} className="sr-only">
-          {t("controls.changesHint")}
+          {t(props.changesHint)}
         </span>
       )}
       <SegmentedControl

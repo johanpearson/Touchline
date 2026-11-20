@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import type { ActionMatchChange, Period, TimedActionMatchChange } from "../../engine";
-import type { MatchReport } from "../../game";
-import type { AppliedHalfTimePlan } from "./half-time-changes";
+import type { Period, TimedActionMatchChange } from "../../engine";
+import type { MatchEdit, MatchReport } from "../../game";
 import type { MatchProgress, ProgressMoment, RestoredMatch } from "./match-progress";
 import type { MatchPlayback } from "./use-match-playback";
 
 type Input = {
   restored?: RestoredMatch;
+  /** The user's edits and report of minutes so far (`useMatchChanges`). */
+  edits: readonly MatchEdit[];
+  report: MatchReport | undefined;
   onProgress?: (progress: MatchProgress, moment: ProgressMoment) => void;
   playback: Pick<MatchPlayback, "paused" | "mode" | "setPaused" | "matchTime"> & {
     period: Period;
     userChanges: readonly TimedActionMatchChange[];
     userChangeCount: number;
   };
-  resume: (change?: ActionMatchChange) => void;
 };
 
 /**
@@ -42,17 +43,14 @@ const useProgressReports = (
   useEffect(() => () => report.current?.(latest.current, "now"), []);
 };
 
-/**
- * What the match screen keeps for resuming: the half-time report, whether a restored match still
- * waits to be started, and the progress reports. `startSecondHalf` applies the user's half-time plan.
- */
-export const useMatchProgress = ({ restored, onProgress, playback, resume }: Input) => {
-  const [report, setReport] = useState<MatchReport | undefined>(restored?.report);
+/** What the match screen keeps for resuming: whether a restored match still waits to be started, and the progress reports. */
+export const useMatchProgress = ({ restored, edits, report, onProgress, playback }: Input) => {
   const [awaitingResume, setAwaitingResume] = useState(restored !== undefined);
   useProgressReports(
     onProgress,
     {
       changes: playback.userChanges,
+      edits,
       mode: playback.mode,
       report,
       position: { matchTime: playback.matchTime, period: playback.period },
@@ -60,13 +58,9 @@ export const useMatchProgress = ({ restored, onProgress, playback, resume }: Inp
     playback.userChangeCount,
     playback.paused,
   );
-  const startSecondHalf = (plan?: AppliedHalfTimePlan) => {
-    setReport(plan?.report);
-    resume(plan?.change);
-  };
   const setPaused = (paused: boolean) => {
     if (!paused) setAwaitingResume(false);
     playback.setPaused(paused);
   };
-  return { report, awaitingResume, startSecondHalf, setPaused };
+  return { awaitingResume, setPaused };
 };
