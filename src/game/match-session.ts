@@ -8,12 +8,13 @@ import type {
 import type { Career } from "./career";
 import type { Fixture } from "./generate-fixtures";
 import { isInt, isNonNegativeNumber, isRecord, isString, type Rec } from "./json-guards";
+import type { MatchEdit } from "./match-edits";
 import { matchInputFor, matchSeed } from "./match-input-for";
 import type { SquadPlan } from "./squad-plan";
 import type { MatchReport } from "./update-condition";
 
 /** The version of the stored match session. Every later change to its shape bumps this. */
-export const MATCH_SESSION_VERSION = 1;
+export const MATCH_SESSION_VERSION = 2;
 
 /** How the match view paces the match; the same names as the playback director's modes. */
 export type MatchSessionMode = "highlights" | "extended" | "full";
@@ -42,7 +43,9 @@ export type MatchSession = {
   /** The user's changes with the engine time they were applied at; the AI's are made by the coach. */
   changes: TimedActionMatchChange[];
   mode: MatchSessionMode;
-  /** Minutes and shout fatigue of the user's side when changes were made at half-time. */
+  /** What the user asked for at each change, in order, one per entry of `changes` made through the editor. */
+  edits?: MatchEdit[];
+  /** Minutes and shout fatigue of the user's side once the user has made changes. */
   report?: MatchReport;
   /** What the user saw: the match time at the director's clock and the period then. */
   position: { matchTime: number; period: Period };
@@ -148,6 +151,9 @@ const isChange = (value: unknown): value is ActionMatchChange =>
 const isTimedChange = (value: unknown): value is TimedActionMatchChange =>
   isRecord(value) && isNonNegativeNumber(value.time) && isChange(value.change);
 
+const isEdit = (value: unknown): value is MatchEdit =>
+  isRecord(value) && isNonNegativeNumber(value.time) && isNonNegativeNumber(value.minute);
+
 const isPosition = (value: unknown): value is MatchSession["position"] =>
   isRecord(value) &&
   isNonNegativeNumber(value.matchTime) &&
@@ -165,6 +171,7 @@ const hasShape = (value: Rec): boolean =>
   isString(value.inputKey) &&
   Array.isArray(value.changes) &&
   value.changes.every(isTimedChange) &&
+  (value.edits === undefined || (Array.isArray(value.edits) && value.edits.every(isEdit))) &&
   (value.report === undefined || isRecord(value.report)) &&
   isString(value.mode) &&
   MODES.includes(value.mode) &&

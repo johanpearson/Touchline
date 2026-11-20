@@ -104,6 +104,8 @@ export {
 export type { Lineup, LineupError, LineupResult } from "./lineup";
 export { BENCH_SIZE, validateLineup } from "./lineup";
 export type { SubstitutionRecord } from "./live-squad";
+export type { MatchEdit, ReplayedEdits } from "./match-edits";
+export { replayMatchEdits } from "./match-edits";
 export { matchInputFor, matchSeed } from "./match-input-for";
 export type {
   MatchSession,
