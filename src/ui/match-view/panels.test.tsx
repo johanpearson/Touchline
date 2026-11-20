@@ -404,6 +404,7 @@ describe("PlayerRatings", () => {
       keyPasses: 2,
       shots: 3,
       xg: 0.8,
+      energy: 64,
       playerOfTheMatch: true,
     },
     {
@@ -415,6 +416,7 @@ describe("PlayerRatings", () => {
       keyPasses: 0,
       shots: 0,
       xg: 0,
+      energy: 100,
       playerOfTheMatch: false,
     },
   ];
@@ -428,6 +430,12 @@ describe("PlayerRatings", () => {
     expect(screen.getByTestId("rating-row-a1").textContent).toContain("6.0");
     expect(screen.getAllByTestId("player-of-the-match")).toHaveLength(1);
     expect(screen.getByTestId("player-of-the-match").textContent).toContain("Player of the match");
+  });
+
+  it("shows the energy each player ended the match with", () => {
+    inLocale(<PlayerRatings rows={rows} teamNames={{ home: "Kvarnby", away: "Västerås" }} />);
+    expect(screen.getByTestId("rating-row-h1").textContent).toContain("64");
+    expect(screen.getByTestId("player-ratings").textContent).toContain("Energy at full time");
   });
 
   it("uses Swedish labels and decimal comma", () => {

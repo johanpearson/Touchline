@@ -8,6 +8,13 @@ import type {
   TimedActionMatchChange,
 } from "../../engine";
 import { buildTimeline, extendTimeline, type PlaybackMode, type Timeline } from "./director";
+import {
+  createEnergyTrack,
+  type Energy,
+  type EnergyTrack,
+  energyAt,
+  recordEnergy,
+} from "./energy-track";
 import { ENGINE_STEP_MATCH_SECONDS, LOOKAHEAD_SECONDS } from "./playback";
 import { advancePresented, INITIAL_PRESENTED, type PresentedState } from "./presented-state";
 import { usePlaybackModeChoice } from "./use-playback-mode";
@@ -38,6 +45,12 @@ export type MatchPlayback = {
   events: readonly ActionEvent[];
   /** How many events the clock has reached. */
   eventCount: number;
+  /**
+   * Energy (0 to 100) by player id at the clock, from what the engine reported when it simulated
+   * up to there; a player not listed has not played and is at full energy. Never the engine's own
+   * energy from the lookahead.
+   */
+  energy: Energy;
   paused: boolean;
   mode: PlaybackMode;
   setPaused: (paused: boolean) => void;
@@ -67,12 +80,15 @@ type Run = {
   /** Presentation seconds played so far. */
   clock: number;
   presented: PresentedState;
+  /** The engine's energy sampled after every step, to be read at the clock. */
+  energy: EnergyTrack;
 };
 
-type View = { matchTime: number; presented: PresentedState };
+type View = { matchTime: number; presented: PresentedState; energy: Energy };
 
 /** Appends what the engine logged since the last call and extends the timeline with it. */
 const pull = (run: Run, match: ActionMatch) => {
+  recordEnergy(run.energy, match.state.time, match.state.energy);
   const fresh = match.events.slice(run.events.length);
   if (fresh.length === 0) return;
   run.events.push(...fresh);
@@ -101,7 +117,9 @@ const createRun = (match: ActionMatch, mode: PlaybackMode, at?: number): Run => 
     timeline,
     clock: 0,
     presented: advancePresented(INITIAL_PRESENTED, events, timeline, { clock: 0, matchTime: 0 }),
+    energy: createEnergyTrack(),
   };
+  recordEnergy(run.energy, match.state.time, match.state.energy);
   if (at === undefined) return run;
   const covered = () =>
     run.timeline.matchEnd >= at &&
@@ -122,7 +140,7 @@ const viewOf = (run: Run): View => {
     clock: run.clock,
     matchTime,
   });
-  return { matchTime, presented: run.presented };
+  return { matchTime, presented: run.presented, energy: energyAt(run.energy, matchTime) };
 };
 
 /**
@@ -178,6 +196,7 @@ export const useMatchPlayback = (
   const applyChange = (change: ActionMatchChange): number | undefined => {
     const { period, time } = match.state;
     if (period === "fullTime" || !match.applyChange(change).ok) return undefined;
+    recordEnergy(run.energy, time, match.state.energy);
     userChangesRef.current.push({ time, change });
     setUserChangeCount(userChangesRef.current.length);
     return time;
@@ -196,6 +215,7 @@ export const useMatchPlayback = (
     state: { period: view.presented.period, score: view.presented.score },
     events: run.events,
     eventCount: view.presented.eventCount,
+    energy: view.energy,
     paused,
     mode,
     setPaused,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ActionMatch, Period, ZoneEvent } from "../../engine";
+import type { Period, ZoneEvent } from "../../engine";
 import {
   EMPTY_MATCH_CHANGES,
   HALF_TIME_MINUTE,
@@ -26,13 +26,12 @@ type Input = {
   /** Without a source the user cannot make changes. */
   source?: ChangesSource;
   restored?: RestoredChanges;
-  /** Its live energy is shown in the editor. */
-  match: Pick<ActionMatch, "state">;
   /** The log as zone events up to the clock; the second half's minutes count from its half-time. */
   zoneEvents: readonly ZoneEvent[];
   matchTime: number;
   period: Period;
-  playback: Pick<MatchPlayback, "applyChange" | "resume">;
+  /** Its energy at the clock is shown in the editor. */
+  playback: Pick<MatchPlayback, "applyChange" | "resume" | "energy">;
 };
 
 const stoppage = (period: Period): boolean => period !== "fullTime";
@@ -75,7 +74,6 @@ const useShoutExpiry = ({ source, state, minute, apply }: ExpiryInput) => {
 export const useMatchChanges = ({
   source,
   restored,
-  match,
   zoneEvents,
   matchTime,
   period,
@@ -88,7 +86,7 @@ export const useMatchChanges = ({
   const minute = halfTime ? HALF_TIME_MINUTE : matchMinuteOf(matchTime, zoneEvents);
   const editor =
     source && stoppage(period)
-      ? editorAt(source(state.rules), { minute, halfTime, energy: match.state.energy })
+      ? editorAt(source(state.rules), { minute, halfTime, energy: playback.energy })
       : undefined;
 
   const apply = (applied: PlannedEditorChange): boolean => {

@@ -49,8 +49,11 @@ describe("match layout", () => {
       expect(screen.queryByTestId("lineups-panel")).toBeNull();
       fireEvent.click(screen.getByTestId("lineups-open"));
       expect(screen.getByTestId("lineups-panel")).toBeTruthy();
-      expect(screen.getByTestId("lineup-home").children).toHaveLength(11);
-      expect(screen.getByTestId("lineup-away").children).toHaveLength(11);
+      for (const side of ["home", "away"]) {
+        const rows = [...screen.getByTestId(`lineup-${side}`).children];
+        expect(rows.filter((row) => row.getAttribute("data-status") === "pitch")).toHaveLength(11);
+        expect(rows.filter((row) => row.getAttribute("data-status") === "bench")).toHaveLength(7);
+      }
     });
 
     it("lists a live rating for every player in the lineups", () => {
@@ -59,7 +62,7 @@ describe("match layout", () => {
       play(150_000);
       fireEvent.click(screen.getByTestId("lineups-open"));
       for (const row of screen.getAllByTestId(/^lineup-row-/)) {
-        expect(row.textContent).toMatch(/\d[.,]\d$/);
+        expect(row.textContent).toMatch(/\d[.,]\d/);
       }
     });
   });

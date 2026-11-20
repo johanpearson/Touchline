@@ -11,6 +11,8 @@ export type RatingRow = {
   keyPasses: number;
   shots: number;
   xg: number;
+  /** Energy (0 to 100, rounded) the player ended the match with. */
+  energy: number;
   playerOfTheMatch: boolean;
 };
 
@@ -20,10 +22,13 @@ export type RatingRowsInput = {
   /** Ids of everyone who played, per side (starters and substitutes who came on). */
   played: PerSide<readonly string[]>;
   names: Readonly<Record<string, string>>;
+  /** Energy at the end of the match by player id; a player not listed is at full energy. */
+  energy?: Readonly<Record<string, number>>;
   userSide: Side;
 };
 
 const RATING_FALLBACK = 6;
+const FULL_ENERGY = 100;
 
 const byRatingThenId = (a: RatingRow, b: RatingRow): number =>
   b.rating - a.rating || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -37,6 +42,7 @@ export const buildRatingRows = ({
   ratings,
   played,
   names,
+  energy = {},
   userSide,
 }: RatingRowsInput): RatingRow[] => {
   const rowsOf = (side: Side): RatingRow[] =>
@@ -50,6 +56,7 @@ export const buildRatingRows = ({
         keyPasses: players[id]?.keyPasses ?? 0,
         shots: players[id]?.shots ?? 0,
         xg: players[id]?.xg ?? 0,
+        energy: Math.round(energy[id] ?? FULL_ENERGY),
         playerOfTheMatch: false,
       }))
       .sort(byRatingThenId);

@@ -48,6 +48,7 @@ export {
 export { chooseOption } from "./action/choose-option";
 export { createActionMatch } from "./action/create-action-match";
 export { MAX_SHOT_XG, PENALTY_XG } from "./action/decision-constants";
+export { energyFactor } from "./action/energy";
 export type {
   EngineAttributeName,
   EngineAttributes,

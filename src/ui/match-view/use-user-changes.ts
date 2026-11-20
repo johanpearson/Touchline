@@ -1,13 +1,6 @@
 import { useMemo } from "react";
 import type { CommentaryLine } from "../../commentary";
-import type {
-  ActionMatch,
-  MatchInput,
-  Period,
-  Side,
-  TimedActionMatchChange,
-  ZoneEvent,
-} from "../../engine";
+import type { MatchInput, Period, Side, TimedActionMatchChange, ZoneEvent } from "../../engine";
 import type { MatchEdit } from "../../game";
 import { useI18n } from "../i18n-provider";
 import { changeLines } from "./change-lines";
@@ -50,11 +43,13 @@ type Input = Omit<LinesInput, "edits"> & {
   changesSource?: ChangesSource;
   restored?: RestoredMatch;
   onProgress?: (progress: MatchProgress, moment: ProgressMoment) => void;
-  match: Pick<ActionMatch, "state">;
   zoneEvents: readonly ZoneEvent[];
   matchTime: number;
   period: Period;
-  playback: Pick<MatchPlayback, "applyChange" | "resume" | "paused" | "mode" | "setPaused"> & {
+  playback: Pick<
+    MatchPlayback,
+    "applyChange" | "resume" | "paused" | "mode" | "setPaused" | "energy"
+  > & {
     userChanges: readonly TimedActionMatchChange[];
     userChangeCount: number;
   };
@@ -66,12 +61,10 @@ type Input = Omit<LinesInput, "edits"> & {
  * times of the changes for the chart.
  */
 export const useUserChanges = (input: Input) => {
-  const { changesSource, restored, onProgress, match, zoneEvents, matchTime, period, playback } =
-    input;
+  const { changesSource, restored, onProgress, zoneEvents, matchTime, period, playback } = input;
   const changes = useMatchChanges({
     source: changesSource,
     restored,
-    match,
     zoneEvents,
     matchTime,
     period,
