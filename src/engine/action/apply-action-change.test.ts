@@ -149,6 +149,29 @@ describe("ActionMatch.applyChange", () => {
       ));
   });
 
+  it("plays on in another formation from the next action, deterministically", () => {
+    const formation = { defenders: 3, midfielders: 4, forwards: 3 };
+    const shape = ["GK", "DEF", "DEF", "DEF", "MID", "MID", "MID", "MID", "FWD", "FWD", "FWD"];
+    const lineup = input.home.starters.map((p, i) => ({
+      ...p,
+      position: shape[i] as EnginePlayer["position"],
+    }));
+    const run = () => {
+      const match = createActionMatch(input, 5);
+      match.advanceTo(HALF_TIME_AT);
+      expect(match.applyChange({ side: "home", lineup, formation })).toEqual({ ok: true });
+      match.resume();
+      match.advanceTo(HALF_TIME_AT);
+      return match;
+    };
+
+    const first = run();
+
+    expect(first.changes).toHaveLength(1);
+    expect(first.events).toEqual(run().events);
+    expect(first.state.period).toBe("fullTime");
+  });
+
   it("throws a RangeError for a side that does not exist", () => {
     const match = createActionMatch(input, 1);
 
