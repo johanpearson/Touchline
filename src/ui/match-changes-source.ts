@@ -1,6 +1,7 @@
 import {
   type Career,
   type Fixture,
+  formationInForce,
   liveSquadAfter,
   type MatchChange,
   type MatchChanges,
@@ -21,13 +22,19 @@ export const changesSourceFor =
     const players = career.league.players.filter((p) => club?.playerIds.includes(p.id));
     const natural = (id: string): PlayerPosition =>
       players.find((p) => p.id === id)?.position ?? "MID";
-    const live = liveSquadAfter(career.squadPlan, previous.substitutions, natural);
+    const live = liveSquadAfter(
+      career.squadPlan,
+      previous.substitutions,
+      natural,
+      previous.formations,
+    );
     return {
       players,
       starters: live.starters,
       bench: live.bench,
       condition: career.condition,
       played: live.played,
+      formation: formationInForce(career.squadPlan.formation, previous.formations),
       tactics: previous.tactics ?? career.squadPlan.tactics,
       changes: previous,
       plan: (change: MatchChange) => planChange(career, fixture, change, { previous }),

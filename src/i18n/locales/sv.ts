@@ -141,6 +141,7 @@ export const sv = {
   "shout.holdShape": "Håll formationen",
   "feed.change.substitution": "Byte: {on} in för {off}",
   "feed.change.tactics": "Taktik ändrad: {changes}",
+  "feed.change.formation": "Formation ändrad: {formation}",
   "feed.change.setting": "{setting}: {level}",
   "feed.change.shout": "Tillrop: {shout}",
   "halfTime.start": "Starta andra halvlek",

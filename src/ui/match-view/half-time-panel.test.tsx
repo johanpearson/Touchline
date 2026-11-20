@@ -264,6 +264,20 @@ describe("HalfTimePanel changes", () => {
     expect(onResume.mock.calls[0]?.[0].change.tactics.mentality).toBe("attacking");
   });
 
+  it("shows the formation in force and passes a new formation on with the plan", () => {
+    const onResume = mountEditor();
+    const control = screen.getByTestId("formation");
+    expect(control.getAttribute("data-value")).toBe(career.squadPlan.formation);
+    expect(screen.queryByTestId("auto-pick")).toBeNull();
+    const other = career.squadPlan.formation === "3-4-3" ? "4-4-2" : "3-4-3";
+
+    fireEvent.click(within(control).getByRole("radio", { name: other }));
+    fireEvent.click(screen.getByTestId("start-second-half"));
+
+    expect(onResume.mock.calls[0]?.[0].change.formation).toBeDefined();
+    expect(onResume.mock.calls[0]?.[0].request.formation).toBe(other);
+  });
+
   it("shows the error with its cause, announced, and does not resume", () => {
     const rejecting: ChangesEditor = {
       ...editor,

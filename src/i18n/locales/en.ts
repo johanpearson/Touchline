@@ -139,6 +139,7 @@ export const en = {
   "shout.holdShape": "Hold shape",
   "feed.change.substitution": "Substitution: {on} on for {off}",
   "feed.change.tactics": "Tactics changed: {changes}",
+  "feed.change.formation": "Formation changed: {formation}",
   "feed.change.setting": "{setting}: {level}",
   "feed.change.shout": "Shout: {shout}",
   "halfTime.start": "Start second half",
