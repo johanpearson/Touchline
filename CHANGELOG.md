@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.9.0](https://github.com/johanpearson/Touchline/compare/v1.8.0...v1.9.0) (2026-11-20)
+
+
+### Features
+
+* **engine:** in-match energy drain that lowers performance ([#414](https://github.com/johanpearson/Touchline/issues/414)) ([770e1e3](https://github.com/johanpearson/Touchline/commit/770e1e3cb35c990906f1531b9fe428d14cee3f91))
+* **game:** change formation during a match ([#439](https://github.com/johanpearson/Touchline/issues/439)) ([9ad3a39](https://github.com/johanpearson/Touchline/commit/9ad3a395cc1bf8db3d6500364ad117c414cd3c5d))
+* **game:** use end-of-match energy in MatchReport and the post-match fitness drain ([#418](https://github.com/johanpearson/Touchline/issues/418)) ([71ad33c](https://github.com/johanpearson/Touchline/commit/71ad33cb52b9038ff168ca030ef7552c6597f71f))
+* **ui:** back action and route hierarchy ([#405](https://github.com/johanpearson/Touchline/issues/405)) ([35922cf](https://github.com/johanpearson/Touchline/commit/35922cf0292e5dd36eaa9f11ff55aeec90be9eae))
+* **ui:** group quiet build-up into beats in the playback director ([#419](https://github.com/johanpearson/Touchline/issues/419)) ([bb5e2b1](https://github.com/johanpearson/Touchline/commit/bb5e2b12b974135bea2d40c7c336f8496f987037))
+* **ui:** live density preview in settings ([#406](https://github.com/johanpearson/Touchline/issues/406)) ([b9cd1e4](https://github.com/johanpearson/Touchline/commit/b9cd1e48dfc5c39ca66836a9b2705325b4b50688))
+* **ui:** lock the match screen and confirm before leaving a match ([#425](https://github.com/johanpearson/Touchline/issues/425)) ([3cf78a1](https://github.com/johanpearson/Touchline/commit/3cf78a1d241724426bd3d0882832e2d8fa2d5d54))
+* **ui:** persist a match in progress and resume it after a reload ([#421](https://github.com/johanpearson/Touchline/issues/421)) ([983dd28](https://github.com/johanpearson/Touchline/commit/983dd2863f46e77f0ae85d9a570c74b27056ffac))
+* **ui:** play matches at a readable pace with three playback modes ([#417](https://github.com/johanpearson/Touchline/issues/417)) ([8504462](https://github.com/johanpearson/Touchline/commit/8504462416d4a058e8357d3185606102fb6b952a))
+* **ui:** playback director that paces match events ([#412](https://github.com/johanpearson/Touchline/issues/412)) ([706d807](https://github.com/johanpearson/Touchline/commit/706d807bd2b5ba68cdd53a616f47ca4f42a8804c))
+* **ui:** preview the new positions of a pending formation change ([#440](https://github.com/johanpearson/Touchline/issues/440)) ([6bddc13](https://github.com/johanpearson/Touchline/commit/6bddc1351f9004f90543ee1875ce15021721afc4)), closes [#438](https://github.com/johanpearson/Touchline/issues/438)
+* **ui:** show player rating in the lineup, energy as a secondary indicator ([#404](https://github.com/johanpearson/Touchline/issues/404)) ([4513b1f](https://github.com/johanpearson/Touchline/commit/4513b1f4b5b7390d0376c5d0ebe2c7c7c3fc73d2)), closes [#382](https://github.com/johanpearson/Touchline/issues/382)
+* **ui:** show rating and live energy in the match lineups ([#436](https://github.com/johanpearson/Touchline/issues/436)) ([8258864](https://github.com/johanpearson/Touchline/commit/825886449bd860c6b57e717cb9794f0f8ae9dc6a)), closes [#391](https://github.com/johanpearson/Touchline/issues/391)
+* **ui:** smooth momentum area chart ([#411](https://github.com/johanpearson/Touchline/issues/411)) ([0f1e2eb](https://github.com/johanpearson/Touchline/commit/0f1e2ebf1f7f00f747016127112eba5407f007a7)), closes [#384](https://github.com/johanpearson/Touchline/issues/384)
+* **ui:** substitutions and tactic changes at any stoppage ([#434](https://github.com/johanpearson/Touchline/issues/434)) ([9bca1d1](https://github.com/johanpearson/Touchline/commit/9bca1d1eded6b4524a4eef182c677797bbb835d3))
+* **ui:** warn when the match in progress cannot be saved ([#422](https://github.com/johanpearson/Touchline/issues/422)) ([6ff7c7f](https://github.com/johanpearson/Touchline/commit/6ff7c7f77ffd0247660ab38715f0f7de8164c99f)), closes [#420](https://github.com/johanpearson/Touchline/issues/420)
+
+
+### Bug Fixes
+
+* **ci:** exclude .claude from Biome and bump config schema to 2.6.8 ([#443](https://github.com/johanpearson/Touchline/issues/443)) ([d676e9f](https://github.com/johanpearson/Touchline/commit/d676e9f8e7ddb5db36a4d616749bfcc8e5196c0b))
+* **e2e:** repair nightly failures from nav, rating label and density preview changes ([#409](https://github.com/johanpearson/Touchline/issues/409)) ([fd0ec6e](https://github.com/johanpearson/Touchline/commit/fd0ec6ef47eea2d9c929adb361e66b7796b56d6a))
+* **ui:** keep the browser history clean when the match lock blocks a navigation ([#444](https://github.com/johanpearson/Touchline/issues/444)) ([e866c9f](https://github.com/johanpearson/Touchline/commit/e866c9f207faf882281563279fa5ad5af6b65efd)), closes [#423](https://github.com/johanpearson/Touchline/issues/423)
+* **ui:** make bench energy in the changes sheet match the lineups panel ([#437](https://github.com/johanpearson/Touchline/issues/437)) ([de2f859](https://github.com/johanpearson/Touchline/commit/de2f8592a59aa7f9fbdda3f6003e6cd05c764bf1)), closes [#435](https://github.com/johanpearson/Touchline/issues/435)
+* **ui:** move the language selector to settings only ([#402](https://github.com/johanpearson/Touchline/issues/402)) ([3e74581](https://github.com/johanpearson/Touchline/commit/3e745817b5c09de0b305a493963c61c78cb210a8)), closes [#381](https://github.com/johanpearson/Touchline/issues/381)
+* **ui:** show the score once in the 2D match view ([#410](https://github.com/johanpearson/Touchline/issues/410)) ([97e80e7](https://github.com/johanpearson/Touchline/commit/97e80e769f531ebb961ebe0d09c636583aebc455))
+
 ## [1.8.0](https://github.com/johanpearson/Touchline/compare/v1.7.0...v1.8.0) (2026-11-18)
 
 
