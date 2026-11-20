@@ -132,6 +132,7 @@ export const en = {
   "changes.error.shoutActive": "A shout is already in force.",
   "changes.error.shoutCoolingDown": "Wait before the next shout.",
   "changes.error.shoutNoEffect": "That shout changes nothing with these tactics.",
+  "changes.error.unknownFormation": "That formation is not available.",
   "shout.pushUp": "Push up",
   "shout.calmDown": "Calm it down",
   "shout.pressTheBall": "Press the ball",

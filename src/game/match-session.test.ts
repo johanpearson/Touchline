@@ -40,6 +40,15 @@ describe("parseMatchSession", () => {
     expect(parseMatchSession(JSON.parse(JSON.stringify(session)))).toEqual({ ok: true, session });
   });
 
+  it("reads a session with a formation change", () => {
+    const formation = { defenders: 3, midfielders: 4, forwards: 3 };
+    const session = aSession({
+      changes: [{ time: 3720, change: { side: "home", lineup: [], formation } }],
+      edits: [{ time: 3720, minute: 62, formation: "3-4-3" }],
+    });
+    expect(parseMatchSession(JSON.parse(JSON.stringify(session)))).toEqual({ ok: true, session });
+  });
+
   it("refuses a session of the first version, which kept no edits", () => {
     expect(parseMatchSession({ ...aSession(), schemaVersion: 1 })).toEqual({
       ok: false,
@@ -61,6 +70,10 @@ describe("parseMatchSession", () => {
     ["an unknown period", { ...aSession(), position: { matchTime: 1, period: "extraTime" } }],
     ["a negative match time", { ...aSession(), position: { matchTime: -1, period: "firstHalf" } }],
     ["a malformed edit", { ...aSession(), edits: [{ minute: 3 }] }],
+    [
+      "a malformed formation",
+      { ...aSession(), changes: [{ time: 1, change: { side: "home", formation: "4-3-3" } }] },
+    ],
     ["a malformed change", { ...aSession(), changes: [{ time: 1, change: { side: "left" } }] }],
   ])("refuses a damaged session: %s", (_name, value) => {
     expect(parseMatchSession(value)).toEqual({ ok: false, error: "corrupt" });

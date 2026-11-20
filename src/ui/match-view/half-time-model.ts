@@ -176,4 +176,5 @@ export const ERROR_KEYS: Record<PlanChangeError, MessageKey> = {
   "shout-active": "changes.error.shoutActive",
   "shout-cooling-down": "changes.error.shoutCoolingDown",
   "shout-no-effect": "changes.error.shoutNoEffect",
+  "unknown-formation": "changes.error.unknownFormation",
 };

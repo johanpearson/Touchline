@@ -134,6 +134,7 @@ export const sv = {
   "changes.error.shoutActive": "Ett tillrop gäller redan.",
   "changes.error.shoutCoolingDown": "Vänta med nästa tillrop.",
   "changes.error.shoutNoEffect": "Tillropet ändrar ingenting med den här taktiken.",
+  "changes.error.unknownFormation": "Den formationen finns inte.",
   "shout.pushUp": "Tryck på",
   "shout.calmDown": "Lugna ner spelet",
   "shout.pressTheBall": "Pressa bollen",
