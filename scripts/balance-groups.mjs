@@ -28,9 +28,9 @@ export const BALANCE_GROUPS = {
  * heavy suites: in one job the formation suite hit the 600 s hook timeout next to the league and tactics suites (#292).
  */
 export const FAST_GROUPS = {
-  "fast-formation": [`${GAME}/formation.balance.test.ts`, `${GAME}/formation-change.balance.test.ts`],
+  "fast-formation": [`${GAME}/formation.balance.test.ts`],
   "fast-league": [`${GAME}/shout.balance.test.ts`, `${GAME}/ai-changes.balance.test.ts`, `${GAME}/league.balance.test.ts`, `${GAME}/season.balance.test.ts`],
-  "fast-development": [`${GAME}/development.balance.test.ts`],
+  "fast-development": [`${GAME}/development.balance.test.ts`, `${GAME}/formation-change.balance.test.ts`],
   "fast-engine": [`${ENGINE}/action.balance.test.ts`, `${ENGINE}/action-strength.balance.test.ts`, `${ENGINE}/action-tactics.balance.test.ts`],
 };
 
