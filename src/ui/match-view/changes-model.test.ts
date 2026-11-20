@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_MATCH_CHANGES,
+  type Formation,
   getNextFixture,
   MAX_SUBSTITUTION_WINDOWS,
   MAX_SUBSTITUTIONS,
@@ -19,6 +20,7 @@ import {
   hasPending,
   noWindowLeft,
   positionOn,
+  previewPositions,
   ratingAt,
   replacementsFor,
   shoutBlock,
@@ -209,6 +211,59 @@ describe("drafts", () => {
     const given = stateAfter(editor, { ...freshDraft(editor), shout: "pushUp" });
     const later = editorFor(given, { minute: 65 });
     expect(shoutBlock(later, freshDraft(later), "holdShape")).toBe("shout-active");
+  });
+});
+
+describe("previewPositions", () => {
+  const other = (editor: ChangesEditor): Formation =>
+    editor.formation === "3-4-3" ? "4-4-2" : "3-4-3";
+  const linesOf = (positions: Record<string, string>) => {
+    const count = (line: string) => Object.values(positions).filter((p) => p === line).length;
+    return [count("DEF"), count("MID"), count("FWD")];
+  };
+
+  it("is the positions in force when no formation is pending or the one in force is chosen again", () => {
+    const editor = editorFor();
+    for (const draft of [
+      freshDraft(editor),
+      { ...freshDraft(editor), formation: editor.formation },
+    ]) {
+      const preview = previewPositions(editor, draft);
+      for (const id of editor.starters) expect(preview[id]).toBe(positionOn(editor, id));
+    }
+  });
+
+  it("places the eleven in the lines of the pending formation, the keeper staying in goal", () => {
+    const editor = editorFor();
+    const preview = previewPositions(editor, { ...freshDraft(editor), formation: other(editor) });
+    expect(Object.keys(preview).sort()).toEqual([...editor.starters].sort());
+    const shape = other(editor).split("-").map(Number);
+    expect(linesOf(preview)).toEqual(shape);
+    const keeper = editor.starters.find((id) => positionOn(editor, id) === "GK") as string;
+    expect(preview[keeper]).toBe("GK");
+  });
+
+  it("lets a pending substitute take the line the formation gives the player replaced", () => {
+    const editor = editorFor();
+    const draft = {
+      ...freshDraft(editor),
+      subs: [{ off: off1, on: on1 }],
+      formation: other(editor),
+    };
+    const preview = previewPositions(editor, draft);
+    expect(preview[off1]).toBeUndefined();
+    expect(preview[on1]).toBeDefined();
+    expect(Object.keys(preview)).toHaveLength(11);
+    expect(linesOf(preview)).toEqual(other(editor).split("-").map(Number));
+  });
+
+  it("gives the substitute the position of the player replaced when only substitutions are pending", () => {
+    const editor = editorFor();
+    const preview = previewPositions(editor, {
+      ...freshDraft(editor),
+      subs: [{ off: off1, on: on1 }],
+    });
+    expect(preview[on1]).toBe(positionOn(editor, off1));
   });
 });
 

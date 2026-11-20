@@ -21,9 +21,11 @@ type RowBodyProps = {
   position: PlayerPosition;
   /** True when this is not the player's own position, so the row says where he would play. */
   asPosition: boolean;
+  /** True when a pending formation change moves the player to another position. */
+  moved: boolean;
 };
 
-function RowBody({ editor, id, mark, position, asPosition }: RowBodyProps) {
+function RowBody({ editor, id, mark, position, asPosition, moved }: RowBodyProps) {
   const { t, formatNumber } = useI18n();
   const player = playerOf(editor, id);
   return (
@@ -35,6 +37,14 @@ function RowBody({ editor, id, mark, position, asPosition }: RowBodyProps) {
             ? t("changes.playsAs", { position: t(`position.short.${position}`) })
             : t(`position.short.${position}`)}
         </span>
+        {moved ? (
+          <span
+            className="ml-2 rounded-pill border border-accent px-2 text-sm font-semibold text-text"
+            data-testid={`row-moved-${id}`}
+          >
+            {t("changes.mark.moved")}
+          </span>
+        ) : null}
         {mark ? (
           <span className="ml-2 rounded-pill border border-accent px-2 text-sm font-semibold text-text">
             {t(mark === "off" ? "halfTime.mark.off" : "halfTime.mark.on")}
@@ -64,6 +74,8 @@ export type SquadSectionProps = {
   positionOf: (id: string) => PlayerPosition;
   /** Whether a row's position differs from the player's own and should be named. */
   asPosition?: (id: string) => boolean;
+  /** Whether a pending formation change moves a row's player to another position. */
+  moved?: (id: string) => boolean;
   /** Players that can be tapped right now. */
   pickable: (id: string) => boolean;
   onPick: (id: string) => void;
@@ -81,6 +93,7 @@ export function SquadSection(props: SquadSectionProps) {
         mark={marks[id] ?? null}
         position={positionOf(id)}
         asPosition={props.asPosition?.(id) ?? false}
+        moved={props.moved?.(id) ?? false}
       />
     );
     if (!pickable(id)) {

@@ -17,6 +17,7 @@ import {
   type PlayerAttributes,
   type PlayerCondition,
   type PlayerPosition,
+  placeEleven,
   type ShoutError,
   type ShoutKind,
 } from "../../game";
@@ -104,8 +105,10 @@ export const freshDraft = (editor: ChangesEditor): ChangeDraft => ({
   tactics: editor.tactics,
 });
 
-const formationChanged = (editor: Pick<ChangesEditor, "formation">, draft: ChangeDraft): boolean =>
-  draft.formation !== undefined && draft.formation !== editor.formation;
+export const formationChanged = (
+  editor: Pick<ChangesEditor, "formation">,
+  draft: ChangeDraft,
+): boolean => draft.formation !== undefined && draft.formation !== editor.formation;
 
 export const hasPending = (editor: ChangesEditor, draft: ChangeDraft): boolean =>
   draft.subs.length > 0 ||
@@ -132,6 +135,33 @@ export const playerOf = (editor: ChangesEditor, id: string): Player | undefined 
 /** The position `id` plays now: the one he came on to play, or his own. */
 export const positionOn = (editor: ChangesEditor, id: string): PlayerPosition =>
   editor.played[id] ?? playerOf(editor, id)?.position ?? "MID";
+
+/**
+ * Where each of the eleven who would be on the pitch plays once the draft is applied, by id: the pitch
+ * players after the pending substitutions (a substitute takes the place of the player he replaces) and,
+ * when a formation other than the one in force is pending, re-placed in its lines with `placeEleven`,
+ * the way `planChange` does it. Without a pending formation these are the positions in force.
+ */
+export const previewPositions = (
+  editor: ChangesEditor,
+  draft: ChangeDraft,
+): Record<string, PlayerPosition> => {
+  const positions: Record<string, PlayerPosition> = {};
+  const eleven = editor.starters.map((id) => {
+    const sub = draft.subs.find((s) => s.off === id);
+    positions[sub?.on ?? id] = positionOn(editor, id);
+    return sub?.on ?? id;
+  });
+  if (!formationChanged(editor, draft) || draft.formation === undefined) return positions;
+  const natural = (id: string): PlayerPosition => playerOf(editor, id)?.position ?? "MID";
+  const placed = placeEleven(
+    eleven,
+    draft.formation,
+    (id) => positions[id] ?? natural(id),
+    natural,
+  );
+  return placed ?? positions;
+};
 
 /**
  * Energy shown for `id`: the live value if he has played, else full (a substitute is fully rested;
