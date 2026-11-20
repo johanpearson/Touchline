@@ -3,6 +3,7 @@ import { aCareer } from "./career-builders";
 import type { Fixture } from "./generate-fixtures";
 import { type MatchEdit, replayMatchEdits } from "./match-edits";
 import { EMPTY_MATCH_CHANGES, planChange } from "./plan-change";
+import type { MatchReport } from "./update-condition";
 
 const career = aCareer(7);
 const fixture = career.season.fixtures.find(
@@ -16,21 +17,32 @@ describe("replayMatchEdits", () => {
     expect(replayMatchEdits(career, fixture, [])).toEqual({ changes: EMPTY_MATCH_CHANGES });
   });
 
+  /** The state and report of the edits planned one by one, as the match screen plans them. */
+  const plannedOneByOne = (edits: readonly MatchEdit[]) => {
+    let previous = EMPTY_MATCH_CHANGES;
+    let report: MatchReport | undefined;
+    for (const { time: _time, ...change } of edits) {
+      const planned = planChange(career, fixture, change, { previous });
+      if (!planned.ok) throw new Error(planned.error);
+      previous = planned.changes;
+      report = planned.report;
+    }
+    return { changes: previous, report };
+  };
+
+  const edits: MatchEdit[] = [
+    { time: 3720, minute: 62, substitutions: [{ off: off1, on: on1 }] },
+    { time: 4800, minute: 80, shout: "pushUp", substitutions: [{ off: off2, on: on2 }] },
+  ];
+
   it("gives the state and report the same edits planned one by one give", () => {
-    const edits: MatchEdit[] = [
-      { time: 3720, minute: 62, substitutions: [{ off: off1, on: on1 }] },
-      { time: 4800, minute: 80, shout: "pushUp", substitutions: [{ off: off2, on: on2 }] },
-    ];
-    const first = planChange(career, fixture, edits[0] as MatchEdit);
-    if (!first.ok) throw new Error("first");
-    const second = planChange(career, fixture, edits[1] as MatchEdit, { previous: first.changes });
-    if (!second.ok) throw new Error("second");
+    expect(replayMatchEdits(career, fixture, edits)).toEqual(plannedOneByOne(edits));
+  });
 
-    const replayed = replayMatchEdits(career, fixture, edits);
-
-    expect(replayed).toEqual({ changes: second.changes, report: second.report });
-    expect(replayed?.report?.minutes[off1]).toBe(62);
-    expect(replayed?.report?.minutes[on2]).toBe(10);
+  it("counts the minutes from the minute of each edit", () => {
+    const report = replayMatchEdits(career, fixture, edits)?.report;
+    expect(report?.minutes[off1]).toBe(62);
+    expect(report?.minutes[on2]).toBe(10);
   });
 
   it("returns null when an edit is no longer valid", () => {

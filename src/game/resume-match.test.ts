@@ -163,27 +163,32 @@ describe("resumeMatch with changes made in play", () => {
     };
   };
 
-  it("replays the same log when reloaded after the first change and before or after the second", () => {
-    for (const [matchTime, period] of [
-      [firstTime + 300, "firstHalf"],
-      [secondTime - 100, "secondHalf"],
-      [secondTime + 100, "secondHalf"],
-    ] as const) {
-      const result = resumeMatch(session(matchTime, period), create);
-      if (!result.ok) throw new Error("expected a match");
-      const { match } = result;
-      if (matchTime < secondTime) {
-        // The user makes the second change after the reload, at the same engine time.
-        if (match.state.period === "firstHalf") {
-          match.advanceTo(END);
-          match.resume();
-        }
-        match.advanceTo(secondTime);
-        match.applyChange(second.change);
-      }
+  /** Reloads at `matchTime` and plays on to full time; the second change is made after a reload before it. */
+  const reloadedAndFinished = (matchTime: number, period: "firstHalf" | "secondHalf") => {
+    const result = resumeMatch(session(matchTime, period), create);
+    if (!result.ok) throw new Error("expected a match");
+    const { match } = result;
+    if (matchTime < secondTime) playUpTo(match, secondTime).applyChange(second.change);
+    match.advanceTo(END);
+    return match;
+  };
+
+  /** Plays on, through half-time, to `time`. */
+  const playUpTo = (match: ActionMatch, time: number): ActionMatch => {
+    if (match.state.period === "firstHalf") {
       match.advanceTo(END);
-      expect(match.events).toEqual(whole.events);
+      match.resume();
     }
+    match.advanceTo(time);
+    return match;
+  };
+
+  it.each([
+    ["in the first half, after the first change", firstTime + 300, "firstHalf"],
+    ["in the second half, before the second change", secondTime - 100, "secondHalf"],
+    ["in the second half, after the second change", secondTime + 100, "secondHalf"],
+  ] as const)("replays the same log when reloaded %s", (_name, matchTime, period) => {
+    expect(reloadedAndFinished(matchTime, period).events).toEqual(whole.events);
   });
 });
 

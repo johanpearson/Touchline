@@ -1,5 +1,4 @@
 import { type ComponentProps, useMemo, useState } from "react";
-import type { CommentaryLine } from "../../commentary";
 import { generateActionCommentary } from "../../commentary";
 import type {
   ActionEvent,
@@ -11,11 +10,10 @@ import type {
   TimedActionMatchChange,
 } from "../../engine";
 import { computeActionStats, createActionMatch, playerRatings } from "../../engine";
-import type { CoachedMatch, MatchEdit, MatchReport } from "../../game";
+import type { CoachedMatch, MatchReport } from "../../game";
 import { useI18n } from "../i18n-provider";
 import { useSuspendPaletteShortcut } from "../palette/palette-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
-import { changeLines } from "./change-lines";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import { type FinishedMatch, finishedMatchOf, withOpponent } from "./finish-match";
 import { FullTimeReport } from "./full-time-report";
@@ -29,10 +27,9 @@ import { PlayerRatings } from "./player-ratings";
 import { buildRatingRows } from "./ratings-table";
 import { terrainEvents } from "./terrain-events";
 import type { TerrainRendererFactory } from "./terrain-renderer";
-import { useMatchChanges } from "./use-match-changes";
 import { useMatchLeave } from "./use-match-leave";
 import { useMatchPlayback } from "./use-match-playback";
-import { useMatchProgress } from "./use-match-progress";
+import { useUserChanges } from "./use-user-changes";
 import { useZoneEvents } from "./use-zone-events";
 
 export type MatchScreenProps = {
@@ -112,20 +109,12 @@ export function MatchScreen({
   onSimulateRest,
 }: MatchScreenProps) {
   const [match] = useState(() => createMatch?.() ?? createActionMatch(input, seed));
-  const {
-    matchTime,
-    state,
-    events,
-    eventCount,
-    resume,
-    userChanges,
-    userChangeCount,
-    ...playback
-  } = useMatchPlayback(
+  const playback = useMatchPlayback(
     match,
     tickMs,
     restored && { matchTime: restored.matchTime, mode: restored.mode, changes: restored.changes },
   );
+  const { matchTime, state, events, eventCount, userChanges } = playback;
   // Space and the arrow keys belong to the match while it runs; Ctrl+K waits until it is paused.
   useSuspendPaletteShortcut(
     !playback.paused && (state.period === "firstHalf" || state.period === "secondHalf"),
@@ -142,24 +131,21 @@ export function MatchScreen({
       matchTime,
       period: state.period,
     });
-  const { editor, edits, report, apply, startSecondHalf } = useMatchChanges({
-    source: changesSource,
+  const changes = useUserChanges({
+    changesSource,
     restored,
+    onProgress,
     match,
+    input,
+    players,
+    userSide,
+    commentary,
     zoneEvents,
     matchTime,
     period: state.period,
-    playback: { applyChange: playback.applyChange, resume },
+    playback,
   });
-  const { awaitingResume, setPaused } = useMatchProgress({
-    restored,
-    edits,
-    report,
-    onProgress,
-    playback: { ...playback, matchTime, period: state.period, userChanges, userChangeCount },
-  });
-  const { locale, t } = useI18n();
-  const lines = useChangeLines({ commentary, edits, players, userSide, input, t, locale });
+  const { editor, report, awaitingResume, setPaused, lines } = changes;
   const active = state.period !== "fullTime" && onSimulateRest !== undefined;
   const leave = useMatchLeave({ active, paused: playback.paused, setPaused });
   return (
@@ -175,13 +161,13 @@ export function MatchScreen({
         stats={actionStats}
         playerIds={played}
         lines={lines}
-        playback={{ ...playback, setPaused }}
+        playback={{ ...playback, setPaused: changes.setPaused }}
         awaitingResume={awaitingResume}
         createRenderer={createRenderer}
         pitch={{ events, createRenderer: createPitchRenderer }}
         editor={editor}
-        onChange={apply}
-        changeTimes={edits.filter(isVisibleChange).map((edit) => edit.time)}
+        onChange={changes.apply}
+        changeTimes={changes.changeTimes}
         statsPanel={<ActionStatsPanel stats={actionStats} playerIds={played} colours={colours} />}
         lineupsPanel={
           <LineupsPanel
@@ -202,14 +188,9 @@ export function MatchScreen({
             rows={ratingRows}
           />
         }
-        onResume={startSecondHalf}
+        onResume={changes.startSecondHalf}
         onContinue={
-          onContinue &&
-          (() =>
-            onContinue(
-              finishedMatchOf(match, input.engineVersion),
-              withOpponent(report, match, userSide),
-            ))
+          onContinue && (() => onContinue(...finishedWith(match, input, report, userSide)))
         }
       />
       <LeaveMatchPrompt
@@ -227,42 +208,16 @@ export function MatchScreen({
   );
 }
 
-/** An edit the user asked for, as opposed to the empty one that puts the tactics back when a shout ends. */
-const isVisibleChange = (edit: MatchEdit): boolean =>
-  (edit.substitutions?.length ?? 0) > 0 || edit.tactics !== undefined || edit.shout !== undefined;
-
-type ChangeLinesInput = {
-  commentary: readonly CommentaryLine[];
-  edits: readonly MatchEdit[];
-  players: Readonly<Record<string, string>>;
-  userSide: Side;
-  input: MatchInput;
-  t: ReturnType<typeof useI18n>["t"];
-  locale: string;
-};
-
-/** The commentary with a line for each change the user made, in match order. */
-const useChangeLines = ({
-  commentary,
-  edits,
-  players,
-  userSide,
-  input,
-  t,
-  locale,
-}: ChangeLinesInput) =>
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `t` follows `locale`
-  useMemo(() => {
-    if (edits.length === 0) return commentary;
-    const own = changeLines(edits, {
-      t,
-      names: players,
-      side: userSide,
-      startTactics: input[userSide].tactics,
-    });
-    // Sorting is stable: a change goes after the commentary of the same moment.
-    return [...commentary, ...own].sort((a, b) => a.time - b.time);
-  }, [commentary, edits, players, userSide, input, locale]);
+/** The arguments of `onContinue`: the final result and the user's report with what the opponent played. */
+const finishedWith = (
+  match: ActionMatch | CoachedMatch,
+  input: MatchInput,
+  report: MatchReport | undefined,
+  userSide: Side,
+): [FinishedMatch, MatchReport | undefined] => [
+  finishedMatchOf(match, input.engineVersion),
+  withOpponent(report, match, userSide),
+];
 
 /** Ids of the players who played, per side: the starters and everyone a change brought on. */
 const playedIds = (

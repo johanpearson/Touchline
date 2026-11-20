@@ -8,12 +8,7 @@ import {
   type MatchReport,
   SHOUT_DURATION_MINUTES,
 } from "../../game";
-import {
-  type ChangesEditor,
-  type ChangesSource,
-  editorAt,
-  type PlannedEditorChange,
-} from "./half-time-model";
+import { type ChangesSource, editorAt, type PlannedEditorChange } from "./half-time-model";
 import { matchMinuteOf } from "./match-minute";
 import type { MatchPlayback } from "./use-match-playback";
 
@@ -54,6 +49,23 @@ export const shoutExpired = (
   return minute >= end && !edits.some((edit) => edit.minute >= end);
 };
 
+type ExpiryInput = {
+  source?: ChangesSource;
+  state: State;
+  minute: number;
+  apply: (applied: PlannedEditorChange) => boolean;
+};
+
+/** Puts the base tactics back with an empty change at the minute a shout runs out. */
+const useShoutExpiry = ({ source, state, minute, apply }: ExpiryInput) => {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the clock reaches a minute or the rules change
+  useEffect(() => {
+    if (!source || !shoutExpired(state.rules, state.edits, minute)) return;
+    const planned = source(state.rules).plan({ minute });
+    if (planned.ok) apply({ ...planned, request: { minute } });
+  }, [minute, state.rules]);
+};
+
 /**
  * The user's changes during the match: the rules state, the edits for the session and the report of
  * minutes. `editor` is built for the current stoppage (half-time or the paused minute); `apply`
@@ -74,13 +86,9 @@ export const useMatchChanges = ({
   );
   const halfTime = period === "halfTime";
   const minute = halfTime ? HALF_TIME_MINUTE : matchMinuteOf(matchTime, zoneEvents);
-  const editor: ChangesEditor | undefined =
+  const editor =
     source && stoppage(period)
-      ? editorAt(source(state.rules), {
-          minute,
-          halfTime,
-          energy: match.state.energy,
-        })
+      ? editorAt(source(state.rules), { minute, halfTime, energy: match.state.energy })
       : undefined;
 
   const apply = (applied: PlannedEditorChange): boolean => {
@@ -95,12 +103,7 @@ export const useMatchChanges = ({
     return true;
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the clock reaches a minute or the rules change
-  useEffect(() => {
-    if (!source || !shoutExpired(state.rules, state.edits, minute)) return;
-    const planned = source(state.rules).plan({ minute });
-    if (planned.ok) apply({ ...planned, request: { minute } });
-  }, [minute, state.rules]);
+  useShoutExpiry({ source, state, minute, apply });
 
   const startSecondHalf = (applied?: PlannedEditorChange) => {
     if (applied) apply(applied);
