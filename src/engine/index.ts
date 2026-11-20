@@ -96,6 +96,8 @@ export {
 } from "./action/team-shape";
 export type { FormationCounts, TeamSheet } from "./action/team-sheet";
 export { STARTER_COUNT } from "./action/team-sheet";
+export type { Phase, PhaseOutcome } from "./action/to-phases";
+export { toPhases } from "./action/to-phases";
 export { createZoneEventAdapter, toZoneEvents } from "./action/to-zone-events";
 export type {
   MatchInputError,
