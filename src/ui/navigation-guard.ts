@@ -50,8 +50,10 @@ const attach = () => {
   window.addEventListener("hashchange", onHashChange);
 };
 
+const inUse = (): boolean => guards.size > 0 || listeners.size > 0;
+
 const detachWhenUnused = () => {
-  if (!attached || guards.size > 0 || listeners.size > 0) return;
+  if (!attached || inUse()) return;
   attached = false;
   window.removeEventListener("hashchange", onHashChange);
 };

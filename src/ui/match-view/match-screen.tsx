@@ -3,18 +3,19 @@ import { generateActionCommentary } from "../../commentary";
 import type {
   ActionEvent,
   ActionMatch,
+  ActionMatchState,
   MatchInput,
   PerSide,
   Side,
   TimedActionMatchChange,
 } from "../../engine";
 import { computeActionStats, createActionMatch, playerRatings } from "../../engine";
-import { type CoachedMatch, goalScorersOf, type MatchReport } from "../../game";
+import type { CoachedMatch, MatchReport } from "../../game";
 import { useI18n } from "../i18n-provider";
 import { useSuspendPaletteShortcut } from "../palette/palette-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
-import { type FinishedMatch, withOpponent } from "./finish-match";
+import { type FinishedMatch, finishedMatchOf, withOpponent } from "./finish-match";
 import { FullTimeReport } from "./full-time-report";
 import type { HalfTimeEditor } from "./half-time-panel";
 import { LeaveMatchPrompt } from "./leave-match-dialog";
@@ -138,16 +139,15 @@ export function MatchScreen({
   });
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   const actionStats = useMemo(() => computeActionStats(events, matchTime), [eventCount, matchTime]);
-  const fullTime = state.period === "fullTime";
-  // Starters plus everyone brought on by an applied change; read once the match is over.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `match.changes` is mutated in place
-  const played = useMemo(() => playedIds(input, match.changes), [input, state.period]);
-  const ratingRows = useFinalRatings({ events, fullTime, played, players, userSide });
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place and only read at full time
-  const goals = useMemo(
-    () => (fullTime ? goalsOf(events, zoneEvents, players) : []),
-    [fullTime, zoneEvents, players],
-  );
+  const { played, ratingRows, goals } = useFullTimeData({
+    input,
+    match,
+    events,
+    zoneEvents,
+    period: state.period,
+    players,
+    userSide,
+  });
   const shown = useMemo(() => terrainEvents(zoneEvents, state.period), [zoneEvents, state.period]);
   const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
@@ -203,12 +203,7 @@ export function MatchScreen({
           onContinue &&
           (() =>
             onContinue(
-              {
-                score: state.score,
-                scorers: goalScorersOf(events),
-                engineVersion: input.engineVersion,
-                energy: match.state.energy,
-              },
+              finishedMatchOf(match, input.engineVersion),
               withOpponent(report, match, userSide),
             ))
         }
@@ -241,6 +236,39 @@ const playedIds = (
     for (const player of change.lineup ?? []) played[change.side].add(player.id);
   }
   return { home: [...played.home], away: [...played.away] };
+};
+
+type FullTimeDataInput = {
+  input: MatchInput;
+  match: ActionMatch;
+  events: readonly ActionEvent[];
+  zoneEvents: Parameters<typeof goalsOf>[1];
+  period: ActionMatchState["period"];
+  players: Readonly<Record<string, string>>;
+  userSide: Side;
+};
+
+/** Who played, the rating rows and the goals; the last two are empty until the match is over. */
+const useFullTimeData = ({
+  input,
+  match,
+  events,
+  zoneEvents,
+  period,
+  players,
+  userSide,
+}: FullTimeDataInput) => {
+  const fullTime = period === "fullTime";
+  // Starters plus everyone brought on by an applied change; read once the match is over.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `match.changes` is mutated in place
+  const played = useMemo(() => playedIds(input, match.changes), [input, period]);
+  const ratingRows = useFinalRatings({ events, fullTime, played, players, userSide });
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place and only read at full time
+  const goals = useMemo(
+    () => (fullTime ? goalsOf(events, zoneEvents, players) : []),
+    [fullTime, zoneEvents, players],
+  );
+  return { played, ratingRows, goals };
 };
 
 type FinalRatingsInput = {
