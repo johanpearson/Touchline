@@ -3,7 +3,7 @@ import { useState } from "react";
 import { cn, Drawer } from "../components";
 import { useI18n } from "../i18n-provider";
 import { moreItems, phoneTabItems } from "./nav-config";
-import { type NavEntry, useNavEntries } from "./use-nav-entries";
+import { type NavEntry, navClick, useNavEntries } from "./use-nav-entries";
 
 const tabStyles = cn(
   "flex min-h-14 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 px-1",
@@ -19,6 +19,7 @@ function TabLink({ entry }: { entry: NavEntry }) {
       data-testid={entry.testId}
       href={entry.href}
       aria-current={entry.current ? "page" : undefined}
+      onClick={navClick(entry)}
       className={tabStyles}
     >
       <span
@@ -46,7 +47,7 @@ function MoreList({ onNavigate }: { onNavigate: () => void }) {
               data-testid={entry.testId}
               href={entry.href}
               aria-current={entry.current ? "page" : undefined}
-              onClick={onNavigate}
+              onClick={navClick(entry, onNavigate)}
               className="flex min-h-11 items-center gap-3 rounded-md px-3 text-base text-soft hover:bg-sunk hover:text-text focus-visible:outline-2 focus-visible:outline-focus aria-[current=page]:bg-sunk aria-[current=page]:font-semibold aria-[current=page]:text-text"
             >
               <Icon aria-hidden="true" className="size-5" />

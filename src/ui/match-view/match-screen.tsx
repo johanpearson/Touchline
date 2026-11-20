@@ -1,22 +1,24 @@
-import { useMemo, useState } from "react";
+import { type ComponentProps, useMemo, useState } from "react";
 import { generateActionCommentary } from "../../commentary";
 import type {
   ActionEvent,
   ActionMatch,
   ActionMatchState,
-  EngineVersion,
   MatchInput,
   PerSide,
   Side,
+  TimedActionMatchChange,
 } from "../../engine";
 import { computeActionStats, createActionMatch, playerRatings } from "../../engine";
-import { type CoachedMatch, goalScorersOf, type MatchReport } from "../../game";
+import type { CoachedMatch, MatchReport } from "../../game";
 import { useI18n } from "../i18n-provider";
 import { useSuspendPaletteShortcut } from "../palette/palette-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
+import { type FinishedMatch, finishedMatchOf, withOpponent } from "./finish-match";
 import { FullTimeReport } from "./full-time-report";
 import type { HalfTimeEditor } from "./half-time-panel";
+import { LeaveMatchPrompt } from "./leave-match-dialog";
 import { LineupsPanel } from "./lineups-panel";
 import { MatchLayout } from "./match-layout";
 import type { MatchProgress, ProgressMoment, RestoredMatch } from "./match-progress";
@@ -25,19 +27,10 @@ import { PlayerRatings } from "./player-ratings";
 import { buildRatingRows } from "./ratings-table";
 import { terrainEvents } from "./terrain-events";
 import type { TerrainRendererFactory } from "./terrain-renderer";
+import { useMatchLeave } from "./use-match-leave";
 import { useMatchPlayback } from "./use-match-playback";
 import { useMatchProgress } from "./use-match-progress";
 import { useZoneEvents } from "./use-zone-events";
-
-/** What `onContinue` gets at full time. */
-export type FinishedMatch = {
-  score: ActionMatchState["score"];
-  /** Player ids of the scorers in the order the goals were scored. */
-  scorers: string[];
-  engineVersion: EngineVersion;
-  /** Energy (0 to 100) each player who played ended the match with. */
-  energy: Readonly<Record<string, number>>;
-};
 
 export type MatchScreenProps = {
   seed: number;
@@ -72,8 +65,22 @@ export type MatchScreenProps = {
   restored?: RestoredMatch;
   /** Called with what is needed to resume the match: on every change and, while it runs, often. */
   onProgress?: (progress: MatchProgress, moment: ProgressMoment) => void;
-  /** When given, the scoreboard has a back link to the hub that asks first and then calls this. */
+  /** When given, the scoreboard has a back link to the hub; the screen asks before it leaves a match in progress. */
   onLeave?: () => void;
+  /**
+   * When given, the screen holds the user on a match in progress: navigating elsewhere asks first,
+   * and "Simulate the rest now" calls this with what is needed to play the match to its end and the
+   * hash the user wanted to go to. The owner records the result and goes there.
+   */
+  onSimulateRest?: (rest: SimulatedRest, destination: string) => void;
+};
+
+/** What a match screen hands over when the user lets the rest of the match be simulated. */
+export type SimulatedRest = {
+  /** The user's changes with the engine time they were applied at. */
+  changes: readonly TimedActionMatchChange[];
+  /** The report of minutes when the user made changes at half-time. */
+  report?: MatchReport;
 };
 
 /**
@@ -96,8 +103,8 @@ export function MatchScreen({
   onProgress,
   onContinue,
   onLeave,
+  onSimulateRest,
 }: MatchScreenProps) {
-  const { locale } = useI18n();
   const [match] = useState(() => createMatch?.() ?? createActionMatch(input, seed));
   const {
     matchTime,
@@ -123,95 +130,82 @@ export function MatchScreen({
     playback: { ...playback, matchTime, period: state.period, userChanges, userChangeCount },
     resume,
   });
-  const zoneEvents = useZoneEvents(events, eventCount);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  const actionStats = useMemo(() => computeActionStats(events, matchTime), [eventCount, matchTime]);
-  const fullTime = state.period === "fullTime";
-  // Starters plus everyone brought on by an applied change; read once the match is over.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `match.changes` is mutated in place
-  const played = useMemo(() => playedIds(input, match.changes), [input, state.period]);
-  const ratingRows = useFinalRatings({ events, fullTime, played, players, userSide });
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place and only read at full time
-  const goals = useMemo(
-    () => (fullTime ? goalsOf(events, zoneEvents, players) : []),
-    [fullTime, zoneEvents, players],
-  );
-  const shown = useMemo(() => terrainEvents(zoneEvents, state.period), [zoneEvents, state.period]);
-  const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  const lines = useMemo(
-    () => generateActionCommentary(events.slice(0, eventCount), { locale, names, players }, seed),
-    [eventCount, locale, names, players, seed],
-  );
+  const { zoneEvents, actionStats, shown, names, lines, played, ratingRows, goals } =
+    useMatchViewData({
+      input,
+      seed,
+      match,
+      players,
+      userSide,
+      events,
+      eventCount,
+      matchTime,
+      period: state.period,
+    });
+  const active = state.period !== "fullTime" && onSimulateRest !== undefined;
+  const leave = useMatchLeave({ active, paused: playback.paused, setPaused });
   return (
-    <MatchLayout
-      names={names}
-      colours={colours}
-      score={state.score}
-      period={state.period}
-      matchTime={matchTime}
-      events={zoneEvents}
-      terrainEvents={shown}
-      stats={actionStats}
-      playerIds={played}
-      lines={lines}
-      playback={{ ...playback, setPaused }}
-      awaitingResume={awaitingResume}
-      createRenderer={createRenderer}
-      pitch={{ events, createRenderer: createPitchRenderer }}
-      halfTimeEditor={halfTimeEditor}
-      statsPanel={<ActionStatsPanel stats={actionStats} playerIds={played} colours={colours} />}
-      lineupsPanel={
-        <LineupsPanel
-          events={events}
-          eventCount={eventCount}
-          matchTime={matchTime}
-          played={played}
-          names={players}
-          teamNames={names}
-          colours={colours}
-          userSide={userSide}
-        />
-      }
-      onLeave={onLeave}
-      fullTimePanel={
-        <FullTimeReport
-          names={names}
-          colours={colours}
-          score={state.score}
-          userSide={userSide}
-          goals={goals}
-        >
-          <PlayerRatings rows={ratingRows} teamNames={names} />
-        </FullTimeReport>
-      }
-      onResume={startSecondHalf}
-      onContinue={
-        onContinue &&
-        (() =>
-          onContinue(
-            {
-              score: state.score,
-              scorers: goalScorersOf(events),
-              engineVersion: input.engineVersion,
-              energy: match.state.energy,
-            },
-            withOpponent(report, match, userSide),
-          ))
-      }
-    />
+    <>
+      <MatchLayout
+        names={names}
+        colours={colours}
+        score={state.score}
+        period={state.period}
+        matchTime={matchTime}
+        events={zoneEvents}
+        terrainEvents={shown}
+        stats={actionStats}
+        playerIds={played}
+        lines={lines}
+        playback={{ ...playback, setPaused }}
+        awaitingResume={awaitingResume}
+        createRenderer={createRenderer}
+        pitch={{ events, createRenderer: createPitchRenderer }}
+        halfTimeEditor={halfTimeEditor}
+        statsPanel={<ActionStatsPanel stats={actionStats} playerIds={played} colours={colours} />}
+        lineupsPanel={
+          <LineupsPanel
+            events={events}
+            eventCount={eventCount}
+            matchTime={matchTime}
+            played={played}
+            names={players}
+            teamNames={names}
+            colours={colours}
+            userSide={userSide}
+          />
+        }
+        onLeave={onLeave}
+        fullTimePanel={
+          <FullTimePanel
+            report={{ names, colours, score: state.score, userSide, goals }}
+            rows={ratingRows}
+          />
+        }
+        onResume={startSecondHalf}
+        onContinue={
+          onContinue &&
+          (() =>
+            onContinue(
+              finishedMatchOf(match, input.engineVersion),
+              withOpponent(report, match, userSide),
+            ))
+        }
+      />
+      <LeaveMatchPrompt
+        target={leave.target}
+        names={names}
+        score={state.score}
+        matchTime={matchTime}
+        events={zoneEvents}
+        onStay={leave.stay}
+        onSimulate={(destination) =>
+          onSimulateRest?.({ changes: userChanges, report }, destination)
+        }
+      />
+    </>
   );
 }
-
-/** The user's report with what the AI opponent played; the user's report is absent when nothing was changed. */
-const withOpponent = (
-  report: MatchReport | undefined,
-  match: ActionMatch | CoachedMatch,
-  userSide: Side,
-): MatchReport | undefined => {
-  if (!report || !("aiReports" in match)) return report;
-  return { ...report, opponent: match.aiReports()[userSide === "home" ? "away" : "home"] };
-};
 
 /** Ids of the players who played, per side: the starters and everyone a change brought on. */
 const playedIds = (
@@ -226,6 +220,89 @@ const playedIds = (
     for (const player of change.lineup ?? []) played[change.side].add(player.id);
   }
   return { home: [...played.home], away: [...played.away] };
+};
+
+type FullTimePanelProps = {
+  report: Omit<ComponentProps<typeof FullTimeReport>, "children">;
+  rows: ComponentProps<typeof PlayerRatings>["rows"];
+};
+
+/** The full-time report with the player ratings under it. */
+const FullTimePanel = ({ report, rows }: FullTimePanelProps) => (
+  <FullTimeReport {...report}>
+    <PlayerRatings rows={rows} teamNames={report.names} />
+  </FullTimeReport>
+);
+
+type MatchViewDataInput = {
+  input: MatchInput;
+  seed: number;
+  match: ActionMatch;
+  players: Readonly<Record<string, string>>;
+  userSide: Side;
+  events: readonly ActionEvent[];
+  eventCount: number;
+  matchTime: number;
+  period: ActionMatchState["period"];
+};
+
+/** Everything the match layout shows that is derived from the event log, memoised on what changes it. */
+const useMatchViewData = (data: MatchViewDataInput) => {
+  const { input, seed, match, players, userSide, events, eventCount, matchTime, period } = data;
+  const { locale } = useI18n();
+  const zoneEvents = useZoneEvents(events, eventCount);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place
+  const actionStats = useMemo(() => computeActionStats(events, matchTime), [eventCount, matchTime]);
+  const full = useFullTimeData({
+    input,
+    match,
+    events,
+    zoneEvents,
+    period,
+    players,
+    userSide,
+  });
+  const shown = useMemo(() => terrainEvents(zoneEvents, period), [zoneEvents, period]);
+  const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place
+  const lines = useMemo(
+    () => generateActionCommentary(events.slice(0, eventCount), { locale, names, players }, seed),
+    [eventCount, locale, names, players, seed],
+  );
+  return { zoneEvents, actionStats, shown, names, lines, ...full };
+};
+
+type FullTimeDataInput = {
+  input: MatchInput;
+  match: ActionMatch;
+  events: readonly ActionEvent[];
+  zoneEvents: Parameters<typeof goalsOf>[1];
+  period: ActionMatchState["period"];
+  players: Readonly<Record<string, string>>;
+  userSide: Side;
+};
+
+/** Who played, the rating rows and the goals; the last two are empty until the match is over. */
+const useFullTimeData = ({
+  input,
+  match,
+  events,
+  zoneEvents,
+  period,
+  players,
+  userSide,
+}: FullTimeDataInput) => {
+  const fullTime = period === "fullTime";
+  // Starters plus everyone brought on by an applied change; read once the match is over.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `match.changes` is mutated in place
+  const played = useMemo(() => playedIds(input, match.changes), [input, period]);
+  const ratingRows = useFinalRatings({ events, fullTime, played, players, userSide });
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place and only read at full time
+  const goals = useMemo(
+    () => (fullTime ? goalsOf(events, zoneEvents, players) : []),
+    [fullTime, zoneEvents, players],
+  );
+  return { played, ratingRows, goals };
 };
 
 type FinalRatingsInput = {

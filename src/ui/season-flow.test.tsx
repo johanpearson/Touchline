@@ -144,16 +144,17 @@ describe("season flow", () => {
     expect(scores).toContain(shown);
   });
 
-  it("does not record a result when leaving the match early", () => {
+  it("records no result and keeps the match when the user stays instead of leaving early", () => {
     mount();
     startMatch();
     goTo("#/league");
-    for (const cell of screen.getAllByTestId(/^table-row-/)) {
-      expect(within(cell).getAllByRole("cell")[2]?.textContent).toBe("0");
-    }
+    fireEvent.click(screen.getByTestId("leave-match-stay"));
+    expect(screen.getByTestId("match-screen")).toBeTruthy();
+    expect(screen.queryByTestId("screen-league")).toBeNull();
+    expect(screen.getByTestId("nav-progress").textContent).toContain("1");
   });
 
-  it("resumes the match paused where it was after leaving it", () => {
+  it("pauses the match while the leave question is open and goes on from the same minute on Stay", () => {
     mount();
     startMatch();
     fireEvent.click(screen.getByTestId("mode-highlights"));
@@ -161,13 +162,13 @@ describe("season flow", () => {
     const clock = screen.getByTestId("clock").textContent;
     expect(clock).not.toBe("0’");
     goTo("#/");
-    expect(screen.getByTestId("header-action").textContent).toBe("Resume match");
-    click("play-match");
-    expect(screen.queryByTestId("pre-match")).toBeNull();
-    expect(screen.getByTestId("clock").textContent).toBe(clock);
-    expect(screen.getByTestId("pause-toggle").textContent).toBe("Resume");
+    expect(screen.getByRole("alertdialog")).toBeTruthy();
     act(() => vi.advanceTimersByTime(3_000));
     expect(screen.getByTestId("clock").textContent).toBe(clock);
+    fireEvent.click(screen.getByTestId("leave-match-stay"));
+    expect(screen.getByTestId("pause-toggle").textContent).toBe("Pause");
+    act(() => vi.advanceTimersByTime(3_000));
+    expect(screen.getByTestId("clock").textContent).not.toBe(clock);
   });
 
   it("redirects #/match and #/results to the hub when there is nothing to show", () => {

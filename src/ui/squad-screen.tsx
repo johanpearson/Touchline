@@ -29,8 +29,11 @@ const FIRST_SORT: SortState = {
 
 const GROUP_ORDER = ["GK", "DEF", "MID", "FWD"] as const;
 
-/** The squad as a player table; the lineup and tactics are edited on the tactics screen. */
-export function SquadScreen({ career }: { career: Career }) {
+/**
+ * The squad as a player table; the lineup and tactics are edited on the tactics screen. `readOnly`
+ * (the panel over a match) leaves out the link to it.
+ */
+export function SquadScreen({ career, readOnly = false }: { career: Career; readOnly?: boolean }) {
   const { t, formatNumber, locale } = useI18n();
   const { density } = useDensity();
   const [position, setPosition] = useState<PositionFilter>("all");
@@ -151,13 +154,15 @@ export function SquadScreen({ career }: { career: Career }) {
           </TabsContent>
         ))}
       </Tabs>
-      <div>
-        <Button asChild variant="secondary">
-          <a href={hrefFor({ name: "tactics" })} data-testid="edit-lineup">
-            {t("squad.editLineup")}
-          </a>
-        </Button>
-      </div>
+      {readOnly ? null : (
+        <div>
+          <Button asChild variant="secondary">
+            <a href={hrefFor({ name: "tactics" })} data-testid="edit-lineup">
+              {t("squad.editLineup")}
+            </a>
+          </Button>
+        </div>
+      )}
       <SquadDetail
         row={detail}
         development={career.lastDevelopment}

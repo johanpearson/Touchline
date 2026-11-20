@@ -4,7 +4,7 @@ import { aCareer } from "./career-builders";
 import { createCoachedMatch } from "./coached-match";
 import type { Fixture } from "./generate-fixtures";
 import { identityOf, type MatchSession } from "./match-session";
-import { resumeMatch } from "./resume-match";
+import { playToFullTime, resumeMatch } from "./resume-match";
 
 const career = aCareer(7);
 const fixture = career.season.fixtures.find(
@@ -116,5 +116,39 @@ describe("resumeMatch", () => {
     const bad = { ...sessionAt(halfTime, halfTime, false) };
     bad.changes = [{ time: halfTime, change: { side: userSide, lineup: [] } }];
     expect(resumeMatch(bad, create)).toEqual({ ok: false, error: "invalid-change" });
+  });
+});
+
+describe("playToFullTime", () => {
+  const plain = (): ActionMatch => {
+    const match = create();
+    match.advanceTo(END);
+    match.resume();
+    match.advanceTo(END);
+    return match;
+  };
+
+  it("gives the log of a match played without a stop, from kick-off", () => {
+    const match = create();
+    playToFullTime(match);
+    expect(match.state.period).toBe("fullTime");
+    expect(match.events).toEqual(plain().events);
+  });
+
+  it("starts the second half of a match waiting at half-time", () => {
+    const match = create();
+    match.advanceTo(END);
+    expect(match.state.period).toBe("halfTime");
+    playToFullTime(match);
+    expect(match.state.period).toBe("fullTime");
+    expect(match.state.score).toEqual(plain().state.score);
+  });
+
+  it("changes nothing once the match is over", () => {
+    const match = create();
+    playToFullTime(match);
+    const events = match.events.length;
+    playToFullTime(match);
+    expect(match.events).toHaveLength(events);
   });
 });

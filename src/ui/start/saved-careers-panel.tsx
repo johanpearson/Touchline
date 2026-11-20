@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, EmptyState, Skeleton } from "../components";
 import { useI18n } from "../i18n-provider";
 import { ImportControls } from "../import-controls";
+import { navigateUnguarded } from "../navigation-guard";
 import { hrefFor } from "../routes";
 import type { SlotEntry, SlotError } from "../save-slots";
 import { KitIcon } from "../shell/kit-icon";
@@ -137,7 +138,7 @@ export function SavedCareersPanel({ id, nowIso }: { id: string; nowIso: string }
       setFailure(null);
       const result = await loadSlot(slotId);
       if (result.ok) {
-        window.location.hash = hrefFor({ name: "home" });
+        navigateUnguarded(hrefFor({ name: "home" }));
         return;
       }
       setFailure(result.error);

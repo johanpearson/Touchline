@@ -239,6 +239,8 @@ A presentation layer between the engine event log and the views; the engine is u
 
 ### Match lock and persistence (item 11)
 - While a match is running, squad and tactics open as **panels over the match screen** (a side drawer on desktop, a sheet on phones). Any other navigation asks for confirmation with **Stay** (default) or **Simulate the rest now** (the deterministic result, recorded as "Continue" does, then the user goes where they asked).
+- The question is an alert dialog: it names the score and minute, **Stay** is focused and Escape means Stay, there is no close button and an outside click does nothing. The match is paused while it is open and goes on from the same minute on Stay. The scoreboard's back link asks the same question. After full time, and on the pre-match screen, nothing is locked.
+- The panels are read only until the changes issue (#390): squad (the table without the "Edit lineup" link) and tactics (formation, starters, bench, tactic levels and team ratings). Escape and the close button close a panel and focus returns to the link that opened it.
 - Match state (seed, input, timed changes, shouts, playback mode and position) is persisted, so a reload resumes the match paused at the saved position; the pre-match screen only shows when there is no session. Header and navigation say "Resume match". Sessions are not part of saves or exports.
 
 ### Changes during a match (item 10)

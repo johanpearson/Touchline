@@ -63,9 +63,11 @@ export const sv = {
   "match.back": "Tillbaka till startsidan",
   "match.leave.title": "Lämna matchen?",
   "match.leave.body":
-    "Matchen startar om från avspark om du kommer tillbaka. Inget resultat sparas.",
-  "match.leave.confirm": "Lämna matchen",
+    "Matchen pågår. Stanna för att fortsätta titta, eller spela klart resten nu utan att titta. Resultatet blir detsamma.",
+  "match.leave.status": "{home} {homeGoals}–{awayGoals} {away}, {minute}",
+  "match.leave.confirm": "Simulera resten nu",
   "match.leave.cancel": "Stanna",
+  "match.lock.readOnly": "Skrivskyddat medan matchen pågår.",
   "match.close": "Stäng",
   "match.panel.label": "Matchinformation",
   "match.tab.stats": "Statistik",

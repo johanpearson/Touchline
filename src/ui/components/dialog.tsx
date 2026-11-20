@@ -21,12 +21,18 @@ export type DialogProps = {
   actions?: ReactNode;
   /** Destructive confirms ignore outside clicks and hide the close button; Escape still closes. */
   destructive?: boolean;
+  /**
+   * A question that must be answered: the dialog has the `alertdialog` role and, like a destructive
+   * confirm, ignores outside clicks and has no close button. Escape still closes it.
+   */
+  alert?: boolean;
   className?: string;
 };
 
 export function Dialog(props: DialogProps) {
   const motionProps = useOverlayMotion();
-  const { destructive = false } = props;
+  const { destructive = false, alert = false } = props;
+  const pinned = destructive || alert;
   const [open, setOpen] = useOpenState(props);
   return (
     <RadixDialog.Root open={open} onOpenChange={setOpen}>
@@ -45,7 +51,8 @@ export function Dialog(props: DialogProps) {
                 <RadixDialog.Content
                   asChild
                   forceMount
-                  onInteractOutside={destructive ? (e) => e.preventDefault() : undefined}
+                  {...(alert ? { role: "alertdialog" } : {})}
+                  onInteractOutside={pinned ? (e) => e.preventDefault() : undefined}
                 >
                   <motion.div
                     {...motionProps}
@@ -59,7 +66,7 @@ export function Dialog(props: DialogProps) {
                       title={props.title}
                       description={props.description}
                       closeLabel={props.closeLabel}
-                      showClose={!destructive}
+                      showClose={!pinned}
                     />
                     {props.children ? <div className="mt-4">{props.children}</div> : null}
                     {props.actions ? <OverlayActions>{props.actions}</OverlayActions> : null}

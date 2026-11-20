@@ -21,6 +21,8 @@ export type DrawerProps = {
   className?: string;
   /** Moves focus to the title when the sheet opens, instead of to its first control. */
   focusTitle?: boolean;
+  /** Where focus goes when the sheet closes, for a sheet without a trigger; preventDefault and move it. */
+  onCloseAutoFocus?: (event: Event) => void;
 };
 
 const focusHeading = (event: Event) => {
@@ -58,6 +60,7 @@ export function Drawer(props: DrawerProps) {
               asChild
               forceMount
               onOpenAutoFocus={props.focusTitle ? focusHeading : undefined}
+              onCloseAutoFocus={props.onCloseAutoFocus}
             >
               <motion.div
                 {...motionProps}

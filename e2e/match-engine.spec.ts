@@ -101,6 +101,13 @@ test.describe("match engine", () => {
     await page.getByTestId("play-match").click();
     await page.getByTestId("kick-off").click();
     await expect(page.getByTestId("view-toggle")).toBeVisible();
+    // The match screen is locked: leaving it asks, and the rest is simulated before Saves opens.
+    await page.getByTestId("nav-saves").click();
+    await page.getByTestId("leave-match-simulate").click();
+    await expect(page.getByTestId("saves-screen")).toBeVisible();
+    await page.getByTestId("nav-hub").click();
+    const simulatedTable = await tableRows(page);
+    expect(simulatedTable).not.toEqual(table);
     await page.getByTestId("nav-saves").click();
 
     await page.getByTestId("save-slot-1").click();
@@ -118,7 +125,7 @@ test.describe("match engine", () => {
     await page.getByTestId("import-into-slot-2").click();
     await page.getByTestId("load-slot-2").click();
     await expect(page.getByTestId("career-hub")).toBeVisible();
-    expect(await tableRows(page)).toEqual(table);
+    expect(await tableRows(page)).toEqual(simulatedTable);
   });
 });
 
@@ -175,5 +182,73 @@ test.describe("match in progress", () => {
 
     await page.getByTestId("pause-toggle").click();
     expect(await toFullTime(page)).toBe(expected);
+  });
+});
+
+test.describe("match lock", () => {
+  test("asks before leaving a match and can simulate the rest on the way out", async ({ page }) => {
+    test.setTimeout(120_000);
+    await startCareer(page);
+    await page.getByTestId("play-match").click();
+    await freezeClock(page);
+    await page.getByTestId("kick-off").click();
+    await chooseMode(page, "highlights");
+    await advanceClock(page, 30_000);
+    const minute = await page.getByTestId("clock").textContent();
+
+    // Stay: the match is where it was.
+    await page.getByTestId("nav-league").click();
+    await expect(page.getByRole("alertdialog")).toBeVisible();
+    await expect(page.getByTestId("leave-match-stay")).toBeFocused();
+    await expect(page.getByTestId("leave-match-status")).toContainText(minute ?? "");
+    await page.getByTestId("leave-match-stay").click();
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+    await expect(page.getByTestId("match-screen")).toBeVisible();
+    await expect(page).toHaveURL(/#\/match$/);
+    await expect(page.getByTestId("clock")).toHaveText(minute ?? "");
+
+    // Squad and tactics are panels over the match; the address does not change.
+    await page.getByTestId("nav-squad").click();
+    await expect(page.getByTestId("match-panel-squad")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("match-panel-squad")).toHaveCount(0);
+    // Focus returns on a timer, which the frozen page clock holds back.
+    await advanceClock(page, 50);
+    await expect(page.getByTestId("nav-squad")).toBeFocused();
+    await expect(page).toHaveURL(/#\/match$/);
+
+    // Simulate the rest: the league opens and the match is in the table.
+    await page.getByTestId("nav-league").click();
+    await page.getByTestId("leave-match-simulate").click();
+    await expect(page.getByTestId("screen-league")).toBeVisible();
+    await unfreezeClock(page);
+    const played = await page
+      .locator("[data-testid^='table-row-'] td:nth-child(3)")
+      .allTextContents();
+    expect(played.every((p) => p === "1")).toBe(true);
+  });
+
+  test("on a phone the tab bar opens squad and tactics as sheets over the match", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await startCareer(page);
+    await page.getByTestId("play-match").click();
+    await page.getByTestId("kick-off").click();
+
+    await page.getByTestId("nav-squad").click();
+    await expect(page.getByTestId("match-panel-squad")).toBeVisible();
+    await expect(page).toHaveURL(/#\/match$/);
+    await page.getByRole("button", { name: "Close" }).click();
+    await expect(page.getByTestId("match-panel-squad")).toHaveCount(0);
+
+    await page.getByTestId("nav-more").click();
+    await page.getByTestId("nav-tactics").click();
+    await expect(page.getByTestId("match-panel-tactics")).toBeVisible();
+    await expect(page).toHaveURL(/#\/match$/);
+
+    await page.keyboard.press("Escape");
+    await page.getByTestId("nav-league").click();
+    await expect(page.getByRole("alertdialog")).toBeVisible();
   });
 });

@@ -165,20 +165,10 @@ describe("match layout", () => {
       expect(screen.queryByTestId("leave-match")).toBeNull();
     });
 
-    it("asks before leaving and stays when the user cancels", () => {
+    it("hands the leave request to the screen, which asks when the match is on", () => {
       const onLeave = vi.fn();
       mount({ onLeave });
       fireEvent.click(screen.getByTestId("leave-match"));
-      expect(onLeave).not.toHaveBeenCalled();
-      fireEvent.click(screen.getByText("Stay"));
-      expect(onLeave).not.toHaveBeenCalled();
-    });
-
-    it("leaves after the user confirms", () => {
-      const onLeave = vi.fn();
-      mount({ onLeave });
-      fireEvent.click(screen.getByTestId("leave-match"));
-      fireEvent.click(screen.getByTestId("leave-match-confirm"));
       expect(onLeave).toHaveBeenCalledTimes(1);
     });
   });

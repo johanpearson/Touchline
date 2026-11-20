@@ -22,9 +22,12 @@ import {
   type HalfTimeEditor,
   MatchScreen,
   type MatchScreenProps,
+  type SimulatedRest,
+  simulateRest as simulate,
 } from "./match-view";
 import type { MatchProgress, ProgressMoment } from "./match-view/match-progress";
 import { createSessionWriter } from "./match-view/session-writer";
+import { navigateUnguarded } from "./navigation-guard";
 import { PreMatchStep } from "./pre-match/pre-match-step";
 import { Redirect } from "./redirect";
 import { hrefFor } from "./routes";
@@ -108,7 +111,8 @@ function PlayMatch({
     plan: (changes) => planHalfTime(career, fixture, changes),
   };
 
-  const finish = (
+  /** Records the result and deletes the session; null when the career took it. */
+  const record = (
     { score, scorers, engineVersion, energy }: FinishedMatch,
     report?: MatchReport,
   ) => {
@@ -122,8 +126,25 @@ function PlayMatch({
       scorers,
     };
     endSession();
-    if (completeMatch(result, userReportWithEnergy(career, report, energy)) === null)
-      window.location.hash = hrefFor({ name: "results" });
+    return completeMatch(result, userReportWithEnergy(career, report, energy));
+  };
+  const finish = (finished: FinishedMatch, report?: MatchReport) => {
+    if (record(finished, report) === null) window.location.hash = hrefFor({ name: "results" });
+  };
+  const userSide = fixture.homeClubId === career.userClubId ? "home" : "away";
+  // The match is played to the end without playback, recorded as "Continue" records it, and the
+  // user goes where they asked. A match that cannot be replayed is dropped, so nobody is trapped.
+  const simulateRest = ({ changes, report }: SimulatedRest, destination: string) => {
+    const rest = simulate({
+      createMatch: setup.createMatch,
+      changes,
+      engineVersion: setup.input.engineVersion,
+      userSide,
+      report,
+    });
+    if (rest) record(rest.finished, rest.report);
+    else endSession();
+    navigateUnguarded(destination);
   };
 
   if (failed) return null;
@@ -133,7 +154,7 @@ function PlayMatch({
       key={`${career.season.number}-${fixture.id}`}
       {...setup}
       createMatch={restoredMatch?.ok ? () => restoredMatch.match : setup.createMatch}
-      userSide={fixture.homeClubId === career.userClubId ? "home" : "away"}
+      userSide={userSide}
       createRenderer={createRenderer}
       tickMs={tickMs}
       halfTimeEditor={editor}
@@ -149,6 +170,7 @@ function PlayMatch({
       }
       onProgress={onProgress}
       onContinue={finish}
+      onSimulateRest={simulateRest}
       onLeave={() => {
         window.location.hash = hrefFor({ name: "home" });
       }}
