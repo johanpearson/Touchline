@@ -15,6 +15,8 @@ export type MomentumAreaOptions = {
   /** When the first half ended, in seconds. */
   halfTime: number;
   goals: readonly MomentumGoal[];
+  /** Match times of the user's changes (substitutions, tactics, shouts), drawn as thin markers. */
+  changeTimes?: readonly number[];
 };
 
 export type SideArea = {
@@ -31,6 +33,8 @@ export type MomentumArea = {
   away: SideArea;
   centreY: number;
   goals: MomentumGoalMarker[];
+  /** One marker per change the clock has reached. */
+  changes: { time: number; x: number }[];
   playheadX: number;
   halfTimeX: number;
 };
@@ -103,6 +107,7 @@ export const momentumArea = (
     matchTime,
     halfTime,
     goals,
+    changeTimes = [],
   }: MomentumAreaOptions,
 ): MomentumArea => {
   const centreY = height / 2;
@@ -137,6 +142,9 @@ export const momentumArea = (
     goals: goals
       .filter((goal) => goal.time <= matchTime)
       .map((goal) => ({ ...goal, x: xOf(goal.time), y: centreY })),
+    changes: changeTimes
+      .filter((time) => time <= matchTime)
+      .map((time) => ({ time, x: xOf(time) })),
     playheadX,
     halfTimeX: xOf(halfTime),
   };

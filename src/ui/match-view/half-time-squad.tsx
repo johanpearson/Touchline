@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
+import type { PlayerPosition } from "../../game";
 import type { MessageKey } from "../../i18n";
 import { cn } from "../components/cn";
 import { useI18n } from "../i18n-provider";
-import { LOW_FITNESS } from "../plan-rows";
-import { type HalfTimeEditor, playerOf } from "./half-time-model";
+import { PlayerRatingBadge } from "../player-rating-badge";
+import { type ChangesEditor, energyOf, playerOf, ratingAt } from "./half-time-model";
 
 export type RowMark = "off" | "on" | null;
 
@@ -12,52 +13,76 @@ const ROW =
 const PICKABLE =
   "cursor-pointer hover:bg-glow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 
-function RowBody({ editor, id, mark }: { editor: HalfTimeEditor; id: string; mark: RowMark }) {
+type RowBodyProps = {
+  editor: ChangesEditor;
+  id: string;
+  mark: RowMark;
+  /** The position the rating is for; the player's own when absent. */
+  position: PlayerPosition;
+  /** True when this is not the player's own position, so the row says where he would play. */
+  asPosition: boolean;
+};
+
+function RowBody({ editor, id, mark, position, asPosition }: RowBodyProps) {
   const { t, formatNumber } = useI18n();
   const player = playerOf(editor, id);
-  const condition = editor.condition[id];
-  const fitness = condition?.fitness ?? 100;
   return (
     <>
       <span className="min-w-0">
         <span className="font-semibold">{player?.name}</span>{" "}
-        <span className="text-soft">{player ? t(`position.short.${player.position}`) : ""}</span>
+        <span className="text-soft" data-testid={`row-position-${id}`}>
+          {asPosition
+            ? t("changes.playsAs", { position: t(`position.short.${position}`) })
+            : t(`position.short.${position}`)}
+        </span>
         {mark ? (
           <span className="ml-2 rounded-pill border border-accent px-2 text-sm font-semibold text-text">
             {t(mark === "off" ? "halfTime.mark.off" : "halfTime.mark.on")}
           </span>
         ) : null}
       </span>
-      <span className="shrink-0 text-sm text-soft">
-        {t("squad.col.fitness")}{" "}
-        <span
-          data-testid={`half-time-fitness-${id}`}
-          className={cn(fitness < LOW_FITNESS && "text-warn")}
-        >
-          {formatNumber(fitness, 0)}
-        </span>{" "}
-        {t("squad.col.form")}{" "}
-        <span data-testid={`half-time-form-${id}`}>{formatNumber(condition?.form ?? 5, 1)}</span>
+      <span className="flex shrink-0 items-center gap-3 text-sm text-soft">
+        <PlayerRatingBadge
+          rating={ratingAt(editor, id, position)}
+          fitness={energyOf(editor, id)}
+          layout="inline"
+        />
+        <span className="sr-only">
+          {t("squad.col.form")} {formatNumber(editor.condition[id]?.form ?? 5, 1)}
+        </span>
       </span>
     </>
   );
 }
 
 export type SquadSectionProps = {
-  editor: HalfTimeEditor;
+  editor: ChangesEditor;
   title: MessageKey;
   ids: readonly string[];
   marks: Readonly<Record<string, RowMark>>;
+  /** The position each row is rated at. */
+  positionOf: (id: string) => PlayerPosition;
+  /** Whether a row's position differs from the player's own and should be named. */
+  asPosition?: (id: string) => boolean;
   /** Players that can be tapped right now. */
   pickable: (id: string) => boolean;
   onPick: (id: string) => void;
 };
 
-/** The eleven or the bench with fitness and form; the players the flow asks for are buttons. */
-export function SquadSection({ editor, title, ids, marks, pickable, onPick }: SquadSectionProps) {
+/** The eleven or the bench with rating and energy; the players the flow asks for are buttons. */
+export function SquadSection(props: SquadSectionProps) {
+  const { editor, title, ids, marks, positionOf, pickable, onPick } = props;
   const { t } = useI18n();
   const row = (id: string): ReactNode => {
-    const body = <RowBody editor={editor} id={id} mark={marks[id] ?? null} />;
+    const body = (
+      <RowBody
+        editor={editor}
+        id={id}
+        mark={marks[id] ?? null}
+        position={positionOf(id)}
+        asPosition={props.asPosition?.(id) ?? false}
+      />
+    );
     if (!pickable(id)) {
       return (
         <div className={ROW} data-testid={`half-time-row-${id}`}>

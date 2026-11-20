@@ -108,4 +108,13 @@ describe("momentumArea", () => {
     const xs = [...area.home.area.matchAll(/(-?\d+(?:\.\d+)?),/g)].map((m) => Number(m[1]));
     expect(Math.max(...xs)).toBeCloseTo(area.playheadX, 1);
   });
+
+  it("places a thin marker for every change the clock has reached", () => {
+    const area = momentumArea([1, 1], options({ matchTime: 600, changeTimes: [150, 900] }));
+    expect(area.changes).toEqual([{ time: 150, x: 8.33 }]);
+  });
+
+  it("has no change markers without changes", () => {
+    expect(momentumArea([1], options()).changes).toEqual([]);
+  });
 });

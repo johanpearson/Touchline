@@ -14,7 +14,9 @@ export type CommentaryKind =
   | "setPiece"
   | "summary"
   | "halfTime"
-  | "fullTime";
+  | "fullTime"
+  /** The user changed something: a substitution, new tactics or a shout. */
+  | "change";
 
 /** One line for the match feed. */
 export type CommentaryLine = {

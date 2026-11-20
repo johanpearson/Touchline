@@ -122,7 +122,7 @@ describe("match layout", () => {
   describe("Make changes", () => {
     beforeEach(() => installBrowserStubs());
 
-    it("is unavailable before half-time and explains why", () => {
+    it("is unavailable without changes and explains why", () => {
       mount();
       const button = screen.getByTestId("make-changes");
       expect(button.getAttribute("aria-disabled")).toBe("true");

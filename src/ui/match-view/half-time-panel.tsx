@@ -3,12 +3,10 @@ import type { ActionMatchState, ActionStats, PerSide } from "../../engine";
 import { Button } from "../components/button";
 import { useI18n } from "../i18n-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
-import type { AppliedHalfTimePlan } from "./half-time-changes";
-import type { HalfTimeEditor } from "./half-time-model";
+import type { ChangesEditor, PlannedEditorChange } from "./half-time-model";
 import { HalfTimeSheet } from "./half-time-sheet";
 
-export type { AppliedHalfTimePlan } from "./half-time-changes";
-export type { HalfTimeEditor } from "./half-time-model";
+export type { ChangesEditor, PlannedEditorChange } from "./half-time-model";
 
 export type HalfTimePanelProps = {
   homeName: string;
@@ -19,8 +17,8 @@ export type HalfTimePanelProps = {
   /** Ids of the players of each side, to total their key passes. */
   playerIds: PerSide<readonly string[]>;
   /** Without an editor the panel offers no changes. Called with the validated plan, if any. */
-  editor?: HalfTimeEditor;
-  onResume: (plan?: AppliedHalfTimePlan) => void;
+  editor?: ChangesEditor;
+  onResume: (plan?: PlannedEditorChange) => void;
   /** Whether the "Make changes" sheet is open; the match controls open it. Uncontrolled when absent. */
   changesOpen?: boolean;
   onChangesOpenChange?: (open: boolean) => void;
@@ -67,7 +65,7 @@ export function HalfTimePanel(props: HalfTimePanelProps) {
           editor={editor}
           open={open}
           onOpenChange={setOpen}
-          onResume={props.onResume}
+          onApply={props.onResume}
         />
       ) : null}
     </section>

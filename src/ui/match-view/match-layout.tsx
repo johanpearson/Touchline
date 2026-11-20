@@ -1,11 +1,13 @@
 import { type ReactNode, useCallback, useState } from "react";
 import type { CommentaryLine } from "../../commentary";
 import type { ActionEvent, ActionMatchState, ActionStats, PerSide, ZoneEvent } from "../../engine";
+import type { MessageKey } from "../../i18n";
 import { Button } from "../components/button";
 import { useI18n } from "../i18n-provider";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import type { PlaybackMode } from "./director";
-import { type AppliedHalfTimePlan, type HalfTimeEditor, HalfTimePanel } from "./half-time-panel";
+import { type ChangesEditor, HalfTimePanel, type PlannedEditorChange } from "./half-time-panel";
+import { HalfTimeSheet } from "./half-time-sheet";
 import { LeaveMatchButton } from "./leave-match-button";
 import { MatchControls } from "./match-controls";
 import { MatchFeed } from "./match-feed";
@@ -43,8 +45,14 @@ export type MatchLayoutProps = {
   createRenderer?: TerrainRendererFactory;
   /** The action log and renderer of the 2D pitch. */
   pitch: { events: readonly ActionEvent[]; createRenderer?: PitchRendererFactory };
-  halfTimeEditor?: HalfTimeEditor;
-  onResume: (plan?: AppliedHalfTimePlan) => void;
+  /** What the user can change now; absent when the match offers no changes. */
+  editor?: ChangesEditor;
+  /** Starts the second half, with the user's half-time change if there is one. */
+  onResume: (plan?: PlannedEditorChange) => void;
+  /** Applies a change made while the match is paused. */
+  onChange?: (plan: PlannedEditorChange) => void;
+  /** Match times of the user's changes, marked in the momentum chart. */
+  changeTimes?: readonly number[];
   /** The in-match stats panel, hidden at half-time (the half-time panel has its own). */
   statsPanel: ReactNode;
   /** Both elevens with live ratings, in a dialog or tab. */
@@ -57,6 +65,12 @@ export type MatchLayoutProps = {
   onLeave?: () => void;
   /** A restored match that has not been started again yet: the pause button says "Resume". */
   awaitingResume?: boolean;
+};
+
+/** Why "Make changes" is unavailable: after full time, while the match runs, or with no editor. */
+const changesHintOf = (period: ActionMatchState["period"], hasEditor: boolean): MessageKey => {
+  if (period === "fullTime") return "controls.changesHint.fullTime";
+  return hasEditor ? "controls.changesHint.playing" : "controls.changesHint.unavailable";
 };
 
 /** The panels of the match screen; `MatchScreen` feeds it. */
@@ -75,8 +89,10 @@ export function MatchLayout({
   awaitingResume,
   createRenderer,
   pitch,
-  halfTimeEditor,
+  editor,
   onResume,
+  onChange,
+  changeTimes,
   onContinue,
   onLeave,
   statsPanel,
@@ -95,6 +111,8 @@ export function MatchLayout({
   );
   const [changesOpen, setChangesOpen] = useState(false);
   const makeChanges = () => setChangesOpen(true);
+  const canMakeChanges = Boolean(editor) && (halfTime || (playing && paused));
+  const changesHint = changesHintOf(period, editor !== undefined);
   const stageLabel = `${view === "pitch" ? t("match.pitch") : t("match.terrain")}. ${describeStage({
     t,
     names,
@@ -136,7 +154,8 @@ export function MatchLayout({
           mode={playback.mode}
           view={view}
           showChain={showChain}
-          canMakeChanges={halfTime && Boolean(halfTimeEditor)}
+          canMakeChanges={canMakeChanges}
+          changesHint={changesHint}
           onPausedChange={setPaused}
           onModeChange={playback.setMode}
           onViewChange={setView}
@@ -150,12 +169,23 @@ export function MatchLayout({
             score={score}
             stats={stats}
             playerIds={playerIds}
-            editor={halfTimeEditor}
+            editor={editor}
             onResume={onResume}
             changesOpen={changesOpen}
             onChangesOpenChange={setChangesOpen}
           />
         )}
+        {changesOpen && editor && !halfTime ? (
+          <HalfTimeSheet
+            editor={editor}
+            open
+            onOpenChange={setChangesOpen}
+            onApply={(plan) => {
+              if (plan) onChange?.(plan);
+              setChangesOpen(false);
+            }}
+          />
+        ) : null}
         {period === "fullTime" && fullTimePanel}
         {period === "fullTime" && onContinue && (
           <Button
@@ -174,6 +204,7 @@ export function MatchLayout({
           homeColour={colours.home}
           awayColour={colours.away}
           names={names}
+          changeTimes={changeTimes}
         />
       </div>
       <MatchSidePanel

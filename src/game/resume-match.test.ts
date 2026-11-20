@@ -4,6 +4,7 @@ import { aCareer } from "./career-builders";
 import { createCoachedMatch } from "./coached-match";
 import type { Fixture } from "./generate-fixtures";
 import { identityOf, type MatchSession } from "./match-session";
+import { planChange } from "./plan-change";
 import { playToFullTime, resumeMatch } from "./resume-match";
 
 const career = aCareer(7);
@@ -116,6 +117,73 @@ describe("resumeMatch", () => {
     const bad = { ...sessionAt(halfTime, halfTime, false) };
     bad.changes = [{ time: halfTime, change: { side: userSide, lineup: [] } }];
     expect(resumeMatch(bad, create)).toEqual({ ok: false, error: "invalid-change" });
+  });
+});
+
+describe("resumeMatch with changes made in play", () => {
+  const off = career.squadPlan.starters[1] as string;
+  const on = career.squadPlan.bench[0] as string;
+  const first = planChange(career, fixture, { minute: 20, substitutions: [{ off, on }] });
+  if (!first.ok) throw new Error(first.error);
+  const second = planChange(
+    career,
+    fixture,
+    { minute: 62, shout: "pushUp" },
+    { previous: first.changes },
+  );
+  if (!second.ok) throw new Error(second.error);
+
+  /** The match played through without a stop: a substitution in the first half, a shout in the second. */
+  const played = (() => {
+    const match = create();
+    match.advanceTo(20 * 60 + 5);
+    const firstTime = match.state.time;
+    match.applyChange(first.change);
+    match.advanceTo(END);
+    match.resume();
+    match.advanceTo(match.state.time + 17 * 60);
+    const secondTime = match.state.time;
+    match.applyChange(second.change);
+    match.advanceTo(END);
+    return { match, firstTime, secondTime };
+  })();
+  const whole = played.match;
+  const { firstTime, secondTime } = played;
+
+  const session = (matchTime: number, period: "firstHalf" | "secondHalf"): MatchSession => {
+    const changes: TimedActionMatchChange[] = [
+      { time: firstTime, change: first.change },
+      { time: secondTime, change: second.change },
+    ];
+    return {
+      ...identityOf(career, fixture),
+      mode: "extended",
+      changes: changes.filter((c) => c.time <= matchTime),
+      position: { matchTime, period },
+    };
+  };
+
+  it("replays the same log when reloaded after the first change and before or after the second", () => {
+    for (const [matchTime, period] of [
+      [firstTime + 300, "firstHalf"],
+      [secondTime - 100, "secondHalf"],
+      [secondTime + 100, "secondHalf"],
+    ] as const) {
+      const result = resumeMatch(session(matchTime, period), create);
+      if (!result.ok) throw new Error("expected a match");
+      const { match } = result;
+      if (matchTime < secondTime) {
+        // The user makes the second change after the reload, at the same engine time.
+        if (match.state.period === "firstHalf") {
+          match.advanceTo(END);
+          match.resume();
+        }
+        match.advanceTo(secondTime);
+        match.applyChange(second.change);
+      }
+      match.advanceTo(END);
+      expect(match.events).toEqual(whole.events);
+    }
   });
 });
 

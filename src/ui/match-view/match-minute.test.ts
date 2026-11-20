@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ZoneEvent } from "../../engine";
-import { formatMatchMinute } from "./match-minute";
+import { formatMatchMinute, matchMinuteOf } from "./match-minute";
 
 const halfTime = (time: number): ZoneEvent => ({
   type: "periodChange",
@@ -42,5 +42,22 @@ describe("formatMatchMinute", () => {
   it("shows the end of the first half as 45+n while the match is paused at half-time", () => {
     const events = [halfTime(2880)];
     expect(formatMatchMinute(2880, events)).toBe("45’");
+  });
+});
+
+describe("matchMinuteOf", () => {
+  it("counts whole minutes in the first half and stops at 45 in its added time", () => {
+    expect(matchMinuteOf(12 * 60 + 59, [])).toBe(12);
+    expect(matchMinuteOf(2700 + 150, [])).toBe(45);
+  });
+
+  it("counts on from 45 in the second half, whatever the added time of the first", () => {
+    const events = [halfTime(2880)];
+    expect(matchMinuteOf(2880, events)).toBe(45);
+    expect(matchMinuteOf(2880 + 17 * 60 + 10, events)).toBe(62);
+  });
+
+  it("keeps counting past 90 in the added time of the second half", () => {
+    expect(matchMinuteOf(2880 + 47 * 60, [halfTime(2880)])).toBe(92);
   });
 });

@@ -2,7 +2,7 @@ export type { ClassicPitchProps } from "./classic-pitch";
 export { ClassicPitch } from "./classic-pitch";
 export type { FinishedMatch, SimulateRest } from "./finish-match";
 export { simulateRest } from "./finish-match";
-export type { HalfTimeEditor } from "./half-time-panel";
+export type { ChangesEditor, ChangesSource } from "./half-time-model";
 export { interpolateSnapshot } from "./interpolate-snapshot";
 export type { MatchScreenProps, SimulatedRest } from "./match-screen";
 export { MatchScreen } from "./match-screen";

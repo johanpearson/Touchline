@@ -1,4 +1,5 @@
 import { type ComponentProps, useMemo, useState } from "react";
+import type { CommentaryLine } from "../../commentary";
 import { generateActionCommentary } from "../../commentary";
 import type {
   ActionEvent,
@@ -10,14 +11,15 @@ import type {
   TimedActionMatchChange,
 } from "../../engine";
 import { computeActionStats, createActionMatch, playerRatings } from "../../engine";
-import type { CoachedMatch, MatchReport } from "../../game";
+import type { CoachedMatch, MatchEdit, MatchReport } from "../../game";
 import { useI18n } from "../i18n-provider";
 import { useSuspendPaletteShortcut } from "../palette/palette-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
+import { changeLines } from "./change-lines";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
 import { type FinishedMatch, finishedMatchOf, withOpponent } from "./finish-match";
 import { FullTimeReport } from "./full-time-report";
-import type { HalfTimeEditor } from "./half-time-panel";
+import type { ChangesSource } from "./half-time-model";
 import { LeaveMatchPrompt } from "./leave-match-dialog";
 import { LineupsPanel } from "./lineups-panel";
 import { MatchLayout } from "./match-layout";
@@ -27,6 +29,7 @@ import { PlayerRatings } from "./player-ratings";
 import { buildRatingRows } from "./ratings-table";
 import { terrainEvents } from "./terrain-events";
 import type { TerrainRendererFactory } from "./terrain-renderer";
+import { useMatchChanges } from "./use-match-changes";
 import { useMatchLeave } from "./use-match-leave";
 import { useMatchPlayback } from "./use-match-playback";
 import { useMatchProgress } from "./use-match-progress";
@@ -51,11 +54,14 @@ export type MatchScreenProps = {
   createPitchRenderer?: PitchRendererFactory;
   /** How often the clock advances, in milliseconds; tests use a coarser tick. */
   tickMs?: number;
-  /** Lets the user change their side at half-time. Without it half-time offers no changes. */
-  halfTimeEditor?: HalfTimeEditor;
+  /**
+   * Lets the user change their side at half-time and whenever the match is paused: who is on the
+   * pitch after the changes so far, and how a change is validated. Without it no changes are offered.
+   */
+  changesSource?: ChangesSource;
   /**
    * When given, a "Continue" button appears at full time and calls this with the final score and
-   * engine version and, if the user made changes at half-time, the report of minutes played.
+   * engine version and, if the user made changes, the report of minutes played.
    */
   onContinue?: (finished: FinishedMatch, report?: MatchReport) => void;
   /**
@@ -79,7 +85,7 @@ export type MatchScreenProps = {
 export type SimulatedRest = {
   /** The user's changes with the engine time they were applied at. */
   changes: readonly TimedActionMatchChange[];
-  /** The report of minutes when the user made changes at half-time. */
+  /** The report of minutes when the user made changes. */
   report?: MatchReport;
 };
 
@@ -98,7 +104,7 @@ export function MatchScreen({
   createRenderer,
   createPitchRenderer,
   tickMs,
-  halfTimeEditor,
+  changesSource,
   restored,
   onProgress,
   onContinue,
@@ -124,13 +130,7 @@ export function MatchScreen({
   useSuspendPaletteShortcut(
     !playback.paused && (state.period === "firstHalf" || state.period === "secondHalf"),
   );
-  const { report, awaitingResume, startSecondHalf, setPaused } = useMatchProgress({
-    restored,
-    onProgress,
-    playback: { ...playback, matchTime, period: state.period, userChanges, userChangeCount },
-    resume,
-  });
-  const { zoneEvents, actionStats, shown, names, lines, played, ratingRows, goals } =
+  const { zoneEvents, actionStats, shown, names, commentary, played, ratingRows, goals } =
     useMatchViewData({
       input,
       seed,
@@ -142,6 +142,24 @@ export function MatchScreen({
       matchTime,
       period: state.period,
     });
+  const { editor, edits, report, apply, startSecondHalf } = useMatchChanges({
+    source: changesSource,
+    restored,
+    match,
+    zoneEvents,
+    matchTime,
+    period: state.period,
+    playback: { applyChange: playback.applyChange, resume },
+  });
+  const { awaitingResume, setPaused } = useMatchProgress({
+    restored,
+    edits,
+    report,
+    onProgress,
+    playback: { ...playback, matchTime, period: state.period, userChanges, userChangeCount },
+  });
+  const { locale, t } = useI18n();
+  const lines = useChangeLines({ commentary, edits, players, userSide, input, t, locale });
   const active = state.period !== "fullTime" && onSimulateRest !== undefined;
   const leave = useMatchLeave({ active, paused: playback.paused, setPaused });
   return (
@@ -161,7 +179,9 @@ export function MatchScreen({
         awaitingResume={awaitingResume}
         createRenderer={createRenderer}
         pitch={{ events, createRenderer: createPitchRenderer }}
-        halfTimeEditor={halfTimeEditor}
+        editor={editor}
+        onChange={apply}
+        changeTimes={edits.map((edit) => edit.time)}
         statsPanel={<ActionStatsPanel stats={actionStats} playerIds={played} colours={colours} />}
         lineupsPanel={
           <LineupsPanel
@@ -206,6 +226,39 @@ export function MatchScreen({
     </>
   );
 }
+
+type ChangeLinesInput = {
+  commentary: readonly CommentaryLine[];
+  edits: readonly MatchEdit[];
+  players: Readonly<Record<string, string>>;
+  userSide: Side;
+  input: MatchInput;
+  t: ReturnType<typeof useI18n>["t"];
+  locale: string;
+};
+
+/** The commentary with a line for each change the user made, in match order. */
+const useChangeLines = ({
+  commentary,
+  edits,
+  players,
+  userSide,
+  input,
+  t,
+  locale,
+}: ChangeLinesInput) =>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `t` follows `locale`
+  useMemo(() => {
+    if (edits.length === 0) return commentary;
+    const own = changeLines(edits, {
+      t,
+      names: players,
+      side: userSide,
+      startTactics: input[userSide].tactics,
+    });
+    // Sorting is stable: a change goes after the commentary of the same moment.
+    return [...commentary, ...own].sort((a, b) => a.time - b.time);
+  }, [commentary, edits, players, userSide, input, locale]);
 
 /** Ids of the players who played, per side: the starters and everyone a change brought on. */
 const playedIds = (
@@ -265,11 +318,11 @@ const useMatchViewData = (data: MatchViewDataInput) => {
   const shown = useMemo(() => terrainEvents(zoneEvents, period), [zoneEvents, period]);
   const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place
-  const lines = useMemo(
+  const commentary = useMemo(
     () => generateActionCommentary(events.slice(0, eventCount), { locale, names, players }, seed),
     [eventCount, locale, names, players, seed],
   );
-  return { zoneEvents, actionStats, shown, names, lines, ...full };
+  return { zoneEvents, actionStats, shown, names, commentary, ...full };
 };
 
 type FullTimeDataInput = {

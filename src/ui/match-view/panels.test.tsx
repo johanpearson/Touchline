@@ -262,6 +262,7 @@ describe("MatchControls", () => {
         view="momentum"
         showChain
         canMakeChanges={false}
+        changesHint="controls.changesHint.playing"
         onPausedChange={() => {}}
         onModeChange={() => {}}
         onViewChange={() => {}}
@@ -324,12 +325,12 @@ describe("MatchControls", () => {
     const button = screen.getByTestId("make-changes");
     expect(button.getAttribute("aria-disabled")).toBe("true");
     const hint = document.getElementById(button.getAttribute("aria-describedby") ?? "");
-    expect(hint?.textContent).toBe("Changes are possible at half-time.");
+    expect(hint?.textContent).toBe("Pause the match to make changes.");
     fireEvent.click(button);
     expect(onMakeChanges).not.toHaveBeenCalled();
   });
 
-  it("makes Make changes available at half-time", () => {
+  it("makes Make changes available when changes can be made", () => {
     const onMakeChanges = vi.fn();
     controls({ canMakeChanges: true, onMakeChanges });
     const button = screen.getByTestId("make-changes");

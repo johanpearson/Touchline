@@ -44,7 +44,7 @@ export type MatchSession = {
   changes: TimedActionMatchChange[];
   mode: MatchSessionMode;
   /** What the user asked for at each change, in order, one per entry of `changes` made through the editor. */
-  edits?: MatchEdit[];
+  edits?: readonly MatchEdit[];
   /** Minutes and shout fatigue of the user's side once the user has made changes. */
   report?: MatchReport;
   /** What the user saw: the match time at the director's clock and the period then. */

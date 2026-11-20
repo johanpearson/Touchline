@@ -42,6 +42,12 @@ export type MatchPlayback = {
   mode: PlaybackMode;
   setPaused: (paused: boolean) => void;
   setMode: (mode: PlaybackMode) => void;
+  /**
+   * Applies the user's change from the next action at the engine's current time and records it;
+   * valid while the match is on or at half-time. Returns the engine time it was applied at, or
+   * undefined when it was refused (full time, or the engine rejected it).
+   */
+  applyChange: (change: ActionMatchChange) => number | undefined;
   /** Starts the second half, applying the user's change first; only valid at half-time. */
   resume: (change?: ActionMatchChange) => void;
   /**
@@ -169,15 +175,17 @@ export const useMatchPlayback = (
     setView(viewOf(run));
   };
 
+  const applyChange = (change: ActionMatchChange): number | undefined => {
+    const { period, time } = match.state;
+    if (period === "fullTime" || !match.applyChange(change).ok) return undefined;
+    userChangesRef.current.push({ time, change });
+    setUserChangeCount(userChangesRef.current.length);
+    return time;
+  };
+
   const resume = (change?: ActionMatchChange) => {
     if (match.state.period !== "halfTime") return;
-    if (change) {
-      const time = match.state.time;
-      if (match.applyChange(change).ok) {
-        userChangesRef.current.push({ time, change });
-        setUserChangeCount(userChangesRef.current.length);
-      }
-    }
+    if (change) applyChange(change);
     match.resume();
     pull(run, match);
     setView(viewOf(run));
@@ -192,6 +200,7 @@ export const useMatchPlayback = (
     mode,
     setPaused,
     setMode,
+    applyChange,
     resume,
     userChanges: userChangesRef.current,
     userChangeCount,

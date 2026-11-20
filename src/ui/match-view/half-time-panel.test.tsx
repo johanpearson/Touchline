@@ -4,14 +4,17 @@ import type { ActionStats } from "../../engine";
 import {
   type Career,
   createCareer,
+  EMPTY_MATCH_CHANGES,
   generateLeague,
   getNextFixture,
   MAX_SUBSTITUTIONS,
-  planHalfTime,
+  type MatchChanges,
 } from "../../game";
 import { createMemoryLocaleStore } from "../../platform";
 import { I18nProvider } from "../i18n-provider";
-import { type HalfTimeEditor, HalfTimePanel } from "./half-time-panel";
+import { changesSourceFor } from "../match-changes-source";
+import { type ChangesEditor, editorAt } from "./half-time-model";
+import { HalfTimePanel } from "./half-time-panel";
 
 const line = (keyPasses: number) => ({
   passes: 0,
@@ -55,21 +58,17 @@ const aCareer = (): Career => {
   return created.career;
 };
 
-const editorFor = (career: Career): HalfTimeEditor => {
+const editorFor = (career: Career, previous: MatchChanges = EMPTY_MATCH_CHANGES): ChangesEditor => {
   const fixture = getNextFixture(career.season, career.userClubId);
-  const club = career.league.clubs.find((c) => c.id === career.userClubId);
-  if (!fixture || !club) throw new Error("fixture");
-  return {
-    players: career.league.players.filter((p) => club.playerIds.includes(p.id)),
-    starters: career.squadPlan.starters,
-    bench: career.squadPlan.bench,
-    condition: career.condition,
-    tactics: career.squadPlan.tactics,
-    plan: (changes) => planHalfTime(career, fixture, changes),
-  };
+  if (!fixture) throw new Error("fixture");
+  return editorAt(changesSourceFor(career, fixture)(previous), {
+    minute: 45,
+    halfTime: true,
+    energy: {},
+  });
 };
 
-const mount = (onResume = vi.fn(), locale = "en", editor?: HalfTimeEditor) =>
+const mount = (onResume = vi.fn(), locale = "en", editor?: ChangesEditor) =>
   render(
     <I18nProvider store={createMemoryLocaleStore(locale)}>
       <HalfTimePanel
@@ -127,32 +126,19 @@ describe("HalfTimePanel changes", () => {
   const editor = editorFor(career);
   const nameOf = (id: string) => career.league.players.find((p) => p.id === id)?.name;
   const positionOf = (id: string) => career.league.players.find((p) => p.id === id)?.position;
-  /** A starter and a bench player of his position. */
-  const swap = (skip = 0) => {
-    const pairs = career.squadPlan.starters.flatMap((off) =>
-      career.squadPlan.bench
-        .filter((on) => positionOf(on) === positionOf(off))
-        .map((on) => ({ off, on })),
-    );
-    const pair = pairs[skip];
-    if (!pair) throw new Error("pair");
-    return pair;
+  /** A starter and the first bench player, whatever their positions. */
+  const swap = () => {
+    const off = career.squadPlan.starters[1];
+    const on = career.squadPlan.bench[0];
+    if (!off || !on) throw new Error("pair");
+    return { off, on };
   };
   /** Swaps that share neither the player going off nor the one coming on. */
-  const distinctSwaps = () => {
-    const used = new Set<string>();
-    const swaps: { off: string; on: string }[] = [];
-    for (const off of career.squadPlan.starters) {
-      const on = career.squadPlan.bench.find(
-        (id) => positionOf(id) === positionOf(off) && !used.has(id),
-      );
-      if (on) {
-        used.add(on);
-        swaps.push({ off, on });
-      }
-    }
-    return swaps;
-  };
+  const distinctSwaps = () =>
+    career.squadPlan.bench.flatMap((on, i) => {
+      const off = career.squadPlan.starters[i + 1];
+      return off ? [{ off, on }] : [];
+    });
   const mountEditor = (onResume = vi.fn(), locale = "en", changes = editor) => {
     mount(onResume, locale, changes);
     fireEvent.click(screen.getByTestId("half-time-open-changes"));
@@ -183,11 +169,12 @@ describe("HalfTimePanel changes", () => {
     expect(start + 1).toBeLessThanOrEqual(4);
   });
 
-  it("shows the eleven and the bench with fitness and form", () => {
+  it("shows the eleven and the bench with rating and energy", () => {
     mountEditor();
     for (const id of [...career.squadPlan.starters, ...career.squadPlan.bench]) {
-      expect(screen.getByTestId(`half-time-fitness-${id}`).textContent).toContain("100");
-      expect(screen.getByTestId(`half-time-form-${id}`)).toBeTruthy();
+      const row = screen.getByTestId(`half-time-row-${id}`);
+      expect(within(row).getByTestId("rating-value").textContent).toMatch(/\d/);
+      expect(row.textContent).toContain("100");
     }
   });
 
@@ -203,22 +190,39 @@ describe("HalfTimePanel changes", () => {
     makeSub({ off, on });
     expect(screen.getByTestId("sub-off-0").textContent).toBe(nameOf(off));
     expect(screen.getByTestId("sub-on-0").textContent).toBe(nameOf(on));
-    expect(screen.getByTestId("sub-count").textContent).toBe("1 of 5");
+    expect(screen.getByTestId("sub-count").textContent).toBe("4 substitutions left");
     fireEvent.click(screen.getByTestId("start-second-half"));
     const plan = onResume.mock.calls[0]?.[0];
     expect(plan.report.minutes[off]).toBe(45);
     expect(plan.report.minutes[on]).toBe(45);
-    expect(plan.lineupAfter.starters).toContain(on);
+    expect(plan.change.lineup.map((p: { id: string }) => p.id)).toContain(on);
+    expect(plan.request).toMatchObject({
+      minute: 45,
+      halfTime: true,
+      substitutions: [{ off, on }],
+    });
   });
 
-  it("only lets the user pick bench players of the position of the player going off", () => {
+  it("lets the user pick any bench player, whatever his position", () => {
     mountEditor();
     const { off } = swap();
     fireEvent.click(screen.getByTestId("sub-add"));
     fireEvent.click(screen.getByTestId(`pick-${off}`));
-    const pickable = career.squadPlan.bench.filter((id) => screen.queryByTestId(`pick-${id}`));
-    expect(pickable.length).toBeGreaterThan(0);
-    for (const id of pickable) expect(positionOf(id)).toBe(positionOf(off));
+    for (const id of career.squadPlan.bench) expect(screen.getByTestId(`pick-${id}`)).toBeTruthy();
+  });
+
+  it("shows the position a substitute would play and his rating there", () => {
+    mountEditor();
+    const { off } = swap();
+    const other = career.squadPlan.bench.find((id) => positionOf(id) !== positionOf(off));
+    if (!other) throw new Error("a bench player of another position");
+    const before = within(screen.getByTestId(`half-time-row-${other}`)).getByTestId("rating-value");
+    const own = before.textContent;
+    fireEvent.click(screen.getByTestId("sub-add"));
+    fireEvent.click(screen.getByTestId(`pick-${off}`));
+    const row = screen.getByTestId(`pick-${other}`);
+    expect(within(row).getByTestId(`row-position-${other}`).textContent).toMatch(/^as /);
+    expect(within(row).getByTestId("rating-value").textContent).not.toBe(own);
   });
 
   it("asks for the player going off first and can cancel the pick", () => {
@@ -235,7 +239,7 @@ describe("HalfTimePanel changes", () => {
     makeSub(swap());
     fireEvent.click(screen.getByTestId("sub-remove-0"));
     expect(screen.queryByTestId("sub-off-0")).toBeNull();
-    expect(screen.getByTestId("sub-count").textContent).toBe("0 of 5");
+    expect(screen.getByTestId("sub-count").textContent).toBe("5 substitutions left");
   });
 
   it("cannot add a sixth substitution and explains why", () => {
@@ -245,7 +249,7 @@ describe("HalfTimePanel changes", () => {
     expect((screen.queryByTestId("sub-add") as HTMLButtonElement | null)?.disabled ?? true).toBe(
       true,
     );
-    expect(screen.getByTestId("sub-limit").textContent).toMatch(/5/);
+    expect(screen.getByTestId("sub-limit").textContent).toBe("No substitutions left.");
   });
 
   it("passes changed tactics on with the plan and starts from the plan's tactics", () => {
@@ -261,18 +265,16 @@ describe("HalfTimePanel changes", () => {
   });
 
   it("shows the error with its cause, announced, and does not resume", () => {
-    const rejecting: HalfTimeEditor = {
+    const rejecting: ChangesEditor = {
       ...editor,
-      plan: () => ({ ok: false, error: "position-mismatch" }),
+      plan: () => ({ ok: false, error: "too-many-windows" }),
     };
     const onResume = mountEditor(vi.fn(), "en", rejecting);
     makeSub(swap());
     fireEvent.click(screen.getByTestId("start-second-half"));
     const alert = screen.getByRole("alert");
     expect(alert.getAttribute("data-testid")).toBe("half-time-error");
-    expect(alert.textContent).toBe(
-      "A substitute must play the same position as the player going off.",
-    );
+    expect(alert.textContent).toBe("All substitution windows are used.");
     expect(onResume).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId("sub-remove-0"));
     expect(screen.queryByTestId("half-time-error")).toBeNull();
@@ -309,6 +311,6 @@ describe("HalfTimePanel changes", () => {
   it("has Swedish labels", () => {
     mountEditor(vi.fn(), "sv");
     expect(screen.getByTestId("sub-add").textContent).toBe("Lägg till byte");
-    expect(screen.getByTestId("sub-count").textContent).toBe("0 av 5");
+    expect(screen.getByTestId("sub-count").textContent).toBe("5 byten kvar");
   });
 });

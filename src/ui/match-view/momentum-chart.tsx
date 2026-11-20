@@ -24,6 +24,8 @@ export type MomentumChartProps = {
   awayColour: string;
   /** Names the sides in the text summary; without them the summary is left out. */
   names?: { home: string; away: string };
+  /** Match times of the user's changes, drawn as thin markers. */
+  changeTimes?: readonly number[];
 };
 
 /**
@@ -36,6 +38,7 @@ export function MomentumChart({
   homeColour,
   awayColour,
   names,
+  changeTimes,
 }: MomentumChartProps) {
   const { t } = useI18n();
   const gradientId = useId();
@@ -52,6 +55,7 @@ export function MomentumChart({
     matchTime,
     halfTime,
     goals: goalEvents.map((goal) => ({ time: goal.time, side: goal.team })),
+    changeTimes,
   });
   const goalList = area.goals
     .map((goal) => {
@@ -136,6 +140,19 @@ export function MomentumChart({
             fill={goal.side === "home" ? homeColour : awayColour}
             stroke="currentColor"
             strokeWidth={1}
+          />
+        ))}
+        {area.changes.map((change) => (
+          <line
+            key={change.time}
+            data-testid="momentum-change"
+            x1={change.x}
+            x2={change.x}
+            y1={HEIGHT * 0.3}
+            y2={HEIGHT * 0.7}
+            stroke="currentColor"
+            strokeWidth={1}
+            opacity={0.55}
           />
         ))}
         <line
