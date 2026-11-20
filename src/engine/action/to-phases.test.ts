@@ -133,35 +133,37 @@ describe("toPhases", () => {
     ]);
   });
 
-  it("folds a brief spell of the other side between two spells of one side into the earlier phase", () => {
-    const phases = toPhases([
-      pass("home", "h1", "h2", "complete", at(1)),
-      pass("home", "h2", "h3", "complete", at(2)),
-      pass("home", "h3", "h4", "intercepted", at(3)),
-      interception("away", "a1", at(4)),
-      pass("away", "a1", "a2", "intercepted", at(5)),
-      ...passes("home", 4, 6),
-    ]);
-
-    expect(phases.map((p) => [p.team, p.actions])).toEqual([
-      ["home", [0, 1, 2, 3, 4]],
-      ["home", [5, 6, 7, 8]],
-    ]);
-  });
-
-  it("merges a short quiet phase into the previous phase when the next one is the other side's", () => {
-    const phases = toPhases([
-      ...passes("home", 3, 1),
-      foul("home", "h4", "a1", at(4)),
-      setPiece("home", "h4", "freeKick", at(10)),
-      pass("home", "h4", "h5", "intercepted", at(11)),
-      ...passes("away", 3, 12),
-    ]);
-
-    expect(phases.map((p) => [p.team, p.actions])).toEqual([
-      ["home", [0, 1, 2, 3, 4, 5]],
-      ["away", [6, 7, 8]],
-    ]);
+  it.each([
+    {
+      name: "folds a brief spell of the other side between two spells of one side into the earlier phase",
+      log: [
+        ...passes("home", 2, 1),
+        pass("home", "h3", "h4", "intercepted", at(3)),
+        interception("away", "a1", at(4)),
+        pass("away", "a1", "a2", "intercepted", at(5)),
+        ...passes("home", 4, 6),
+      ],
+      expected: [
+        ["home", [0, 1, 2, 3, 4]],
+        ["home", [5, 6, 7, 8]],
+      ],
+    },
+    {
+      name: "merges a short quiet phase into the previous phase when the next one is the other side's",
+      log: [
+        ...passes("home", 3, 1),
+        foul("home", "h4", "a1", at(4)),
+        setPiece("home", "h4", "freeKick", at(10)),
+        pass("home", "h4", "h5", "intercepted", at(11)),
+        ...passes("away", 3, 12),
+      ],
+      expected: [
+        ["home", [0, 1, 2, 3, 4, 5]],
+        ["away", [6, 7, 8]],
+      ],
+    },
+  ])("$name", ({ log, expected }) => {
+    expect(toPhases(log).map((p) => [p.team, p.actions])).toEqual(expected);
   });
 
   it("never adds actions after a phase that ended in a shot", () => {
