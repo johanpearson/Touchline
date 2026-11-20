@@ -6,9 +6,12 @@ import {
   subscribeRoute,
 } from "./navigation-guard";
 
+// Undoing a blocked change traverses the history, which the browser (and jsdom) finish later.
+const settle = () => new Promise((resolve) => setTimeout(resolve, 20));
+
 const go = async (hash: string) => {
   window.location.hash = hash;
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await settle();
 };
 
 describe("navigation guard", () => {
@@ -83,5 +86,63 @@ describe("navigation guard", () => {
     await go("#/squad");
     expect(onBlocked).toHaveBeenCalledWith("#/squad");
     unregister();
+  });
+  describe("history", () => {
+    // The app listens from the start, so every entry it shows is numbered before a guard blocks one.
+    let unsubscribe = () => {};
+    beforeEach(() => {
+      unsubscribe = subscribeRoute(() => {});
+    });
+    afterEach(() => unsubscribe());
+
+    const step = async (move: "back" | "forward") => {
+      window.history[move]();
+      await settle();
+    };
+
+    it("leaves the entries as they were after a blocked push, so one Back press leaves the match", async () => {
+      await go("#/home");
+      await go("#/match");
+      let active = true;
+      const unregister = registerNavigationGuard({ active: () => active, onBlocked: vi.fn() });
+      await go("#/league");
+      await settle();
+      expect(window.location.hash).toBe("#/match");
+      active = false;
+      await step("back");
+      expect(window.location.hash).toBe("#/home");
+      unregister();
+    });
+
+    it("returns the cursor to the match entry after a blocked Back, without a duplicate entry", async () => {
+      await go("#/home");
+      await go("#/match");
+      let active = true;
+      const onBlocked = vi.fn();
+      const unregister = registerNavigationGuard({ active: () => active, onBlocked });
+      await step("back");
+      expect(onBlocked).toHaveBeenCalledWith("#/home");
+      expect(window.location.hash).toBe("#/match");
+      active = false;
+      await step("back");
+      expect(window.location.hash).toBe("#/home");
+      unregister();
+    });
+
+    it("returns the cursor to the match entry after a blocked Forward", async () => {
+      await go("#/match");
+      await go("#/league");
+      await step("back");
+      let active = true;
+      const onBlocked = vi.fn();
+      const unregister = registerNavigationGuard({ active: () => active, onBlocked });
+      await step("forward");
+      expect(onBlocked).toHaveBeenCalledWith("#/league");
+      expect(window.location.hash).toBe("#/match");
+      active = false;
+      await step("forward");
+      expect(window.location.hash).toBe("#/league");
+      unregister();
+    });
   });
 });

@@ -4,7 +4,7 @@ import { navigateUnguarded } from "./navigation-guard";
 import { useNavigationGuard } from "./use-navigation-guard";
 import { useRoute } from "./use-route";
 
-const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
+const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 20)));
 
 function Probe({ active, onBlocked }: { active: boolean; onBlocked: (hash: string) => void }) {
   useNavigationGuard(active, onBlocked);

@@ -285,6 +285,27 @@ test.describe("match lock", () => {
     expect(played.every((p) => p === "1")).toBe(true);
   });
 
+  test("a blocked link click leaves the history as it was, so one Back press leaves the match", async ({
+    page,
+  }) => {
+    await startCareer(page);
+    await page.getByTestId("play-match").click();
+    await page.getByTestId("kick-off").click();
+
+    await page.getByTestId("nav-league").click();
+    await expect(page.getByRole("alertdialog")).toBeVisible();
+    await page.getByTestId("leave-match-stay").click();
+    await expect(page).toHaveURL(/#\/match$/);
+
+    // One Back press is a step to the page before the match: asked about, not swallowed by a
+    // duplicate match entry.
+    await page.goBack();
+    await expect(page.getByRole("alertdialog")).toBeVisible();
+    await expect(page).toHaveURL(/#\/match$/);
+    await page.getByTestId("leave-match-simulate").click();
+    await expect(page.getByTestId("career-hub")).toBeVisible();
+  });
+
   test("on a phone the tab bar opens squad and tactics as sheets over the match", async ({
     page,
   }) => {
