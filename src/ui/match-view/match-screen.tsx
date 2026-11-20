@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { type ComponentProps, useMemo, useState } from "react";
 import { generateActionCommentary } from "../../commentary";
 import type {
   ActionEvent,
@@ -105,7 +105,6 @@ export function MatchScreen({
   onLeave,
   onSimulateRest,
 }: MatchScreenProps) {
-  const { locale } = useI18n();
   const [match] = useState(() => createMatch?.() ?? createActionMatch(input, seed));
   const {
     matchTime,
@@ -131,30 +130,20 @@ export function MatchScreen({
     playback: { ...playback, matchTime, period: state.period, userChanges, userChangeCount },
     resume,
   });
-  const zoneEvents = useZoneEvents(events, eventCount);
-  const leave = useMatchLeave({
-    active: state.period !== "fullTime" && onSimulateRest !== undefined,
-    paused: playback.paused,
-    setPaused,
-  });
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  const actionStats = useMemo(() => computeActionStats(events, matchTime), [eventCount, matchTime]);
-  const { played, ratingRows, goals } = useFullTimeData({
-    input,
-    match,
-    events,
-    zoneEvents,
-    period: state.period,
-    players,
-    userSide,
-  });
-  const shown = useMemo(() => terrainEvents(zoneEvents, state.period), [zoneEvents, state.period]);
-  const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  const lines = useMemo(
-    () => generateActionCommentary(events.slice(0, eventCount), { locale, names, players }, seed),
-    [eventCount, locale, names, players, seed],
-  );
+  const { zoneEvents, actionStats, shown, names, lines, played, ratingRows, goals } =
+    useMatchViewData({
+      input,
+      seed,
+      match,
+      players,
+      userSide,
+      events,
+      eventCount,
+      matchTime,
+      period: state.period,
+    });
+  const active = state.period !== "fullTime" && onSimulateRest !== undefined;
+  const leave = useMatchLeave({ active, paused: playback.paused, setPaused });
   return (
     <>
       <MatchLayout
@@ -188,15 +177,10 @@ export function MatchScreen({
         }
         onLeave={onLeave}
         fullTimePanel={
-          <FullTimeReport
-            names={names}
-            colours={colours}
-            score={state.score}
-            userSide={userSide}
-            goals={goals}
-          >
-            <PlayerRatings rows={ratingRows} teamNames={names} />
-          </FullTimeReport>
+          <FullTimePanel
+            report={{ names, colours, score: state.score, userSide, goals }}
+            rows={ratingRows}
+          />
         }
         onResume={startSecondHalf}
         onContinue={
@@ -236,6 +220,56 @@ const playedIds = (
     for (const player of change.lineup ?? []) played[change.side].add(player.id);
   }
   return { home: [...played.home], away: [...played.away] };
+};
+
+type FullTimePanelProps = {
+  report: Omit<ComponentProps<typeof FullTimeReport>, "children">;
+  rows: ComponentProps<typeof PlayerRatings>["rows"];
+};
+
+/** The full-time report with the player ratings under it. */
+const FullTimePanel = ({ report, rows }: FullTimePanelProps) => (
+  <FullTimeReport {...report}>
+    <PlayerRatings rows={rows} teamNames={report.names} />
+  </FullTimeReport>
+);
+
+type MatchViewDataInput = {
+  input: MatchInput;
+  seed: number;
+  match: ActionMatch;
+  players: Readonly<Record<string, string>>;
+  userSide: Side;
+  events: readonly ActionEvent[];
+  eventCount: number;
+  matchTime: number;
+  period: ActionMatchState["period"];
+};
+
+/** Everything the match layout shows that is derived from the event log, memoised on what changes it. */
+const useMatchViewData = (data: MatchViewDataInput) => {
+  const { input, seed, match, players, userSide, events, eventCount, matchTime, period } = data;
+  const { locale } = useI18n();
+  const zoneEvents = useZoneEvents(events, eventCount);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place
+  const actionStats = useMemo(() => computeActionStats(events, matchTime), [eventCount, matchTime]);
+  const full = useFullTimeData({
+    input,
+    match,
+    events,
+    zoneEvents,
+    period,
+    players,
+    userSide,
+  });
+  const shown = useMemo(() => terrainEvents(zoneEvents, period), [zoneEvents, period]);
+  const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place
+  const lines = useMemo(
+    () => generateActionCommentary(events.slice(0, eventCount), { locale, names, players }, seed),
+    [eventCount, locale, names, players, seed],
+  );
+  return { zoneEvents, actionStats, shown, names, lines, ...full };
 };
 
 type FullTimeDataInput = {
