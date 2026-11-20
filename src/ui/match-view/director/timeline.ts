@@ -1,12 +1,11 @@
-import type { ActionEvent } from "../../../engine";
-import { goalDistance, holdFor, isBeatAction, isKeyMoment } from "./classify";
+import { type ActionEvent, type Phase, toPhases } from "../../../engine";
+import { goalDistance, holdFor, isKeyMoment } from "./classify";
 import {
   ACTIVE_DISTANCE,
-  BEAT_SETTINGS,
-  LEAD_IN_MATCH_SECONDS,
   MIN_DURATION,
   MODE_SETTINGS,
   NEAR_GOAL_SLOWDOWN,
+  PHASE_SETTINGS,
   type PlaybackMode,
   SLOWDOWN_FULL_DISTANCE,
 } from "./constants";
@@ -26,10 +25,10 @@ export type Segment = {
   presentationEnd: number;
   matchStart: number;
   matchEnd: number;
-  /** True when the action has its own moment at its `MIN_DURATION`; false for actions played through inside a beat and for cuts. */
+  /** True when the action has its own moment at its `MIN_DURATION` (the ending action of a phase and key moments); false for actions played through inside a phase and for cuts. */
   moment: boolean;
-  /** Index in the log of the first action of the beat this action belongs to; absent for an action shown on its own. */
-  beat?: number;
+  /** Index in the log of the first action of the phase this action belongs to. */
+  phase: number;
 };
 
 /**
@@ -43,8 +42,8 @@ export type Timeline = {
   readonly duration: number;
   /** Match time the committed segments end at; where the timeline stops until it is extended. */
   readonly matchEnd: number;
-  /** Events not yet turned into segments (they wait for the next event, and in highlights for the lead-in horizon). */
-  readonly pending: readonly ActionEvent[];
+  /** Every event of the log known so far; the ones from index `committed` on wait until their phase is final. */
+  readonly log: readonly ActionEvent[];
   /** Number of events already turned into segments. */
   readonly committed: number;
   /** Match time at `presentationSeconds`; before 0 the first, after `duration` the last match time. */
@@ -102,10 +101,7 @@ const presentationTimeIn = (
   return interpolate(segment.presentationStart, segment.presentationEnd, t);
 };
 
-type State = Pick<
-  Timeline,
-  "mode" | "segments" | "duration" | "matchEnd" | "pending" | "committed"
->;
+type State = Pick<Timeline, "mode" | "segments" | "duration" | "matchEnd" | "log" | "committed">;
 
 const toTimeline = (state: State): Timeline => ({
   ...state,
@@ -121,45 +117,34 @@ const momentDuration = (event: ActionEvent, mode: PlaybackMode): number => {
   return MIN_DURATION[event.type] * MODE_SETTINGS[mode].minimumScale * slowdown;
 };
 
-/** True when a key moment lies within the lead-in window after `from`; undefined when the log is too short to tell. */
-const keyMomentAhead = (pending: readonly ActionEvent[], from: number): boolean | undefined => {
-  const start = pending[from] as ActionEvent;
-  for (let i = from; i < pending.length; i += 1) {
-    const event = pending[i] as ActionEvent;
-    if (event.type === "periodChange" || event.time > start.time + LEAD_IN_MATCH_SECONDS)
-      return false;
-    if (isKeyMoment(event)) return true;
-  }
-  return undefined;
+type SegmentDraft = Pick<Segment, "kind" | "eventIndex" | "matchStart" | "matchEnd" | "moment"> & {
+  seconds: number;
 };
 
-type Placement = {
-  event: ActionEvent;
-  index: number;
-  next: ActionEvent;
-  mode: PlaybackMode;
-  /** False in highlights outside a key moment's lead-in: the span is cut. */
-  shown: boolean;
-};
-
-type SegmentDraft = Pick<Segment, "kind" | "eventIndex" | "matchStart" | "matchEnd" | "moment"> &
-  Pick<Segment, "beat"> & { seconds: number };
-
-/** Lays drafts end to end from presentation time `start`. */
-const lay = (drafts: readonly SegmentDraft[], start: number): readonly Segment[] => {
+/** Lays drafts end to end from presentation time `start`, tagging each with the phase's first log index. */
+const lay = (drafts: readonly SegmentDraft[], start: number, phase: number): readonly Segment[] => {
   const segments: Segment[] = [];
   let at = start;
   for (const { seconds, ...draft } of drafts) {
-    segments.push({ ...draft, presentationStart: at, presentationEnd: at + seconds });
+    segments.push({ ...draft, phase, presentationStart: at, presentationEnd: at + seconds });
     at += seconds;
   }
   return segments;
 };
 
+type Placement = {
+  events: readonly ActionEvent[];
+  /** Log indices of the phase's actions. */
+  indices: readonly number[];
+  /** Match time the phase ends at: the time of the first action after it. */
+  endTime: number;
+  mode: PlaybackMode;
+  shown: boolean;
+};
+
 /** The drafts of one action shown on its own: a hold before and after a key moment around its play segment. */
-const momentDrafts = ({ event, index, next, mode, shown }: Placement): SegmentDraft[] => {
-  const base = { eventIndex: index, matchStart: event.time, matchEnd: next.time };
-  if (!shown) return [{ ...base, kind: "cut", seconds: 0, moment: false }];
+const momentDrafts = (event: ActionEvent, index: number, end: number, mode: PlaybackMode) => {
+  const base = { eventIndex: index, matchStart: event.time, matchEnd: end };
   const key = holdFor(event);
   const scale = MODE_SETTINGS[mode].holdScale;
   const drafts: SegmentDraft[] = [];
@@ -173,149 +158,127 @@ const momentDrafts = ({ event, index, next, mode, shown }: Placement): SegmentDr
   });
   if (key) drafts.push(hold(key.before * scale, event.time));
   drafts.push({ ...base, kind: "play", seconds: momentDuration(event, mode), moment: true });
-  if (key) drafts.push(hold(key.after * scale, next.time));
+  if (key) drafts.push(hold(key.after * scale, end));
   return drafts;
 };
 
-/** How far the ball travels in an action; picks the longest action of a beat as a key action. */
-const travel = (event: ActionEvent): number =>
-  Math.hypot(event.to.x - event.from.x, event.to.y - event.from.y);
-
 /**
- * Indices (in a beat) of the actions that get their own moment: the last (it leads into what follows),
- * the longest and the first, as many as the beat is long enough for and the mode allows.
+ * The drafts of a phase: its ending action (and any key moment inside it) at its own moment, every
+ * other action at one pace, so the clock runs at one speed through the build-up and the ball moves
+ * without a pause between passes. The build-up takes between the mode's `minBuildUp` and
+ * `maxBuildUp` presentation seconds.
  */
-const keyActionsOf = (
-  beat: readonly ActionEvent[],
-  settings: { keyActions: number; actionsPerKey: number },
-): ReadonlySet<number> => {
-  const lastIndex = beat.length - 1;
-  let longest = 0;
-  beat.forEach((event, i) => {
-    if (travel(event) > travel(beat[longest] as ActionEvent)) longest = i;
-  });
-  const count = Math.min(settings.keyActions, Math.ceil(beat.length / settings.actionsPerKey));
-  return new Set([lastIndex, longest, 0].slice(0, count));
-};
-
-type BeatPlacement = {
-  beat: readonly ActionEvent[];
-  firstIndex: number;
-  /** Match time the beat ends at: the time of the first action after it. */
-  endTime: number;
-  mode: PlaybackMode;
-  shown: boolean;
-};
-
-/** The drafts of a beat: key actions at their minimum, the rest at one pace, the whole between the beat's minimum and maximum. */
-const beatDrafts = ({ beat, firstIndex, endTime, mode, shown }: BeatPlacement): SegmentDraft[] => {
-  const settings = BEAT_SETTINGS[mode];
-  const keys = shown ? keyActionsOf(beat, settings) : new Set<number>();
-  const spanOf = (i: number): number =>
-    (beat[i + 1]?.time ?? endTime) - (beat[i] as ActionEvent).time;
-  const restSpan = beat.reduce((sum, _, i) => sum + (keys.has(i) ? 0 : spanOf(i)), 0);
-  const keySeconds = beat.reduce(
-    (sum, event, i) => sum + (keys.has(i) ? momentDuration(event, mode) : 0),
-    0,
+const phaseDrafts = ({ events, indices, endTime, mode, shown }: Placement): SegmentDraft[] => {
+  const timeAfter = (k: number): number => events[indices[k + 1] ?? -1]?.time ?? endTime;
+  if (!shown)
+    return indices.map((eventIndex, k) => ({
+      eventIndex,
+      matchStart: (events[eventIndex] as ActionEvent).time,
+      matchEnd: timeAfter(k),
+      kind: "cut",
+      seconds: 0,
+      moment: false,
+    }));
+  const lastK = indices.length - 1;
+  const ownMoment = (k: number): boolean =>
+    k === lastK || isKeyMoment(events[indices[k] as number] as ActionEvent);
+  const spanOf = (k: number): number =>
+    timeAfter(k) - (events[indices[k] as number] as ActionEvent).time;
+  const settings = PHASE_SETTINGS[mode];
+  const buildUpSpan = indices.reduce((sum, _, k) => sum + (ownMoment(k) ? 0 : spanOf(k)), 0);
+  const buildUp = Math.min(
+    settings.maxBuildUp,
+    Math.max(settings.minBuildUp, buildUpSpan * settings.pace),
   );
-  const wanted = Math.min(
-    settings.maxDuration,
-    Math.max(settings.minDuration, keySeconds + restSpan * settings.pace),
-  );
-  const restSeconds = Math.max(wanted - keySeconds, restSpan * 0.001);
-  return beat.map((event, i) => {
-    const base = {
-      eventIndex: firstIndex + i,
-      matchStart: event.time,
-      matchEnd: beat[i + 1]?.time ?? endTime,
-      beat: firstIndex,
-    };
-    if (!shown) return { ...base, kind: "cut", seconds: 0, moment: false, beat: undefined };
-    if (keys.has(i))
-      return { ...base, kind: "play", seconds: momentDuration(event, mode), moment: true };
-    const share = restSpan === 0 ? 0 : spanOf(i) / restSpan;
-    return { ...base, kind: "play", seconds: restSeconds * share, moment: false };
+  return indices.flatMap((eventIndex, k) => {
+    const event = events[eventIndex] as ActionEvent;
+    if (ownMoment(k)) return momentDrafts(event, eventIndex, timeAfter(k), mode);
+    const share = buildUpSpan === 0 ? 0 : spanOf(k) / buildUpSpan;
+    return [
+      {
+        eventIndex,
+        matchStart: event.time,
+        matchEnd: timeAfter(k),
+        kind: "play" as const,
+        seconds: buildUp * share,
+        moment: false,
+      },
+    ];
   });
 };
 
 type Step = { state: State; done: boolean };
 
-const advance = (state: State, fresh: readonly Segment[], matchEnd: number, count = 1): State => ({
-  ...state,
-  segments: [...state.segments, ...fresh],
-  duration: fresh.at(-1)?.presentationEnd ?? state.duration,
-  matchEnd,
-  pending: state.pending.slice(count),
-  committed: state.committed + count,
-});
+/** The phases after the one being committed that must be known before it is final: merging looks one phase ahead and folds can carry on. */
+const PHASES_AHEAD = 2;
 
-/** Whether `pending[i]` is shown (always, except in highlights outside a key moment's lead-in); undefined when unknown yet. */
-const isShownAt = (state: State, i: number): boolean | undefined => {
-  const event = state.pending[i] as ActionEvent;
-  if (state.mode !== "highlights" || isKeyMoment(event)) return true;
-  return keyMomentAhead(state.pending, i);
-};
-
-type BeatRun = { length: number; shown: boolean };
+/** A phase is shown in every mode, except in highlights where only phases with a key moment or a shot are. */
+const isShown = (log: readonly ActionEvent[], phase: Phase, mode: PlaybackMode): boolean =>
+  mode !== "highlights" ||
+  phase.outcome === "shot" ||
+  phase.outcome === "goal" ||
+  phase.actions.some((i) => isKeyMoment(log[i] as ActionEvent));
 
 /**
- * The beat that starts at `pending[0]`: consecutive quiet actions that are all shown or all cut and
- * span at most the mode's longest beat. Undefined while the log is too short to tell where it ends.
+ * Whether `phases[index]` cannot change any more as the log grows: a period change after it settles
+ * it (phases never cross a period), else it waits until `PHASES_AHEAD` phases follow.
  */
-const beatRun = (state: State): BeatRun | undefined => {
-  const { pending, mode } = state;
-  const first = pending[0] as ActionEvent;
-  const shown = isShownAt(state, 0);
-  if (shown === undefined) return undefined;
-  let length = 1;
-  for (; length < pending.length; length += 1) {
-    const event = pending[length] as ActionEvent;
-    if (!isBeatAction(event, mode) || event.time - first.time > BEAT_SETTINGS[mode].maxSpan) break;
-    const same = isShownAt(state, length);
-    if (same === undefined) return undefined;
-    if (same !== shown) break;
-  }
-  return length < pending.length ? { length, shown } : undefined;
+const isSettled = (
+  log: readonly ActionEvent[],
+  phases: readonly Phase[],
+  index: number,
+): boolean => {
+  const phase = phases[index] as Phase;
+  if (phases.length - index > PHASES_AHEAD) return true;
+  const last = phase.actions.at(-1) as number;
+  return log.some((e, i) => i > last && e.type === "periodChange");
 };
 
-const commitBeat = (state: State): Step => {
-  const run = beatRun(state);
-  if (!run) return { state, done: true };
-  const beat = state.pending.slice(0, run.length);
-  const end = state.pending[run.length] as ActionEvent;
-  const { mode, committed: firstIndex } = state;
-  const drafts = beatDrafts({ beat, firstIndex, endTime: end.time, mode, shown: run.shown });
-  const fresh = lay(drafts, state.duration);
-  return { state: advance(state, fresh, end.time, run.length), done: false };
-};
-
-const commitNext = (state: State): Step => {
-  const [event, next] = state.pending;
-  if (!event) return { state, done: true };
-  if (event.type === "periodChange")
-    return { state: advance(state, [], state.matchEnd), done: false };
-  if (isBeatAction(event, state.mode)) return commitBeat(state);
-  if (!next) return { state, done: true };
-  const shown = isShownAt(state, 0);
-  if (shown === undefined) return { state, done: true };
-  const { mode, duration: start, committed: index } = state;
-  const fresh = lay(momentDrafts({ event, index, next, mode, shown }), start);
-  return { state: advance(state, fresh, next.time), done: false };
+const commitPhase = (state: State, phases: readonly Phase[]): Step => {
+  const { log, mode, committed } = state;
+  const index = phases.findIndex((p) => p.actions[0] === committed);
+  const phase = phases[index];
+  if (!phase || !isSettled(log, phases, index)) return { state, done: true };
+  const count = phase.actions.length;
+  const played = phase.actions.filter((i) => (log[i] as ActionEvent).type !== "periodChange");
+  const next: State = { ...state, committed: committed + count };
+  if (played.length === 0) return { state: next, done: false };
+  const end = log[committed + count] as ActionEvent;
+  const drafts = phaseDrafts({
+    events: log,
+    indices: played,
+    endTime: end.time,
+    mode,
+    shown: isShown(log, phase, mode),
+  });
+  const fresh = lay(drafts, state.duration, committed);
+  return {
+    state: {
+      ...next,
+      segments: [...state.segments, ...fresh],
+      duration: fresh.at(-1)?.presentationEnd ?? state.duration,
+      matchEnd: end.time,
+    },
+    done: false,
+  };
 };
 
 const commitAll = (initial: State): State => {
-  let step = commitNext(initial);
-  while (!step.done) step = commitNext(step.state);
+  const phases = toPhases(initial.log);
+  let step = commitPhase(initial, phases);
+  while (!step.done) step = commitPhase(step.state, phases);
   return step.state;
 };
 
 /** The timeline of `events` (the engine log, or the part of it known so far) in `mode`. */
 export const buildTimeline = (events: readonly ActionEvent[], mode: PlaybackMode): Timeline =>
   extendTimeline(
-    toTimeline({ mode, segments: [], duration: 0, matchEnd: 0, pending: [], committed: 0 }),
+    toTimeline({ mode, segments: [], duration: 0, matchEnd: 0, log: [], committed: 0 }),
     events,
   );
 
 /** The timeline after `newEvents` were appended to its log. Earlier segments are never changed. */
 export const extendTimeline = (timeline: Timeline, newEvents: readonly ActionEvent[]): Timeline =>
-  toTimeline(commitAll({ ...timeline, pending: [...timeline.pending, ...newEvents] }));
+  newEvents.length === 0
+    ? timeline
+    : toTimeline(commitAll({ ...timeline, log: [...timeline.log, ...newEvents] }));

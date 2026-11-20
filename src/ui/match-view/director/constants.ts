@@ -14,14 +14,14 @@ export const MODE_TARGET_MINUTES: Record<PlaybackMode, { min: number; max: numbe
 
 /**
  * The shortest time, in presentation seconds, an action that is shown at full pace stays on screen in
- * `full` mode (a pass at least 0.8 s). Other modes multiply it by `MODE_SETTINGS[mode].minimumScale`.
+ * `full` mode (a pass at least 0.6 s). Other modes multiply it by `MODE_SETTINGS[mode].minimumScale`.
  */
 export const MIN_DURATION: Record<ActionEventType, number> = {
-  pass: 0.8,
-  carry: 1,
-  tackle: 0.8,
-  interception: 0.8,
-  clearance: 0.9,
+  pass: 0.6,
+  carry: 0.7,
+  tackle: 0.6,
+  interception: 0.6,
+  clearance: 0.6,
   foul: 1.2,
   shot: 1.2,
   setPiece: 1,
@@ -30,13 +30,6 @@ export const MIN_DURATION: Record<ActionEventType, number> = {
 
 /** Distance to the nearest goal (metres) up to which an action is slowed down in front of goal, per mode. */
 export const ACTIVE_DISTANCE: Record<PlaybackMode, number> = {
-  full: 5,
-  extended: 5,
-  highlights: 5,
-};
-
-/** Distance to the nearest goal (metres) beyond which quiet play is grouped into beats, per mode. */
-export const BEAT_DISTANCE: Record<PlaybackMode, number> = {
   full: 5,
   extended: 5,
   highlights: 5,
@@ -62,52 +55,24 @@ export const MODE_SETTINGS: Record<PlaybackMode, ModeSettings> = {
 };
 
 /**
- * How a beat (a run of quiet actions) is shown. Its key actions (the first, the last and the longest)
- * get their own moment at `MIN_DURATION`; the actions between them play through at `pace`
- * presentation seconds per match second, so the clock runs at one speed inside the beat.
+ * How a possession phase is shown (`docs/architecture.md`, "Match playback director"). Its ending
+ * action (and any key moment inside it) gets its own moment at `MIN_DURATION`; every other action
+ * plays through at `pace` presentation seconds per match second, so the clock and the ball move at
+ * one steady speed through the build-up.
  */
-type BeatSettings = {
-  /** Presentation seconds per match second for the actions between the key actions. */
+type PhaseSettings = {
+  /** Presentation seconds per match second for the build-up. */
   pace: number;
-  /** Shortest and longest time, in presentation seconds, one beat takes; the key actions always fit. */
-  minDuration: number;
-  maxDuration: number;
-  /** A beat that spans more match seconds than this is split. */
-  maxSpan: number;
-  /** At most this many actions of one beat get their own moment, one per `actionsPerKey` actions in the beat. */
-  keyActions: number;
-  actionsPerKey: number;
+  /** Shortest and longest time, in presentation seconds, the build-up of one phase takes. */
+  minBuildUp: number;
+  maxBuildUp: number;
 };
 
-export const BEAT_SETTINGS: Record<PlaybackMode, BeatSettings> = {
-  full: {
-    pace: 0.025,
-    minDuration: 1.2,
-    maxDuration: 5,
-    maxSpan: 60,
-    keyActions: 2,
-    actionsPerKey: 4,
-  },
-  extended: {
-    pace: 0.01,
-    minDuration: 0.8,
-    maxDuration: 3,
-    maxSpan: 90,
-    keyActions: 2,
-    actionsPerKey: 4,
-  },
-  highlights: {
-    pace: 0.1,
-    minDuration: 0.8,
-    maxDuration: 2.5,
-    maxSpan: 20,
-    keyActions: 2,
-    actionsPerKey: 4,
-  },
+export const PHASE_SETTINGS: Record<PlaybackMode, PhaseSettings> = {
+  full: { pace: 0.04, minBuildUp: 0.3, maxBuildUp: 2.5 },
+  extended: { pace: 0.015, minBuildUp: 0.2, maxBuildUp: 1.5 },
+  highlights: { pace: 0.05, minBuildUp: 0.3, maxBuildUp: 2 },
 };
-
-/** Match seconds before a key moment that `highlights` mode still plays, so a chance has a build-up. */
-export const LEAD_IN_MATCH_SECONDS = 6;
 
 /** The clock stands still (views keep animating) for these presentation seconds around a key moment. */
 export type Hold = { before: number; after: number };
