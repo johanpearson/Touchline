@@ -25,6 +25,9 @@ const farFromGoals = { x: 52.5, y: 34 };
 
 const playOf = (segments: readonly Segment[], eventIndex: number) =>
   segments.find((s) => s.eventIndex === eventIndex && s.kind === "play");
+/** `count` passes by the away side, one every 3 match seconds from `start`: a phase of its own. */
+const awayRun = (count: number, start: number): ActionEvent[] =>
+  quietRun(count, start).map((e) => ({ ...e, team: "away" as const }));
 const length = (s: Segment | undefined) =>
   s ? s.presentationEnd - s.presentationStart : Number.NaN;
 
@@ -35,21 +38,21 @@ const log = (...events: ActionEvent[]): ActionEvent[] => {
 };
 
 describe("buildTimeline", () => {
-  it("gives every action near a goal at least its minimum duration in full mode", () => {
+  it("gives the action that ends a phase near a goal at least its minimum duration in full mode", () => {
     const events = log(
       aPass({ time: 0, ...closeToGoal }),
       aCarry({ time: 3, ...closeToGoal }),
       aPass({ time: 6, ...closeToGoal }),
     );
     const { segments } = buildTimeline(events, "full");
-    expect(length(playOf(segments, 0))).toBeGreaterThanOrEqual(MIN_DURATION.pass);
-    expect(length(playOf(segments, 1))).toBeGreaterThanOrEqual(MIN_DURATION.carry);
-    expect(MIN_DURATION.pass).toBe(0.8);
+    expect(length(playOf(segments, 2))).toBeGreaterThanOrEqual(MIN_DURATION.pass);
+    expect(length(playOf(segments, 0))).toBeLessThan(MIN_DURATION.pass);
+    expect(MIN_DURATION.pass).toBe(0.6);
   });
 
-  it("compresses the quiet actions between the key actions of a beat to a fraction of the engine time", () => {
+  it("compresses the build-up of a phase to a fraction of the engine time", () => {
     const { segments, duration } = buildTimeline(log(...quietRun(20)), "full");
-    expect(duration).toBeLessThan((20 * 3) / 4);
+    expect(duration).toBeLessThan((20 * 3) / 10);
     const between = segments.find((s) => s.kind === "play" && !s.moment);
     expect(length(between)).toBeLessThan(MIN_DURATION.pass);
   });
@@ -59,7 +62,7 @@ describe("buildTimeline", () => {
       length(
         playOf(
           buildTimeline(log(aPass({ time: 0, x }), aPass({ time: 3, x })), "full").segments,
-          0,
+          1,
         ),
       );
     expect(at(105 - ACTIVE_DISTANCE.full + 0.5)).toBeLessThan(at(105 - 3));
@@ -130,22 +133,21 @@ describe("buildTimeline", () => {
     }
   });
 
-  it("cuts between key moments in highlights mode and keeps a lead-in", () => {
+  it("cuts the phases without a key moment in highlights mode and plays the whole phase that ends in a shot", () => {
     const events = log(
-      ...quietRun(40),
-      aShot({ time: 120, ...farFromGoals, outcome: "goal" }),
-      ...quietRun(40, 125),
+      ...awayRun(40, 0),
+      ...quietRun(10, 120),
+      aShot({ time: 150, ...farFromGoals, outcome: "goal" }),
+      ...awayRun(40, 160),
     );
     const { segments } = buildTimeline(events, "highlights");
     const cuts = segments.filter((s) => s.kind === "cut");
-    expect(cuts.length).toBeGreaterThan(30);
+    expect(cuts).toHaveLength(80);
     expect(
       cuts.every((s) => s.presentationStart === s.presentationEnd && s.matchEnd > s.matchStart),
     ).toBe(true);
-    const leadIn = segments.filter(
-      (s) => s.kind === "play" && s.eventIndex >= 38 && s.eventIndex < 40,
-    );
-    expect(leadIn.length).toBeGreaterThan(0);
+    const shown = segments.filter((s) => s.kind === "play").map((s) => s.eventIndex);
+    expect(shown).toEqual(Array.from({ length: 11 }, (_, i) => 40 + i));
   });
 
   it("stops at half-time and full time", () => {
@@ -190,7 +192,7 @@ describe("inverse mapping", () => {
 
   it("maps a match time inside a cut to the instant of the cut", () => {
     const t = buildTimeline(
-      log(...quietRun(40), aShot({ time: 120, ...farFromGoals })),
+      log(...awayRun(40, 0), ...quietRun(10, 120), aShot({ time: 150, ...farFromGoals })),
       "highlights",
     );
     const cut = t.segments.find((s) => s.kind === "cut");
@@ -223,10 +225,10 @@ describe("extendTimeline", () => {
     }
   });
 
-  it("waits for the end of a beat before committing it", () => {
+  it("waits until a phase cannot change any more before committing it", () => {
     const [first, rest] = split(log(...quietRun(6)), 3);
     const partial = buildTimeline(first, "full");
-    expect(partial.segments.some((s) => s.eventIndex === 2)).toBe(false);
+    expect(partial.segments).toHaveLength(0);
     const extended = extendTimeline(partial, rest);
     expect(extended.segments.some((s) => s.eventIndex === 2)).toBe(true);
   });

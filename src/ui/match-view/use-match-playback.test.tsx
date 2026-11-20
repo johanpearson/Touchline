@@ -76,7 +76,8 @@ describe("useMatchPlayback", () => {
     play(20);
     const timeline = buildTimeline(match.events, "extended");
     expect(timeline.duration).toBeGreaterThanOrEqual(20 + LOOKAHEAD_SECONDS);
-    expect(match.state.time).toBeLessThan(result.current.matchTime + 120);
+    // A phase is final only once two phases follow it (director), so the engine is some phases ahead.
+    expect(match.state.time).toBeLessThan(result.current.matchTime + 150);
     expect(match.state.time).toBeGreaterThanOrEqual(result.current.matchTime);
   });
 

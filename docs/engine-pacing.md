@@ -36,5 +36,5 @@ Tracked under the epic "Football Manager pacing" (M6a). Order: phases adapter, t
 
 ## Not decided here
 
-- Whether highlights mode (key moments only) shows phases or only the last action of each; decide while building the director issue, with the playtest.
+- ~~Whether highlights mode shows phases or only the last action of each~~ Decided in #448: whole phases that end in a shot or hold a key moment (the build-up gives a chance its context); see `docs/architecture.md`, "Match playback director".
 - Whether the ratings should be computed from phases; no, ratings keep reading actions.
