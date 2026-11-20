@@ -19,7 +19,7 @@ const outsideClick = async () => {
   fireEvent.click(overlay);
 };
 
-function Harness(props: { destructive?: boolean }) {
+function Harness(props: { destructive?: boolean; alert?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <Dialog
@@ -30,6 +30,7 @@ function Harness(props: { destructive?: boolean }) {
       description="This cannot be undone."
       closeLabel="Close"
       destructive={props.destructive}
+      alert={props.alert}
       actions={<Button>Go</Button>}
     >
       <input aria-label="Name" />
@@ -38,6 +39,22 @@ function Harness(props: { destructive?: boolean }) {
 }
 
 describe("Dialog", () => {
+  it("is an alert dialog without a close button when it is a question that must be answered", () => {
+    render(<Harness alert />);
+    fireEvent.click(screen.getByText("Open"));
+    expect(screen.getByRole("alertdialog", { name: "Delete save" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
+  });
+
+  it("ignores a click outside an alert dialog, while Escape still closes it", async () => {
+    render(<Harness alert />);
+    fireEvent.click(screen.getByText("Open"));
+    await outsideClick();
+    expect(screen.getByRole("alertdialog")).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole("alertdialog"), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+  });
+
   it("is a named dialog with a description", () => {
     render(<Harness />);
     fireEvent.click(screen.getByText("Open"));

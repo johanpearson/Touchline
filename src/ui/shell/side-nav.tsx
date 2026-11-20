@@ -6,7 +6,7 @@ import { useI18n } from "../i18n-provider";
 import { DURATION, EASE, useReducedMotion } from "../motion";
 import { Brand } from "./brand";
 import { NAV_ITEMS } from "./nav-config";
-import { type NavEntry, useNavEntries } from "./use-nav-entries";
+import { type NavEntry, navClick, useNavEntries } from "./use-nav-entries";
 
 const linkStyles = cn(
   "flex min-h-11 items-center gap-3 rounded-md border-l-4 border-transparent px-3 py-2",
@@ -25,7 +25,7 @@ function SideNavLink({ entry, compact, onNavigate }: LinkProps) {
       href={entry.href}
       aria-current={entry.current ? "page" : undefined}
       aria-label={compact ? entry.label : undefined}
-      onClick={onNavigate}
+      onClick={navClick(entry, onNavigate)}
       className={cn(linkStyles, compact && "justify-center px-0")}
     >
       <Icon aria-hidden="true" className="size-5 shrink-0" />

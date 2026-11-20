@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useId, useMemo, useState } from "react";
 import { useI18n } from "../i18n-provider";
+import { panelOpener, useMatchLock } from "../match-lock/match-lock";
 import { hrefFor } from "../routes";
 import { useTheme } from "../theme/theme-provider";
 import { useCareer } from "../use-career";
@@ -28,6 +29,7 @@ export function usePaletteSearch(): PaletteSearch {
   const { career } = useCareer();
   const { theme, setTheme } = useTheme();
   const { setOpen } = usePalette();
+  const lock = useMatchLock();
   const listId = useId();
   const [query, setQueryState] = useState("");
   const [activeKey, setActiveKey] = useState<string | undefined>();
@@ -43,8 +45,11 @@ export function usePaletteSearch(): PaletteSearch {
   const choose = (item: PaletteItem) => {
     setOpen(false);
     const { target } = item;
-    if (target.kind === "route") window.location.hash = hrefFor(target.route);
-    else if (target.kind === "theme") setTheme(target.theme);
+    if (target.kind === "route") {
+      const openPanel = panelOpener(lock, target.route);
+      if (openPanel) openPanel();
+      else window.location.hash = hrefFor(target.route);
+    } else if (target.kind === "theme") setTheme(target.theme);
     else i18n.setLocale(target.locale);
   };
 

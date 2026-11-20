@@ -180,7 +180,7 @@ export { AI_RENEW_BEST_COUNT, AI_RENEW_MAX_AGE, renewAiContracts } from "./renew
 export type { RenewError, RenewResult } from "./renew-contract";
 export { askingWage, renewContract } from "./renew-contract";
 export type { ResumeMatchResult } from "./resume-match";
-export { resumeMatch } from "./resume-match";
+export { playToFullTime, resumeMatch } from "./resume-match";
 export {
   RETIREMENT_CERTAIN_AGE,
   RETIREMENT_CHANCE_STEP,

@@ -3,11 +3,10 @@ import { generateActionCommentary } from "../../commentary";
 import type {
   ActionEvent,
   ActionMatch,
-  ActionMatchState,
-  EngineVersion,
   MatchInput,
   PerSide,
   Side,
+  TimedActionMatchChange,
 } from "../../engine";
 import { computeActionStats, createActionMatch, playerRatings } from "../../engine";
 import { type CoachedMatch, goalScorersOf, type MatchReport } from "../../game";
@@ -15,8 +14,10 @@ import { useI18n } from "../i18n-provider";
 import { useSuspendPaletteShortcut } from "../palette/palette-provider";
 import { ActionStatsPanel } from "./action-stats-panel";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
+import { type FinishedMatch, withOpponent } from "./finish-match";
 import { FullTimeReport } from "./full-time-report";
 import type { HalfTimeEditor } from "./half-time-panel";
+import { LeaveMatchPrompt } from "./leave-match-dialog";
 import { LineupsPanel } from "./lineups-panel";
 import { MatchLayout } from "./match-layout";
 import type { MatchProgress, ProgressMoment, RestoredMatch } from "./match-progress";
@@ -25,19 +26,10 @@ import { PlayerRatings } from "./player-ratings";
 import { buildRatingRows } from "./ratings-table";
 import { terrainEvents } from "./terrain-events";
 import type { TerrainRendererFactory } from "./terrain-renderer";
+import { useMatchLeave } from "./use-match-leave";
 import { useMatchPlayback } from "./use-match-playback";
 import { useMatchProgress } from "./use-match-progress";
 import { useZoneEvents } from "./use-zone-events";
-
-/** What `onContinue` gets at full time. */
-export type FinishedMatch = {
-  score: ActionMatchState["score"];
-  /** Player ids of the scorers in the order the goals were scored. */
-  scorers: string[];
-  engineVersion: EngineVersion;
-  /** Energy (0 to 100) each player who played ended the match with. */
-  energy: Readonly<Record<string, number>>;
-};
 
 export type MatchScreenProps = {
   seed: number;
@@ -72,8 +64,22 @@ export type MatchScreenProps = {
   restored?: RestoredMatch;
   /** Called with what is needed to resume the match: on every change and, while it runs, often. */
   onProgress?: (progress: MatchProgress, moment: ProgressMoment) => void;
-  /** When given, the scoreboard has a back link to the hub that asks first and then calls this. */
+  /** When given, the scoreboard has a back link to the hub; the screen asks before it leaves a match in progress. */
   onLeave?: () => void;
+  /**
+   * When given, the screen holds the user on a match in progress: navigating elsewhere asks first,
+   * and "Simulate the rest now" calls this with what is needed to play the match to its end and the
+   * hash the user wanted to go to. The owner records the result and goes there.
+   */
+  onSimulateRest?: (rest: SimulatedRest, destination: string) => void;
+};
+
+/** What a match screen hands over when the user lets the rest of the match be simulated. */
+export type SimulatedRest = {
+  /** The user's changes with the engine time they were applied at. */
+  changes: readonly TimedActionMatchChange[];
+  /** The report of minutes when the user made changes at half-time. */
+  report?: MatchReport;
 };
 
 /**
@@ -96,6 +102,7 @@ export function MatchScreen({
   onProgress,
   onContinue,
   onLeave,
+  onSimulateRest,
 }: MatchScreenProps) {
   const { locale } = useI18n();
   const [match] = useState(() => createMatch?.() ?? createActionMatch(input, seed));
@@ -124,6 +131,11 @@ export function MatchScreen({
     resume,
   });
   const zoneEvents = useZoneEvents(events, eventCount);
+  const leave = useMatchLeave({
+    active: state.period !== "fullTime" && onSimulateRest !== undefined,
+    paused: playback.paused,
+    setPaused,
+  });
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   const actionStats = useMemo(() => computeActionStats(events, matchTime), [eventCount, matchTime]);
   const fullTime = state.period === "fullTime";
@@ -144,74 +156,77 @@ export function MatchScreen({
     [eventCount, locale, names, players, seed],
   );
   return (
-    <MatchLayout
-      names={names}
-      colours={colours}
-      score={state.score}
-      period={state.period}
-      matchTime={matchTime}
-      events={zoneEvents}
-      terrainEvents={shown}
-      stats={actionStats}
-      playerIds={played}
-      lines={lines}
-      playback={{ ...playback, setPaused }}
-      awaitingResume={awaitingResume}
-      createRenderer={createRenderer}
-      pitch={{ events, createRenderer: createPitchRenderer }}
-      halfTimeEditor={halfTimeEditor}
-      statsPanel={<ActionStatsPanel stats={actionStats} playerIds={played} colours={colours} />}
-      lineupsPanel={
-        <LineupsPanel
-          events={events}
-          eventCount={eventCount}
-          matchTime={matchTime}
-          played={played}
-          names={players}
-          teamNames={names}
-          colours={colours}
-          userSide={userSide}
-        />
-      }
-      onLeave={onLeave}
-      fullTimePanel={
-        <FullTimeReport
-          names={names}
-          colours={colours}
-          score={state.score}
-          userSide={userSide}
-          goals={goals}
-        >
-          <PlayerRatings rows={ratingRows} teamNames={names} />
-        </FullTimeReport>
-      }
-      onResume={startSecondHalf}
-      onContinue={
-        onContinue &&
-        (() =>
-          onContinue(
-            {
-              score: state.score,
-              scorers: goalScorersOf(events),
-              engineVersion: input.engineVersion,
-              energy: match.state.energy,
-            },
-            withOpponent(report, match, userSide),
-          ))
-      }
-    />
+    <>
+      <MatchLayout
+        names={names}
+        colours={colours}
+        score={state.score}
+        period={state.period}
+        matchTime={matchTime}
+        events={zoneEvents}
+        terrainEvents={shown}
+        stats={actionStats}
+        playerIds={played}
+        lines={lines}
+        playback={{ ...playback, setPaused }}
+        awaitingResume={awaitingResume}
+        createRenderer={createRenderer}
+        pitch={{ events, createRenderer: createPitchRenderer }}
+        halfTimeEditor={halfTimeEditor}
+        statsPanel={<ActionStatsPanel stats={actionStats} playerIds={played} colours={colours} />}
+        lineupsPanel={
+          <LineupsPanel
+            events={events}
+            eventCount={eventCount}
+            matchTime={matchTime}
+            played={played}
+            names={players}
+            teamNames={names}
+            colours={colours}
+            userSide={userSide}
+          />
+        }
+        onLeave={onLeave}
+        fullTimePanel={
+          <FullTimeReport
+            names={names}
+            colours={colours}
+            score={state.score}
+            userSide={userSide}
+            goals={goals}
+          >
+            <PlayerRatings rows={ratingRows} teamNames={names} />
+          </FullTimeReport>
+        }
+        onResume={startSecondHalf}
+        onContinue={
+          onContinue &&
+          (() =>
+            onContinue(
+              {
+                score: state.score,
+                scorers: goalScorersOf(events),
+                engineVersion: input.engineVersion,
+                energy: match.state.energy,
+              },
+              withOpponent(report, match, userSide),
+            ))
+        }
+      />
+      <LeaveMatchPrompt
+        target={leave.target}
+        names={names}
+        score={state.score}
+        matchTime={matchTime}
+        events={zoneEvents}
+        onStay={leave.stay}
+        onSimulate={(destination) =>
+          onSimulateRest?.({ changes: userChanges, report }, destination)
+        }
+      />
+    </>
   );
 }
-
-/** The user's report with what the AI opponent played; the user's report is absent when nothing was changed. */
-const withOpponent = (
-  report: MatchReport | undefined,
-  match: ActionMatch | CoachedMatch,
-  userSide: Side,
-): MatchReport | undefined => {
-  if (!report || !("aiReports" in match)) return report;
-  return { ...report, opponent: match.aiReports()[userSide === "home" ? "away" : "home"] };
-};
 
 /** Ids of the players who played, per side: the starters and everyone a change brought on. */
 const playedIds = (

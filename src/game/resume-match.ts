@@ -17,6 +17,17 @@ const advanceThroughHalfTime = (match: ActionMatch, time: number) => {
   }
 };
 
+/** Far beyond the longest match, so advancing to it always reaches full time. */
+const BEYOND_FULL_TIME = 1_000_000;
+
+/**
+ * Plays the match to full time without a stop: a match waiting at half-time starts its second half
+ * with no change. The result is the one a match watched to the end has, because the engine consumes
+ * no randomness beyond its seed.
+ */
+export const playToFullTime = (match: ActionMatch): void =>
+  advanceThroughHalfTime(match, BEYOND_FULL_TIME);
+
 /**
  * Rebuilds a match from its session: creates it, replays the user's changes at the engine times
  * they were made and advances to the saved position. No randomness is consumed beyond the seed, so

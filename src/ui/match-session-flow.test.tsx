@@ -6,6 +6,7 @@ import {
   renderHook,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -150,8 +151,8 @@ describe("resuming a match from its session", () => {
     goTo("#/match");
     expect(screen.queryByTestId("pre-match")).toBeNull();
     expect(screen.getByTestId("match-screen")).toBeTruthy();
-    goTo("#/tactics");
-    expect(screen.getByTestId("tactic-mentality").dataset.value).toBe("attacking");
+    fireEvent.click(screen.getByTestId("nav-tactics"));
+    expect(within(screen.getByTestId("match-lineup-tactics")).getByText("Attacking")).toBeTruthy();
   });
 
   it.each([
@@ -191,14 +192,14 @@ describe("resuming a match from its session", () => {
     expect(screen.queryByText("Saved match not resumed")).toBeNull();
   });
 
-  it("writes the match to the store from kickoff and drops it when the result is quick-simmed", async () => {
+  it("writes the match to the store from kickoff and drops it when the rest is simulated", async () => {
     const { matchSessionStore } = await mountWith(null);
     goTo("#/match");
     fireEvent.click(screen.getByTestId("kick-off"));
     expect((await matchSessionStore.load()).kind).toBe("found");
 
     goTo("#/");
-    fireEvent.click(screen.getByTestId("quick-sim"));
+    fireEvent.click(screen.getByTestId("leave-match-simulate"));
 
     await waitFor(async () => expect(await matchSessionStore.load()).toEqual({ kind: "none" }));
   });
