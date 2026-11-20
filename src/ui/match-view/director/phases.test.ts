@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type ActionEvent, toPhases } from "../../../engine";
-import { MIN_DURATION, PHASE_SETTINGS, PLAYBACK_MODES } from "./constants";
+import { MIN_DURATION, PHASE_SETTINGS, PLAYBACK_MODES, type PlaybackMode } from "./constants";
 import {
   aPass,
   aPeriodChange,
@@ -22,6 +22,18 @@ const phasesOf = (segments: readonly Segment[]): Map<number, Segment[]> => {
   const byPhase = new Map<number, Segment[]>();
   for (const s of plays(segments)) byPhase.set(s.phase, [...(byPhase.get(s.phase) ?? []), s]);
   return byPhase;
+};
+
+/** The presentation seconds of every phase's build-up (the actions without their own moment). */
+const buildUpSeconds = (segments: readonly Segment[]): number[] =>
+  [...phasesOf(segments).values()].map((own) =>
+    own.filter((s) => !s.moment).reduce((sum, s) => sum + seconds(s), 0),
+  );
+
+const expectWithinLimits = (build: number, mode: PlaybackMode, seed: number) => {
+  const { minBuildUp, maxBuildUp } = PHASE_SETTINGS[mode];
+  expect(build, `${mode} seed ${seed}`).toBeLessThanOrEqual(maxBuildUp + 1e-9);
+  if (build > 0) expect(build, `${mode} seed ${seed}`).toBeGreaterThanOrEqual(minBuildUp - 1e-9);
 };
 
 describe("phase playback", () => {
@@ -70,15 +82,9 @@ describe("phase playback", () => {
 
   it("keeps the build-up of every phase between the mode's minimum and maximum", () => {
     for (const mode of PLAYBACK_MODES) {
-      const { minBuildUp, maxBuildUp } = PHASE_SETTINGS[mode];
       for (const seed of SEEDS.slice(0, 4)) {
         const { segments } = buildTimeline(seededMatchEvents(seed), mode);
-        for (const own of phasesOf(segments).values()) {
-          const build = own.filter((s) => !s.moment).reduce((sum, s) => sum + seconds(s), 0);
-          expect(build, `${mode} seed ${seed}`).toBeLessThanOrEqual(maxBuildUp + 1e-9);
-          if (build > 0)
-            expect(build, `${mode} seed ${seed}`).toBeGreaterThanOrEqual(minBuildUp - 1e-9);
-        }
+        for (const build of buildUpSeconds(segments)) expectWithinLimits(build, mode, seed);
       }
     }
   });
