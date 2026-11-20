@@ -60,6 +60,7 @@
     "src/engine/action/team-phase.ts": 2,
     "src/engine/action/team-shape.ts": 85,
     "src/engine/action/team-sheet.ts": 0.1,
+    "src/engine/action/to-phases.ts": 3,
     "src/engine/action/to-zone-events.ts": 4,
     "src/engine/action/validate-match-input.ts": 2.4,
     "src/engine/match-state.ts": 0.2,
