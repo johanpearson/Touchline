@@ -42,24 +42,36 @@ const depthOf = (team: Side, at: Point): number => toAttackingFrame(team, at).x;
 const wideOf = (team: Side, at: Point): number =>
   Math.abs(toAttackingFrame(team, at).y - PITCH_WIDTH / 2);
 
+/** A possession won in open play in the attacker's own part of the pitch and played quickly forward. */
+const isCounter = (input: ChanceInput): boolean => {
+  const won = input.start === "tackle" || input.start === "interception";
+  if (!won) return false;
+  const early = depthOf(input.team, input.ball) < COUNTER_MAX_START_DEPTH;
+  return early && input.chain.length <= COUNTER_MAX_LINKS;
+};
+
+type Geometry = { input: ChanceInput; creator: ChainLink; shooter: ChainLink };
+
+/** Whether the last pass came from a wing at least `minDepth` deep. */
+const fromWing = ({ input, creator }: Geometry, minDepth: number): boolean =>
+  wideOf(input.team, creator.at) >= WIDE_CHANNEL && depthOf(input.team, creator.at) >= minDepth;
+
+const gainOfLastPass = ({ input, creator, shooter }: Geometry): number =>
+  depthOf(input.team, shooter.at) - depthOf(input.team, creator.at);
+
+/** The conditions of each open-play kind besides `openPlay`, which is always allowed. */
+const KIND_TESTS: readonly [OpenKind, (g: Geometry) => boolean][] = [
+  ["cross", (g) => fromWing(g, CROSS_MIN_DEPTH)],
+  ["cutBack", (g) => fromWing(g, CUT_BACK_MIN_DEPTH)],
+  ["throughBall", (g) => gainOfLastPass(g) >= THROUGH_BALL_MIN_GAIN],
+  ["counter", (g) => isCounter(g.input)],
+];
+
 /** The open-play kinds the geometry of the last pass allows, each once. */
 const allowedKinds = (input: ChanceInput, creator: ChainLink, shooter: ChainLink): OpenKind[] => {
-  const { team, start, chain } = input;
-  const wide = wideOf(team, creator.at) >= WIDE_CHANNEL;
-  const depth = depthOf(team, creator.at);
-  const kinds: OpenKind[] = ["openPlay"];
-  if (wide && depth >= CROSS_MIN_DEPTH) kinds.push("cross");
-  if (wide && depth >= CUT_BACK_MIN_DEPTH) kinds.push("cutBack");
-  if (depthOf(team, shooter.at) - depth >= THROUGH_BALL_MIN_GAIN) kinds.push("throughBall");
-  const won = start === "tackle" || start === "interception";
-  if (
-    won &&
-    depthOf(team, input.ball) < COUNTER_MAX_START_DEPTH &&
-    chain.length <= COUNTER_MAX_LINKS
-  ) {
-    kinds.push("counter");
-  }
-  return kinds;
+  const geometry: Geometry = { input, creator, shooter };
+  const allowed = KIND_TESTS.filter(([, test]) => test(geometry)).map(([kind]) => kind);
+  return ["openPlay", ...allowed];
 };
 
 /** The kind of the chance: fixed by a penalty, a corner or a direct free kick, otherwise one weighted draw. */
