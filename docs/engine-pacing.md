@@ -1,6 +1,6 @@
 # Engine pacing: from 1,900 actions to possession phases
 
-Design note for #416. Status: decided, not built. No code changed by this note.
+Design note for #416 and #450. Status: stages 1 to 3 are built and played; the gate (#450) decided **engine v3 is needed** and its plan is below.
 
 ## Problem
 
@@ -38,3 +38,42 @@ Tracked under the epic "Football Manager pacing" (M6a). Order: phases adapter, t
 
 - ~~Whether highlights mode shows phases or only the last action of each~~ Decided in #448: whole phases that end in a shot or hold a key moment (the build-up gives a chance its context); see `docs/architecture.md`, "Match playback director".
 - Whether the ratings should be computed from phases; no, ratings keep reading actions.
+
+## Verdict after playing stages 1 to 3 (#450)
+
+Stages 1 to 3 are merged (phases #447, one movement per phase #448, commentary per phase #449) and the match was played. Verdict of the maintainer: **it flows better, but engine v3 is needed.** The goal is as close to Football Manager as possible: a person must feel excitement when a goal-scoring chance is built and disappointment when the striker misses. "Now I get 0 of that."
+
+Why stage 1 to 3 cannot give that: the view can only replay what the log holds. In the action log a chance is one `shot` event at the end of a random walk of passes; nothing in the simulation says that this was a *chance* (a through ball, a cut-back, a one-on-one, a free header), who made it, or how close it was (a save with a hand on it, the post, a header just over). Every phase therefore plays with the same weight, and a miss is a one-line outcome. To feel the chance, the simulation has to produce it as a story with a creator, a taker, a situation and a result.
+
+## Engine v3 plan
+
+**Principle: the unit of simulation is the possession phase, and a chance is a first-class event.** `engineVersion: 3`.
+
+### Model
+
+- `PhaseStep` (new, `src/engine/phase/`): `team`, `period`, `startTime`, `endTime` (10 to 25 s), `start` (how the ball was won: kickoff, tackle, interception, goal kick, throw-in, corner, free kick), `chain` (the 2 to 6 players involved, in order, with the ball path as waypoints), `outcome` (`lost` by tackle, interception or bad pass, `foul`, `outOfPlay`, `chance`, `periodEnd`) and, for a chance, `chance`: `{ kind: openPlay | throughBall | cross | cutBack | counter | setPiece | penalty, creator, shooter, situation: oneOnOne | header | edge | box | volley..., xg, result: goal | saved | woodwork | blocked | wide | over, keeper, aftermath: rebound | corner | goalKick | kickoff }`.
+- Target: 250 to 400 steps a match (about 310 today as phases), about 25 shots, and **4 to 8 clear chances (xG of 0.25 or more)**; the exact range is set by the retune issue from the first measurements. Goals 2.4 to 3.0, shots 20 to 30, home win rate 42% to 48% stay as they are.
+- A step is drawn in stages: progress through build-up, progression and final third (each stage a draw from attacker against defender strengths, tactics and `teamShape`), then the outcome; a chance draws its creator, taker, situation and xG, then one result ladder (goal, then the near misses and saves) so the xG calibration holds and near misses are first-class.
+- **Derived action log:** `toActionEvents(steps)` expands every step into the familiar `ActionEvent`s (passes, carries, the shot, restarts) with times and snapshots, drawn from a separate fork (`"inner-actions"`) that never feeds back into the simulation. Stats, ratings, commentary, the classic view and `toZoneEvents` therefore keep working on a log of the same shape; a pass is derived, not simulated. `toPhases` becomes the identity on steps.
+- Streams: `createRng(seed).fork("phase-sim")` for decisions, `"inner-actions"` and `"action-presentation"` for presentation. Same seed + input + changes give the same steps however time is split. The fast path skips snapshots as today.
+- `createMatch(input, seed, options)` dispatches on `input.engineVersion` (2 or 3) while both exist. v2 is deleted when v3 is the default and green (as the zone engine was in #167).
+
+### Save policy
+
+Results are never replayed and no match is saved mid-way, so v3 is **not breaking**: new careers start with `Career.engineVersion` 3 and a schema migration moves existing careers to 3 (recorded `Result.engineVersion` labels stay). Season-level balance changes slightly, so the retune also covers the game-level suites.
+
+### Work (epic #446, in order)
+
+1. Event model and derived action log (types, `toActionEvents`, property tests).
+2. Phase draw: build-up, progression, outcome, involved players.
+3. Chances and shot results (creator, situation, xG, near misses, aftermath).
+4. Match loop: periods, restarts, changes, energy, added time, fast path, `createMatch` dispatch.
+5. Retune: `action.balance`, strength, tactics and the 81 combinations, then formation, league and season suites.
+6. Consumers on v3 logs: stats, ratings, `toZoneEvents`, commentary context, chance stats.
+7. Game integration: engine version 3 for new careers, migration, results stamp.
+8. Match view: chance moments (tension in the build-up, the shot, the reaction to a save, a miss or a goal).
+9. Commentary for chances: suspense before the shot, disappointment after a miss.
+10. Mutation baseline, performance budget, CI scoping and balance groups for the new files.
+11. Remove v2.
+
+Risks: a new model restarts every balance suite and the mutation baseline (95.3% nightly today), so the engine v3 code lives beside v2 until the retune is green; nothing in `src/game` or `src/ui` switches before issue 7.
