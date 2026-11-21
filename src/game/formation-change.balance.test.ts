@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { createActionMatch } from "../engine";
+import { createMatch } from "../engine";
 import type { Career } from "./career";
 import { aCareer } from "./career-builders";
 import { FORMATIONS, type Formation } from "./formation";
@@ -25,7 +25,9 @@ const goalDifferenceOf = (
   seed: number,
   formation: Formation | undefined,
 ): number => {
-  const match = createActionMatch(mirrorInput(career, fixture), seed, { detail: "fast" });
+  const match = createMatch({ ...mirrorInput(career, fixture), engineVersion: 3 }, seed, {
+    detail: "fast",
+  });
   if (formation) {
     advanceThroughHalfTime(match, CHANGE_MINUTE);
     const planned = planChange(career, fixture, { minute: CHANGE_MINUTE, formation });

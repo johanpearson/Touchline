@@ -6,10 +6,10 @@ export const STEP_MAX_SECONDS = 25;
 export const STAGE_COUNT = 3;
 export type Stage = 0 | 1 | 2;
 
-/** Chance that an attack of equal strength gets through each stage. Tuned by the retune issue. */
+/** Chance that an attack of equal strength gets through each stage. Calibrated by #461. */
 export const STAGE_BASE: readonly [number, number, number] = [0.74, 0.62, 0.105];
 /** Added to the stage chance per unit of attack minus defence strength (both 0..1). */
-export const STAGE_GAIN = 1.2;
+export const STAGE_GAIN = 0.17;
 export const STAGE_MIN = 0.03;
 export const STAGE_MAX = 0.97;
 /** Added to the final-third chance when the possession starts from a corner or a free kick. */
@@ -29,7 +29,7 @@ export const SHOT_DEPTH_MAX = 96;
 
 /** Shares of the failed possessions that end in a foul or out of play; the rest is a lost ball. */
 export const FOUL_SHARE = 0.09;
-export const OUT_OF_PLAY_SHARE = 0.1;
+export const OUT_OF_PLAY_SHARE = 0.125;
 /** Share of the fouls in the final third that are penalties. */
 export const PENALTY_FOUL_SHARE = 0.02;
 /** Share of the lost balls that are a tackle, an interception (the rest is a bad pass). */
@@ -43,12 +43,12 @@ export const DIRECT_FREE_KICK_MIN_DEPTH = 82;
 export const DIRECT_FREE_KICK_BAND = 10;
 
 /** How strongly the tactics move a stage chance. */
-export const DIRECTNESS_GAIN = 0.2;
+export const DIRECTNESS_GAIN = 0.15;
 export const RISK_BUILD_UP_PENALTY = 0.15;
 export const SHOT_WEIGHT_GAIN = 0.6;
-export const TURNOVER_BONUS_GAIN = 3;
+export const TURNOVER_BONUS_GAIN = 4;
 /** Counter-attack gain: times the natural log of the defender's `spaceBehind`. */
-export const SPACE_BEHIND_GAIN = 0.05;
+export const SPACE_BEHIND_GAIN = 0.08;
 /** Weight of the home edge in a stage chance (the home side gains, the away side loses). */
 export const HOME_EDGE_GAIN = 1;
 

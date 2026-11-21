@@ -39,7 +39,7 @@ const xgPerMatch = (steps: readonly PhaseStep[]): number =>
 const perMatch = (steps: readonly PhaseStep[], keep: (s: PhaseStep) => boolean): number =>
   steps.filter(keep).length / MATCHES;
 
-describe("phase draw over seeded matches (draft ranges, retuned by #461)", () => {
+describe("phase draw over seeded matches (ranges set by #461)", () => {
   let steps: PhaseStep[] = [];
   beforeAll(() => {
     steps = playMatches();

@@ -1,6 +1,6 @@
 import type { ChanceAftermath, ChanceKind, ChanceResult, ChanceSituation } from "./chance";
 
-/** Tuning values of a chance (first draft; the retune issue, #461, calibrates them). */
+/** Tuning values of a chance (first draft, then calibrated by #461). */
 
 /** Metres from the goal's centre: a shot from this far or further, from open play, is from the edge. */
 export const EDGE_DISTANCE = 17;
@@ -95,11 +95,11 @@ export const AFTERMATH_SHARES: Record<
   Exclude<ChanceResult, "goal">,
   readonly [number, number, number]
 > = {
-  saved: [0.3, 0.3, 0.4],
-  woodwork: [0.6, 0.2, 0.2],
-  blocked: [0.4, 0.35, 0.25],
-  wide: [0, 0.05, 0.95],
-  over: [0, 0.05, 0.95],
+  saved: [0.2, 0.5, 0.3],
+  woodwork: [0.5, 0.3, 0.2],
+  blocked: [0.25, 0.55, 0.2],
+  wide: [0, 0.12, 0.88],
+  over: [0, 0.12, 0.88],
 };
 
 /** Where a rebound lands: metres in front of the goal line. */

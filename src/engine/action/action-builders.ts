@@ -102,12 +102,14 @@ export const aTeamSheet = (name = "Team", idPrefix = "t"): TeamSheetBuilder =>
 type MatchInputV2Builder = {
   withHome: (sheet: TeamSheet) => MatchInputV2Builder;
   withAway: (sheet: TeamSheet) => MatchInputV2Builder;
+  withEngineVersion: (engineVersion: MatchInput["engineVersion"]) => MatchInputV2Builder;
   build: () => MatchInput;
 };
 
 const inputV2Builder = (input: MatchInput): MatchInputV2Builder => ({
   withHome: (home) => inputV2Builder({ ...input, home }),
   withAway: (away) => inputV2Builder({ ...input, away }),
+  withEngineVersion: (engineVersion) => inputV2Builder({ ...input, engineVersion }),
   build: () => ({ ...input }),
 });
 

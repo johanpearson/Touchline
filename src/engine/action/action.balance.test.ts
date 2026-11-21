@@ -11,8 +11,8 @@ describe("action engine balance: two average teams", () => {
   let s: ActionBalanceSummary;
 
   beforeAll(() => {
-    s = simulateActionBalance(aMatchInput().build(), MATCHES, BASE_SEED);
-    console.info(`\n${formatBalanceTable("v2: average vs average", s)}\n`);
+    s = simulateActionBalance(aMatchInput().withEngineVersion(3).build(), MATCHES, BASE_SEED);
+    console.info(`\n${formatBalanceTable("v3: average vs average", s)}\n`);
     console.info(`Late goal share (minute 75 on): ${(s.lateGoalShare * 100).toFixed(1)}%`);
   }, 300_000);
 
