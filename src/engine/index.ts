@@ -108,6 +108,21 @@ export { validateLineup, validateMatchInput } from "./action/validate-match-inpu
 export type { Period, PitchPosition, Side } from "./match-state";
 export { momentumSeries } from "./momentum-series";
 export type { PerSide } from "./per-side";
+export type {
+  Chance,
+  ChanceAftermath,
+  ChanceKind,
+  ChanceResult,
+  ChanceSituation,
+} from "./phase/chance";
+export type {
+  ChainLink,
+  LostHow,
+  PhaseStart,
+  PhaseStep,
+  PhaseStepOutcome,
+} from "./phase/phase-step";
+export { type ToActionEventsOptions, toActionEvents } from "./phase/to-action-events";
 export type { Rng } from "./rng";
 export { createRng } from "./rng";
 export type { Mentality, Pressing, TeamTactics, Tempo, Width } from "./tactics";
