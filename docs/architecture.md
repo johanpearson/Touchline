@@ -75,6 +75,12 @@ Every `ActionEvent` has `time` (seconds, one decimal), `period`, `team` (the sid
 - Shot outcomes `goal` is followed by a kickoff `setPiece`. A foul in the box gives a penalty.
 - Aim: about 1,900 actions per match at a mean of 3 s. Rough budget: ~1,000 passes, ~250 carries, ~25 shots, ~150 tackles, ~100 interceptions, ~50 clearances, ~24 fouls and ~100 restarts.
 
+#### Engine v3: phase steps (#457)
+
+Engine v3 (`engineVersion: 3`, plan in `docs/engine-pacing.md`) simulates a possession phase as one `PhaseStep` (`src/engine/phase/`) instead of single actions: `team`, `period`, `startTime`, `endTime` (10 to 25 s), `start` (kickoff, tackle, interception, goal kick, throw-in, corner, free kick, penalty), a `chain` of 2 to 6 players with the ball path as waypoints (one taker for a penalty) and an `outcome`: `chance` (a first-class `Chance` with kind, creator, shooter, situation, xG, result, keeper and aftermath), `lost` (by tackle, interception or bad pass), `foul`, `outOfPlay` or `periodEnd`.
+
+`toActionEvents(steps, seed, { sheets, detail })` derives the familiar `ActionEvent` log so stats, ratings, commentary and `toZoneEvents` keep working: the restart that opens the step, a pass between each pair of players in the chain (a cross or through ball when the chance says so, a key pass before the shot), now and then a carry, and the closing action (a shot for a chance, a lost carry or intercepted pass, a foul on the fouled side, a ball out of play, or the period change). Every step becomes at least three actions, so `toPhases` on the derived log returns the steps' boundaries (team, period, start and end time). Times lie inside the step and never decrease; snapshots hold 22 players from `teamShape` and the ball. All randomness comes from the `"inner-actions"` fork of the seed, one sub-stream per step, and never feeds back into the steps; `detail: "fast"` leaves out the snapshots and gives the same actions.
+
 ### Team shape
 
 `teamShape(sheet, tactics, phase, ball, side)` is a pure function that returns the 11 positions of a side.

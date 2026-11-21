@@ -21,6 +21,8 @@ describe("mutation testing setup", () => {
       "!src/engine/action/measure-match-time.ts",
       "!src/engine/action/balance-test-support.ts",
       "!src/engine/action/*-builders.ts",
+      "!src/engine/phase/arbitraries.ts",
+      "!src/engine/phase/*-builders.ts",
     ]);
   });
 

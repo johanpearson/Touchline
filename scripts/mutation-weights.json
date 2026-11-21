@@ -73,6 +73,12 @@
     "src/engine/pitch.ts": 1.2,
     "src/engine/rng.ts": 1,
     "src/engine/tactics.ts": 1,
-    "src/engine/zone-event.ts": 0.3
+    "src/engine/zone-event.ts": 0.3,
+    "src/engine/phase/chance.ts": 0.1,
+    "src/engine/phase/draft-event.ts": 0.1,
+    "src/engine/phase/phase-step.ts": 0.1,
+    "src/engine/phase/step-drafts.ts": 2,
+    "src/engine/phase/step-times.ts": 0.5,
+    "src/engine/phase/to-action-events.ts": 1.5
   }
 }
