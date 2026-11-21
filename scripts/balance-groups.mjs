@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ENGINE = "src/engine/action";
+const PHASE = "src/engine/phase";
 const GAME = "src/game";
 const tactics = (mentality) => ["high", "low", "medium"].map((pressing) => `${ENGINE}/action-no-dominant-tactic-${mentality}-${pressing}.balance.test.ts`);
 
@@ -19,7 +20,7 @@ const tactics = (mentality) => ["high", "low", "medium"].map((pressing) => `${EN
 export const BALANCE_GROUPS = {
   game: [`${GAME}/shout.balance.test.ts`, `${GAME}/ai-changes.balance.test.ts`, `${GAME}/formation.balance.test.ts`, `${GAME}/formation-change.balance.test.ts`, `${GAME}/league.balance.test.ts`, `${GAME}/season.balance.test.ts`, `${GAME}/development.balance.test.ts`],
   "tactics-attacking": [...tactics("attacking"), `${ENGINE}/action.balance.test.ts`],
-  "tactics-balanced": [...tactics("balanced"), `${ENGINE}/action-strength.balance.test.ts`, `${ENGINE}/to-phases.balance.test.ts`],
+  "tactics-balanced": [...tactics("balanced"), `${ENGINE}/action-strength.balance.test.ts`, `${ENGINE}/to-phases.balance.test.ts`, `${PHASE}/phase-draw.balance.test.ts`],
   "tactics-defensive": [...tactics("defensive"), `${ENGINE}/action-tactics.balance.test.ts`],
 };
 
@@ -31,7 +32,7 @@ export const FAST_GROUPS = {
   "fast-formation": [`${GAME}/formation.balance.test.ts`],
   "fast-league": [`${GAME}/shout.balance.test.ts`, `${GAME}/ai-changes.balance.test.ts`, `${GAME}/league.balance.test.ts`, `${GAME}/season.balance.test.ts`],
   "fast-development": [`${GAME}/development.balance.test.ts`],
-  "fast-engine": [`${ENGINE}/action.balance.test.ts`, `${ENGINE}/action-strength.balance.test.ts`, `${ENGINE}/action-tactics.balance.test.ts`, `${ENGINE}/to-phases.balance.test.ts`],
+  "fast-engine": [`${ENGINE}/action.balance.test.ts`, `${ENGINE}/action-strength.balance.test.ts`, `${ENGINE}/action-tactics.balance.test.ts`, `${ENGINE}/to-phases.balance.test.ts`, `${PHASE}/phase-draw.balance.test.ts`],
   "fast-formation-change": [`${GAME}/formation-change.balance.test.ts`],
 };
 

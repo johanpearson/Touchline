@@ -23,6 +23,7 @@ describe("mutation testing setup", () => {
       "!src/engine/action/*-builders.ts",
       "!src/engine/phase/arbitraries.ts",
       "!src/engine/phase/*-builders.ts",
+      "!src/engine/phase/simulate-steps.ts",
     ]);
   });
 

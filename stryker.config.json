@@ -11,7 +11,8 @@
     "!src/engine/action/balance-test-support.ts",
     "!src/engine/action/*-builders.ts",
     "!src/engine/phase/arbitraries.ts",
-    "!src/engine/phase/*-builders.ts"
+    "!src/engine/phase/*-builders.ts",
+    "!src/engine/phase/simulate-steps.ts"
   ],
   "reporters": ["html", "clear-text", "progress"],
   "htmlReporter": {
