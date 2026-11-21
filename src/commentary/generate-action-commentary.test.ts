@@ -78,15 +78,15 @@ describe("generateActionCommentary", { timeout: 30000 }, () => {
     }
   });
 
-  it("keeps the feed to about 60 to 100 lines per match", () => {
+  it("keeps the feed to about 40 to 80 lines per match", () => {
     const counts = SEEDS.map(
       (seed) => generateActionCommentary(played(seed), context(), seed).length,
     );
     const mean = counts.reduce((sum, n) => sum + n, 0) / counts.length;
-    expect(Math.min(...counts)).toBeGreaterThanOrEqual(55);
-    expect(Math.max(...counts)).toBeLessThanOrEqual(105);
-    expect(mean).toBeGreaterThan(65);
-    expect(mean).toBeLessThan(90);
+    expect(Math.min(...counts)).toBeGreaterThanOrEqual(40);
+    expect(Math.max(...counts)).toBeLessThanOrEqual(80);
+    expect(mean).toBeGreaterThan(48);
+    expect(mean).toBeLessThan(72);
   });
 
   it("leaves earlier lines unchanged when the log grows", () => {
@@ -136,6 +136,17 @@ describe("generateActionCommentary", { timeout: 30000 }, () => {
 
   it("gives no line to a negligible shot", () => {
     const events: ActionEvent[] = [shot("home", "h-9", "missed", 0.01, "a-1", { time: 100 })];
+    expect(generateActionCommentary(events, context(), 1)).toEqual([]);
+  });
+
+  it("gives no line to a quiet passage of play, a throw-in or a goal kick", () => {
+    const events: ActionEvent[] = [
+      pass("home", "h-1", "h-2", "complete", { time: 10 }),
+      pass("home", "h-2", "h-3", "complete", { time: 13 }),
+      pass("home", "h-3", "h-4", "intercepted", { time: 16 }),
+      setPiece("away", "a-3", "throwIn", { time: 20 }),
+      setPiece("home", "h-1", "goalKick", { time: 40 }),
+    ];
     expect(generateActionCommentary(events, context(), 1)).toEqual([]);
   });
 

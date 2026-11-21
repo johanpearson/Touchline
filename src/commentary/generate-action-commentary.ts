@@ -6,6 +6,7 @@ import type { CommentaryLine } from "./commentary-line";
 import type { ActionPiece, Params } from "./describe-action";
 import { describeAction } from "./describe-action";
 import { possessive } from "./grammar";
+import { selectKeyActions } from "./phase-selection";
 import type { ActionTemplateKey } from "./templates/action-templates";
 import { actionTemplates } from "./templates/action-templates";
 
@@ -26,8 +27,8 @@ const render = (text: string, params: Params): string =>
  * Turns an action-engine event log into commentary lines, in time order. Pure: it reads the events
  * and nothing else, and draws all its randomness from its own stream (`createRng(seed).fork("commentary")`),
  * so it can never change the simulation. A line depends only on the events up to and including the
- * one it belongs to, so regenerating from a growing log keeps earlier lines unchanged. See
- * `action-selection.ts` for which actions get a line.
+ * one it belongs to, so regenerating from a growing log keeps earlier lines unchanged. Which
+ * actions get a line is decided per possession phase (`phase-selection.ts`); set pieces are described one by one.
  */
 export const generateActionCommentary = (
   events: readonly ActionEvent[],
@@ -38,6 +39,7 @@ export const generateActionCommentary = (
   const { locale, names, players } = context;
   const score: PerSide<number> = { home: 0, away: 0 };
   const lines: CommentaryLine[] = [];
+  const keyActions = selectKeyActions(events);
   let nextSlot = 0;
 
   const nameOf = (id: string | undefined): string => (id === undefined ? "" : (players[id] ?? id));
@@ -105,6 +107,7 @@ export const generateActionCommentary = (
       return;
     }
     if (event.type === "shot" && event.outcome === "goal") score[event.team] += 1;
+    if (event.type !== "setPiece" && !keyActions.has(index)) return;
     for (const piece of describeAction(event, events[index - 1], { locale, nameOf, rng })) {
       emit(event.time, piece);
     }

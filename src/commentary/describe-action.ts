@@ -3,7 +3,6 @@ import { PITCH_LENGTH } from "../engine";
 import type { Locale } from "../i18n";
 import {
   BIG_CHANCE_XG,
-  COLOUR_CHANCE,
   DANGER_PROGRESS,
   DANGEROUS_FREE_KICK_CHANCE,
   DANGEROUS_STOP_CHANCE,
@@ -12,7 +11,6 @@ import {
   KEY_PASS_CHANCE,
   MINOR_SHOT_CHANCE,
   MINOR_SHOT_XG,
-  THROUGH_BALL_CHANCE,
 } from "./action-selection";
 import type { CommentaryKind } from "./commentary-line";
 import { possessive } from "./grammar";
@@ -175,21 +173,9 @@ const setPiecePieces = (
         : FREE_KICK_CHANCE;
       return ctx.rng.chance(chance) ? piece("freeKick", "setPiece") : [];
     }
-    case "throwIn":
-      return ctx.rng.chance(COLOUR_CHANCE) ? piece("throwIn", "setPiece") : [];
-    case "goalKick":
-      return ctx.rng.chance(COLOUR_CHANCE) ? piece("goalKick", "setPiece") : [];
     default:
       return [];
   }
-};
-
-const throughBallPieces = (event: PassEvent, ctx: DescribeContext): ActionPiece[] => {
-  if (event.variant !== "through" || event.outcome !== "complete") return [];
-  if (!isDangerous(event.team, event.to.x) || !ctx.rng.chance(THROUGH_BALL_CHANCE)) return [];
-  const params = { ...named(ctx, "passer", event.actor), ...named(ctx, "player", event.target) };
-  const piece: ActionPiece = { key: "throughBall", kind: "keyPass", team: event.team, params };
-  return [piece];
 };
 
 /**
@@ -212,8 +198,6 @@ export const describeAction = (
       return foulPieces(event, ctx);
     case "setPiece":
       return setPiecePieces(event, previous, ctx);
-    case "pass":
-      return throughBallPieces(event, ctx);
     default:
       return [];
   }
