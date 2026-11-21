@@ -50,6 +50,11 @@ export const drawFailure = (stage: Stage, defending: TeamSheet, rng: Rng): Endin
   return { outcome: "lost", how, challenger: pickChallenger(defending, stage, rng) };
 };
 
+const chanceKind = (start: PhaseStart): Chance["kind"] => {
+  if (start === "penalty") return "penalty";
+  return start === "corner" || start === "freeKick" ? "setPiece" : "openPlay";
+};
+
 const placeholderResult = (xg: number, rng: Rng): ChanceResult => {
   if (rng.chance(xg)) return "goal";
   return rng.chance(PLACEHOLDER_WIDE_SHARE) ? "wide" : "saved";
@@ -61,18 +66,21 @@ const placeholderAftermath = (result: ChanceResult, rng: Rng): ChanceAftermath =
   return rng.chance(SAVED_CORNER_SHARE) ? "corner" : "goalKick";
 };
 
+/** What the placeholder chance needs: who shoots at which keeper after which possession. */
+export type PlaceholderShot = {
+  team: Side;
+  start: PhaseStart;
+  chain: readonly ChainLink[];
+  keeper: string;
+};
+
 /**
  * A placeholder chance for the phase draw: the model's fields filled with simple draws (xG from the
  * shot position, goal with probability xG, otherwise saved or wide). The chance issue (#459) gives
  * the chance its creator, situation, kind and near misses.
  */
-export const placeholderChance = (
-  team: Side,
-  start: PhaseStart,
-  chain: readonly ChainLink[],
-  keeper: string,
-  rng: Rng,
-): Chance => {
+export const placeholderChance = (shot: PlaceholderShot, rng: Rng): Chance => {
+  const { team, start, chain, keeper } = shot;
   const shooter = chain[chain.length - 1] as ChainLink;
   const creator = (chain[chain.length - 2] ?? shooter).player;
   const penalty = start === "penalty";
@@ -80,11 +88,7 @@ export const placeholderChance = (
   const xg = penalty ? PENALTY_XG : shotXg(toAttackingFrame(team, from), PLACEHOLDER_PRESSURE);
   const result = placeholderResult(xg, rng);
   return {
-    kind: penalty
-      ? "penalty"
-      : start === "corner" || start === "freeKick"
-        ? "setPiece"
-        : "openPlay",
+    kind: chanceKind(start),
     creator,
     shooter: shooter.player,
     situation: "box",

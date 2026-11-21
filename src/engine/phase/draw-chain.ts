@@ -39,14 +39,12 @@ const pickWeighted = <T>(items: readonly T[], weight: (item: T) => number, rng: 
   return items[0] as T;
 };
 
+/** Which player to pick: from the ball's third, weighted by an attribute, never the player `exclude`. */
+export type PlayerPick = { stage: Stage; attribute: EngineAttributeName; exclude?: string };
+
 /** An outfield player of `sheet` who joins a possession in `stage`, never `exclude`, weighted by `attribute`. */
-export const pickPlayer = (
-  sheet: TeamSheet,
-  stage: Stage,
-  attribute: EngineAttributeName,
-  exclude: string | undefined,
-  rng: Rng,
-): EnginePlayer => {
+export const pickPlayer = (sheet: TeamSheet, pick: PlayerPick, rng: Rng): EnginePlayer => {
+  const { stage, attribute, exclude } = pick;
   const pool = sheet.starters.filter(
     (p) => p.id !== exclude && POSITION_WEIGHT[stage][p.position] > 0,
   );
@@ -59,7 +57,8 @@ export const pickPlayer = (
 
 /** An outfield defender-side player who challenges, weighted by tackling. */
 export const pickChallenger = (sheet: TeamSheet, stage: Stage, rng: Rng): string =>
-  pickPlayer(sheet, stage === 0 ? 2 : stage === 2 ? 0 : 1, "tackling", undefined, rng).id;
+  pickPlayer(sheet, { stage: stage === 0 ? 2 : stage === 2 ? 0 : 1, attribute: "tackling" }, rng)
+    .id;
 
 type ChainPlan = {
   team: Side;
@@ -112,20 +111,15 @@ export const drawChain = (plan: ChainPlan, rng: Rng): [ChainLink, ...ChainLink[]
   const first: EnginePlayer =
     plan.start === "goalKick"
       ? (plan.sheet.starters[0] as EnginePlayer)
-      : pickPlayer(plan.sheet, plan.from, "passing", undefined, rng);
+      : pickPlayer(plan.sheet, { stage: plan.from, attribute: "passing" }, rng);
   const links: ChainLink[] = [{ player: first.id, at: plan.ball }];
   for (let i = 1; i < count; i++) {
     const last = i === count - 1;
     const share = i / (count - 1);
     const at = last ? target : waypoint(start, target, share, rng);
     const stage = startStage(at.x);
-    const player = pickPlayer(
-      plan.sheet,
-      stage,
-      last && plan.shoots ? "finishing" : "passing",
-      links[i - 1]?.player,
-      rng,
-    );
+    const attribute = last && plan.shoots ? "finishing" : "passing";
+    const player = pickPlayer(plan.sheet, { stage, attribute, exclude: links[i - 1]?.player }, rng);
     links.push({ player: player.id, at: flip(at) });
   }
   return links as [ChainLink, ...ChainLink[]];

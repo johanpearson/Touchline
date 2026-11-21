@@ -52,12 +52,12 @@ const timing = (state: PhaseState, seconds: number) => {
 
 const penaltyStep = (state: PhaseState, rng: Rng): PhaseStep => {
   const sheet = state.sheets[state.team];
-  const taker = pickPlayer(sheet, 2, "finishing", undefined, rng);
+  const taker = pickPlayer(sheet, { stage: 2, attribute: "finishing" }, rng);
   const at = toAttackingFrame(state.team, { x: PENALTY_SPOT.depth, y: PENALTY_SPOT.y });
   const chain: [ChainLink, ...ChainLink[]] = [{ player: taker.id, at }];
   const defending: Side = state.team === "home" ? "away" : "home";
   const keeper = (state.sheets[defending].starters[0] as { id: string }).id;
-  const chance = placeholderChance(state.team, "penalty", chain, keeper, rng);
+  const chance = placeholderChance({ team: state.team, start: "penalty", chain, keeper }, rng);
   const { startTime, endTime } = timing(state, STEP_MIN_SECONDS);
   return {
     team: state.team,
@@ -118,7 +118,7 @@ export const drawPhaseStep = (state: PhaseState, rng: Rng): PhaseStep => {
     return {
       ...base,
       outcome: "chance",
-      chance: placeholderChance(state.team, state.start, chain, keeper, rng),
+      chance: placeholderChance({ team: state.team, start: state.start, chain, keeper }, rng),
     };
   }
   return { ...base, ...failure };

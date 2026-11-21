@@ -37,30 +37,35 @@ const afterChance = (step: Extract<PhaseStep, { outcome: "chance" }>): Restart =
   }
 };
 
+const afterFoul = (step: Extract<PhaseStep, { outcome: "foul" }>, at: Point): Restart =>
+  step.penalty
+    ? {
+        team: step.team,
+        start: "penalty",
+        ball: toAttackingFrame(step.team, { x: PENALTY_SPOT.depth, y: PENALTY_SPOT.y }),
+      }
+    : { team: step.team, start: "freeKick", ball: at };
+
+const afterOutOfPlay = (team: Side, at: Point): Restart =>
+  overEndLine(team, at) ? goalKick(other(team)) : { team: other(team), start: "throwIn", ball: at };
+
+const afterLost = (step: Extract<PhaseStep, { outcome: "lost" }>, at: Point): Restart => ({
+  team: other(step.team),
+  start: step.how === "tackle" ? "tackle" : "interception",
+  ball: at,
+});
+
 const restartAfter = (step: Exclude<PhaseStep, { outcome: "periodEnd" }>): Restart => {
-  const last = step.chain[step.chain.length - 1];
-  const at = last?.at ?? { ...CENTRE };
+  const at = step.chain[step.chain.length - 1]?.at ?? { ...CENTRE };
   switch (step.outcome) {
     case "chance":
       return afterChance(step);
     case "lost":
-      return {
-        team: other(step.team),
-        start: step.how === "tackle" ? "tackle" : "interception",
-        ball: at,
-      };
+      return afterLost(step, at);
     case "foul":
-      return step.penalty
-        ? {
-            team: step.team,
-            start: "penalty",
-            ball: toAttackingFrame(step.team, { x: PENALTY_SPOT.depth, y: PENALTY_SPOT.y }),
-          }
-        : { team: step.team, start: "freeKick", ball: at };
+      return afterFoul(step, at);
     case "outOfPlay":
-      return overEndLine(step.team, at)
-        ? goalKick(other(step.team))
-        : { team: other(step.team), start: "throwIn", ball: at };
+      return afterOutOfPlay(step.team, at);
   }
 };
 
