@@ -19,3 +19,11 @@ describe("action engine performance", () => {
     expect(medianMs).toBeLessThan(CI_LIMIT_MS);
   });
 });
+
+describe("phase engine (v3) performance", () => {
+  it(`simulates a fast-detail match in a median under ${CI_LIMIT_MS} ms`, () => {
+    const { medianMs } = measureMatchTime("fast", 15, 5, 3);
+
+    expect(medianMs).toBeLessThan(CI_LIMIT_MS);
+  });
+});

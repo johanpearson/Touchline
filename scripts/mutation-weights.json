@@ -89,6 +89,14 @@
     "src/engine/phase/phase-step.ts": 0.1,
     "src/engine/phase/step-drafts.ts": 2,
     "src/engine/phase/step-times.ts": 0.5,
-    "src/engine/phase/to-action-events.ts": 1.5
+    "src/engine/phase/to-action-events.ts": 1.5,
+    "src/engine/create-match.ts": 0.3,
+    "src/engine/phase/advance-phase-loop.ts": 1,
+    "src/engine/phase/change-phase-loop.ts": 0.7,
+    "src/engine/phase/create-phase-match.ts": 0.8,
+    "src/engine/phase/phase-loop-state.ts": 0.3,
+    "src/engine/phase/play-step.ts": 1,
+    "src/engine/phase/resume-phase-loop.ts": 0.7,
+    "src/engine/phase/start-phase-loop.ts": 1
   }
 }
