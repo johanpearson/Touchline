@@ -30,10 +30,15 @@ const onPitch = (point: Point): Point => ({
 const forward = (team: Side, from: Point, metres: number): Point =>
   onPitch({ x: from.x + (team === "home" ? metres : -metres), y: from.y });
 
+/** Pass variants a chance's kind forces on the pass that creates it. */
+const CREATING_VARIANT: Partial<Record<Chance["kind"], PassVariant>> = {
+  cross: "cross",
+  throughBall: "through",
+};
+
 const passVariant = (chance: Chance | undefined, last: boolean, length: number): PassVariant => {
-  if (chance && last && chance.kind === "cross") return "cross";
-  if (chance && last && chance.kind === "throughBall") return "through";
-  return length > LONG_PASS_METRES ? "long" : "short";
+  const forced = chance && last ? CREATING_VARIANT[chance.kind] : undefined;
+  return forced ?? (length > LONG_PASS_METRES ? "long" : "short");
 };
 
 const passes = (step: PhaseStep, rng: Rng): DraftEvent[] =>
