@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.10.0](https://github.com/johanpearson/Touchline/compare/v1.9.0...v1.10.0) (2026-11-21)
+
+
+### Features
+
+* **commentary:** one commentary line per possession phase ([#449](https://github.com/johanpearson/Touchline/issues/449)) ([#456](https://github.com/johanpearson/Touchline/issues/456)) ([445281f](https://github.com/johanpearson/Touchline/commit/445281f43ec810c191b17d558956af63e0414d3b))
+* **engine:** group the action log into possession phases ([#452](https://github.com/johanpearson/Touchline/issues/452)) ([559ec04](https://github.com/johanpearson/Touchline/commit/559ec044d3608b9ff98d33dcc055837ca1478271))
+* **engine:** v3 phase draw with build-up, progression and outcome ([#470](https://github.com/johanpearson/Touchline/issues/470)) ([347d539](https://github.com/johanpearson/Touchline/commit/347d539afc525626015001d135126588f038a5df))
+* **engine:** v3 phase-step event model and derived action log ([#469](https://github.com/johanpearson/Touchline/issues/469)) ([0b86476](https://github.com/johanpearson/Touchline/commit/0b86476f62ce09ec5f9eb533a97aefa87cecf835))
+* **ui:** play each possession phase as one continuous movement ([#454](https://github.com/johanpearson/Touchline/issues/454)) ([48df635](https://github.com/johanpearson/Touchline/commit/48df635a2d1fce42d14be0727c04d7bfbfcdc9c7))
+
 ## [1.9.0](https://github.com/johanpearson/Touchline/compare/v1.8.0...v1.9.0) (2026-11-20)
 
 
