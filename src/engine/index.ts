@@ -115,6 +115,9 @@ export type {
   ChanceResult,
   ChanceSituation,
 } from "./phase/chance";
+export { drawPhaseStep } from "./phase/draw-phase-step";
+export { nextPhaseState } from "./phase/next-phase-state";
+export { kickoffState, type PhaseState } from "./phase/phase-state";
 export type {
   ChainLink,
   LostHow,
