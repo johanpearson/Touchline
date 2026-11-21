@@ -36,6 +36,12 @@ const effectiveInput = (
   return { ...input, home: tired(input.home, "home"), away: tired(input.away, "away") };
 };
 
+/** `ActionMatchOptions.energyPenalty` as one flag per side: `true` or `false` for both, or only the side named. */
+export const penaltySides = (option: boolean | Side): Record<Side, boolean> =>
+  typeof option === "boolean"
+    ? { home: option, away: option }
+    : { home: option === "home", away: option === "away" };
+
 /** The default: every side tires. */
 export const EVERYONE_TIRES: Readonly<Record<Side, boolean>> = { home: true, away: true };
 

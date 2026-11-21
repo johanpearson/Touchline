@@ -57,6 +57,22 @@ const withPresentation = (
 };
 
 /**
+ * The action events of one step: its restart, the passes along its chain, a carry here and there and
+ * the closing action. `index` is the step's place in the match: it picks the step's own sub-stream of
+ * the `"inner-actions"` fork of `seed`, so a step's actions never depend on the other steps and a
+ * match loop can derive them one step at a time.
+ */
+export const toStepEvents = (
+  step: PhaseStep,
+  index: number,
+  seed: number,
+  options: ToActionEventsOptions,
+): ActionEvent[] => {
+  const rng = createRng(seed).fork(INNER_STREAM).fork(String(index));
+  return markKeyPasses(withPresentation(step, draftsOf(step, rng), rng, options));
+};
+
+/**
  * Expands phase steps into the familiar action log (`docs/architecture.md`, "Engine v3"): passes
  * along each step's chain, a carry here and there, the restart that opens it and the action that
  * closes it (a shot for a chance, a lost carry or pass, a foul, a ball out of play or the period
@@ -67,11 +83,4 @@ export const toActionEvents = (
   steps: readonly PhaseStep[],
   seed: number,
   options: ToActionEventsOptions,
-): ActionEvent[] => {
-  const inner = createRng(seed).fork(INNER_STREAM);
-  const events = steps.flatMap((step, i) => {
-    const rng = inner.fork(String(i));
-    return withPresentation(step, draftsOf(step, rng), rng, options);
-  });
-  return markKeyPasses(events);
-};
+): ActionEvent[] => steps.flatMap((step, i) => toStepEvents(step, i, seed, options));
