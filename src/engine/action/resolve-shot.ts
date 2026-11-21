@@ -45,12 +45,19 @@ const goalLineX = (side: Side): number => (side === "home" ? PITCH_LENGTH : 0);
 const keeperSkill = (keeper: EnginePlayer): number =>
   (rating(keeper, "handling") + rating(keeper, "reflexes")) / 2;
 
-/** Chance the shot is a goal: xG, raised by finishing, lowered by the keeper's handling and reflexes. */
-export const goalChance = (input: ShotInput): number => {
-  const finishing = 1 + FINISHING_GOAL_GAIN * (rating(input.shooter, "finishing") - 0.5);
-  const keeping = 1 - KEEPER_GOAL_GAIN * (keeperSkill(input.keeper.player) - 0.5);
-  return clamp(input.xg * finishing * keeping, 0, GOAL_CHANCE_MAX);
+/** The keeper's shot-stopping skill, 0..1: the mean of handling and reflexes. */
+export const shotStoppingSkill = keeperSkill;
+
+/** Chance a shot of `xg` is a goal: raised by the shooter's finishing, lowered by the keeper's skill. */
+export const goalChanceOf = (xg: number, shooter: EnginePlayer, keeper: EnginePlayer): number => {
+  const finishing = 1 + FINISHING_GOAL_GAIN * (rating(shooter, "finishing") - 0.5);
+  const keeping = 1 - KEEPER_GOAL_GAIN * (keeperSkill(keeper) - 0.5);
+  return clamp(xg * finishing * keeping, 0, GOAL_CHANCE_MAX);
 };
+
+/** Chance the shot is a goal: xG, raised by finishing, lowered by the keeper's handling and reflexes. */
+export const goalChance = (input: ShotInput): number =>
+  goalChanceOf(input.xg, input.shooter, input.keeper.player);
 
 const laneBlockers = (input: ShotInput): Challenger[] => {
   if (input.penalty === true) return [];

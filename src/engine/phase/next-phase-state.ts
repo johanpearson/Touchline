@@ -1,6 +1,7 @@
 import { PITCH_LENGTH, PITCH_WIDTH, type Point } from "../action/pitch-metres";
 import { toAttackingFrame } from "../action/shot-xg";
 import type { Side } from "../match-state";
+import { REBOUND_DEPTH } from "./chance-constants";
 import { overEndLine } from "./draw-ending";
 import { CENTRE, GOAL_KICK_DEPTH, PENALTY_SPOT } from "./phase-constants";
 import type { PhaseState } from "./phase-state";
@@ -25,13 +26,24 @@ const corner = (attacker: Side, from: Point): Restart => ({
   }),
 });
 
+/** A rebound is a loose ball in front of goal that the defence gets first: it restarts as an interception. */
+const reboundWon = (step: Extract<PhaseStep, { outcome: "chance" }>): Restart => ({
+  team: other(step.team),
+  start: "interception",
+  ball: toAttackingFrame(step.team, {
+    x: REBOUND_DEPTH,
+    y: PENALTY_SPOT.y + (step.chance.from.y - PENALTY_SPOT.y) / 2,
+  }),
+});
+
 const afterChance = (step: Extract<PhaseStep, { outcome: "chance" }>): Restart => {
   switch (step.chance.aftermath) {
     case "kickoff":
       return { team: other(step.team), start: "kickoff", ball: { ...CENTRE } };
     case "goalKick":
       return goalKick(other(step.team));
-    // A rebound is only drawn by the chance issue (#459); until then it restarts as a corner.
+    case "rebound":
+      return reboundWon(step);
     default:
       return corner(step.team, step.chance.from);
   }

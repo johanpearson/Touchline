@@ -12,6 +12,9 @@ import {
   STAGE_END_DEPTH,
   STAGE_START_LIMITS,
   type Stage,
+  WIDE_CREATOR_SHARE,
+  WIDE_OFFSET_MAX,
+  WIDE_OFFSET_MIN,
 } from "./phase-constants";
 import type { ChainLink, PhaseStart } from "./phase-step";
 
@@ -82,6 +85,12 @@ const endDepth = (plan: ChainPlan, rng: Rng): number =>
     ? SHOT_DEPTH_MIN + rng.next() * (SHOT_DEPTH_MAX - SHOT_DEPTH_MIN)
     : STAGE_END_DEPTH[Math.min(plan.endedIn, 2) as Stage] - rng.next() * 25;
 
+/** A creator out wide: near a touchline, so the last pass is a cross or a cut-back. */
+const widePoint = (at: Point, rng: Rng): Point => {
+  const offset = WIDE_OFFSET_MIN + rng.next() * (WIDE_OFFSET_MAX - WIDE_OFFSET_MIN);
+  return { x: at.x, y: rng.next() < 0.5 ? offset : PITCH_WIDTH - offset };
+};
+
 const waypoint = (from: Point, to: Point, share: number, rng: Rng): Point => ({
   x: clamp(from.x + (to.x - from.x) * share + (rng.next() - 0.5) * DEPTH_JITTER, MARGIN, 104),
   y: clamp(
@@ -90,6 +99,13 @@ const waypoint = (from: Point, to: Point, share: number, rng: Rng): Point => ({
     PITCH_WIDTH - MARGIN,
   ),
 });
+
+/** The attribute that weights a link: the shooter by finishing, the creator by vision, the rest by passing. */
+const chainAttribute = (shoots: boolean, index: number, count: number): EngineAttributeName => {
+  if (!shoots) return "passing";
+  if (index === count - 1) return "finishing";
+  return index === count - 2 ? "vision" : "passing";
+};
 
 /**
  * The players of the possession in order, with the ball path from `plan.ball` to where it ends
@@ -116,9 +132,11 @@ export const drawChain = (plan: ChainPlan, rng: Rng): [ChainLink, ...ChainLink[]
   for (let i = 1; i < count; i++) {
     const last = i === count - 1;
     const share = i / (count - 1);
-    const at = last ? target : waypoint(start, target, share, rng);
+    const onWing = plan.shoots && i === count - 2 && rng.chance(WIDE_CREATOR_SHARE);
+    const along = last ? target : waypoint(start, target, share, rng);
+    const at = onWing ? widePoint(along, rng) : along;
     const stage = startStage(at.x);
-    const attribute = last && plan.shoots ? "finishing" : "passing";
+    const attribute = chainAttribute(plan.shoots, i, count);
     const player = pickPlayer(plan.sheet, { stage, attribute, exclude: links[i - 1]?.player }, rng);
     links.push({ player: player.id, at: flip(at) });
   }

@@ -120,6 +120,55 @@ describe("drawPhaseStep", () => {
     if (step.outcome === "chance") expect(step.chance.kind).toBe("penalty");
   });
 
+  it("shoots a free kick in front of goal directly: one taker, one shot, a free-kick chance", () => {
+    const kick = state({ start: "freeKick", ball: { x: 90, y: 30 } });
+
+    const step = drawPhaseStep(kick, createRng(4));
+
+    expect(step.chain).toHaveLength(1);
+    expect(step.chain[0]?.at).toEqual({ x: 90, y: 30 });
+    expect(step).toMatchObject({ outcome: "chance", start: "freeKick", endTime: 10 });
+    if (step.outcome === "chance") {
+      expect(step.chance).toMatchObject({
+        kind: "freeKick",
+        situation: "edge",
+        from: { x: 90, y: 30 },
+      });
+      expect(step.chance.xg).toBeLessThan(0.1);
+    }
+  });
+
+  it.each([
+    ["too far out", { x: 60, y: 34 }],
+    ["too wide", { x: 90, y: 10 }],
+  ])("plays a free kick that is %s as a possession", (_, ball) => {
+    const kick = state({ start: "freeKick", ball });
+
+    const step = drawPhaseStep(kick, scripted(PASS, PASS, PASS));
+
+    expect(step.chain.length).toBeGreaterThanOrEqual(2);
+    if (step.outcome === "chance") expect(step.chance.kind).toBe("setPiece");
+  });
+
+  it("mirrors a direct free kick for the away side", () => {
+    const kick = state({ team: "away", start: "freeKick", ball: { x: 15, y: 38 } });
+
+    const step = drawPhaseStep(kick, createRng(4));
+
+    expect(step.chain).toHaveLength(1);
+    expect(step.outcome === "chance" && step.chance.kind).toBe("freeKick");
+    expect(step.chain.every((link) => awayIds.has(link.player))).toBe(true);
+  });
+
+  it("resolves a chance with the shooter against the keeper: a goal restarts with a kickoff", () => {
+    const step = drawPhaseStep(state(), scripted(...Array(40).fill(PASS)));
+
+    expect(step.outcome === "chance" && step.chance).toMatchObject({
+      result: "goal",
+      aftermath: "kickoff",
+    });
+  });
+
   it("ends the period when the step reaches its end, never shorter than 10 s", () => {
     const late = state({ time: 2695, periodEndsAt: 2700 });
 
@@ -159,7 +208,7 @@ describe("drawPhaseStep over a seeded half", () => {
 
   it("keeps chains of 2 to 6 players on the pitch, never the same player twice in a row", () => {
     for (const step of steps) {
-      if (step.start === "penalty") continue;
+      if (step.chain.length === 1) continue; // a penalty or a direct free kick
       expect(step.chain.length).toBeGreaterThanOrEqual(2);
       expect(step.chain.length).toBeLessThanOrEqual(6);
       step.chain.forEach((link, i) => {
@@ -172,5 +221,46 @@ describe("drawPhaseStep over a seeded half", () => {
   it("ends the half with exactly one period end", () => {
     expect(steps.filter((s) => s.outcome === "periodEnd")).toHaveLength(1);
     expect(steps[steps.length - 1]?.outcome).toBe("periodEnd");
+  });
+});
+
+describe("the chances drawn over seeded halves", () => {
+  const chances = Array.from({ length: 80 }, (_, seed) => drawHalf(sheets, 100 + seed)).flatMap(
+    (half) => half.flatMap((step) => (step.outcome === "chance" ? [step.chance] : [])),
+  );
+
+  it("cover every kind, situation and result", () => {
+    const seen = (pick: (c: (typeof chances)[number]) => string) => new Set(chances.map(pick));
+
+    expect(seen((c) => c.kind)).toEqual(
+      new Set([
+        "openPlay",
+        "throughBall",
+        "cross",
+        "cutBack",
+        "counter",
+        "setPiece",
+        "freeKick",
+        "penalty",
+      ]),
+    );
+    expect(seen((c) => c.situation)).toEqual(
+      new Set(["oneOnOne", "header", "edge", "box", "volley"]),
+    );
+    expect(seen((c) => c.result)).toEqual(
+      new Set(["goal", "saved", "woodwork", "blocked", "wide", "over"]),
+    );
+  });
+
+  it("restarts every goal with a kickoff and no other result with one", () => {
+    for (const c of chances) expect(c.aftermath === "kickoff").toBe(c.result === "goal");
+  });
+
+  it("keeps xG between 0.01 and 0.8, every one-on-one a clear chance", () => {
+    for (const c of chances) {
+      expect(c.xg).toBeGreaterThanOrEqual(0.01);
+      expect(c.xg).toBeLessThanOrEqual(0.8);
+      if (c.situation === "oneOnOne") expect(c.xg).toBeGreaterThanOrEqual(0.25);
+    }
   });
 });

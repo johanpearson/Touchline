@@ -1,10 +1,16 @@
+import type { EnginePlayer } from "../action/engine-player";
+import type { Point } from "../action/pitch-metres";
 import { toAttackingFrame } from "../action/shot-xg";
 import { actionTactics } from "../action/tactics-parameters";
 import type { Side } from "../match-state";
 import type { Rng } from "../rng";
+import type { Chance } from "./chance";
 import { drawChain, pickPlayer, startStage } from "./draw-chain";
-import { drawFailure, onExitLine, placeholderChance } from "./draw-ending";
+import { drawChance } from "./draw-chance";
+import { drawFailure, onExitLine } from "./draw-ending";
 import {
+  DIRECT_FREE_KICK_BAND,
+  DIRECT_FREE_KICK_MIN_DEPTH,
   PENALTY_SPOT,
   STAGE_COUNT,
   STEP_MAX_SECONDS,
@@ -13,6 +19,7 @@ import {
 } from "./phase-constants";
 import type { PhaseState } from "./phase-state";
 import type { ChainLink, PhaseStep } from "./phase-step";
+import { resolveChance } from "./resolve-chance";
 import { stageChance } from "./stage-strength";
 
 const oneDecimal = (value: number): number => Math.round(value * 10) / 10;
@@ -50,25 +57,55 @@ const timing = (state: PhaseState, seconds: number) => {
   };
 };
 
-const penaltyStep = (state: PhaseState, rng: Rng): PhaseStep => {
-  const sheet = state.sheets[state.team];
-  const taker = pickPlayer(sheet, { stage: 2, attribute: "finishing" }, rng);
-  const at = toAttackingFrame(state.team, { x: PENALTY_SPOT.depth, y: PENALTY_SPOT.y });
-  const chain: [ChainLink, ...ChainLink[]] = [{ player: taker.id, at }];
+const keeperOf = (state: PhaseState): string => {
   const defending: Side = state.team === "home" ? "away" : "home";
-  const keeper = (state.sheets[defending].starters[0] as { id: string }).id;
-  const chance = placeholderChance({ team: state.team, start: "penalty", chain, keeper }, rng);
+  return (state.sheets[defending].starters[0] as { id: string }).id;
+};
+
+/** Draws the chance of a possession and its result, shooter against the defending keeper. */
+const chanceOf = (state: PhaseState, chain: readonly ChainLink[], rng: Rng): Chance => {
+  const keeper = keeperOf(state);
+  const draft = drawChance(
+    { team: state.team, start: state.start, ball: state.ball, chain, keeper },
+    rng,
+  );
+  const shooter = state.sheets[state.team].starters.find((p) => p.id === draft.shooter);
+  const goalkeeper = state.sheets[state.team === "home" ? "away" : "home"].starters[0];
+  return {
+    ...draft,
+    ...resolveChance(draft, shooter as EnginePlayer, goalkeeper as EnginePlayer, rng),
+  };
+};
+
+/** A penalty, or a free kick close enough to shoot at goal: one taker, one shot. */
+const setPieceShot = (state: PhaseState, at: Point, rng: Rng): PhaseStep => {
+  const taker = pickPlayer(state.sheets[state.team], { stage: 2, attribute: "finishing" }, rng);
+  const chain: [ChainLink, ...ChainLink[]] = [{ player: taker.id, at }];
+  const chance = chanceOf(state, chain, rng);
   const { startTime, endTime } = timing(state, STEP_MIN_SECONDS);
   return {
     team: state.team,
     period: state.period,
     startTime,
     endTime,
-    start: "penalty",
+    start: state.start,
     chain,
     outcome: "chance",
     chance,
   };
+};
+
+const penaltySpot = (state: PhaseState): Point =>
+  toAttackingFrame(state.team, { x: PENALTY_SPOT.depth, y: PENALTY_SPOT.y });
+
+/** True for a free kick within range and in front of the goal: taken as a direct shot. */
+const isDirectFreeKick = (state: PhaseState): boolean => {
+  if (state.start !== "freeKick") return false;
+  const local = toAttackingFrame(state.team, state.ball);
+  return (
+    local.x >= DIRECT_FREE_KICK_MIN_DEPTH &&
+    Math.abs(local.y - PENALTY_SPOT.y) <= DIRECT_FREE_KICK_BAND
+  );
 };
 
 /**
@@ -76,11 +113,12 @@ const penaltyStep = (state: PhaseState, rng: Rng): PhaseStep => {
  * and final third (each stage a draw from the attacker's against the defender's strengths, tactics
  * and the home edge; a possession starts in the stage of the ball's third), then the step's chain and
  * its outcome are drawn. A possession that stops in a stage ends in a lost ball, a foul on the
- * attacker or out of play; one that gets through ends in a chance (a placeholder until #459).
+ * attacker or out of play; one that gets through ends in a chance (`drawChance`, `resolveChance`).
  * A step that reaches the end of the period ends it. Pure: all randomness comes from `rng`.
  */
 export const drawPhaseStep = (state: PhaseState, rng: Rng): PhaseStep => {
-  if (state.start === "penalty") return penaltyStep(state, rng);
+  if (state.start === "penalty") return setPieceShot(state, penaltySpot(state), rng);
+  if (isDirectFreeKick(state)) return setPieceShot(state, state.ball, rng);
   const attacking = state.sheets[state.team];
   const defending: Side = state.team === "home" ? "away" : "home";
   const defence = state.sheets[defending];
@@ -114,12 +152,7 @@ export const drawPhaseStep = (state: PhaseState, rng: Rng): PhaseStep => {
   };
   if (periodEnd) return { ...base, outcome: "periodEnd" };
   if (failure === undefined) {
-    const keeper = (defence.starters[0] as { id: string }).id;
-    return {
-      ...base,
-      outcome: "chance",
-      chance: placeholderChance({ team: state.team, start: state.start, chain, keeper }, rng),
-    };
+    return { ...base, outcome: "chance", chance: chanceOf(state, chain, rng) };
   }
   return { ...base, ...failure };
 };

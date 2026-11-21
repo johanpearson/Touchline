@@ -74,11 +74,19 @@ describe("nextPhaseState", () => {
     ["kickoff", "away", "kickoff"],
     ["goalKick", "away", "goalKick"],
     ["corner", "home", "corner"],
-    ["rebound", "home", "corner"],
+    ["rebound", "away", "interception"],
   ] as const)("restarts after a chance with aftermath %s", (aftermath, team, start) => {
     const step = aStep().endingInChance(aChance().withAftermath(aftermath).build()).build();
 
     expect(nextPhaseState(state, step)).toMatchObject({ team, start });
+  });
+
+  it("puts a rebound in front of the goal the shot was taken at, won by the defence", () => {
+    const step = aStep()
+      .endingInChance({ ...aChance().withAftermath("rebound").build(), from: { x: 94, y: 24 } })
+      .build();
+
+    expect(nextPhaseState(state, step)?.ball).toEqual({ x: 94, y: 29 });
   });
 
   it("takes a corner from the side of the shot", () => {
