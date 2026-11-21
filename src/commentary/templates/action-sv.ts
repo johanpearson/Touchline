@@ -60,10 +60,6 @@ export const actionSv = {
     "{passer} spelar fram {player} med en djupledspassning",
     "En smart passning från {passer} sätter upp {player}",
   ],
-  throughBall: [
-    "{passer} slår en djupledare bakom {opponentGen} backlinje",
-    "Snygg blick av {passer}, en boll över backlinjen till {player}",
-  ],
   tackleStop: [
     "{player} gör en avgörande tackling på {opponentPlayer} och stoppar anfallet",
     "Bra tackling av {player} på {opponentPlayer}, faran är över",
@@ -85,8 +81,6 @@ export const actionSv = {
     "{player} står över frisparken för {team}",
     "Frispark i ett lovande läge för {team}, {player} försöker",
   ],
-  throwIn: ["Inkast till {team}, taget av {player}", "{player} tar inkastet för {team}"],
-  goalKick: ["{player} tar målspark för {team}", "Målspark, {player} slår den långt"],
   summaryDominant: [
     "{team} har styrt senaste kvarten, {pct} % bollinnehav",
     "{team} äger bollen just nu, {pct} % senaste kvarten",

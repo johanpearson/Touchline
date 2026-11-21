@@ -62,10 +62,6 @@ export const actionEn = {
     "{passer} threads the ball through to {player}",
     "A clever pass from {passer} sets up {player}",
   ],
-  throughBall: [
-    "{passer} slips a through ball in behind {opponentGen} defence",
-    "Splendid vision from {passer}, a ball over the top for {player}",
-  ],
   tackleStop: [
     "{player} makes a crucial tackle on {opponentPlayer} to stop the attack",
     "Great tackle by {player} on {opponentPlayer}, the danger is over",
@@ -87,8 +83,6 @@ export const actionEn = {
     "{player} stands over the free kick for {team}",
     "Free kick in a promising place for {team}, {player} has a go",
   ],
-  throwIn: ["Throw-in for {team}, taken by {player}", "{player} takes the throw for {team}"],
-  goalKick: ["{player} takes the goal kick for {team}", "Goal kick, {player} sends it long"],
   summaryDominant: [
     "{team} have controlled the last quarter, {pct}% of the ball",
     "{team} own the ball right now, {pct}% over the last 15 minutes",
