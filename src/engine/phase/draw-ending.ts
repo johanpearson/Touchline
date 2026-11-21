@@ -1,10 +1,8 @@
-import { PENALTY_XG } from "../action/decision-constants";
 import { PITCH_LENGTH, type Point } from "../action/pitch-metres";
-import { shotXg, toAttackingFrame } from "../action/shot-xg";
+import { toAttackingFrame } from "../action/shot-xg";
 import type { TeamSheet } from "../action/team-sheet";
 import type { Side } from "../match-state";
 import type { Rng } from "../rng";
-import type { Chance, ChanceAftermath, ChanceResult } from "./chance";
 import { pickChallenger } from "./draw-chain";
 import {
   END_LINE_DEPTH,
@@ -13,14 +11,9 @@ import {
   LOST_TACKLE_SHARE,
   OUT_OF_PLAY_SHARE,
   PENALTY_FOUL_SHARE,
-  PLACEHOLDER_WIDE_SHARE,
-  SAVED_CORNER_SHARE,
   type Stage,
 } from "./phase-constants";
-import type { ChainLink, LostHow, PhaseStart, PhaseStep } from "./phase-step";
-
-/** Pressure on the placeholder shot; the chance issue (#459) replaces the whole placeholder. */
-const PLACEHOLDER_PRESSURE = 0.3;
+import type { LostHow, PhaseStep } from "./phase-step";
 
 type Ending =
   | { outcome: "lost"; how: LostHow; challenger: string }
@@ -48,56 +41,6 @@ export const drawFailure = (stage: Stage, defending: TeamSheet, rng: Rng): Endin
   if (kind < FOUL_SHARE + OUT_OF_PLAY_SHARE) return { outcome: "outOfPlay" };
   const how = lostHow(rng.next());
   return { outcome: "lost", how, challenger: pickChallenger(defending, stage, rng) };
-};
-
-const chanceKind = (start: PhaseStart): Chance["kind"] => {
-  if (start === "penalty") return "penalty";
-  return start === "corner" || start === "freeKick" ? "setPiece" : "openPlay";
-};
-
-const placeholderResult = (xg: number, rng: Rng): ChanceResult => {
-  if (rng.chance(xg)) return "goal";
-  return rng.chance(PLACEHOLDER_WIDE_SHARE) ? "wide" : "saved";
-};
-
-const placeholderAftermath = (result: ChanceResult, rng: Rng): ChanceAftermath => {
-  if (result === "goal") return "kickoff";
-  if (result === "wide") return "goalKick";
-  return rng.chance(SAVED_CORNER_SHARE) ? "corner" : "goalKick";
-};
-
-/** What the placeholder chance needs: who shoots at which keeper after which possession. */
-export type PlaceholderShot = {
-  team: Side;
-  start: PhaseStart;
-  chain: readonly ChainLink[];
-  keeper: string;
-};
-
-/**
- * A placeholder chance for the phase draw: the model's fields filled with simple draws (xG from the
- * shot position, goal with probability xG, otherwise saved or wide). The chance issue (#459) gives
- * the chance its creator, situation, kind and near misses.
- */
-export const placeholderChance = (shot: PlaceholderShot, rng: Rng): Chance => {
-  const { team, start, chain, keeper } = shot;
-  const shooter = chain[chain.length - 1] as ChainLink;
-  const creator = (chain[chain.length - 2] ?? shooter).player;
-  const penalty = start === "penalty";
-  const from: Point = shooter.at;
-  const xg = penalty ? PENALTY_XG : shotXg(toAttackingFrame(team, from), PLACEHOLDER_PRESSURE);
-  const result = placeholderResult(xg, rng);
-  return {
-    kind: chanceKind(start),
-    creator,
-    shooter: shooter.player,
-    situation: "box",
-    xg,
-    result,
-    keeper,
-    aftermath: placeholderAftermath(result, rng),
-    from: { ...from },
-  };
 };
 
 /** True when the last waypoint of an out-of-play possession is on the end line of the attacker's goal. */

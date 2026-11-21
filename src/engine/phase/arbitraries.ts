@@ -41,6 +41,7 @@ const arbDraft = fc.record({
     "cutBack",
     "counter",
     "setPiece",
+    "freeKick",
   ),
   situation: fc.constantFrom<ChanceSituation>("oneOnOne", "header", "edge", "box", "volley"),
   xg: fc.double({ min: 0.01, max: 0.9, noNaN: true }),

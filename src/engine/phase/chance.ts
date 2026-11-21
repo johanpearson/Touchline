@@ -8,9 +8,10 @@ export type ChanceKind =
   | "cutBack"
   | "counter"
   | "setPiece"
+  | "freeKick"
   | "penalty";
 
-/** What the shooter faced. */
+/** What the shooter faced. A penalty counts as `oneOnOne` and a direct free kick as `edge`. */
 export type ChanceSituation = "oneOnOne" | "header" | "edge" | "box" | "volley";
 
 /** The shot's result. `wide` and `over` are near misses; `woodwork` hit the frame. */

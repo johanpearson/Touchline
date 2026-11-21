@@ -25,6 +25,17 @@ const playMatches = (home: Partial<TeamTactics> = {}, away: Partial<TeamTactics>
   return steps;
 };
 
+type Shot = Extract<PhaseStep, { outcome: "chance" }>["chance"];
+
+const shotsOf = (steps: readonly PhaseStep[]): Shot[] =>
+  steps.flatMap((s) => (s.outcome === "chance" ? [s.chance] : []));
+
+const shotsPerMatch = (steps: readonly PhaseStep[], keep: (c: Shot) => boolean): number =>
+  shotsOf(steps).filter(keep).length / MATCHES;
+
+const xgPerMatch = (steps: readonly PhaseStep[]): number =>
+  shotsOf(steps).reduce((sum, c) => sum + c.xg, 0) / MATCHES;
+
 const perMatch = (steps: readonly PhaseStep[], keep: (s: PhaseStep) => boolean): number =>
   steps.filter(keep).length / MATCHES;
 
@@ -32,6 +43,12 @@ describe("phase draw over seeded matches (draft ranges, retuned by #461)", () =>
   let steps: PhaseStep[] = [];
   beforeAll(() => {
     steps = playMatches();
+    const results = ["goal", "saved", "woodwork", "blocked", "wide", "over"]
+      .map((r) => `${r} ${shotsPerMatch(steps, (c) => c.result === r).toFixed(2)}`)
+      .join(", ");
+    console.info(
+      `Shots ${shotsPerMatch(steps, () => true).toFixed(1)}, xG ${xgPerMatch(steps).toFixed(2)}, clear chances ${shotsPerMatch(steps, (c) => c.xg >= 0.25).toFixed(2)}; ${results}`,
+    );
     console.info(
       `Steps per match ${perMatch(steps, () => true).toFixed(0)}, chances ${perMatch(steps, (s) => s.outcome === "chance").toFixed(1)}, fouls ${perMatch(steps, (s) => s.outcome === "foul").toFixed(1)}`,
     );
@@ -62,17 +79,40 @@ describe("phase draw over seeded matches (draft ranges, retuned by #461)", () =>
     );
   });
 
-  it("draws about 20 to 40 chances and few penalties a match", () => {
+  it("draws 20 to 30 chances and few penalties a match", () => {
     between(
       perMatch(steps, (s) => s.outcome === "chance"),
       20,
-      40,
+      30,
     );
     between(
       perMatch(steps, (s) => s.outcome === "foul" && s.penalty),
       0,
       1,
     );
+  });
+
+  it("scores 2.4 to 3.0 goals a match with total xG within 15% of the goals", () => {
+    const goals = shotsPerMatch(steps, (c) => c.result === "goal");
+
+    between(goals, 2.4, 3);
+    between(xgPerMatch(steps) / goals, 0.85, 1.15);
+  });
+
+  it("creates 4 to 8 clear chances (xG of 0.25 or more) a match", () => {
+    between(
+      shotsPerMatch(steps, (c) => c.xg >= 0.25),
+      4,
+      8,
+    );
+  });
+
+  it("gives every result a share of the shots, near misses included", () => {
+    const total = shotsPerMatch(steps, () => true);
+    for (const result of ["saved", "woodwork", "blocked", "wide", "over"] as const) {
+      const share = shotsPerMatch(steps, (c) => c.result === result) / total;
+      expect(share, result).toBeGreaterThan(0.01);
+    }
   });
 
   it("splits the possessions evenly between two equal sides", () => {
@@ -91,15 +131,20 @@ describe("phase draw over seeded matches (draft ranges, retuned by #461)", () =>
     expect(average(slow)).toBeGreaterThan(average(steps));
   });
 
-  it("gives an attacking mentality more chances and a high press more turnovers of the opponent in build-up", () => {
+  it("gives an attacking mentality more chances and a high press fewer chances to the opponent", () => {
     const attacking = playMatches({ mentality: "attacking" });
     const chances = (list: readonly PhaseStep[]) =>
       list.filter((s) => s.team === "home" && s.outcome === "chance").length;
-    const lostBy = (list: readonly PhaseStep[]) =>
-      list.filter((s) => s.team === "away" && s.outcome === "lost").length;
+    // Restarts only: a ball won in open play also carries the space a high press leaves behind.
+    const chanceShareBy = (list: readonly PhaseStep[]) => {
+      const built = list.filter(
+        (s) => s.team === "away" && (s.start === "goalKick" || s.start === "throwIn"),
+      );
+      return built.filter((s) => s.outcome === "chance").length / built.length;
+    };
     const pressing = playMatches({ pressing: "high" });
 
     expect(chances(attacking)).toBeGreaterThan(chances(steps));
-    expect(lostBy(pressing)).toBeGreaterThan(lostBy(steps));
+    expect(chanceShareBy(pressing)).toBeLessThan(chanceShareBy(steps));
   });
 });
