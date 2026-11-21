@@ -1,7 +1,7 @@
+import { createMatch } from "../create-match";
 import type { Side } from "../match-state";
 import type { PerSide } from "../per-side";
 import { type MatchMetrics, matchMetrics } from "./action-balance-metrics";
-import { createActionMatch } from "./create-action-match";
 import type { MatchInput } from "./match-input";
 
 /** Per-match averages for one side. */
@@ -97,7 +97,7 @@ const emptyTotals = (): Totals => ({
 });
 
 const playFastMatch = (input: MatchInput, seed: number) => {
-  const match = createActionMatch(input, seed, { detail: "fast" });
+  const match = createMatch(input, seed, { detail: "fast" });
   match.advanceTo(PLAY_ON);
   match.resume();
   match.advanceTo(PLAY_ON);
@@ -125,7 +125,7 @@ const averaged = (totals: Totals, matches: number): ActionSideAverages => ({
 });
 
 /**
- * Simulates `matches` action-engine matches on the fast path with seeds `baseSeed`, `baseSeed + 1`,
+ * Simulates `matches` matches on the engine `input.engineVersion` names (fast path), with seeds `baseSeed`, `baseSeed + 1`,
  * ... and summarises them. Deterministic: the same arguments always give the same summary.
  */
 export const simulateActionBalance = (

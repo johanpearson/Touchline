@@ -20,7 +20,10 @@ export const withTactics = (changes: Partial<TeamTactics>): TeamTactics => ({
 /** The home side plays `tactics` against a neutral away side; both teams are average. */
 export const playWith = (tactics: TeamTactics, matches = MATCHES) =>
   simulateActionBalance(
-    aMatchInput().withHome(aTeamSheet("Home", "h").withTactics(tactics).build()).build(),
+    aMatchInput()
+      .withEngineVersion(3)
+      .withHome(aTeamSheet("Home", "h").withTactics(tactics).build())
+      .build(),
     matches,
     BASE_SEED,
   );

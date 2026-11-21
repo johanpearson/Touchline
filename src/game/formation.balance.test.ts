@@ -65,12 +65,12 @@ const simulateAgainst442 = (formation: Formation): Share => {
       const half = MATCHES_PER_CLUB / 2;
       const baseSeed = seed * 1_000_000 + index * 1_000;
       const atHome = simulateActionBalance(
-        { engineVersion: 2, home: tested, away: baseline },
+        { engineVersion: 3, home: tested, away: baseline },
         half,
         baseSeed,
       );
       const away = simulateActionBalance(
-        { engineVersion: 2, home: baseline, away: tested },
+        { engineVersion: 3, home: baseline, away: tested },
         half,
         baseSeed + half,
       );

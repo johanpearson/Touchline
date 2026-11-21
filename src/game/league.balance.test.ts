@@ -40,11 +40,12 @@ const simulateLeague = (career: Career, leagueSeed: number) => {
         homeClubId: (clubs[home] as { id: string }).id,
         awayClubId: (clubs[away] as { id: string }).id,
       });
+      const v3 = { ...input, engineVersion: 3 as const };
       const baseSeed = leagueSeed * 1_000_000 + (home * clubs.length + away) * MATCHES_PER_PAIR;
       fixtures.push({
         home,
         away,
-        summary: simulateActionBalance(input, MATCHES_PER_PAIR, baseSeed),
+        summary: simulateActionBalance(v3, MATCHES_PER_PAIR, baseSeed),
       });
     }
   }

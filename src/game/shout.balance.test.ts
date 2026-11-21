@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { createActionMatch, type Side } from "../engine";
+import { createMatch, type Side } from "../engine";
 import type { Career } from "./career";
 import { aCareer } from "./career-builders";
 import type { Fixture } from "./generate-fixtures";
@@ -35,7 +35,9 @@ const playMatch = (
   seed: number,
   shout: ShoutKind | undefined,
 ): Run => {
-  const match = createActionMatch(mirrorInput(career, fixture), seed, { detail: "fast" });
+  const match = createMatch({ ...mirrorInput(career, fixture), engineVersion: 3 }, seed, {
+    detail: "fast",
+  });
   let changes: MatchChanges = EMPTY_MATCH_CHANGES;
   const give = (minute: number, change: Omit<MatchChange, "minute">) => {
     advance(match, minute);

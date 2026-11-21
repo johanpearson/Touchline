@@ -10,7 +10,7 @@ describe("action engine balance: clearly stronger team", () => {
   const weak = aTeamSheet("Weak", "w").build();
 
   it("wins 55% to 80% at home, and the weaker team still wins at least 10%", () => {
-    const input = aMatchInput().withHome(strong).withAway(weak).build();
+    const input = aMatchInput().withEngineVersion(3).withHome(strong).withAway(weak).build();
 
     const s = simulateActionBalance(input, MATCHES, BASE_SEED);
 
@@ -20,7 +20,7 @@ describe("action engine balance: clearly stronger team", () => {
   });
 
   it("wins 55% to 80% away, and the weaker team still wins at least 10%", () => {
-    const input = aMatchInput().withHome(weak).withAway(strong).build();
+    const input = aMatchInput().withEngineVersion(3).withHome(weak).withAway(strong).build();
 
     const s = simulateActionBalance(input, MATCHES, BASE_SEED);
 

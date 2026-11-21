@@ -2,6 +2,7 @@ import { rating } from "../action/attribute-rating";
 import type { EngineAttributeName, EnginePlayer } from "../action/engine-player";
 import { PITCH_WIDTH, type Point } from "../action/pitch-metres";
 import { toAttackingFrame } from "../action/shot-xg";
+import { actionTactics } from "../action/tactics-parameters";
 import type { TeamSheet } from "../action/team-sheet";
 import type { Side } from "../match-state";
 import type { Rng } from "../rng";
@@ -128,11 +129,12 @@ export const drawChain = (plan: ChainPlan, rng: Rng): [ChainLink, ...ChainLink[]
     plan.start === "goalKick"
       ? (plan.sheet.starters[0] as EnginePlayer)
       : pickPlayer(plan.sheet, { stage: plan.from, attribute: "passing" }, rng);
+  const wideBonus = actionTactics(plan.sheet.tactics).wideBonus;
   const links: ChainLink[] = [{ player: first.id, at: plan.ball }];
   for (let i = 1; i < count; i++) {
     const last = i === count - 1;
     const share = i / (count - 1);
-    const onWing = plan.shoots && i === count - 2 && rng.chance(WIDE_CREATOR_SHARE);
+    const onWing = plan.shoots && i === count - 2 && rng.chance(WIDE_CREATOR_SHARE * wideBonus);
     const along = last ? target : waypoint(start, target, share, rng);
     const at = onWing ? widePoint(along, rng) : along;
     const stage = startStage(at.x);
