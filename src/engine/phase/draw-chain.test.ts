@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { aTeamSheet } from "../action/action-builders";
 import type { EnginePlayer } from "../action/engine-player";
