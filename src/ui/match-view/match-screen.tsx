@@ -30,7 +30,7 @@ import type { TerrainRendererFactory } from "./terrain-renderer";
 import { TiredAnnouncer } from "./tired-announcer";
 import { useLineupRows } from "./use-lineup-rows";
 import { useMatchLeave } from "./use-match-leave";
-import { useMatchPlayback } from "./use-match-playback";
+import { chancesOfMatch, useMatchPlayback } from "./use-match-playback";
 import { useUserChanges } from "./use-user-changes";
 import { useZoneEvents } from "./use-zone-events";
 
@@ -285,8 +285,13 @@ const useMatchViewData = (data: MatchViewDataInput) => {
   const names = useMemo(() => ({ home: input.home.name, away: input.away.name }), [input]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: `events` is appended to in place
   const commentary = useMemo(
-    () => generateActionCommentary(events.slice(0, eventCount), { locale, names, players }, seed),
-    [eventCount, locale, names, players, seed],
+    () =>
+      generateActionCommentary(
+        events.slice(0, eventCount),
+        { locale, names, players, chances: chancesOfMatch(match) },
+        seed,
+      ),
+    [eventCount, locale, match, names, players, seed],
   );
   return { zoneEvents, actionStats, shown, names, commentary, ...full };
 };

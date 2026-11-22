@@ -83,6 +83,66 @@ export const actionEn = {
     "{player} stands over the free kick for {team}",
     "Free kick in a promising place for {team}, {player} has a go",
   ],
+  buildUpOpenPlay: [
+    "{creator} works it forward and picks out {player}",
+    "Patient play from {team}, {creator} slips the ball to {player}",
+    "{team} move it quickly, {creator} finds {player} in space",
+  ],
+  buildUpThroughBall: [
+    "{creator} threads a ball through the defence for {player}!",
+    "A pass between the lines from {creator} and {player} is in behind",
+    "{creator} splits the defence, {player} is through",
+  ],
+  buildUpCross: [
+    "{creator} swings in a cross, {player} is waiting at the far post",
+    "The ball comes in from {creator}, and it drops for {player}",
+    "A dangerous delivery from {creator} towards {player}",
+  ],
+  buildUpCutBack: [
+    "{creator} reaches the byline and pulls it back for {player}",
+    "{creator} cuts it back across the box, {player} arrives",
+    "A low ball from {creator} into the danger area, {player} is there",
+  ],
+  buildUpCounter: [
+    "{team} break at speed, {creator} releases {player}",
+    "Counter-attack! {creator} sends {player} away",
+    "The ball is won and {team} are off, {creator} finds {player}",
+  ],
+  buildUpSetPiece: [
+    "{creator} delivers the set piece and it falls to {player}",
+    "The ball is swung in by {creator}, {player} gets on the end of it",
+    "{creator} picks out {player} from the dead ball",
+  ],
+  buildUpFreeKick: [
+    "{player} lines up the free kick, the wall is set",
+    "A free kick in a dangerous spot, {player} will have a shot",
+    "{player} stands over it, {team} have a real chance here",
+  ],
+  reactionSaved: [
+    "Saved! {keeper} gets down to keep out {playerGen} shot",
+    "{player} had to score, but {keeper} stands tall",
+    "What a stop by {keeper}! {player} cannot believe it",
+  ],
+  reactionWoodwork: [
+    "Off the post! {player} was inches away",
+    "{player} hits the frame, agonisingly close for {team}",
+    "The woodwork saves {opponent}, {player} cannot believe it",
+  ],
+  reactionBlocked: [
+    "{player} shoots, but the defence throws itself in the way",
+    "Blocked at the last second, {player} is denied",
+    "A desperate block stops {player}, the danger is cleared",
+  ],
+  reactionWide: [
+    "{player} drags it wide, a big chance gone",
+    "Wide! {player} should have done better there",
+    "{player} pulls the shot past the post, and {team} will rue that one",
+  ],
+  reactionOver: [
+    "{player} skies it over the bar",
+    "Over! {player} will be furious with that miss",
+    "{player} blazes it over from a good position",
+  ],
   summaryDominant: [
     "{team} have controlled the last quarter, {pct}% of the ball",
     "{team} own the ball right now, {pct}% over the last 15 minutes",

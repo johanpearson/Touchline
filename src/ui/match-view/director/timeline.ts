@@ -1,6 +1,7 @@
 import {
   type ActionEvent,
   type ChanceResult,
+  chanceOfShot,
   type Phase,
   type Side,
   type StepChance,
@@ -191,17 +192,6 @@ type Placement = {
   /** The clear chance whose shot is `events[index]`, if it is one. */
   chanceAt: (index: number) => StepChance | undefined;
 };
-
-/** The clear chance of a shot: the chance of the same side and period at the shot's time. */
-const chanceOfShot = (
-  chances: readonly StepChance[],
-  event: ActionEvent,
-): StepChance | undefined =>
-  event.type === "shot"
-    ? chances.find(
-        (c) => c.team === event.team && c.period === event.period && c.time === event.time,
-      )
-    : undefined;
 
 /** The holds around a shot that is a clear chance: tension before, the reaction to its result after. */
 const chanceHold = (chance: StepChance): Hold => ({

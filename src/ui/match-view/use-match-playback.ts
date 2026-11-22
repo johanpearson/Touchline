@@ -108,9 +108,13 @@ type View = {
 /** A match that may carry the engine v3 steps (`createMatch`); a v2 match has none, so no chance moments. */
 type ObservedMatch = ActionMatch & { readonly steps?: readonly PhaseStep[] };
 
+/** The chances of every step the engine has played; none for an engine v2 match. */
+export const chancesOfMatch = (match: ActionMatch): StepChance[] =>
+  chancesOf((match as ObservedMatch).steps ?? []);
+
 /** The chances of the steps the engine has played that the run does not know yet. */
 const newChances = (run: Run, match: ObservedMatch): StepChance[] =>
-  chancesOf(match.steps ?? []).slice(run.chances.length);
+  chancesOfMatch(match).slice(run.chances.length);
 
 /** Appends what the engine logged since the last call and extends the timeline with it. */
 const pull = (run: Run, match: ObservedMatch) => {

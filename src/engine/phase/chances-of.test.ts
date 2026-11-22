@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Chance } from "./chance";
-import { bigChanceStats, chancesOf } from "./chances-of";
+import { bigChanceStats, chanceOfShot, chancesOf } from "./chances-of";
 import type { PhaseStep } from "./phase-step";
 
 const aChance = (changes: Partial<Chance> = {}): Chance => ({
@@ -117,5 +117,31 @@ describe("bigChanceStats", () => {
 
     expect(teams.home).toEqual({ created: 3, missed: 2 });
     expect(teams.away).toEqual({ created: 1, missed: 1 });
+  });
+});
+
+describe("chanceOfShot", () => {
+  const chances = chancesOf([aStep("home", aChance({ xg: 0.4 }), 100)]);
+  const shotAt = (team: "home" | "away", period: "firstHalf" | "secondHalf", time: number) => ({
+    type: "shot" as const,
+    team,
+    period,
+    time,
+  });
+
+  it("finds the chance of the same side and period at the shot's time", () => {
+    expect(chanceOfShot(chances, shotAt("home", "firstHalf", 115))).toBe(chances[0]);
+  });
+
+  it("finds nothing for another side, period or time", () => {
+    expect(chanceOfShot(chances, shotAt("away", "firstHalf", 115))).toBeUndefined();
+    expect(chanceOfShot(chances, shotAt("home", "secondHalf", 115))).toBeUndefined();
+    expect(chanceOfShot(chances, shotAt("home", "firstHalf", 114))).toBeUndefined();
+  });
+
+  it("finds nothing for an event that is not a shot", () => {
+    expect(
+      chanceOfShot(chances, { ...shotAt("home", "firstHalf", 115), type: "pass" }),
+    ).toBeUndefined();
   });
 });

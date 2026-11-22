@@ -120,6 +120,7 @@ export {
   type BigChanceLine,
   type BigChanceStats,
   bigChanceStats,
+  chanceOfShot,
   chancesOf,
   type StepChance,
 } from "./phase/chances-of";
