@@ -1,13 +1,23 @@
 import { useEffect, useRef, useState } from "react";
-import type {
-  ActionEvent,
-  ActionMatch,
-  ActionMatchChange,
-  Period,
-  Side,
-  TimedActionMatchChange,
+import {
+  type ActionEvent,
+  type ActionMatch,
+  type ActionMatchChange,
+  chancesOf,
+  type Period,
+  type PhaseStep,
+  type Side,
+  type StepChance,
+  type TimedActionMatchChange,
 } from "../../engine";
-import { buildTimeline, extendTimeline, type PlaybackMode, type Timeline } from "./director";
+import {
+  buildTimeline,
+  chanceMomentAt,
+  extendTimeline,
+  type PlaybackMode,
+  type SegmentChance,
+  type Timeline,
+} from "./director";
 import {
   createEnergyTrack,
   type Energy,
@@ -37,6 +47,8 @@ export type RestoredPlayback = {
 export type MatchPlayback = {
   /** The match time at the presentation clock; every view follows this and nothing else. */
   matchTime: number;
+  /** The clear chance on screen at the clock (engine v3 matches), for the stage cue; undefined otherwise. */
+  chance: SegmentChance | undefined;
   state: PresentedMatchState;
   /**
    * The whole log read so far, up to the lookahead ahead of the clock. The array is appended to in
@@ -82,21 +94,37 @@ type Run = {
   presented: PresentedState;
   /** The engine's energy sampled after every step, to be read at the clock. */
   energy: EnergyTrack;
+  /** The clear and other chances of the engine v3 steps played so far; empty on engine v2. */
+  chances: StepChance[];
 };
 
-type View = { matchTime: number; presented: PresentedState; energy: Energy };
+type View = {
+  matchTime: number;
+  presented: PresentedState;
+  energy: Energy;
+  chance: SegmentChance | undefined;
+};
+
+/** A match that may carry the engine v3 steps (`createMatch`); a v2 match has none, so no chance moments. */
+type ObservedMatch = ActionMatch & { readonly steps?: readonly PhaseStep[] };
+
+/** The chances of the steps the engine has played that the run does not know yet. */
+const newChances = (run: Run, match: ObservedMatch): StepChance[] =>
+  chancesOf(match.steps ?? []).slice(run.chances.length);
 
 /** Appends what the engine logged since the last call and extends the timeline with it. */
-const pull = (run: Run, match: ActionMatch) => {
+const pull = (run: Run, match: ObservedMatch) => {
   recordEnergy(run.energy, match.state.time, match.state.energy);
   const fresh = match.events.slice(run.events.length);
-  if (fresh.length === 0) return;
+  const chances = newChances(run, match);
+  if (fresh.length === 0 && chances.length === 0) return;
   run.events.push(...fresh);
-  run.timeline = extendTimeline(run.timeline, fresh);
+  run.chances.push(...chances);
+  run.timeline = extendTimeline(run.timeline, fresh, chances);
 };
 
 /** Advances the engine until `done` holds or the engine stops at half-time or full time. */
-const advanceUntil = (run: Run, match: ActionMatch, done: () => boolean) => {
+const advanceUntil = (run: Run, match: ObservedMatch, done: () => boolean) => {
   pull(run, match);
   while (!done() && isPlaying(match.state.period)) {
     match.advanceTo(match.state.time + ENGINE_STEP_MATCH_SECONDS);
@@ -109,15 +137,17 @@ const advanceUntil = (run: Run, match: ActionMatch, done: () => boolean) => {
  * engine is advanced past `at` first, as live play has it (the timeline reaches the lookahead
  * beyond the clock), because the end of a timeline is provisional until the next action is known.
  */
-const createRun = (match: ActionMatch, mode: PlaybackMode, at?: number): Run => {
+const createRun = (match: ObservedMatch, mode: PlaybackMode, at?: number): Run => {
   const events = [...match.events];
-  const timeline = buildTimeline(events, mode);
+  const chances = chancesOf(match.steps ?? []);
+  const timeline = buildTimeline(events, mode, chances);
   const run: Run = {
     events,
     timeline,
     clock: 0,
     presented: advancePresented(INITIAL_PRESENTED, events, timeline, { clock: 0, matchTime: 0 }),
     energy: createEnergyTrack(),
+    chances,
   };
   recordEnergy(run.energy, match.state.time, match.state.energy);
   if (at === undefined) return run;
@@ -140,7 +170,12 @@ const viewOf = (run: Run): View => {
     clock: run.clock,
     matchTime,
   });
-  return { matchTime, presented: run.presented, energy: energyAt(run.energy, matchTime) };
+  return {
+    matchTime,
+    presented: run.presented,
+    energy: energyAt(run.energy, matchTime),
+    chance: chanceMomentAt(run.timeline, run.clock),
+  };
 };
 
 /**
@@ -151,7 +186,7 @@ const viewOf = (run: Run): View => {
  * The score, period and event count the views see are those at the clock, never the engine's.
  */
 export const useMatchPlayback = (
-  match: ActionMatch,
+  match: ObservedMatch,
   tickMs: number = DEFAULT_TICK_MS,
   restored?: RestoredPlayback,
 ): MatchPlayback => {
@@ -185,7 +220,7 @@ export const useMatchPlayback = (
     chooseMode(next);
     if (next === run.timeline.mode) return;
     const matchTime = run.timeline.matchTimeAt(run.clock);
-    run.timeline = buildTimeline(run.events, next);
+    run.timeline = buildTimeline(run.events, next, run.chances);
     advanceUntil(run, match, () => run.timeline.matchEnd >= matchTime);
     run.clock = isPlaying(run.presented.period)
       ? run.timeline.presentationTimeAt(matchTime)
@@ -216,6 +251,7 @@ export const useMatchPlayback = (
     events: run.events,
     eventCount: view.presented.eventCount,
     energy: view.energy,
+    chance: view.chance,
     paused,
     mode,
     setPaused,

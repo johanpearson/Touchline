@@ -5,7 +5,7 @@ import type { MessageKey } from "../../i18n";
 import { Button } from "../components/button";
 import { useI18n } from "../i18n-provider";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
-import type { PlaybackMode } from "./director";
+import type { PlaybackMode, SegmentChance } from "./director";
 import { type ChangesEditor, HalfTimePanel, type PlannedEditorChange } from "./half-time-panel";
 import { HalfTimeSheet } from "./half-time-sheet";
 import { LeaveMatchButton } from "./leave-match-button";
@@ -23,6 +23,8 @@ import "./match-screen.css";
 
 export type MatchLayoutProps = {
   names: PerSide<string>;
+  /** Player names by id, for the chance cue. */
+  players?: Readonly<Record<string, string>>;
   colours: PerSide<string>;
   score: ActionMatchState["score"];
   period: ActionMatchState["period"];
@@ -39,6 +41,7 @@ export type MatchLayoutProps = {
   playback: {
     paused: boolean;
     mode: PlaybackMode;
+    chance?: SegmentChance;
     setPaused: (paused: boolean) => void;
     setMode: (mode: PlaybackMode) => void;
   };
@@ -76,6 +79,7 @@ const changesHintOf = (period: ActionMatchState["period"], hasEditor: boolean): 
 /** The panels of the match screen; `MatchScreen` feeds it. */
 export function MatchLayout({
   names,
+  players,
   colours,
   score,
   period,
@@ -147,6 +151,9 @@ export function MatchLayout({
           createRenderer={createRenderer}
           pitch={pitch}
           showChain={showChain}
+          chance={playback.chance}
+          teamNames={names}
+          players={players ?? {}}
         />
         <MatchControls
           paused={paused}
