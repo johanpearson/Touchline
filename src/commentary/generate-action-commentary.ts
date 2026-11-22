@@ -1,5 +1,5 @@
 import type { ActionEvent, PerSide, Side, StepChance } from "../engine";
-import { computeActionStats, createRng } from "../engine";
+import { chanceOfShot, computeActionStats, createRng } from "../engine";
 import type { Locale } from "../i18n";
 import { EVEN_SPELL_MARGIN, SUMMARY_INTERVAL, SUMMARY_SLOTS } from "./action-selection";
 import type { CommentaryLine } from "./commentary-line";
@@ -16,7 +16,7 @@ export type ActionCommentaryContext = {
   names: PerSide<string>;
   /** Display name of each player id in the log. An unknown id is shown as it is. */
   players: Readonly<Record<string, string>>;
-  /** The chances of an engine v3 match (`chancesOf(match.steps)`); read by the chance narration of #464, not used yet. */
+  /** The chances of an engine v3 match (`chancesOf(match.steps)`); a clear one gets a build-up and a reaction line (#464). */
   chances?: readonly StepChance[];
 };
 
@@ -42,7 +42,9 @@ export const generateActionCommentary = (
   const score: PerSide<number> = { home: 0, away: 0 };
   const lines: CommentaryLine[] = [];
   const keyActions = selectKeyActions(events);
+  const chances = (context.chances ?? []).filter((chance) => chance.clear);
   let nextSlot = 0;
+  let lastText: string | undefined;
 
   const nameOf = (id: string | undefined): string => (id === undefined ? "" : (players[id] ?? id));
 
@@ -56,7 +58,10 @@ export const generateActionCommentary = (
       score: `${score.home}–${score.away}`,
       ...piece.params,
     };
-    const text = render(rng.pick(actionTemplates[locale][piece.key]), params);
+    const variants = actionTemplates[locale][piece.key].map((variant) => render(variant, params));
+    const fresh = variants.filter((variant) => variant !== lastText);
+    const text = rng.pick(fresh.length > 0 ? fresh : variants);
+    lastText = text;
     lines.push({
       time,
       kind: piece.kind,
@@ -110,7 +115,9 @@ export const generateActionCommentary = (
     }
     if (event.type === "shot" && event.outcome === "goal") score[event.team] += 1;
     if (event.type !== "setPiece" && !keyActions.has(index)) return;
-    for (const piece of describeAction(event, events[index - 1], { locale, nameOf, rng })) {
+    const chance = chanceOfShot(chances, event);
+    const pieces = describeAction(event, events[index - 1], { locale, nameOf, rng }, chance);
+    for (const piece of pieces) {
       emit(event.time, piece);
     }
   });

@@ -1,6 +1,6 @@
-import type { ActionEvent, ActionShotEvent, PassEvent, Rng, Side } from "../engine";
+import type { ActionEvent, ActionShotEvent, PassEvent, Side, StepChance } from "../engine";
 import { PITCH_LENGTH } from "../engine";
-import type { Locale } from "../i18n";
+import type { ActionPiece, DescribeContext, Params } from "./action-piece";
 import {
   BIG_CHANCE_XG,
   DANGER_PROGRESS,
@@ -12,28 +12,10 @@ import {
   MINOR_SHOT_CHANCE,
   MINOR_SHOT_XG,
 } from "./action-selection";
+import { chancePieces, isNarrated } from "./chance-narration";
 import type { CommentaryKind } from "./commentary-line";
 import { possessive } from "./grammar";
 import type { ActionTemplateKey } from "./templates/action-templates";
-
-export type Params = Record<string, string | number>;
-
-/** One line to emit: which template, what it is about and the names to fill in. */
-export type ActionPiece = {
-  key: ActionTemplateKey;
-  kind: CommentaryKind;
-  team: Side | undefined;
-  big?: boolean;
-  /** Placeholders beyond the team names and the score. */
-  params: Params;
-};
-
-export type DescribeContext = {
-  locale: Locale;
-  /** Display name of a player id (the id itself when unknown). */
-  nameOf: (id: string | undefined) => string;
-  rng: Rng;
-};
 
 const other = (side: Side): Side => (side === "home" ? "away" : "home");
 
@@ -181,16 +163,20 @@ const setPiecePieces = (
 /**
  * The commentary pieces for one action event, in the order they should appear. Depends only on the
  * event, the one before it and the stream position, so lines never depend on later events.
+ * `chance` is the engine v3 chance of a shot (`chanceOfShot`): a clear one is narrated by `chancePieces`.
  * Half-time, full time and summaries are handled by the generator.
  */
 export const describeAction = (
   event: ActionEvent,
   previous: ActionEvent | undefined,
   ctx: DescribeContext,
+  chance?: StepChance,
 ): ActionPiece[] => {
   switch (event.type) {
     case "shot":
-      return shotPieces(event, previous, ctx);
+      return isNarrated(chance)
+        ? chancePieces(event, chance, ctx)
+        : shotPieces(event, previous, ctx);
     case "tackle":
     case "interception":
       return stopPiece(event, ctx);
@@ -202,3 +188,5 @@ export const describeAction = (
       return [];
   }
 };
+
+export type { ActionPiece, DescribeContext, Params } from "./action-piece";

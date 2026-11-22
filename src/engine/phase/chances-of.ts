@@ -1,3 +1,4 @@
+import type { ActionEvent } from "../action/action-event";
 import type { Period, Side } from "../match-state";
 import type { PerSide } from "../per-side";
 import type { Chance } from "./chance";
@@ -33,6 +34,17 @@ export const chancesOf = (steps: readonly PhaseStep[]): StepChance[] =>
         ]
       : [],
   );
+
+/** The chance a shot event belongs to: the one of the same side and period at the shot's time (the step's end). Shared by the director and the commentary so both agree on what a chance is. */
+export const chanceOfShot = (
+  chances: readonly StepChance[],
+  event: Pick<ActionEvent, "type" | "team" | "period" | "time">,
+): StepChance | undefined =>
+  event.type === "shot"
+    ? chances.find(
+        (c) => c.team === event.team && c.period === event.period && c.time === event.time,
+      )
+    : undefined;
 
 /** A player's clear chances: created for a team mate, taken and missed (any result but a goal). */
 export type BigChanceLine = { created: number; taken: number; missed: number };

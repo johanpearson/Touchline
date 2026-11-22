@@ -81,6 +81,66 @@ export const actionSv = {
     "{player} står över frisparken för {team}",
     "Frispark i ett lovande läge för {team}, {player} försöker",
   ],
+  buildUpOpenPlay: [
+    "{creator} spelar fram bollen och hittar {player}",
+    "Tålmodigt spel från {team}, {creator} slår bollen till {player}",
+    "{team} flyttar bollen snabbt, {creator} hittar {player} på yta",
+  ],
+  buildUpThroughBall: [
+    "{creator} spelar in en djupledspass till {player}!",
+    "En passning mellan lagdelarna från {creator} och {player} är fri",
+    "{creator} klyver försvaret, {player} är igenom",
+  ],
+  buildUpCross: [
+    "{creator} slår in ett inlägg, {player} väntar vid bortre stolpen",
+    "Bollen kommer in från {creator} och landar hos {player}",
+    "Ett farligt inlägg från {creator} mot {player}",
+  ],
+  buildUpCutBack: [
+    "{creator} tar sig till kortlinjen och drar tillbaka bollen till {player}",
+    "{creator} lägger tillbaka bollen över straffområdet, {player} är där",
+    "En låg passning från {creator} in i farozonen, {player} kommer",
+  ],
+  buildUpCounter: [
+    "{team} kontrar snabbt, {creator} skickar iväg {player}",
+    "Kontring! {creator} sätter {player} på språng",
+    "Bollen vinns och {team} är på väg, {creator} hittar {player}",
+  ],
+  buildUpSetPiece: [
+    "{creator} slår fastbollen och den hamnar hos {player}",
+    "Bollen slås in av {creator}, {player} når den först",
+    "{creator} hittar {player} efter fastbollen",
+  ],
+  buildUpFreeKick: [
+    "{player} ställer upp för frisparken, muren är på plats",
+    "Frispark i ett farligt läge, {player} får skjuta",
+    "{player} står över bollen, {team} har en riktig chans här",
+  ],
+  reactionSaved: [
+    "Räddning! {keeper} kastar sig och stoppar {playerGen} skott",
+    "{player} måste göra mål, men {keeper} står pall",
+    "Vilken räddning av {keeper}! {player} kan inte tro det",
+  ],
+  reactionWoodwork: [
+    "I stolpen! {player} var centimeter från mål",
+    "{player} träffar ramen, så nära för {team}",
+    "Ramen räddar {opponent}, {player} kan inte tro det",
+  ],
+  reactionBlocked: [
+    "{player} skjuter, men försvaret kastar sig i vägen",
+    "Blockerat i sista stund, {player} nekas",
+    "Ett desperat block stoppar {player}, faran är över",
+  ],
+  reactionWide: [
+    "{player} skjuter utanför, en stor chans går förlorad",
+    "Utanför! {player} borde ha gjort bättre ifrån sig",
+    "{player} drar skottet förbi stolpen, och {team} kommer ångra den",
+  ],
+  reactionOver: [
+    "{player} skjuter högt över ribban",
+    "Över! {player} blir rasande på sig själv efter den missen",
+    "{player} blåser över från ett bra läge",
+  ],
   summaryDominant: [
     "{team} har styrt senaste kvarten, {pct} % bollinnehav",
     "{team} äger bollen just nu, {pct} % senaste kvarten",
