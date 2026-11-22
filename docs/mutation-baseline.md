@@ -259,4 +259,4 @@ What the new tests pin (`draw-chain.test.ts`, `step-drafts.test.ts`, `stage-stre
 
 Survivors left for now (each file is above 70% and the folder is above the 80% threshold): `to-action-events.ts` (snapshot and shape details that no test reads), `draw-phase-step.ts` and `draw-chance.ts` (the order of draws inside a step, pinned only by the seeded balance run), and `start-phase-loop.ts` (the draw order of the added-time stream). They are the first candidates when a later nightly run drops.
 
-Weights: the whole folder took about 20 minutes, in line with the 21.6 minutes of estimates in `mutation-weights.json`, so the weights stay as they are.
+Weights: the whole folder took about 20 minutes on one runner, against 27.1 minutes of estimates in `mutation-weights.json` for its files, so the weights are a little high and stay as they are (a shard that finishes early is harmless).
