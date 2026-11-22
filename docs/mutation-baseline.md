@@ -227,3 +227,36 @@ What the run showed:
 - The 80% break threshold and the 120 minute shard limit are unchanged and not close to being hit.
 
 Next steps: the weights are good enough, so nothing further is changed for #209. #244 (cost of timed-out mutants) remains the way to shorten the run further, but its target of 45 minutes for the slowest shard is already met; it is now an optimisation, not a need.
+
+## Engine v3 (`src/engine/phase`), #466
+
+The v3 phase engine (#446) is part of the nightly mutation plan: `stryker.config.json` mutates `src/engine/**` and leaves out only the test helpers `arbitraries.ts`, `*-builders.ts` and `simulate-steps.ts`; every other file under `src/engine/phase/` has a weight in `scripts/mutation-weights.json` (a test fails for a file that is missing). The performance budget (`performance.perf.test.ts`, `npm run bench:engine`) measures v2 and v3, `scripts/ci-scope.mjs` treats `src/engine/**` (and so the new folder) as engine-side, and `scripts/balance-groups.mjs` lists `phase-draw.balance.test.ts` in the `tactics-balanced` group and in the fast engine group.
+
+Measured on 2026-11-22 with `npx stryker run stryker.config.json --mutate 'src/engine/phase/*.ts,!src/engine/phase/*.test.ts,!src/engine/phase/arbitraries.ts,!src/engine/phase/*-builders.ts,!src/engine/phase/simulate-steps.ts'` (the whole folder, about 20 minutes in one run). The first run scored **72.10%**, below the 80% break threshold, so the survivors were treated as missing tests and the score after them is **90.64%** (933 killed, 6 timed out, 92 survived, 5 with no coverage).
+
+| File | Before | After |
+| --- | --- | --- |
+| All files | 72.10% | **90.64%** |
+| `draw-chain.ts` | 30.37% | 97.78% |
+| `step-drafts.ts` | 59.09% | 98.48% |
+| `stage-strength.ts` | 67.53% | 97.40% |
+| `draw-ending.ts` | 69.39% | 97.96% |
+| `start-phase-loop.ts` | 73.68% | 78.95% |
+| `resume-phase-loop.ts` | 75.00% | 90.00% |
+| `step-times.ts` | 77.78% | 100.00% |
+| `play-step.ts` | 86.05% | 88.37% |
+| `to-action-events.ts` | 62.50% | 71.88% |
+| `draw-phase-step.ts` | 78.26% | 78.26% |
+| `draw-chance.ts` | 83.94% | 83.94% |
+| `resolve-chance.ts` | 80.85% | 80.85% |
+| the other files | 88.89% to 100% | 88.89% to 100% |
+
+What the new tests pin (`draw-chain.test.ts`, `step-drafts.test.ts`, `stage-strength.test.ts`, `draw-ending.test.ts`, `start-phase-loop.test.ts`, `step-times.test.ts`, `to-step-events.test.ts`):
+
+- Scripted-RNG tests fix the exact waypoint arithmetic of a chain, the side and offset of a wing creator, the shot depth and band, and the draw order; seeded tests fix which attribute weights each link (finishing for the shooter, vision for the creator, passing for the rest) and that the same player never appears twice in a row.
+- The values of `stageChance` are pinned for neutral and varied squads, both sides, all three stages, the set-piece bonus, the goalkeeper share, mentality, press and counter terms and the lower clamp. A deliberate retune of the model (#461) updates these numbers together with the balance ranges.
+- The boundaries of the failure draw (9% foul, 21.5% out of play, 40% and 75% for the way a ball is lost, 2% penalties in the final third), the end-line geometry and every closing event of a step (shot outcome mapping, tackled carry, intercepted and incomplete passes, out of play, fouls, period changes), the padding of short possessions, and the added time and kickoff side of a match.
+
+Survivors left for now (each file is above 70% and the folder is above the 80% threshold): `to-action-events.ts` (snapshot and shape details that no test reads), `draw-phase-step.ts` and `draw-chance.ts` (the order of draws inside a step, pinned only by the seeded balance run), and `start-phase-loop.ts` (the draw order of the added-time stream). They are the first candidates when a later nightly run drops.
+
+Weights: the whole folder took about 20 minutes on one runner, against 27.1 minutes of estimates in `mutation-weights.json` for its files, so the weights are a little high and stay as they are (a shard that finishes early is harmless).
