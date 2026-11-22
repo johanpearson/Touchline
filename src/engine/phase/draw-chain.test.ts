@@ -102,7 +102,8 @@ describe("pickPlayer", () => {
     const hits = Array.from(
       { length: 200 },
       () =>
-        pickPlayer({ ...sheet, starters: weakOthers }, { stage: 2, attribute: "finishing" }, rng).id,
+        pickPlayer({ ...sheet, starters: weakOthers }, { stage: 2, attribute: "finishing" }, rng)
+          .id,
     ).filter((id) => id === "h-10").length;
 
     expect(hits).toBeGreaterThan(100);
@@ -253,5 +254,151 @@ describe("drawChain", () => {
 
   it("is deterministic for a seed", () => {
     expect(draw({ endedIn: 3, shoots: true }, 11)).toEqual(draw({ endedIn: 3, shoots: true }, 11));
+  });
+});
+
+describe("drawChain with a scripted draw", () => {
+  it("places the waypoints on the line from the ball to the target, plus jitter", () => {
+    // count 4, end depth 70 - 0.2 * 25, target y 0.25 * 68, first player, then per link x and y jitter and a player
+    const chain = drawChain(
+      plan(),
+      scripted(0.5, 0.2, 0.25, 0.5, 0.9, 0.1, 0.5, 0.1, 0.9, 0.5, 0.5),
+    );
+
+    expect(chain).toHaveLength(4);
+    expect(chain[0].at).toEqual({ x: 30, y: 34 });
+    expect(chain[1].at.x).toBeCloseTo(30 + 35 / 3 + 0.4 * 4, 6);
+    expect(chain[1].at.y).toBeCloseTo(34 - 17 / 3 - 0.4 * 14, 6);
+    expect(chain[2].at.x).toBeCloseTo(30 + 70 / 3 - 0.4 * 4, 6);
+    expect(chain[2].at.y).toBeCloseTo(34 - 34 / 3 + 0.4 * 14, 6);
+    expect(chain[3].at.x).toBeCloseTo(65, 6);
+    expect(chain[3].at.y).toBeCloseTo(17, 6);
+  });
+
+  it("keeps waypoints at least 1 m inside the touchlines", () => {
+    const chain = drawChain(plan({ ball: { x: 30, y: 0 } }), scripted(0.5, 0.2, 0, 0.5, 0, 0, 0.5));
+
+    expect(chain[1].at.y).toBe(1);
+    const far = drawChain(
+      plan({ ball: { x: 30, y: PITCH_WIDTH } }),
+      scripted(0.5, 0.2, 0.999, 0.5, 0.999, 0.999, 0.5),
+    );
+    expect(far[1].at.y).toBe(PITCH_WIDTH - 1);
+  });
+
+  it("mirrors the path for the away side", () => {
+    const chain = drawChain(
+      plan({ team: "away", sheet: away, ball: { x: 75, y: 34 } }),
+      scripted(0.5, 0.2, 0.25, 0.5, 0.9, 0.1, 0.5, 0.1, 0.9, 0.5, 0.5),
+    );
+
+    expect(chain[0].at).toEqual({ x: 75, y: 34 });
+    expect(chain[3].at.x).toBeCloseTo(105 - 65, 6);
+  });
+
+  it("puts the shooter in the shooting band at a depth drawn from the shot range", () => {
+    // from stage 2: count 3, depth 0.25 of the range, y 0.25 of the band
+    const chain = drawChain(
+      plan({ ball: { x: 70, y: 34 }, from: 2, endedIn: 3, shoots: true }),
+      scripted(0, 0.25, 0.25, 0.5, 0.99, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5),
+    );
+
+    expect(chain.at(-1)?.at.x).toBeCloseTo(SHOT_DEPTH_MIN + 0.25 * 12, 6);
+    expect(chain.at(-1)?.at.y).toBeCloseTo(22 + 0.25 * 24, 6);
+  });
+
+  it.each([
+    [0.2, WIDE_OFFSET_MIN + 0.5 * (WIDE_OFFSET_MAX - WIDE_OFFSET_MIN)],
+    [0.5, PITCH_WIDTH - (WIDE_OFFSET_MIN + 0.5 * (WIDE_OFFSET_MAX - WIDE_OFFSET_MIN))],
+    [0.7, PITCH_WIDTH - (WIDE_OFFSET_MIN + 0.5 * (WIDE_OFFSET_MAX - WIDE_OFFSET_MIN))],
+  ])("places a wing creator on the side drawn %s", (side, y) => {
+    // count 3; the creator (link 1) is on the wing: chance 0.1, waypoint jitter, offset 0.5, side
+    const chain = drawChain(
+      plan({ ball: { x: 70, y: 34 }, from: 2, endedIn: 3, shoots: true }),
+      scripted(0, 0, 0.5, 0.5, 0.1, 0.5, 0.5, 0.5, side),
+    );
+
+    expect(chain[1].at.y).toBeCloseTo(y, 6);
+    expect(chain[1].at.x).toBeCloseTo(77, 6);
+  });
+
+  it("leaves the creator in the middle when the wing draw fails", () => {
+    const chain = drawChain(
+      plan({ ball: { x: 70, y: 34 }, from: 2, endedIn: 3, shoots: true }),
+      scripted(0, 0, 0.5, 0.5, 0.5),
+    );
+
+    expect(chain[1].at.y).toBeCloseTo(34, 6);
+  });
+
+  it("does not draw a wing creator for a possession that does not shoot", () => {
+    const chain = drawChain(
+      plan({ ball: { x: 70, y: 34 }, from: 2, endedIn: 3 }),
+      scripted(0, 0, 0.5, 0.5, 0.1, 0.5, 0.5, 0.5, 0.1),
+    );
+
+    expect(chain[1].at.y).toBeGreaterThan(20);
+  });
+});
+
+describe("drawChain weights", () => {
+  const only = (id: string, attribute: string): TeamSheet => ({
+    ...sheet,
+    starters: sheet.starters.map((p) => ({
+      ...p,
+      attributes: { ...p.attributes, finishing: 0.01, vision: 0.01, passing: 0.01 },
+      ...(p.id === id
+        ? {
+            attributes: {
+              ...p.attributes,
+              finishing: 0.01,
+              vision: 0.01,
+              passing: 0.01,
+              [attribute]: 1,
+            },
+          }
+        : {}),
+    })),
+  });
+  const share = (s: TeamSheet, index: number, from: 0 | 2 = 2): number => {
+    let hits = 0;
+    for (let seed = 0; seed < 150; seed++) {
+      const chain = drawChain(
+        plan({
+          sheet: s,
+          ball: { x: from === 2 ? 70 : 20, y: 34 },
+          from,
+          endedIn: 3,
+          shoots: true,
+        }),
+        createRng(seed),
+      );
+      if (chain[index < 0 ? chain.length + index : index]?.player === "h-10") hits++;
+    }
+    return hits / 150;
+  };
+
+  it("picks the shooter by finishing", () => {
+    expect(share(only("h-10", "finishing"), -1)).toBeGreaterThan(0.5);
+  });
+
+  it("picks the creator by vision", () => {
+    expect(share(only("h-10", "vision"), -2)).toBeGreaterThan(0.5);
+  });
+
+  it("picks the other links by passing", () => {
+    const byPassing = share(only("h-10", "passing"), 1, 0);
+
+    expect(byPassing).toBeGreaterThan(0.2);
+    expect(byPassing).toBeGreaterThan(share(only("h-10", "finishing"), 1, 0) + 0.1);
+  });
+
+  it("weights every link of a possession that does not shoot by passing", () => {
+    const s = only("h-10", "passing");
+    const hits = Array.from({ length: 150 }, (_, seed) =>
+      drawChain(plan({ sheet: s, ball: { x: 70, y: 34 }, from: 2, endedIn: 2 }), createRng(seed)),
+    ).filter((chain) => chain.at(-1)?.player === "h-10").length;
+
+    expect(hits / 150).toBeGreaterThan(0.4);
   });
 });
