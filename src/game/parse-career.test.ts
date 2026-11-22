@@ -398,7 +398,7 @@ describe("parseCareer squad plan and condition", () => {
     }, "invalid-condition");
   });
 
-  it.each([0, 1, 3, "2", null, undefined])("rejects engineVersion %j", (value) => {
+  it.each([0, 1, 2, "3", null, undefined])("rejects engineVersion %j", (value) => {
     reject((c) => {
       (c as { engineVersion: unknown }).engineVersion = value;
     }, "invalid-engine-version");

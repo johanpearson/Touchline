@@ -230,7 +230,7 @@ describe("planHalfTime", () => {
       awayClubId: fixture.awayClubId,
       homeGoals: 1,
       awayGoals: 1,
-      engineVersion: 2 as const,
+      engineVersion: 3 as const,
     };
 
     const done = completeMatchday(career, draw, result.report);

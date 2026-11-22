@@ -93,12 +93,12 @@ describe("completeMatchday", () => {
     });
   });
 
-  it("simulates the other fixtures on the action engine", () => {
+  it("simulates the other fixtures on engine 3", () => {
     const career = aCareer();
 
     const done = complete(career);
 
-    expect(done.season.results.every((r) => r.engineVersion === 2)).toBe(true);
+    expect(done.season.results.every((r) => r.engineVersion === 3)).toBe(true);
   });
 
   it("rejects a result for an unknown fixture", () => {
@@ -152,7 +152,7 @@ describe("completeMatchday", () => {
     const career = playSeason(aCareer());
 
     expect(career.season.results).toHaveLength(182);
-    expect(career.season.results.every((r) => r.engineVersion === 2)).toBe(true);
+    expect(career.season.results.every((r) => r.engineVersion === 3)).toBe(true);
     expect(career.season.currentMatchday).toBe(27);
   }, 120_000);
 

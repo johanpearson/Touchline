@@ -51,8 +51,8 @@ describe("createCareer", () => {
     ).toBe(true);
   });
 
-  it("plays on the action engine", () => {
-    expect(aCareer(5).engineVersion).toBe(2);
+  it("plays on engine 3, the phase-step engine", () => {
+    expect(aCareer(5).engineVersion).toBe(3);
   });
 
   it("starts with contracts, finances, no free agents and zero minutes", () => {

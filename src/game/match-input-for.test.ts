@@ -19,7 +19,7 @@ describe("matchInputFor", () => {
 
     const input = matchInputFor(career, fixture);
 
-    expect(input.engineVersion).toBe(2);
+    expect(input.engineVersion).toBe(3);
     expect(validateMatchInput(input)).toEqual({ ok: true });
     const user = input[sideOf(career, fixture)];
     expect(user.formation).toEqual({ defenders: 4, midfielders: 4, forwards: 2 });

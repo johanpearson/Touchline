@@ -1,4 +1,10 @@
-import { type ActionMatch, type ActionMatchOptions, createActionMatch, type Side } from "../engine";
+import {
+  type ActionMatch,
+  type ActionMatchOptions,
+  createMatch,
+  type Match,
+  type Side,
+} from "../engine";
 import {
   AI_HALF_TIME_MINUTE,
   AI_TACTICS,
@@ -23,7 +29,7 @@ import { type MatchReport, withEnergy } from "./update-condition";
 export type CoachedMatchOptions = ActionMatchOptions & { seed?: number };
 
 /** An action match in which every AI club substitutes and shouts at the same fixed moments. */
-export type CoachedMatch = ActionMatch & {
+export type CoachedMatch = Match & {
   /** Minutes, shout fatigue and the energy so far of each AI side, as if the match ended at 90 minutes. */
   aiReports: () => Partial<Record<Side, MatchReport>>;
 };
@@ -105,7 +111,7 @@ export const createCoachedMatch = (
   fixture: Fixture,
   options: CoachedMatchOptions = {},
 ): CoachedMatch => {
-  const match = createActionMatch(
+  const match = createMatch(
     matchInputFor(career, fixture),
     options.seed ?? matchSeed(career, fixture),
     options,
@@ -125,6 +131,9 @@ export const createCoachedMatch = (
     },
     get changes() {
       return match.changes;
+    },
+    get steps() {
+      return match.steps;
     },
     applyChange: match.applyChange,
     advanceTo: (seconds) => {

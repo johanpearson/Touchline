@@ -43,7 +43,7 @@ describe("simulateFixture", () => {
     const career = aCareer();
     const fixture = career.season.fixtures[0] as (typeof career.season.fixtures)[number];
 
-    expect(simulateFixture(career, fixture).engineVersion).toBe(2);
+    expect(simulateFixture(career, fixture).engineVersion).toBe(3);
   });
 
   it("plays the coached action match, deterministically", () => {

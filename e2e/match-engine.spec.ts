@@ -115,7 +115,7 @@ test.describe("match engine", () => {
     await page.getByTestId("export-slot-1").click();
     const path = await (await downloadPromise).path();
     const parsed: unknown = JSON.parse(await readFile(path, "utf8"));
-    expect(parsed).toMatchObject({ game: { engineVersion: 2 } });
+    expect(parsed).toMatchObject({ game: { engineVersion: 3 } });
 
     await page.getByTestId("delete-slot-1").click();
     await page.getByTestId("confirm-yes").click();

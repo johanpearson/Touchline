@@ -60,7 +60,7 @@ const sheetOf = (career: Career, setup: SideSetup): TeamSheet => ({
 
 /** The engine input for a fixture: the user's club uses its squad plan, AI clubs an auto-picked 4-4-2. */
 export const matchInputFor = (career: Career, fixture: Fixture): MatchInput => ({
-  engineVersion: 2,
+  engineVersion: 3,
   home: sheetOf(career, setupOf(career, fixture.homeClubId)),
   away: sheetOf(career, setupOf(career, fixture.awayClubId)),
 });

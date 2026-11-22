@@ -28,7 +28,8 @@ const parseResult = (raw: unknown): Result | undefined => {
   const { homeClubId, awayClubId, homeGoals, awayGoals } = raw;
   if (!isString(homeClubId) || !isString(awayClubId)) return undefined;
   if (!isNonNegativeInt(homeGoals) || !isNonNegativeInt(awayGoals)) return undefined;
-  if (raw.engineVersion !== 1 && raw.engineVersion !== 2) return undefined;
+  if (raw.engineVersion !== 1 && raw.engineVersion !== 2 && raw.engineVersion !== 3)
+    return undefined;
   const { engineVersion } = raw;
   const result: Result = {
     fixtureId: raw.fixtureId,

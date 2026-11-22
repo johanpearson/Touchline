@@ -3,6 +3,7 @@ import { aCareer, deepFreeze } from "./career-builders";
 import { parseCareer } from "./parse-career";
 import { playMatchdays } from "./season-test-helpers";
 import { useActionEngine } from "./use-action-engine";
+import { usePhaseEngine } from "./use-phase-engine";
 
 /** A v4 career that played on the zone engine: one matchday, every result stamped engine 1. */
 const zoneCareer = () => {
@@ -31,14 +32,14 @@ describe("useActionEngine", () => {
     expect(migrated.season.results.every((r) => r.engineVersion === 1)).toBe(true);
   });
 
-  it("gives a career that parseCareer accepts", () => {
-    const parsed = parseCareer(useActionEngine(zoneCareer()));
+  it("gives a career that parseCareer accepts once the next migration moved it to engine 3", () => {
+    const parsed = parseCareer(usePhaseEngine(useActionEngine(zoneCareer())));
 
     expect(parsed.ok).toBe(true);
   });
 
   it("leaves a career that already plays on engine 2 as it is", () => {
-    const career = playMatchdays(aCareer(), 1);
+    const career = { ...playMatchdays(aCareer(), 1), engineVersion: 2 };
 
     expect(useActionEngine(career)).toEqual(career);
   });

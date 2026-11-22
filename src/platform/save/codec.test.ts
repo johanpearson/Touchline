@@ -10,6 +10,7 @@ import careerV4 from "./fixtures/career-v4.json";
 import careerV5 from "./fixtures/career-v5.json";
 import careerV6 from "./fixtures/career-v6.json";
 import careerV7 from "./fixtures/career-v7.json";
+import careerV8 from "./fixtures/career-v8.json";
 import type { Migration } from "./migrations";
 import { CURRENT_SCHEMA_VERSION, MIGRATIONS } from "./schema";
 
@@ -143,7 +144,7 @@ describe("frozen schema v2 fixture", () => {
     ).toBe(true);
   });
 
-  it("plays its next matchday on the action engine", () => {
+  it("plays its next matchday on engine 3", () => {
     const result = readEnvelope(careerV2);
     if (!result.ok) throw new Error(result.error);
     const parsed = parseCareer(result.save.game);
@@ -151,7 +152,7 @@ describe("frozen schema v2 fixture", () => {
     const fixture = getNextFixture(parsed.career.season, parsed.career.userClubId);
     if (!fixture) throw new Error("no fixture");
 
-    expect(simulateFixture(parsed.career, fixture).engineVersion).toBe(2);
+    expect(simulateFixture(parsed.career, fixture).engineVersion).toBe(3);
   });
 
   it("keeps createdAt and savedAt apart", () => {
@@ -170,71 +171,71 @@ describe("frozen schema v3 fixture", () => {
     expect(parsed.ok && parsed.career.squadPlan.tactics.mentality).toBe("attacking");
   });
 
-  it("moves the career to engine 2 and keeps every recorded result labelled engine 1", () => {
+  it("moves the career to engine 3 and keeps every recorded result labelled engine 1", () => {
     const result = readEnvelope(careerV3);
     if (!result.ok) throw new Error(result.error);
     const parsed = parseCareer(result.save.game);
     if (!parsed.ok) throw new Error(parsed.error);
-    expect(parsed.career.engineVersion).toBe(2);
+    expect(parsed.career.engineVersion).toBe(3);
     expect(parsed.career.season.results.length).toBeGreaterThan(0);
     expect(parsed.career.season.results.every((r) => r.engineVersion === 1)).toBe(true);
   });
 
-  it("plays its next matchday on the action engine", () => {
+  it("plays its next matchday on engine 3", () => {
     const result = readEnvelope(careerV3);
     if (!result.ok) throw new Error(result.error);
     const parsed = parseCareer(result.save.game);
     if (!parsed.ok) throw new Error(parsed.error);
     const fixture = getNextFixture(parsed.career.season, parsed.career.userClubId);
     if (!fixture) throw new Error("no fixture");
-    expect(simulateFixture(parsed.career, fixture).engineVersion).toBe(2);
+    expect(simulateFixture(parsed.career, fixture).engineVersion).toBe(3);
   });
 });
 
 /** `career-v4.json` is a frozen schema version 4 save (adds `engineVersion`): an engine 2 career after two matchdays. Never regenerate it. */
 describe("frozen schema v4 fixture", () => {
-  it("migrates to the current version and parses as an engine 2 career with engine 2 results", () => {
+  it("migrates to the current version and parses as an engine 3 career with engine 2 results", () => {
     const result = readEnvelope(careerV4);
     expect(result.ok && result.save.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     if (!result.ok) return;
     const parsed = parseCareer(result.save.game);
-    expect(parsed.ok && parsed.career.engineVersion).toBe(2);
+    expect(parsed.ok && parsed.career.engineVersion).toBe(3);
     expect(parsed.ok && parsed.career.season.results.length).toBeGreaterThan(0);
     expect(parsed.ok && parsed.career.season.results.every((r) => r.engineVersion === 2)).toBe(
       true,
     );
   });
 
-  it("plays its next matchday on engine 2", () => {
+  it("plays its next matchday on engine 3", () => {
     const result = readEnvelope(careerV4);
     if (!result.ok) throw new Error(result.error);
     const parsed = parseCareer(result.save.game);
     if (!parsed.ok) throw new Error(parsed.error);
     const fixture = getNextFixture(parsed.career.season, parsed.career.userClubId);
     if (!fixture) throw new Error("no fixture");
-    expect(simulateFixture(parsed.career, fixture).engineVersion).toBe(2);
+    expect(simulateFixture(parsed.career, fixture).engineVersion).toBe(3);
   });
 });
 
 /** `career-v5.json` is a frozen schema version 5 save (every career plays on the action engine): a career after two matchdays. Never regenerate it. */
 describe("frozen schema v5 fixture", () => {
-  it("migrates to the current version and parses as an engine 2 career", () => {
+  it("migrates to the current version and parses as an engine 3 career", () => {
     const result = readEnvelope(careerV5);
     expect(result.ok && result.save.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     if (!result.ok) return;
     const parsed = parseCareer(result.save.game);
-    expect(parsed.ok && parsed.career.engineVersion).toBe(2);
+    expect(parsed.ok && parsed.career.engineVersion).toBe(3);
     expect(parsed.ok && parsed.career.season.results.length).toBeGreaterThan(0);
   });
 
-  it("plays its next matchday on engine 2", () => {
+  it("plays its next matchday on engine 3", () => {
     const result = readEnvelope(careerV5);
     if (!result.ok) throw new Error(result.error);
     const parsed = parseCareer(result.save.game);
     if (!parsed.ok) throw new Error(parsed.error);
     const fixture = getNextFixture(parsed.career.season, parsed.career.userClubId);
     if (!fixture) throw new Error("no fixture");
-    expect(simulateFixture(parsed.career, fixture).engineVersion).toBe(2);
+    expect(simulateFixture(parsed.career, fixture).engineVersion).toBe(3);
   });
 });
 
@@ -271,17 +272,51 @@ describe("frozen schema v6 fixture", () => {
   });
 });
 
-/** `career-v7.json` is a frozen schema version 7 save (potential, contracts, finances, free agents, minutes): a career after two matchdays. Never regenerate it. */
+/** `career-v7.json` is a frozen schema version 7 save (potential, contracts, finances, free agents, minutes): an engine 2 career after two matchdays. Never regenerate it. */
 describe("frozen schema v7 fixture", () => {
-  it("loads unchanged and parses with its new fields", () => {
+  it("migrates to the current version and parses with its new fields", () => {
     const result = readEnvelope(careerV7);
-    expect(result).toEqual({ ok: true, save: careerV7 });
+    expect(result.ok && result.save.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     if (!result.ok) return;
     const parsed = parseCareer(result.save.game);
     if (!parsed.ok) throw new Error(parsed.error);
     expect(Object.keys(parsed.career.contracts)).toHaveLength(parsed.career.league.players.length);
     expect(Object.keys(parsed.career.finances)).toHaveLength(parsed.career.league.clubs.length);
     expect(parsed.career.freeAgentIds).toEqual([]);
+  });
+
+  it("moves the career to engine 3 and keeps every recorded result labelled engine 2", () => {
+    const result = readEnvelope(careerV7);
+    if (!result.ok) throw new Error(result.error);
+    const parsed = parseCareer(result.save.game);
+    if (!parsed.ok) throw new Error(parsed.error);
+    expect(parsed.career.engineVersion).toBe(3);
+    expect(parsed.career.season.results.length).toBeGreaterThan(0);
+    expect(parsed.career.season.results.every((r) => r.engineVersion === 2)).toBe(true);
+  });
+
+  it("plays its next matchday on engine 3", () => {
+    const result = readEnvelope(careerV7);
+    if (!result.ok) throw new Error(result.error);
+    const parsed = parseCareer(result.save.game);
+    if (!parsed.ok) throw new Error(parsed.error);
+    const fixture = getNextFixture(parsed.career.season, parsed.career.userClubId);
+    if (!fixture) throw new Error("no fixture");
+    expect(simulateFixture(parsed.career, fixture).engineVersion).toBe(3);
+  });
+});
+
+/** `career-v8.json` is a frozen schema version 8 save (every career plays on the phase-step engine): a career after two matchdays. Never regenerate it. */
+describe("frozen schema v8 fixture", () => {
+  it("loads unchanged and parses as an engine 3 career with engine 3 results", () => {
+    const result = readEnvelope(careerV8);
+    expect(result).toEqual({ ok: true, save: careerV8 });
+    if (!result.ok) return;
+    const parsed = parseCareer(result.save.game);
+    expect(parsed.ok && parsed.career.engineVersion).toBe(3);
+    expect(parsed.ok && parsed.career.season.results.every((r) => r.engineVersion === 3)).toBe(
+      true,
+    );
   });
 });
 
