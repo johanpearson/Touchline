@@ -267,23 +267,23 @@ describe("drawChain with a scripted draw", () => {
 
     expect(chain).toHaveLength(4);
     expect(chain[0].at).toEqual({ x: 30, y: 34 });
-    expect(chain[1].at.x).toBeCloseTo(30 + 35 / 3 + 0.4 * 4, 6);
-    expect(chain[1].at.y).toBeCloseTo(34 - 17 / 3 - 0.4 * 14, 6);
-    expect(chain[2].at.x).toBeCloseTo(30 + 70 / 3 - 0.4 * 4, 6);
-    expect(chain[2].at.y).toBeCloseTo(34 - 34 / 3 + 0.4 * 14, 6);
-    expect(chain[3].at.x).toBeCloseTo(65, 6);
-    expect(chain[3].at.y).toBeCloseTo(17, 6);
+    expect(chain[1]?.at.x).toBeCloseTo(30 + 35 / 3 + 0.4 * 4, 6);
+    expect(chain[1]?.at.y).toBeCloseTo(34 - 17 / 3 - 0.4 * 14, 6);
+    expect(chain[2]?.at.x).toBeCloseTo(30 + 70 / 3 - 0.4 * 4, 6);
+    expect(chain[2]?.at.y).toBeCloseTo(34 - 34 / 3 + 0.4 * 14, 6);
+    expect(chain[3]?.at.x).toBeCloseTo(65, 6);
+    expect(chain[3]?.at.y).toBeCloseTo(17, 6);
   });
 
   it("keeps waypoints at least 1 m inside the touchlines", () => {
     const chain = drawChain(plan({ ball: { x: 30, y: 0 } }), scripted(0.5, 0.2, 0, 0.5, 0, 0, 0.5));
 
-    expect(chain[1].at.y).toBe(1);
+    expect(chain[1]?.at.y).toBe(1);
     const far = drawChain(
       plan({ ball: { x: 30, y: PITCH_WIDTH } }),
       scripted(0.5, 0.2, 0.999, 0.5, 0.999, 0.999, 0.5),
     );
-    expect(far[1].at.y).toBe(PITCH_WIDTH - 1);
+    expect(far[1]?.at.y).toBe(PITCH_WIDTH - 1);
   });
 
   it("mirrors the path for the away side", () => {
@@ -293,7 +293,7 @@ describe("drawChain with a scripted draw", () => {
     );
 
     expect(chain[0].at).toEqual({ x: 75, y: 34 });
-    expect(chain[3].at.x).toBeCloseTo(105 - 65, 6);
+    expect(chain[3]?.at.x).toBeCloseTo(105 - 65, 6);
   });
 
   it("puts the shooter in the shooting band at a depth drawn from the shot range", () => {
@@ -318,8 +318,8 @@ describe("drawChain with a scripted draw", () => {
       scripted(0, 0, 0.5, 0.5, 0.1, 0.5, 0.5, 0.5, side),
     );
 
-    expect(chain[1].at.y).toBeCloseTo(y, 6);
-    expect(chain[1].at.x).toBeCloseTo(77, 6);
+    expect(chain[1]?.at.y).toBeCloseTo(y, 6);
+    expect(chain[1]?.at.x).toBeCloseTo(77, 6);
   });
 
   it("leaves the creator in the middle when the wing draw fails", () => {
@@ -328,7 +328,7 @@ describe("drawChain with a scripted draw", () => {
       scripted(0, 0, 0.5, 0.5, 0.5),
     );
 
-    expect(chain[1].at.y).toBeCloseTo(34, 6);
+    expect(chain[1]?.at.y).toBeCloseTo(34, 6);
   });
 
   it("does not draw a wing creator for a possession that does not shoot", () => {
@@ -337,7 +337,7 @@ describe("drawChain with a scripted draw", () => {
       scripted(0, 0, 0.5, 0.5, 0.1, 0.5, 0.5, 0.5, 0.1),
     );
 
-    expect(chain[1].at.y).toBeGreaterThan(20);
+    expect(chain[1]?.at.y).toBeGreaterThan(20);
   });
 });
 

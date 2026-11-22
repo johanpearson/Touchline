@@ -5,7 +5,14 @@ import { spreadTimes } from "./step-times";
 const counting = (): Rng & { draws: () => number } => {
   const base = createRng(1);
   let draws = 0;
-  return { ...base, next: () => (draws++, base.next()), draws: () => draws };
+  return {
+    ...base,
+    next: () => {
+      draws++;
+      return base.next();
+    },
+    draws: () => draws,
+  };
 };
 
 describe("spreadTimes", () => {
