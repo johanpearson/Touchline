@@ -1,7 +1,9 @@
 import type { ActionEvent, PerSide, ZoneEvent } from "../../engine";
 import { useI18n } from "../i18n-provider";
+import { ChanceCue } from "./chance-cue";
 import { ClassicPitch } from "./classic-pitch";
 import type { PitchRendererFactory } from "./classic-pitch-renderer";
+import type { SegmentChance } from "./director";
 import { MomentumTerrain } from "./momentum-terrain";
 import type { TerrainRendererFactory } from "./terrain-renderer";
 import type { MatchView } from "./use-view-choice";
@@ -16,6 +18,10 @@ export type MatchStageProps = {
   createRenderer?: TerrainRendererFactory;
   pitch: { events: readonly ActionEvent[]; createRenderer?: PitchRendererFactory };
   showChain: boolean;
+  /** The chance moment at the clock, shown as a cue over the stage. */
+  chance?: SegmentChance;
+  teamNames: PerSide<string>;
+  players: Readonly<Record<string, string>>;
 };
 
 /**
@@ -32,11 +38,14 @@ export function MatchStage({
   createRenderer,
   pitch,
   showChain,
+  chance,
+  teamNames,
+  players,
 }: MatchStageProps) {
   const { t } = useI18n();
   return (
     <div
-      className="mx-auto w-full overflow-hidden rounded-xl border border-line bg-stage"
+      className="relative mx-auto w-full overflow-hidden rounded-xl border border-line bg-stage"
       style={{
         maxWidth: "calc((100svh - 22rem) * 1.6)",
         minWidth: "min(100%, 18rem)",
@@ -73,6 +82,7 @@ export function MatchStage({
           label={label}
         />
       )}
+      <ChanceCue moment={chance} teamNames={teamNames} colours={colours} players={players} />
     </div>
   );
 }

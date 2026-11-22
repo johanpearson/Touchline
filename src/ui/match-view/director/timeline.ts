@@ -1,7 +1,16 @@
-import { type ActionEvent, type Phase, type StepChance, toPhases } from "../../../engine";
+import {
+  type ActionEvent,
+  type ChanceResult,
+  type Phase,
+  type Side,
+  type StepChance,
+  toPhases,
+} from "../../../engine";
 import { goalDistance, holdFor, isKeyMoment } from "./classify";
 import {
   ACTIVE_DISTANCE,
+  CHANCE_MOMENT,
+  type Hold,
   MIN_DURATION,
   MODE_SETTINGS,
   NEAR_GOAL_SLOWDOWN,
@@ -15,6 +24,29 @@ export type DirectorInput = {
   events: readonly ActionEvent[];
   chances?: readonly StepChance[];
 };
+
+/**
+ * The stage of a chance moment (#463): the `creator`'s pass slows down, the clock holds in `tension`
+ * before the `shot`, then holds on the `reaction` to its result.
+ */
+export type ChanceStage = "creator" | "tension" | "shot" | "reaction";
+
+/** What a segment of a clear chance shows: its stage, the result of the shot, the side, the shooter and the keeper (player ids). */
+export type SegmentChance = {
+  stage: ChanceStage;
+  result: ChanceResult;
+  team: Side;
+  shooter: string;
+  keeper: string;
+};
+
+const tagged = (chance: StepChance, stage: ChanceStage): SegmentChance => ({
+  stage,
+  result: chance.result,
+  team: chance.team,
+  shooter: chance.shooter,
+  keeper: chance.keeper,
+});
 
 /**
  * `play`: match time runs from `matchStart` to `matchEnd` over the presentation span.
@@ -35,6 +67,8 @@ export type Segment = {
   moment: boolean;
   /** Index in the log of the first action of the phase this action belongs to. */
   phase: number;
+  /** Set on the segments of a clear chance that stage it; absent on every other segment. */
+  chance?: SegmentChance;
 };
 
 /**
@@ -50,6 +84,8 @@ export type Timeline = {
   readonly matchEnd: number;
   /** Every event of the log known so far; the ones from index `committed` on wait until their phase is final. */
   readonly log: readonly ActionEvent[];
+  /** The clear chances known so far (the shot of each is in the log, possibly not yet committed). */
+  readonly chances: readonly StepChance[];
   /** Number of events already turned into segments. */
   readonly committed: number;
   /** Match time at `presentationSeconds`; before 0 the first, after `duration` the last match time. */
@@ -107,7 +143,10 @@ const presentationTimeIn = (
   return interpolate(segment.presentationStart, segment.presentationEnd, t);
 };
 
-type State = Pick<Timeline, "mode" | "segments" | "duration" | "matchEnd" | "log" | "committed">;
+type State = Pick<
+  Timeline,
+  "mode" | "segments" | "duration" | "matchEnd" | "log" | "chances" | "committed"
+>;
 
 const toTimeline = (state: State): Timeline => ({
   ...state,
@@ -123,7 +162,10 @@ const momentDuration = (event: ActionEvent, mode: PlaybackMode): number => {
   return MIN_DURATION[event.type] * MODE_SETTINGS[mode].minimumScale * slowdown;
 };
 
-type SegmentDraft = Pick<Segment, "kind" | "eventIndex" | "matchStart" | "matchEnd" | "moment"> & {
+type SegmentDraft = Pick<
+  Segment,
+  "kind" | "eventIndex" | "matchStart" | "matchEnd" | "moment" | "chance"
+> & {
   seconds: number;
 };
 
@@ -146,27 +188,78 @@ type Placement = {
   endTime: number;
   mode: PlaybackMode;
   shown: boolean;
+  /** The clear chance whose shot is `events[index]`, if it is one. */
+  chanceAt: (index: number) => StepChance | undefined;
 };
 
+/** The clear chance of a shot: the chance of the same side and period at the shot's time. */
+const chanceOfShot = (
+  chances: readonly StepChance[],
+  event: ActionEvent,
+): StepChance | undefined =>
+  event.type === "shot"
+    ? chances.find(
+        (c) => c.team === event.team && c.period === event.period && c.time === event.time,
+      )
+    : undefined;
+
+/** The holds around a shot that is a clear chance: tension before, the reaction to its result after. */
+const chanceHold = (chance: StepChance): Hold => ({
+  before: CHANCE_MOMENT.beforeShot,
+  after: CHANCE_MOMENT.reaction[chance.result],
+});
+
 /** The drafts of one action shown on its own: a hold before and after a key moment around its play segment. */
-const momentDrafts = (event: ActionEvent, index: number, end: number, mode: PlaybackMode) => {
+const momentDrafts = (
+  event: ActionEvent,
+  index: number,
+  end: number,
+  mode: PlaybackMode,
+  chance?: StepChance,
+) => {
   const base = { eventIndex: index, matchStart: event.time, matchEnd: end };
-  const key = holdFor(event);
+  const key = chance ? chanceHold(chance) : holdFor(event);
   const scale = MODE_SETTINGS[mode].holdScale;
+  const staged = (stage: ChanceStage): Pick<SegmentDraft, "chance"> =>
+    chance ? { chance: tagged(chance, stage) } : {};
   const drafts: SegmentDraft[] = [];
-  const hold = (seconds: number, time: number): SegmentDraft => ({
+  const hold = (seconds: number, time: number, stage: ChanceStage): SegmentDraft => ({
     ...base,
     kind: "hold",
     seconds,
     matchStart: time,
     matchEnd: time,
     moment: false,
+    ...staged(stage),
   });
-  if (key) drafts.push(hold(key.before * scale, event.time));
-  drafts.push({ ...base, kind: "play", seconds: momentDuration(event, mode), moment: true });
-  if (key) drafts.push(hold(key.after * scale, end));
+  if (key) drafts.push(hold(key.before * scale, event.time, "tension"));
+  drafts.push({
+    ...base,
+    kind: "play",
+    seconds: momentDuration(event, mode),
+    moment: true,
+    ...staged("shot"),
+  });
+  if (key) drafts.push(hold(key.after * scale, end, "reaction"));
   return drafts;
 };
+
+/** The creator's pass of a clear chance: it slows down for `creatorSeconds` as the ball is played. */
+const creatorDraft = (
+  event: ActionEvent,
+  index: number,
+  end: number,
+  mode: PlaybackMode,
+  chance: StepChance,
+): SegmentDraft => ({
+  eventIndex: index,
+  matchStart: event.time,
+  matchEnd: end,
+  kind: "play",
+  seconds: Math.max(momentDuration(event, mode), CHANCE_MOMENT.creatorSeconds[mode]),
+  moment: true,
+  chance: tagged(chance, "creator"),
+});
 
 /**
  * The drafts of a phase: its ending action (and any key moment inside it) at its own moment, every
@@ -174,22 +267,25 @@ const momentDrafts = (event: ActionEvent, index: number, end: number, mode: Play
  * without a pause between passes. The build-up takes between the mode's `minBuildUp` and
  * `maxBuildUp` presentation seconds.
  */
-const phaseDrafts = ({ events, indices, endTime, mode, shown }: Placement): SegmentDraft[] => {
+const phaseDrafts = (placement: Placement): SegmentDraft[] => {
+  const { events, indices, endTime, mode, shown, chanceAt } = placement;
+  const eventAt = (k: number): ActionEvent => events[indices[k] as number] as ActionEvent;
   const timeAfter = (k: number): number => events[indices[k + 1] ?? -1]?.time ?? endTime;
   if (!shown)
     return indices.map((eventIndex, k) => ({
       eventIndex,
-      matchStart: (events[eventIndex] as ActionEvent).time,
+      matchStart: eventAt(k).time,
       matchEnd: timeAfter(k),
       kind: "cut",
       seconds: 0,
       moment: false,
     }));
   const lastK = indices.length - 1;
+  const chance = chanceAt(indices[lastK] as number);
+  const creatorK = chance && lastK > 0 && !isKeyMoment(eventAt(lastK - 1)) ? lastK - 1 : -1;
   const ownMoment = (k: number): boolean =>
-    k === lastK || isKeyMoment(events[indices[k] as number] as ActionEvent);
-  const spanOf = (k: number): number =>
-    timeAfter(k) - (events[indices[k] as number] as ActionEvent).time;
+    k === lastK || k === creatorK || isKeyMoment(eventAt(k));
+  const spanOf = (k: number): number => timeAfter(k) - eventAt(k).time;
   const settings = PHASE_SETTINGS[mode];
   const buildUpSpan = indices.reduce((sum, _, k) => sum + (ownMoment(k) ? 0 : spanOf(k)), 0);
   const buildUp = Math.min(
@@ -197,8 +293,11 @@ const phaseDrafts = ({ events, indices, endTime, mode, shown }: Placement): Segm
     Math.max(settings.minBuildUp, buildUpSpan * settings.pace),
   );
   return indices.flatMap((eventIndex, k) => {
-    const event = events[eventIndex] as ActionEvent;
-    if (ownMoment(k)) return momentDrafts(event, eventIndex, timeAfter(k), mode);
+    const event = eventAt(k);
+    if (chance && k === creatorK)
+      return [creatorDraft(event, eventIndex, timeAfter(k), mode, chance)];
+    if (ownMoment(k))
+      return momentDrafts(event, eventIndex, timeAfter(k), mode, k === lastK ? chance : undefined);
     const share = buildUpSpan === 0 ? 0 : spanOf(k) / buildUpSpan;
     return [
       {
@@ -256,6 +355,7 @@ const commitPhase = (state: State, phases: readonly Phase[]): Step => {
     endTime: end.time,
     mode,
     shown: isShown(log, phase, mode),
+    chanceAt: (i) => chanceOfShot(state.chances, log[i] as ActionEvent),
   });
   const fresh = lay(drafts, state.duration, committed);
   return {
@@ -277,14 +377,37 @@ const commitAll = (initial: State): State => {
 };
 
 /** The timeline of `events` (the engine log, or the part of it known so far) in `mode`. */
-export const buildTimeline = (events: readonly ActionEvent[], mode: PlaybackMode): Timeline =>
+export const buildTimeline = (
+  events: readonly ActionEvent[],
+  mode: PlaybackMode,
+  chances: readonly StepChance[] = [],
+): Timeline =>
   extendTimeline(
-    toTimeline({ mode, segments: [], duration: 0, matchEnd: 0, log: [], committed: 0 }),
+    toTimeline({
+      mode,
+      segments: [],
+      duration: 0,
+      matchEnd: 0,
+      log: [],
+      chances: [],
+      committed: 0,
+    }),
     events,
+    chances,
   );
 
-/** The timeline after `newEvents` were appended to its log. Earlier segments are never changed. */
-export const extendTimeline = (timeline: Timeline, newEvents: readonly ActionEvent[]): Timeline =>
-  newEvents.length === 0
-    ? timeline
-    : toTimeline(commitAll({ ...timeline, log: [...timeline.log, ...newEvents] }));
+/**
+ * The timeline after `newEvents` were appended to its log and `newChances` (the chances of the steps
+ * that produced them, see `chancesOf`) became known. Earlier segments are never changed. Only clear
+ * chances are staged; a chance must be known by the time its phase is committed, which holds because
+ * the engine hands over a step's chance with its events.
+ */
+export const extendTimeline = (
+  timeline: Timeline,
+  newEvents: readonly ActionEvent[],
+  newChances: readonly StepChance[] = [],
+): Timeline => {
+  if (newEvents.length === 0 && newChances.length === 0) return timeline;
+  const chances = [...timeline.chances, ...newChances.filter((c) => c.clear)];
+  return toTimeline(commitAll({ ...timeline, chances, log: [...timeline.log, ...newEvents] }));
+};

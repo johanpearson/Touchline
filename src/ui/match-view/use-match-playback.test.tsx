@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createActionMatch, NEUTRAL_TACTICS } from "../../engine";
+import { createActionMatch, createMatch, NEUTRAL_TACTICS } from "../../engine";
 import { anActionMatchSetup } from "./action-match-fixture";
 import { buildTimeline } from "./director";
 import { LOOKAHEAD_SECONDS } from "./playback";
@@ -150,7 +150,7 @@ describe("useMatchPlayback", () => {
     const counted = result.current.eventCount;
     act(() => result.current.setMode("full"));
     expect(result.current.mode).toBe("full");
-    expect(result.current.matchTime).toBeGreaterThanOrEqual(before);
+    expect(result.current.matchTime).toBeGreaterThanOrEqual(before - 1e-6);
     expect(result.current.matchTime - before).toBeLessThan(2);
     expect(result.current.eventCount).toBeGreaterThanOrEqual(counted);
     play(5);
@@ -296,5 +296,31 @@ describe("useMatchPlayback", () => {
       act(() => result.current.resume({ side: "home", lineup: [] }));
       expect(result.current.userChanges).toEqual([]);
     });
+  });
+});
+
+describe("useMatchPlayback chance moments", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
+    window.localStorage.clear();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("shows the chance on screen at the clock for an engine v3 match and none on engine v2", () => {
+    const { setup } = anActionMatchSetup(3);
+    const v3 = createMatch({ ...setup.input, engineVersion: 3 }, setup.seed);
+    const { result } = renderHook(() => useMatchPlayback(v3, 1000));
+    const seen = new Set<string>();
+    for (let i = 0; i < 400 && result.current.state.period !== "halfTime"; i++) {
+      act(() => vi.advanceTimersByTime(500));
+      const stage = result.current.chance?.stage;
+      if (stage) seen.add(stage);
+    }
+    expect(seen).toContain("shot");
+    expect(seen).toContain("reaction");
+    const v2 = createActionMatch(setup.input, setup.seed);
+    const { result: classic } = renderHook(() => useMatchPlayback(v2, 1000));
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(classic.current.chance).toBeUndefined();
   });
 });

@@ -164,6 +164,7 @@ export function MatchScreen({
     <>
       <MatchLayout
         names={names}
+        players={players}
         colours={colours}
         score={state.score}
         period={state.period}

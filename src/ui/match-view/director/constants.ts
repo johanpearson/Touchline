@@ -1,4 +1,4 @@
-import type { ActionEventType } from "../../../engine";
+import type { ActionEventType, ChanceResult } from "../../../engine";
 
 /** How much of a match the user watches: key moments only, a compressed match, or all of it at a readable pace. */
 export type PlaybackMode = "highlights" | "extended" | "full";
@@ -69,7 +69,7 @@ type PhaseSettings = {
 };
 
 export const PHASE_SETTINGS: Record<PlaybackMode, PhaseSettings> = {
-  full: { pace: 0.04, minBuildUp: 0.3, maxBuildUp: 2.5 },
+  full: { pace: 0.033, minBuildUp: 0.3, maxBuildUp: 2.2 },
   extended: { pace: 0.015, minBuildUp: 0.2, maxBuildUp: 1.5 },
   highlights: { pace: 0.05, minBuildUp: 0.3, maxBuildUp: 2 },
 };
@@ -85,3 +85,27 @@ export const HOLDS = {
   penalty: { before: 1.5, after: 1.2 },
   penaltyFoul: { before: 0.5, after: 0.8 },
 } as const satisfies Record<string, Hold>;
+
+/**
+ * The chance moment (#463): a step with a clear chance (xG from `CLEAR_CHANCE_XG`, 0.25) is played in
+ * stages. The build-up runs at the phase's pace, the creator's pass slows down (`creatorSeconds`, a
+ * short slowdown as the ball is played), the clock holds before the shot (`beforeShot`), the shot
+ * plays at its own moment and the clock then holds on the result for `reaction[result]` presentation
+ * seconds: a goal gets the celebration beat (the longest), every near miss a visible beat of
+ * disappointment. The creator's seconds and the holds are scaled by the mode like the other holds.
+ */
+export const CHANCE_MOMENT = {
+  creatorSeconds: { full: 1.2, extended: 1.2, highlights: 1.2 } satisfies Record<
+    PlaybackMode,
+    number
+  >,
+  beforeShot: 0.9,
+  reaction: {
+    goal: HOLDS.goal.after,
+    woodwork: 2.2,
+    saved: 1.6,
+    wide: 1.4,
+    over: 1.4,
+    blocked: 1.2,
+  } satisfies Record<ChanceResult, number>,
+} as const;
