@@ -9,7 +9,7 @@ import type {
   Side,
   TimedActionMatchChange,
 } from "../../engine";
-import { computeActionStats, createActionMatch, playerRatings } from "../../engine";
+import { computeActionStats, createMatch as createEngineMatch, playerRatings } from "../../engine";
 import type { CoachedMatch, MatchReport } from "../../game";
 import { useI18n } from "../i18n-provider";
 import { useSuspendPaletteShortcut } from "../palette/palette-provider";
@@ -110,7 +110,7 @@ export function MatchScreen({
   onLeave,
   onSimulateRest,
 }: MatchScreenProps) {
-  const [match] = useState(() => createMatch?.() ?? createActionMatch(input, seed));
+  const [match] = useState(() => createMatch?.() ?? createEngineMatch(input, seed));
   const playback = useMatchPlayback(
     match,
     tickMs,

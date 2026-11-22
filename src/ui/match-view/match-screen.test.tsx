@@ -105,7 +105,7 @@ describe("MatchScreen", () => {
     play(150_000);
     fireEvent.click(screen.getByTestId("continue"));
     expect(onContinue).toHaveBeenCalledWith(
-      expect.objectContaining({ engineVersion: 2 }),
+      expect.objectContaining({ engineVersion: 3 }),
       undefined,
     );
   });
@@ -250,7 +250,7 @@ describe("MatchScreen", () => {
     play(150_000);
     fireEvent.click(screen.getByTestId("continue"));
     const report = onContinue.mock.calls[0]?.[1];
-    expect(onContinue.mock.calls[0]?.[0]).toMatchObject({ engineVersion: 2 });
+    expect(onContinue.mock.calls[0]?.[0]).toMatchObject({ engineVersion: 3 });
     expect(report.minutes[off]).toBe(45);
     expect(report.minutes[on]).toBe(45);
     expect(report.opponent.minutes).toEqual(expect.any(Object));

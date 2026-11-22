@@ -35,7 +35,7 @@ describe("matchSetupFor", () => {
     const career = aCareer();
     const fixture = nextFixtureOf(career);
     const setup = matchSetupFor(career, fixture);
-    expect(setup.input.engineVersion).toBe(2);
+    expect(setup.input.engineVersion).toBe(3);
     const sheet = setup.input.home;
     for (const player of [...sheet.starters, ...sheet.bench]) {
       expect(setup.players[player.id]).toBe(

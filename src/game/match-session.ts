@@ -166,7 +166,7 @@ const hasShape = (value: Rec): boolean =>
   isString(value.userClubId) &&
   isInt(value.season) &&
   isString(value.fixtureId) &&
-  (value.engineVersion === 1 || value.engineVersion === 2) &&
+  (value.engineVersion === 1 || value.engineVersion === 2 || value.engineVersion === 3) &&
   isInt(value.seed) &&
   isRecord(value.squadPlan) &&
   isString(value.inputKey) &&

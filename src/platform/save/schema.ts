@@ -3,15 +3,16 @@ import {
   addEngineVersion,
   addSquadPlanAndCondition,
   useActionEngine,
+  usePhaseEngine,
 } from "../../game";
 import type { Migration } from "./migrations";
 
 /**
  * Schema version 1 is the M3 `Career` shape. Version 2 adds `savedAt` to the envelope (the
  * `Career` shape is unchanged). Version 3 adds the squad plan and condition, version 4 the engine
- * version of the career and of every result, version 5 moves every career to the action engine (the zone engine was removed), version 6 adds the optional `scorers` list to results, version 7 adds potential, contracts, finances, free agents and season minutes (M6). Every later change to the stored shape bumps this.
+ * version of the career and of every result, version 5 moves every career to the action engine (the zone engine was removed), version 6 adds the optional `scorers` list to results, version 7 adds potential, contracts, finances, free agents and season minutes (M6), version 8 moves every career to the phase-step engine (engine 3). Every later change to the stored shape bumps this.
  */
-export const CURRENT_SCHEMA_VERSION = 7;
+export const CURRENT_SCHEMA_VERSION = 8;
 
 /** One migration per version bump, forming a gapless chain from 1 to `CURRENT_SCHEMA_VERSION`. */
 export const MIGRATIONS: Migration[] = [
@@ -42,5 +43,10 @@ export const MIGRATIONS: Migration[] = [
   {
     from: 6,
     migrate: (save) => ({ ...save, schemaVersion: 7, game: addCareerEconomy(save.game) }),
+  },
+  // v7 careers play on the action engine: from now on every match uses the phase-step engine.
+  {
+    from: 7,
+    migrate: (save) => ({ ...save, schemaVersion: 8, game: usePhaseEngine(save.game) }),
   },
 ];

@@ -35,7 +35,7 @@ export const createCareer = (spec: CareerSpec): CareerResult => {
       history: [],
       squadPlan: initialSquadPlan(clubSquad(userClub, league.players)),
       condition: initialConditions(league.players),
-      engineVersion: 2,
+      engineVersion: 3,
       contracts,
       finances: initialFinances(league.clubs, league.players, contracts, season.number),
       freeAgentIds: [],
