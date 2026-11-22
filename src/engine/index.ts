@@ -116,6 +116,13 @@ export type {
   ChanceResult,
   ChanceSituation,
 } from "./phase/chance";
+export {
+  type BigChanceLine,
+  type BigChanceStats,
+  bigChanceStats,
+  chancesOf,
+  type StepChance,
+} from "./phase/chances-of";
 export { createPhaseMatch, type PhaseMatch } from "./phase/create-phase-match";
 export { drawPhaseStep } from "./phase/draw-phase-step";
 export { nextPhaseState } from "./phase/next-phase-state";

@@ -1,4 +1,4 @@
-import type { ActionEvent, PerSide, Side } from "../engine";
+import type { ActionEvent, PerSide, Side, StepChance } from "../engine";
 import { computeActionStats, createRng } from "../engine";
 import type { Locale } from "../i18n";
 import { EVEN_SPELL_MARGIN, SUMMARY_INTERVAL, SUMMARY_SLOTS } from "./action-selection";
@@ -16,6 +16,8 @@ export type ActionCommentaryContext = {
   names: PerSide<string>;
   /** Display name of each player id in the log. An unknown id is shown as it is. */
   players: Readonly<Record<string, string>>;
+  /** The chances of an engine v3 match (`chancesOf(match.steps)`); read by the chance narration of #464, not used yet. */
+  chances?: readonly StepChance[];
 };
 
 const other = (side: Side): Side => (side === "home" ? "away" : "home");

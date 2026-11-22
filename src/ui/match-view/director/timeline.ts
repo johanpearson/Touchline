@@ -1,4 +1,4 @@
-import { type ActionEvent, type Phase, toPhases } from "../../../engine";
+import { type ActionEvent, type Phase, type StepChance, toPhases } from "../../../engine";
 import { goalDistance, holdFor, isKeyMoment } from "./classify";
 import {
   ACTIVE_DISTANCE,
@@ -9,6 +9,12 @@ import {
   type PlaybackMode,
   SLOWDOWN_FULL_DISTANCE,
 } from "./constants";
+
+/** What the director reads: the action log and, for an engine v3 match, its chances (`chancesOf`); the chance moments of #463 use them. */
+export type DirectorInput = {
+  events: readonly ActionEvent[];
+  chances?: readonly StepChance[];
+};
 
 /**
  * `play`: match time runs from `matchStart` to `matchEnd` over the presentation span.
