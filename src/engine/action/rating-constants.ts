@@ -6,7 +6,7 @@ export const RATING_MAX = 10;
 /** Raises a rating. */
 export const GOAL_BONUS = 1;
 export const KEY_PASS_BONUS = 0.3;
-export const PROGRESSIVE_PASS_BONUS = 0.1;
+export const PROGRESSIVE_PASS_BONUS = 0.05;
 export const TACKLE_WON_BONUS = 0.2;
 export const INTERCEPTION_BONUS = 0.2;
 export const SAVE_BONUS = 0.3;

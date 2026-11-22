@@ -76,6 +76,7 @@
     "src/engine/zone-event.ts": 0.3,
     "src/engine/phase/chance.ts": 0.1,
     "src/engine/phase/chance-constants.ts": 0.1,
+    "src/engine/phase/chances-of.ts": 1,
     "src/engine/phase/draw-chance.ts": 2.5,
     "src/engine/phase/resolve-chance.ts": 2,
     "src/engine/phase/draw-chain.ts": 3,

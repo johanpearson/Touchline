@@ -104,3 +104,6 @@ export const AFTERMATH_SHARES: Record<
 
 /** Where a rebound lands: metres in front of the goal line. */
 export const REBOUND_DEPTH = 94;
+
+/** A chance from this xG upwards is a clear (big) chance. */
+export const CLEAR_CHANCE_XG = 0.25;

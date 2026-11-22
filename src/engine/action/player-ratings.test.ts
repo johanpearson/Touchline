@@ -13,7 +13,7 @@ describe("rating constants", () => {
     expect([c.RATING_MIN, c.RATING_MAX]).toEqual([1, 10]);
     expect(c.GOAL_BONUS).toBe(1);
     expect(c.KEY_PASS_BONUS).toBe(0.3);
-    expect(c.PROGRESSIVE_PASS_BONUS).toBe(0.1);
+    expect(c.PROGRESSIVE_PASS_BONUS).toBe(0.05);
     expect(c.TACKLE_WON_BONUS).toBe(0.2);
     expect(c.INTERCEPTION_BONUS).toBe(0.2);
     expect(c.SAVE_BONUS).toBe(0.3);
@@ -84,9 +84,9 @@ describe("playerRatings", () => {
       from: { x: 40, y: 34 },
       to: { x: 60, y: 34 },
     });
-    expect(rating([home], "h1")).toBeCloseTo(6.1);
+    expect(rating([home], "h1")).toBeCloseTo(6.05);
     expect(rating([homeShort], "h1")).toBeCloseTo(6);
-    expect(rating([away], "a1")).toBeCloseTo(6.1);
+    expect(rating([away], "a1")).toBeCloseTo(6.05);
     expect(rating([awayBack], "a1")).toBeCloseTo(6);
     expect(rating([lost], "h1")).toBeCloseTo(6);
   });
