@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.10.0](https://github.com/johanpearson/Touchline/compare/v1.9.0...v1.10.0) (2026-11-23)
+
+
+### Features
+
+* **commentary:** chance narration with suspense and disappointment ([#478](https://github.com/johanpearson/Touchline/issues/478)) ([adb7377](https://github.com/johanpearson/Touchline/commit/adb7377a89feee401de0ae1410403fcf9abce623)), closes [#464](https://github.com/johanpearson/Touchline/issues/464)
+* **commentary:** one commentary line per possession phase ([#449](https://github.com/johanpearson/Touchline/issues/449)) ([#456](https://github.com/johanpearson/Touchline/issues/456)) ([445281f](https://github.com/johanpearson/Touchline/commit/445281f43ec810c191b17d558956af63e0414d3b))
+* **engine:** chances, big-chance stats and v3 consumers ([#475](https://github.com/johanpearson/Touchline/issues/475)) ([0926b91](https://github.com/johanpearson/Touchline/commit/0926b914dcf2aed45a4fe9a57536b6d235baed9a))
+* **engine:** group the action log into possession phases ([#452](https://github.com/johanpearson/Touchline/issues/452)) ([559ec04](https://github.com/johanpearson/Touchline/commit/559ec044d3608b9ff98d33dcc055837ca1478271))
+* **engine:** v3 chances and shot results with near misses ([#471](https://github.com/johanpearson/Touchline/issues/471)) ([0a92c0b](https://github.com/johanpearson/Touchline/commit/0a92c0b487f68bccc77d66e560c7ce0dae6b0188))
+* **engine:** v3 match loop, periods, changes, energy and createMatch dispatch ([#472](https://github.com/johanpearson/Touchline/issues/472)) ([b21cc87](https://github.com/johanpearson/Touchline/commit/b21cc87a6af9399eeabb24680af0908236b73fe1))
+* **engine:** v3 phase draw with build-up, progression and outcome ([#470](https://github.com/johanpearson/Touchline/issues/470)) ([347d539](https://github.com/johanpearson/Touchline/commit/347d539afc525626015001d135126588f038a5df))
+* **engine:** v3 phase-step event model and derived action log ([#469](https://github.com/johanpearson/Touchline/issues/469)) ([0b86476](https://github.com/johanpearson/Touchline/commit/0b86476f62ce09ec5f9eb533a97aefa87cecf835))
+* **game:** play every match on engine v3 and migrate saved careers ([#479](https://github.com/johanpearson/Touchline/issues/479)) ([0b820ed](https://github.com/johanpearson/Touchline/commit/0b820edf3da57ea3a201d82868e42e9ecb004925)), closes [#465](https://github.com/johanpearson/Touchline/issues/465)
+* **ui:** chance moments in the match view ([#463](https://github.com/johanpearson/Touchline/issues/463)) ([#476](https://github.com/johanpearson/Touchline/issues/476)) ([b321c78](https://github.com/johanpearson/Touchline/commit/b321c7812a70f424e276ff55fbb9e28f07848fc6))
+* **ui:** play each possession phase as one continuous movement ([#454](https://github.com/johanpearson/Touchline/issues/454)) ([48df635](https://github.com/johanpearson/Touchline/commit/48df635a2d1fce42d14be0727c04d7bfbfcdc9c7))
+
 ## [1.9.0](https://github.com/johanpearson/Touchline/compare/v1.8.0...v1.9.0) (2026-11-20)
 
 
