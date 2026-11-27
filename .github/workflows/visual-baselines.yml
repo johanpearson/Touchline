@@ -62,7 +62,7 @@ jobs:
       - name: Create a GitHub App token
         id: app
         if: steps.token.outputs.ready == 'true'
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
