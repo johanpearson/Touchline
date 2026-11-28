@@ -1,13 +1,11 @@
 {
   "schemaVersion": 1,
-  "updated": "2026-11-27",
+  "updated": "2026-11-28",
   "sha": "462131a6ddc67da6af88946fa77ffa72523113a6",
   "ref": "main",
-  "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/45926505883",
-  "ok": false,
-  "failing": [
-    "e2e"
-  ],
+  "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/46096507931",
+  "ok": true,
+  "failing": [],
   "jobs": [
     {
       "job": "balance",
@@ -15,25 +13,25 @@
       "status": "pass",
       "message": "pass",
       "outcome": "success",
-      "date": "2026-11-27",
+      "date": "2026-11-28",
       "sha": "462131a6ddc67da6af88946fa77ffa72523113a6",
       "ref": "main",
-      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/45926505883",
+      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/46096507931",
       "metrics": {}
     },
     {
       "job": "mutation",
       "label": "mutation",
       "status": "pass",
-      "message": "93.8%",
+      "message": "93.9%",
       "outcome": "success",
-      "date": "2026-11-27",
+      "date": "2026-11-28",
       "sha": "462131a6ddc67da6af88946fa77ffa72523113a6",
       "ref": "main",
-      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/45926505883",
+      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/46096507931",
       "metrics": {
-        "mutationScore": 93.83,
-        "durationMinutes": 98
+        "mutationScore": 93.9,
+        "durationMinutes": 78.1
       }
     },
     {
@@ -42,22 +40,22 @@
       "status": "pass",
       "message": "pass",
       "outcome": "success",
-      "date": "2026-11-27",
+      "date": "2026-11-28",
       "sha": "462131a6ddc67da6af88946fa77ffa72523113a6",
       "ref": "main",
-      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/45926505883",
+      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/46096507931",
       "metrics": {}
     },
     {
       "job": "e2e",
       "label": "e2e",
-      "status": "red",
-      "message": "e2e failed",
-      "outcome": "failure",
-      "date": "2026-11-27",
+      "status": "pass",
+      "message": "pass",
+      "outcome": "success",
+      "date": "2026-11-28",
       "sha": "462131a6ddc67da6af88946fa77ffa72523113a6",
       "ref": "main",
-      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/45926505883",
+      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/46096507931",
       "metrics": {}
     },
     {
@@ -66,10 +64,10 @@
       "status": "pass",
       "message": "pass",
       "outcome": "success",
-      "date": "2026-11-27",
+      "date": "2026-11-28",
       "sha": "462131a6ddc67da6af88946fa77ffa72523113a6",
       "ref": "main",
-      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/45926505883",
+      "runUrl": "https://github.com/johanpearson/Touchline/actions/runs/46096507931",
       "metrics": {}
     }
   ]
